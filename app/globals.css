@@ -1,26 +1,176 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: #0e0e10;
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-montserrat), system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+  --font-heading: var(--font-sans);
+
+  /* Surfaces */
+  --color-surface: #0e0e10;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-low: #131316;
+  --color-surface-container: #19191c;
+  --color-surface-container-high: #1f1f23;
+  --color-surface-container-highest: #252529;
+  --color-surface-bright: #2c2c30;
+  --color-surface-variant: #252529;
+
+  /* Primary (aqua) */
+  --color-primary-container: #0079a7;
+  --color-primary-dim: #5ce1e6;
+  --color-on-primary: #000000;
+  --color-on-primary-container: #ffffff;
+
+  /* Tertiary (magenta) */
+  --color-tertiary: #f91e5a;
+  --color-tertiary-container: #ff66e7;
+  --color-tertiary-dim: #f91e5a;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #ffffff;
+
+  /* Text/outline */
+  --color-on-background: #e7e4ea;
+  --color-on-surface: #e7e4ea;
+  --color-on-surface-variant: #acaaaf;
+  --color-outline: #767579;
+  --color-outline-variant: #48474c;
+
+  /* Brand custom */
+  --color-aqua: #01e8c2;
+  --color-aqua-light: #5ce1e6;
+  --color-aqua-dark: #0079a7;
+  --color-magenta: #f91e5a;
+  --color-magenta-light: #ff66e7;
+
+  /* shadcn-compatible tokens */
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --background: #0e0e10;
+  --foreground: #e7e4ea;
+  --card: #19191c;
+  --card-foreground: #e7e4ea;
+  --primary: #01e8c2;
+  --primary-foreground: #000000;
+  --secondary: #1f1f23;
+  --secondary-foreground: #e7e4ea;
+  --muted: #252529;
+  --muted-foreground: #acaaaf;
+  --accent: #252529;
+  --accent-foreground: #e7e4ea;
+  --destructive: #f91e5a;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #01e8c2;
+  --radius: 0.625rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Brand utilities reused across surfaces */
+.text-gradient-aqua-magenta {
+  background: linear-gradient(135deg, #01e8c2, #5ce1e6, #f91e5a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-primary {
+  background: linear-gradient(to right, #01e8c2, #f91e5a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.neon-aqua-border {
+  box-shadow:
+    0 0 15px rgba(1, 232, 194, 0.3),
+    inset 0 0 10px rgba(1, 232, 194, 0.2);
+  border: 1px solid rgba(1, 232, 194, 0.2);
+}
+
+/* Aurora background blobs (hero + checkout backdrops) */
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate(0%, 0%) scale(1); }
+  33% { transform: translate(8%, -12%) scale(1.08); }
+  66% { transform: translate(-6%, 10%) scale(0.95); }
+}
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate(0%, 0%) scale(1); }
+  40% { transform: translate(-10%, 8%) scale(1.1); }
+  70% { transform: translate(7%, -6%) scale(0.92); }
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.aurora-blob-teal {
+  width: 55vw;
+  height: 55vw;
+  max-width: 700px;
+  max-height: 700px;
+  top: -15%;
+  left: -10%;
+  background: radial-gradient(circle, rgba(1, 232, 194, 0.28) 0%, transparent 70%);
+  animation: aurora-drift-1 18s ease-in-out infinite;
+}
+.aurora-blob-pink {
+  width: 50vw;
+  height: 50vw;
+  max-width: 650px;
+  max-height: 650px;
+  bottom: -10%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(249, 30, 90, 0.22) 0%, transparent 70%);
+  animation: aurora-drift-2 22s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

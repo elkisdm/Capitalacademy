@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fintoc/fintoc-js": "^1.1.2",
     "@hookform/resolvers": "^5.2.2",
     "@mux/mux-node": "^14.0.1",
     "@mux/mux-player-react": "^3.12.0",

@@ -30,12 +30,20 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (todos los .env son secretos y NO se commitean)
 .env*
-!.env.example
+
+# MCP server config (puede contener tokens personales)
+.mcp.json
 
 # vercel
 .vercel
+
+# claude code (local-only)
+.claude/settings.local.json
+
+# AI snapshots (local IDE tooling)
+.snapshots/
 
 # typescript
 *.tsbuildinfo

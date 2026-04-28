@@ -4,8 +4,23 @@ import {
   type FintocWebhookEvent,
 } from "@/lib/fintoc/webhook";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  sendPaymentConfirmationEmail,
+  sendPaymentTeamNotification,
+} from "@/lib/email/payment-confirmation";
 
 export const runtime = "nodejs";
+
+interface PaymentRow {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  rut: string;
+  phone: string;
+  amount_clp: number;
+  paid_at: string | null;
+}
 
 export async function POST(req: Request) {
   const secret = process.env.FINTOC_WEBHOOK_SECRET;
@@ -55,15 +70,26 @@ export async function POST(req: Request) {
   const status = mapFintocStatus(event.type, fintocStatus);
   const supabase = createAdminClient();
 
+  // Lectura previa para detectar idempotencia: si paid_at ya existe,
+  // este es un reenvío de Fintoc y NO debemos disparar emails de nuevo.
+  const { data: existing } = await supabase
+    .from("payments" as never)
+    .select("id, firstname, lastname, email, rut, phone, amount_clp, paid_at")
+    .eq("fintoc_session_id", sessionId)
+    .single<PaymentRow>();
+
+  const wasAlreadyPaid = Boolean(existing?.paid_at);
+  const paidAtIso = new Date().toISOString();
+
   const update: Record<string, unknown> = {
     status,
     raw_webhook: event as unknown as Record<string, unknown>,
     fintoc_payment_id: paymentExternalId ?? null,
   };
-  if (status === "succeeded") update.paid_at = new Date().toISOString();
+  if (status === "succeeded" && !wasAlreadyPaid) {
+    update.paid_at = paidAtIso;
+  }
 
-  // Casts provisionales mientras `lib/supabase/types.ts` siga vacío.
-  // Quitar `as never` cuando los tipos se regeneren contra el proyecto real.
   const { error } = await supabase
     .from("payments" as never)
     .update(update as never)
@@ -72,6 +98,40 @@ export async function POST(req: Request) {
   if (error) {
     console.error("payments update error", error);
     return NextResponse.json({ error: "db" }, { status: 500 });
+  }
+
+  // Notificaciones: solo en transición a succeeded (no en reenvíos).
+  // Errores de email NO devuelven 500 al webhook — Fintoc reintentaría
+  // y duplicaríamos pagos. Logueamos y reconciliamos manual.
+  if (status === "succeeded" && !wasAlreadyPaid && existing) {
+    const emailInput = {
+      paymentId: existing.id,
+      firstname: existing.firstname,
+      lastname: existing.lastname,
+      email: existing.email,
+      rut: existing.rut,
+      phone: existing.phone,
+      amountClp: existing.amount_clp,
+      paidAt: new Date(paidAtIso),
+    };
+
+    const [studentResult, teamResult] = await Promise.all([
+      sendPaymentConfirmationEmail(emailInput),
+      sendPaymentTeamNotification(emailInput),
+    ]);
+
+    if (!studentResult.ok) {
+      console.error("payment-email student failed", {
+        paymentId: existing.id,
+        error: studentResult.error,
+      });
+    }
+    if (!teamResult.ok) {
+      console.error("payment-email team failed", {
+        paymentId: existing.id,
+        error: teamResult.error,
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });

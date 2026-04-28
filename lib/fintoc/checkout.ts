@@ -39,9 +39,16 @@ export async function createDiplomadoCheckoutSession(
     return { errorMessage: "Falta configurar FINTOC_SECRET_KEY.", status: 500 };
   }
 
+  const baseAppUrl = (
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+    "https://capitalacademy.cl"
+  );
+
   const checkoutPayload = {
     amount: DIPLOMADO_PRICE_CLP,
     currency: "CLP",
+    success_url: `${baseAppUrl}/pago/gracias?id=${input.paymentId}`,
+    cancel_url: `${baseAppUrl}/pago`,
     customer: {
       name: `${input.firstname} ${input.lastname}`.trim(),
       email: input.email,

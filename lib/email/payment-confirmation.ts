@@ -11,6 +11,16 @@ interface PaymentConfirmationInput {
   paidAt: Date;
 }
 
+// Base URL pública usada para resolver assets embebidos en el email
+// (logos, etc). Debe apuntar al dominio donde Next sirve `public/`.
+function getPublicBaseUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (fromEnv && !fromEnv.startsWith("http://localhost")) {
+    return fromEnv;
+  }
+  return "https://capitalacademy.vercel.app";
+}
+
 const moneyFormatter = new Intl.NumberFormat("es-CL", {
   style: "currency",
   currency: "CLP",
@@ -89,15 +99,16 @@ interface RenderInput extends PaymentConfirmationInput {
 }
 
 function studentEmailHtml(d: RenderInput): string {
+  const baseUrl = getPublicBaseUrl();
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#f5f5f5;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0a0a0a;padding:40px 16px;">
     <tr><td align="center">
       <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;background:#141414;border:1px solid #262626;border-radius:16px;overflow:hidden;">
-        <tr><td style="padding:32px 32px 8px 32px;">
-          <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:0.3em;color:#22d3ee;text-transform:uppercase;font-weight:700;">Capital Academy</p>
-          <h1 style="margin:0;font-size:24px;line-height:1.25;color:#fff;font-weight:800;letter-spacing:-0.02em;">Inscripción confirmada</h1>
+        <tr><td align="center" style="padding:32px 32px 8px 32px;">
+          <img src="${baseUrl}/email/logo-light.png" alt="Capital Academy" width="96" height="95" style="display:block;width:96px;height:auto;margin:0 auto 16px auto;border:0;outline:none;text-decoration:none;" />
+          <h1 style="margin:0;font-size:24px;line-height:1.25;color:#fff;font-weight:800;letter-spacing:-0.02em;text-align:center;">Inscripción confirmada</h1>
         </td></tr>
         <tr><td style="padding:8px 32px 24px 32px;">
           <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#e5e5e5;">Hola <strong>${escapeHtml(d.firstname)}</strong>,</p>
@@ -149,13 +160,19 @@ function studentEmailText(d: RenderInput): string {
 }
 
 function teamEmailHtml(d: RenderInput): string {
+  const baseUrl = getPublicBaseUrl();
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:24px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#171717;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;">
     <tr><td style="padding:20px 24px;background:#0a0a0a;color:#fff;">
-      <p style="margin:0;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#22d3ee;">Pago recibido</p>
-      <h1 style="margin:4px 0 0 0;font-size:18px;font-weight:700;">${escapeHtml(d.firstname)} ${escapeHtml(d.lastname)} · ${escapeHtml(d.amount)}</h1>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+        <td valign="middle" style="width:48px;padding-right:12px;"><img src="${baseUrl}/email/logo-light.png" alt="Capital Academy" width="40" height="40" style="display:block;width:40px;height:auto;border:0;outline:none;" /></td>
+        <td valign="middle">
+          <p style="margin:0;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#22d3ee;">Pago recibido</p>
+          <h1 style="margin:2px 0 0 0;font-size:18px;font-weight:700;">${escapeHtml(d.firstname)} ${escapeHtml(d.lastname)} · ${escapeHtml(d.amount)}</h1>
+        </td>
+      </tr></table>
     </td></tr>
     <tr><td style="padding:20px 24px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:1.6;">

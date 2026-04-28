@@ -197,7 +197,7 @@ export function CheckoutClient({ priceClp }: Props) {
       <button
         type="submit"
         disabled={isBusy}
-        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-aqua)] text-sm font-bold uppercase tracking-[0.15em] text-black transition-all duration-200 hover:bg-[var(--color-aqua-light)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(91,45,235,0.35)] transition-all duration-200 hover:bg-[var(--color-ca-violet-deep)] hover:shadow-[0_16px_40px_rgba(91,45,235,0.45)] hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
       >
         {isBusy ? "Procesando…" : "Pagar inscripción"}
       </button>
@@ -210,7 +210,7 @@ export function CheckoutClient({ priceClp }: Props) {
 }
 
 const inputCls =
-  "w-full h-11 rounded-lg border border-[var(--border)] bg-white/[0.04] px-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 hover:border-white/25 focus:border-[var(--color-aqua)]/60 focus:bg-white/[0.07]";
+  "w-full h-11 rounded-lg border border-[var(--border)] bg-white/[0.04] px-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 hover:border-[var(--color-ca-lime)]/40 focus:border-[var(--color-ca-lime)]/70 focus:bg-white/[0.07] focus:ring-2 focus:ring-[var(--color-ca-violet)]/30";
 
 function Field({
   label,

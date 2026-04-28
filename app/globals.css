@@ -3,48 +3,60 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: #0e0e10;
+  --color-background: var(--color-ca-navy-deep);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-montserrat), system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
   --font-heading: var(--font-sans);
 
-  /* Surfaces */
-  --color-surface: #0e0e10;
-  --color-surface-container-lowest: #000000;
-  --color-surface-container-low: #131316;
-  --color-surface-container: #19191c;
-  --color-surface-container-high: #1f1f23;
-  --color-surface-container-highest: #252529;
-  --color-surface-bright: #2c2c30;
-  --color-surface-variant: #252529;
+  /* === Capital Academy brand palette === */
+  --color-ca-lime: #d9f55e;
+  --color-ca-lime-soft: #e4f98e;
+  --color-ca-lime-bright: #c8f08c;
+  --color-ca-violet: #5b2deb;
+  --color-ca-violet-deep: #3a14c7;
+  --color-ca-violet-soft: #d4b8ff;
+  --color-ca-navy: #0d1340;
+  --color-ca-navy-deep: #070a29;
+  --color-ca-navy-raised: #10164a;
+  --color-ca-electric: #0b1fe8;
 
-  /* Primary (aqua) */
-  --color-primary-container: #0079a7;
-  --color-primary-dim: #5ce1e6;
-  --color-on-primary: #000000;
+  /* Semantic surfaces (mapped onto CA palette) */
+  --color-surface: var(--color-ca-navy-deep);
+  --color-surface-container-lowest: #04062a;
+  --color-surface-container-low: #0a0e35;
+  --color-surface-container: var(--color-ca-navy-raised);
+  --color-surface-container-high: #161d5a;
+  --color-surface-container-highest: #1d266a;
+  --color-surface-bright: #232c7a;
+  --color-surface-variant: #161d5a;
+
+  /* Primary (lime) */
+  --color-primary-container: rgba(217, 245, 94, 0.18);
+  --color-primary-dim: var(--color-ca-lime-soft);
+  --color-on-primary: var(--color-ca-navy);
   --color-on-primary-container: #ffffff;
 
-  /* Tertiary (magenta) */
-  --color-tertiary: #f91e5a;
-  --color-tertiary-container: #ff66e7;
-  --color-tertiary-dim: #f91e5a;
+  /* Tertiary (violet) */
+  --color-tertiary: var(--color-ca-violet);
+  --color-tertiary-container: var(--color-ca-violet-deep);
+  --color-tertiary-dim: var(--color-ca-violet-soft);
   --color-on-tertiary: #ffffff;
   --color-on-tertiary-container: #ffffff;
 
   /* Text/outline */
-  --color-on-background: #e7e4ea;
-  --color-on-surface: #e7e4ea;
-  --color-on-surface-variant: #acaaaf;
-  --color-outline: #767579;
-  --color-outline-variant: #48474c;
+  --color-on-background: #ffffff;
+  --color-on-surface: #ffffff;
+  --color-on-surface-variant: rgba(255, 255, 255, 0.72);
+  --color-outline: rgba(217, 245, 94, 0.28);
+  --color-outline-variant: rgba(255, 255, 255, 0.1);
 
-  /* Brand custom */
-  --color-aqua: #01e8c2;
-  --color-aqua-light: #5ce1e6;
-  --color-aqua-dark: #0079a7;
-  --color-magenta: #f91e5a;
-  --color-magenta-light: #ff66e7;
+  /* Brand custom (legacy aliases mapped to new palette to avoid breakage) */
+  --color-aqua: var(--color-ca-lime);
+  --color-aqua-light: var(--color-ca-lime-soft);
+  --color-aqua-dark: var(--color-ca-violet);
+  --color-magenta: var(--color-ca-violet);
+  --color-magenta-light: var(--color-ca-violet-soft);
 
   /* shadcn-compatible tokens */
   --color-ring: var(--ring);
@@ -69,23 +81,23 @@
 }
 
 :root {
-  --background: #0e0e10;
-  --foreground: #e7e4ea;
-  --card: #19191c;
-  --card-foreground: #e7e4ea;
-  --primary: #01e8c2;
-  --primary-foreground: #000000;
-  --secondary: #1f1f23;
-  --secondary-foreground: #e7e4ea;
-  --muted: #252529;
-  --muted-foreground: #acaaaf;
-  --accent: #252529;
-  --accent-foreground: #e7e4ea;
-  --destructive: #f91e5a;
-  --border: rgba(255, 255, 255, 0.1);
+  --background: #070a29;
+  --foreground: #ffffff;
+  --card: #10164a;
+  --card-foreground: #ffffff;
+  --primary: #d9f55e;
+  --primary-foreground: #0d1340;
+  --secondary: #161d5a;
+  --secondary-foreground: #ffffff;
+  --muted: #161d5a;
+  --muted-foreground: rgba(255, 255, 255, 0.7);
+  --accent: #5b2deb;
+  --accent-foreground: #ffffff;
+  --destructive: #f43f5e;
+  --border: rgba(217, 245, 94, 0.18);
   --input: rgba(255, 255, 255, 0.1);
-  --ring: #01e8c2;
-  --radius: 0.625rem;
+  --ring: #d9f55e;
+  --radius: 0.875rem;
 }
 
 @layer base {
@@ -104,29 +116,75 @@
   }
 }
 
-/* Brand utilities reused across surfaces */
+/* === Brand utilities — Capital Academy === */
+.text-gradient-ca {
+  background: linear-gradient(135deg, #d9f55e 0%, #c8f08c 50%, #5b2deb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-ca-lime {
+  background: linear-gradient(120deg, #d9f55e 0%, #e4f98e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Legacy aliases — keep working but use CA palette */
 .text-gradient-aqua-magenta {
-  background: linear-gradient(135deg, #01e8c2, #5ce1e6, #f91e5a);
+  background: linear-gradient(135deg, #d9f55e 0%, #c8f08c 50%, #5b2deb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-primary {
-  background: linear-gradient(to right, #01e8c2, #f91e5a);
+  background: linear-gradient(to right, #d9f55e, #5b2deb);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.neon-aqua-border {
-  box-shadow:
-    0 0 15px rgba(1, 232, 194, 0.3),
-    inset 0 0 10px rgba(1, 232, 194, 0.2);
-  border: 1px solid rgba(1, 232, 194, 0.2);
+.ca-btn-primary {
+  background: var(--color-ca-violet);
+  color: #ffffff;
+  border-radius: 9999px;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
 }
 
-/* Aurora background blobs (hero + checkout backdrops) */
+.ca-btn-primary:hover {
+  background: var(--color-ca-violet-deep);
+  box-shadow: 0 16px 40px rgba(91, 45, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.ca-btn-lime {
+  background: var(--color-ca-lime);
+  color: var(--color-ca-navy);
+  border-radius: 9999px;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+
+.ca-btn-lime:hover {
+  background: var(--color-ca-lime-soft);
+  box-shadow: 0 16px 40px rgba(217, 245, 94, 0.3);
+  transform: translateY(-1px);
+}
+
+.ca-card {
+  background: var(--color-ca-navy-raised);
+  border: 1px solid rgba(217, 245, 94, 0.22);
+  border-radius: 24px;
+}
+
+/* === Background blobs (lime + violet aurora) === */
 @keyframes aurora-drift-1 {
   0%, 100% { transform: translate(0%, 0%) scale(1); }
   33% { transform: translate(8%, -12%) scale(1.08); }
@@ -141,30 +199,55 @@
 .aurora-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
+  filter: blur(110px);
   will-change: transform;
   mix-blend-mode: screen;
   pointer-events: none;
 }
-.aurora-blob-teal {
+
+.aurora-blob-lime {
+  width: 60vw;
+  height: 60vw;
+  max-width: 720px;
+  max-height: 720px;
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(217, 245, 94, 0.22) 0%, transparent 70%);
+  animation: aurora-drift-1 22s ease-in-out infinite;
+}
+
+.aurora-blob-violet {
   width: 55vw;
   height: 55vw;
-  max-width: 700px;
-  max-height: 700px;
-  top: -15%;
-  left: -10%;
-  background: radial-gradient(circle, rgba(1, 232, 194, 0.28) 0%, transparent 70%);
-  animation: aurora-drift-1 18s ease-in-out infinite;
+  max-width: 680px;
+  max-height: 680px;
+  bottom: -12%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(91, 45, 235, 0.32) 0%, transparent 70%);
+  animation: aurora-drift-2 26s ease-in-out infinite;
 }
+
+/* Legacy class names continue to work but use the new palette */
+.aurora-blob-teal {
+  width: 60vw;
+  height: 60vw;
+  max-width: 720px;
+  max-height: 720px;
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(217, 245, 94, 0.22) 0%, transparent 70%);
+  animation: aurora-drift-1 22s ease-in-out infinite;
+}
+
 .aurora-blob-pink {
-  width: 50vw;
-  height: 50vw;
-  max-width: 650px;
-  max-height: 650px;
-  bottom: -10%;
-  right: -8%;
-  background: radial-gradient(circle, rgba(249, 30, 90, 0.22) 0%, transparent 70%);
-  animation: aurora-drift-2 22s ease-in-out infinite;
+  width: 55vw;
+  height: 55vw;
+  max-width: 680px;
+  max-height: 680px;
+  bottom: -12%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(91, 45, 235, 0.32) 0%, transparent 70%);
+  animation: aurora-drift-2 26s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

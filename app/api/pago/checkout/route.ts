@@ -5,15 +5,11 @@ import {
   createDiplomadoCheckoutSession,
 } from "@/lib/fintoc/checkout";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { PaymentInsert } from "@/lib/supabase/types";
+import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
-// Hasta que `lib/supabase/types.ts` se regenere desde el proyecto real,
-// usamos `payments` como un nombre de tabla "no tipado" y casteamos en
-// los puntos de inserción/actualización. Quitar todos los `as never` y
-// `as { id: string }` cuando los tipos generados estén en su lugar.
-const PAYMENTS = "payments" as never;
+type PaymentInsert = Database["public"]["Tables"]["payments"]["Insert"];
 
 export async function POST(req: Request) {
   let json: unknown;
@@ -48,10 +44,10 @@ export async function POST(req: Request) {
   };
 
   const { data: payment, error: insertErr } = await supabase
-    .from(PAYMENTS)
-    .insert(insertPayload as never)
+    .from("payments")
+    .insert(insertPayload)
     .select("id")
-    .single<{ id: string }>();
+    .single();
 
   if (insertErr || !payment) {
     console.error("payments insert error", insertErr);
@@ -72,11 +68,11 @@ export async function POST(req: Request) {
 
   if ("errorMessage" in session) {
     await supabase
-      .from(PAYMENTS)
+      .from("payments")
       .update({
         status: "failed",
         failure_reason: session.errorMessage,
-      } as never)
+      })
       .eq("id", payment.id);
     return NextResponse.json(
       { error: session.errorMessage },
@@ -85,8 +81,8 @@ export async function POST(req: Request) {
   }
 
   await supabase
-    .from(PAYMENTS)
-    .update({ fintoc_session_id: session.checkoutSessionId } as never)
+    .from("payments")
+    .update({ fintoc_session_id: session.checkoutSessionId })
     .eq("id", payment.id);
 
   return NextResponse.json({

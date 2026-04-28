@@ -8,19 +8,11 @@ import {
   sendPaymentConfirmationEmail,
   sendPaymentTeamNotification,
 } from "@/lib/email/payment-confirmation";
+import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
-interface PaymentRow {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  rut: string;
-  phone: string;
-  amount_clp: number;
-  paid_at: string | null;
-}
+type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
 
 export async function POST(req: Request) {
   const secret = process.env.FINTOC_WEBHOOK_SECRET;
@@ -73,17 +65,17 @@ export async function POST(req: Request) {
   // Lectura previa para detectar idempotencia: si paid_at ya existe,
   // este es un reenvío de Fintoc y NO debemos disparar emails de nuevo.
   const { data: existing } = await supabase
-    .from("payments" as never)
+    .from("payments")
     .select("id, firstname, lastname, email, rut, phone, amount_clp, paid_at")
     .eq("fintoc_session_id", sessionId)
-    .single<PaymentRow>();
+    .single();
 
   const wasAlreadyPaid = Boolean(existing?.paid_at);
   const paidAtIso = new Date().toISOString();
 
-  const update: Record<string, unknown> = {
+  const update: PaymentUpdate = {
     status,
-    raw_webhook: event as unknown as Record<string, unknown>,
+    raw_webhook: event as unknown as PaymentUpdate["raw_webhook"],
     fintoc_payment_id: paymentExternalId ?? null,
   };
   if (status === "succeeded" && !wasAlreadyPaid) {
@@ -91,8 +83,8 @@ export async function POST(req: Request) {
   }
 
   const { error } = await supabase
-    .from("payments" as never)
-    .update(update as never)
+    .from("payments")
+    .update(update)
     .eq("fintoc_session_id", sessionId);
 
   if (error) {

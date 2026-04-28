@@ -45,6 +45,10 @@ yarn-error.log*
 # AI snapshots (local IDE tooling)
 .snapshots/
 
+# Supabase CLI cache (local-only)
+supabase/.temp/
+supabase/.branches/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

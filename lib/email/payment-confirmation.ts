@@ -102,38 +102,54 @@ function studentEmailHtml(d: RenderInput): string {
   const baseUrl = getPublicBaseUrl();
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#f5f5f5;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0a0a0a;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#070a29;font-family:Montserrat,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#ffffff;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#070a29;padding:40px 16px;">
     <tr><td align="center">
-      <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;background:#141414;border:1px solid #262626;border-radius:16px;overflow:hidden;">
-        <tr><td align="center" style="padding:32px 32px 8px 32px;">
-          <img src="${baseUrl}/email/logo-light.png" alt="Capital Academy" width="96" height="95" style="display:block;width:96px;height:auto;margin:0 auto 16px auto;border:0;outline:none;text-decoration:none;" />
-          <h1 style="margin:0;font-size:24px;line-height:1.25;color:#fff;font-weight:800;letter-spacing:-0.02em;text-align:center;">Inscripción confirmada</h1>
-        </td></tr>
-        <tr><td style="padding:8px 32px 24px 32px;">
-          <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#e5e5e5;">Hola <strong>${escapeHtml(d.firstname)}</strong>,</p>
-          <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#e5e5e5;">Recibimos tu pago de <strong>${escapeHtml(d.amount)}</strong>. Tu cupo en el <strong>Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria</strong> está confirmado.</p>
-        </td></tr>
-        <tr><td style="padding:0 32px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;">
-            <tr><td style="padding:20px;">
-              <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.2em;color:#a3a3a3;text-transform:uppercase;font-weight:600;">Próximos pasos</p>
-              <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#d4d4d4;">
-                <li>Te contactaremos en las próximas 24 horas con el calendario de clases y el acceso a la plataforma.</li>
-                <li>Recibirás un correo separado con tu credencial de ingreso.</li>
-                <li>Si tienes preguntas urgentes, responde este correo.</li>
-              </ul>
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#10164a;border:1px solid rgba(217,245,94,0.22);border-radius:24px;overflow:hidden;">
+        <tr><td style="padding:0;background:linear-gradient(135deg,#d9f55e 0%,#c8f08c 55%,#d9f55e 100%);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr><td align="center" style="padding:36px 28px 28px 28px;">
+              <img src="${baseUrl}/email/logo-on-light.png" alt="Capital Academy" width="88" height="86" style="display:block;width:88px;height:auto;margin:0 auto 18px auto;border:0;outline:none;text-decoration:none;" />
+              <p style="margin:0 0 6px 0;font-size:11px;letter-spacing:0.3em;color:#0d1340;text-transform:uppercase;font-weight:800;">Capital Academy</p>
+              <h1 style="margin:0;font-size:28px;line-height:1.2;color:#0d1340;font-weight:900;letter-spacing:-0.03em;text-align:center;">Inscripción confirmada</h1>
             </td></tr>
           </table>
         </td></tr>
-        <tr><td style="padding:24px 32px 8px 32px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:12px;color:#737373;">
-            <tr><td style="padding:6px 0;"><strong style="color:#a3a3a3;">ID de pago:</strong> ${escapeHtml(d.paymentId)}</td></tr>
-            <tr><td style="padding:6px 0;"><strong style="color:#a3a3a3;">Fecha:</strong> ${escapeHtml(d.date)}</td></tr>
+        <tr><td style="padding:32px 32px 8px 32px;">
+          <p style="margin:0 0 18px 0;font-size:16px;line-height:1.55;color:#ffffff;">Hola <strong style="color:#d9f55e;">${escapeHtml(d.firstname)}</strong>,</p>
+          <p style="margin:0 0 6px 0;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.86);">Tu pago de <strong style="color:#d9f55e;">${escapeHtml(d.amount)}</strong> fue aprobado. Tu cupo en el <strong style="color:#ffffff;">Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria</strong> queda confirmado.</p>
+        </td></tr>
+        <tr><td style="padding:20px 32px 8px 32px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:rgba(91,45,235,0.18);border:1px solid rgba(217,245,94,0.22);border-radius:16px;">
+            <tr><td style="padding:22px 22px 18px 22px;">
+              <p style="margin:0 0 14px 0;font-size:11px;letter-spacing:0.24em;color:#d9f55e;text-transform:uppercase;font-weight:800;">Próximos pasos</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.9);">
+                <tr><td valign="top" style="width:24px;padding:6px 0;color:#d9f55e;font-weight:800;">1.</td><td style="padding:6px 0;">Te contactaremos en las próximas 24 horas con el calendario y el acceso a la plataforma.</td></tr>
+                <tr><td valign="top" style="width:24px;padding:6px 0;color:#d9f55e;font-weight:800;">2.</td><td style="padding:6px 0;">Recibirás un correo separado con tu credencial de ingreso al portal del alumno.</td></tr>
+                <tr><td valign="top" style="width:24px;padding:6px 0;color:#d9f55e;font-weight:800;">3.</td><td style="padding:6px 0;">Si tienes preguntas urgentes, responde directamente este correo.</td></tr>
+              </table>
+            </td></tr>
           </table>
         </td></tr>
-        <tr><td style="padding:24px 32px 32px 32px;border-top:1px solid #262626;">
-          <p style="margin:0;font-size:12px;line-height:1.6;color:#737373;">Capital Academy · Este correo confirma tu inscripción. Guárdalo para tus registros.</p>
+        <tr><td style="padding:22px 32px 6px 32px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="width:35%;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,184,255,0.85);">Valor pagado</td>
+              <td style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:14px;color:#ffffff;font-weight:700;">${escapeHtml(d.amount)}</td>
+            </tr>
+            <tr>
+              <td style="width:35%;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,184,255,0.85);">Fecha</td>
+              <td style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:14px;color:#ffffff;">${escapeHtml(d.date)}</td>
+            </tr>
+            <tr>
+              <td style="width:35%;padding:12px 14px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,184,255,0.85);">ID de pago</td>
+              <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.78);font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;">${escapeHtml(d.paymentId)}</td>
+            </tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:28px 32px 36px 32px;">
+          <p style="margin:0 0 4px 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.7);">Gracias por confiar en <strong style="color:#d9f55e;">Capital Academy</strong>.</p>
+          <p style="margin:0;font-size:11px;line-height:1.6;color:rgba(212,184,255,0.55);">Guarda este correo como comprobante de tu inscripción.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -163,28 +179,30 @@ function teamEmailHtml(d: RenderInput): string {
   const baseUrl = getPublicBaseUrl();
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:24px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#171717;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;">
-    <tr><td style="padding:20px 24px;background:#0a0a0a;color:#fff;">
+<body style="margin:0;padding:24px;background:#f4f4f7;font-family:Montserrat,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0d1340;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px;margin:0 auto;background:#ffffff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(13,19,64,0.08);">
+    <tr><td style="padding:0;background:#070a29;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
-        <td valign="middle" style="width:48px;padding-right:12px;"><img src="${baseUrl}/email/logo-light.png" alt="Capital Academy" width="40" height="40" style="display:block;width:40px;height:auto;border:0;outline:none;" /></td>
-        <td valign="middle">
-          <p style="margin:0;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#22d3ee;">Pago recibido</p>
-          <h1 style="margin:2px 0 0 0;font-size:18px;font-weight:700;">${escapeHtml(d.firstname)} ${escapeHtml(d.lastname)} · ${escapeHtml(d.amount)}</h1>
+        <td valign="middle" style="width:64px;padding:18px 0 18px 22px;">
+          <img src="${baseUrl}/email/logo-on-light.png" alt="Capital Academy" width="40" height="40" style="display:block;width:40px;height:auto;border:0;outline:none;background:#d9f55e;border-radius:8px;padding:4px;" />
+        </td>
+        <td valign="middle" style="padding:18px 22px 18px 14px;">
+          <p style="margin:0;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#d9f55e;font-weight:800;">Pago recibido · Capital Academy</p>
+          <h1 style="margin:3px 0 0 0;font-size:18px;font-weight:700;color:#ffffff;letter-spacing:-0.01em;">${escapeHtml(d.firstname)} ${escapeHtml(d.lastname)} · ${escapeHtml(d.amount)}</h1>
         </td>
       </tr></table>
     </td></tr>
-    <tr><td style="padding:20px 24px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:1.6;">
-        <tr><td style="padding:6px 0;color:#737373;width:120px;">Email</td><td style="padding:6px 0;"><a href="mailto:${escapeHtml(d.email)}" style="color:#0070f3;">${escapeHtml(d.email)}</a></td></tr>
-        <tr><td style="padding:6px 0;color:#737373;">Teléfono</td><td style="padding:6px 0;">${escapeHtml(d.phone)}</td></tr>
-        <tr><td style="padding:6px 0;color:#737373;">RUT</td><td style="padding:6px 0;">${escapeHtml(d.rut)}</td></tr>
-        <tr><td style="padding:6px 0;color:#737373;">Pagado el</td><td style="padding:6px 0;">${escapeHtml(d.date)}</td></tr>
-        <tr><td style="padding:6px 0;color:#737373;">Payment ID</td><td style="padding:6px 0;font-family:monospace;font-size:12px;">${escapeHtml(d.paymentId)}</td></tr>
+    <tr><td style="padding:24px 24px 8px 24px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:1.6;border-collapse:collapse;">
+        <tr><td style="padding:8px 0;color:#5b2deb;width:120px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Email</td><td style="padding:8px 0;color:#0d1340;"><a href="mailto:${escapeHtml(d.email)}" style="color:#5b2deb;text-decoration:none;font-weight:600;">${escapeHtml(d.email)}</a></td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Teléfono</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.phone)}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">RUT</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.rut)}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Pagado el</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.date)}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Payment ID</td><td style="padding:8px 0;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12px;color:#3a14c7;">${escapeHtml(d.paymentId)}</td></tr>
       </table>
     </td></tr>
-    <tr><td style="padding:16px 24px;background:#fafafa;border-top:1px solid #e5e5e5;font-size:12px;color:#737373;">
-      Responde este correo para contactar al alumno directamente.
+    <tr><td style="padding:18px 24px;background:#f9faff;border-top:1px solid rgba(91,45,235,0.12);font-size:12px;color:#5b2deb;line-height:1.6;">
+      <strong style="color:#0d1340;">Tip:</strong> responde este correo para contactar al alumno directamente — el reply va a su email.
     </td></tr>
   </table>
 </body></html>`;

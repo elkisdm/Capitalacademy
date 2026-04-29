@@ -4,12 +4,15 @@ import {
   DIPLOMADO_PRICE_CLP,
   createDiplomadoCheckoutSession,
 } from "@/lib/fintoc/checkout";
+import { createFlowCheckout } from "@/lib/flow/checkout";
+import { getActivePaymentProvider } from "@/lib/payments/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
 type PaymentInsert = Database["public"]["Tables"]["payments"]["Insert"];
+type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
 
 export async function POST(req: Request) {
   let json: unknown;
@@ -27,6 +30,7 @@ export async function POST(req: Request) {
     );
   }
 
+  const provider = getActivePaymentProvider();
   const { firstname, lastname, rut, email, phone } = parsed.data;
   const supabase = createAdminClient();
 
@@ -38,6 +42,7 @@ export async function POST(req: Request) {
     phone,
     amount_clp: DIPLOMADO_PRICE_CLP,
     status: "pending",
+    provider,
     ip_address:
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     user_agent: req.headers.get("user-agent"),
@@ -57,6 +62,50 @@ export async function POST(req: Request) {
     );
   }
 
+  if (provider === "flow") {
+    const commerceOrder = `CA-${payment.id.slice(0, 8)}-${Date.now().toString(36)}`;
+    const flow = await createFlowCheckout({
+      paymentId: payment.id,
+      commerceOrder,
+      firstname,
+      lastname,
+      rut,
+      email,
+      phone,
+    });
+
+    if ("errorMessage" in flow) {
+      await supabase
+        .from("payments")
+        .update({
+          status: "failed",
+          failure_reason: flow.errorMessage,
+        } satisfies PaymentUpdate)
+        .eq("id", payment.id);
+      return NextResponse.json(
+        { error: flow.errorMessage },
+        { status: flow.status },
+      );
+    }
+
+    await supabase
+      .from("payments")
+      .update({
+        commerce_order: flow.commerceOrder,
+        flow_token: flow.token,
+        flow_order: flow.flowOrder,
+      } satisfies PaymentUpdate)
+      .eq("id", payment.id);
+
+    return NextResponse.json({
+      provider: "flow" as const,
+      paymentId: payment.id,
+      redirectUrl: flow.redirectUrl,
+      amount: flow.amount,
+    });
+  }
+
+  // provider === "fintoc"
   const session = await createDiplomadoCheckoutSession({
     paymentId: payment.id,
     firstname,
@@ -72,7 +121,7 @@ export async function POST(req: Request) {
       .update({
         status: "failed",
         failure_reason: session.errorMessage,
-      })
+      } satisfies PaymentUpdate)
       .eq("id", payment.id);
     return NextResponse.json(
       { error: session.errorMessage },
@@ -82,10 +131,13 @@ export async function POST(req: Request) {
 
   await supabase
     .from("payments")
-    .update({ fintoc_session_id: session.checkoutSessionId })
+    .update({
+      fintoc_session_id: session.checkoutSessionId,
+    } satisfies PaymentUpdate)
     .eq("id", payment.id);
 
   return NextResponse.json({
+    provider: "fintoc" as const,
     paymentId: payment.id,
     sessionToken: session.sessionToken,
     amount: session.amount,

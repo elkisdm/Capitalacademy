@@ -1,14 +1,21 @@
 import Image from "next/image";
 import { CheckoutClient } from "./CheckoutClient";
-import { DIPLOMADO_PRICE_CLP } from "@/lib/fintoc/checkout";
+import { DIPLOMADO_PRICE_CLP } from "@/lib/flow/checkout";
+import { getActivePaymentProvider } from "@/lib/payments/provider";
 
 export const metadata = {
   title: "Ingreso al Diplomado · Capital Academy",
   description:
-    "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Pago seguro vía Fintoc.",
+    "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Pago seguro online.",
 };
 
 export default function PagoPage() {
+  const provider = getActivePaymentProvider();
+  const providerLabel =
+    provider === "flow"
+      ? "Pago procesado por Flow · Webpay, transferencia, tarjetas y más."
+      : "Pago procesado por Fintoc · Webpay, transferencia y tarjetas chilenas.";
+
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[var(--color-ca-navy-deep)]">
       <div className="aurora-blob aurora-blob-lime" aria-hidden />
@@ -41,8 +48,7 @@ export default function PagoPage() {
           <CheckoutClient priceClp={DIPLOMADO_PRICE_CLP} />
 
           <p className="mt-8 text-center text-xs text-white/45">
-            Pago procesado por Fintoc · Webpay, transferencia y tarjetas
-            chilenas.
+            {providerLabel}
           </p>
         </div>
       </section>

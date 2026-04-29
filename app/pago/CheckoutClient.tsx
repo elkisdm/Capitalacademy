@@ -14,11 +14,19 @@ import { formatRut } from "@/lib/utils/rut";
 type Props = { priceClp: number };
 type Status = "idle" | "submitting" | "loading-widget" | "ready" | "error";
 
-interface CheckoutResponse {
-  paymentId: string;
-  sessionToken: string;
-  amount: number;
-}
+type CheckoutResponse =
+  | {
+      provider: "flow";
+      paymentId: string;
+      redirectUrl: string;
+      amount: number;
+    }
+  | {
+      provider: "fintoc";
+      paymentId: string;
+      sessionToken: string;
+      amount: number;
+    };
 
 const priceFormatter = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -79,6 +87,13 @@ export function CheckoutClient({ priceClp }: Props) {
       return;
     }
 
+    if (payload.provider === "flow") {
+      setStatus("loading-widget");
+      window.location.assign(payload.redirectUrl);
+      return;
+    }
+
+    // provider === "fintoc" — widget embebido
     setStatus("loading-widget");
     const publicKey = process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY;
     if (!publicKey) {

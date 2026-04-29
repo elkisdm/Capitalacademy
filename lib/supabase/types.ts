@@ -231,6 +231,7 @@ export type Database = {
       payments: {
         Row: {
           amount_clp: number
+          commerce_order: string | null
           created_at: string
           currency: string
           email: string
@@ -238,11 +239,14 @@ export type Database = {
           fintoc_payment_id: string | null
           fintoc_session_id: string | null
           firstname: string
+          flow_order: number | null
+          flow_token: string | null
           id: string
           ip_address: unknown
           lastname: string
           paid_at: string | null
           phone: string
+          provider: string
           raw_webhook: Json | null
           rut: string
           status: Database["public"]["Enums"]["payment_status"]
@@ -251,6 +255,7 @@ export type Database = {
         }
         Insert: {
           amount_clp: number
+          commerce_order?: string | null
           created_at?: string
           currency?: string
           email: string
@@ -258,11 +263,14 @@ export type Database = {
           fintoc_payment_id?: string | null
           fintoc_session_id?: string | null
           firstname: string
+          flow_order?: number | null
+          flow_token?: string | null
           id?: string
           ip_address?: unknown
           lastname: string
           paid_at?: string | null
           phone: string
+          provider?: string
           raw_webhook?: Json | null
           rut: string
           status?: Database["public"]["Enums"]["payment_status"]
@@ -271,6 +279,7 @@ export type Database = {
         }
         Update: {
           amount_clp?: number
+          commerce_order?: string | null
           created_at?: string
           currency?: string
           email?: string
@@ -278,11 +287,14 @@ export type Database = {
           fintoc_payment_id?: string | null
           fintoc_session_id?: string | null
           firstname?: string
+          flow_order?: number | null
+          flow_token?: string | null
           id?: string
           ip_address?: unknown
           lastname?: string
           paid_at?: string | null
           phone?: string
+          provider?: string
           raw_webhook?: Json | null
           rut?: string
           status?: Database["public"]["Enums"]["payment_status"]

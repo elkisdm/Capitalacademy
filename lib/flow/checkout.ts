@@ -44,9 +44,11 @@ export async function createFlowCheckout(
     };
   }
 
+  // Flow rechaza URLs http/localhost en urlConfirmation y urlReturn (1603).
+  // Si la env var no es https público válido, caemos al dominio de producción.
+  const candidate = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   const baseAppUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "https://capitalacademy.cl";
+    candidate && candidate.startsWith("https://") ? candidate : "https://capitalacademy.cl";
 
   const optional = JSON.stringify({
     rut: input.rut,

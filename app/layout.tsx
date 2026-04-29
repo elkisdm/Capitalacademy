@@ -10,9 +10,28 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Capital Academy",
+  metadataBase: new URL("https://capitalacademy.cl"),
+  title: {
+    default: "Capital Academy",
+    template: "%s · Capital Academy",
+  },
   description:
     "Plataforma académica del Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria.",
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    siteName: "Capital Academy",
+    title: "Capital Academy",
+    description:
+      "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Formación profesional para corredores y asesores.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Capital Academy",
+    description:
+      "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Formación profesional para corredores y asesores.",
+  },
 };
 
 export default function RootLayout({

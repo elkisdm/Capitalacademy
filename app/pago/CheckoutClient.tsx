@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +9,15 @@ import {
   checkoutFormSchema,
   type CheckoutFormInput,
 } from "@/lib/fintoc/schema";
+import {
+  PAYMENT_PLANS,
+  PAYMENT_PLAN_KEYS,
+  type PaymentPlan,
+} from "@/lib/flow/checkout";
+import type { PaymentProvider } from "@/lib/payments/provider";
 import { formatRut } from "@/lib/utils/rut";
 
-type Props = { priceClp: number };
+type Props = { provider: PaymentProvider };
 type Status = "idle" | "submitting" | "loading-widget" | "ready" | "error";
 
 type CheckoutResponse =
@@ -34,12 +40,18 @@ const priceFormatter = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
-export function CheckoutClient({ priceClp }: Props) {
+export function CheckoutClient({ provider }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const widgetRef = useRef<{ open: () => void; destroy: () => void } | null>(
     null,
+  );
+
+  // Fintoc no soporta cuotas con recargo: solo plan contado.
+  const availablePlans = useMemo<PaymentPlan[]>(
+    () => (provider === "flow" ? PAYMENT_PLAN_KEYS : ["contado"]),
+    [provider],
   );
 
   const {
@@ -51,7 +63,11 @@ export function CheckoutClient({ priceClp }: Props) {
   } = useForm<CheckoutFormInput>({
     resolver: zodResolver(checkoutFormSchema),
     mode: "onBlur",
+    defaultValues: { plan: "contado" },
   });
+
+  const selectedPlan = (watch("plan") ?? "contado") as PaymentPlan;
+  const selectedAmount = PAYMENT_PLANS[selectedPlan].amount;
 
   useEffect(
     () => () => {
@@ -144,9 +160,58 @@ export function CheckoutClient({ priceClp }: Props) {
           Total a pagar
         </span>
         <span className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-          {priceFormatter.format(priceClp)}
+          {priceFormatter.format(selectedAmount)}
         </span>
       </div>
+
+      {availablePlans.length > 1 && (
+        <fieldset className="mb-6">
+          <legend className="mb-2 text-xs font-medium uppercase tracking-widest text-white/60">
+            Forma de pago
+          </legend>
+          <div className="grid grid-cols-1 gap-2">
+            {availablePlans.map((planKey) => {
+              const plan = PAYMENT_PLANS[planKey];
+              const isSelected = selectedPlan === planKey;
+              return (
+                <label
+                  key={planKey}
+                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                    isSelected
+                      ? "border-[var(--color-ca-lime)]/70 bg-[var(--color-ca-lime)]/[0.06]"
+                      : "border-[var(--border)] bg-white/[0.02] hover:border-[var(--color-ca-lime)]/30"
+                  }`}
+                >
+                  <span className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      value={planKey}
+                      {...register("plan")}
+                      className="mt-1 h-4 w-4 accent-[var(--color-ca-lime)]"
+                    />
+                    <span className="block">
+                      <span className="block text-sm font-semibold text-white">
+                        {plan.label}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-white/55">
+                        {plan.description}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-bold text-white">
+                    {priceFormatter.format(plan.amount)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {errors.plan?.message && (
+            <p className="mt-2 text-[11px] text-[var(--color-magenta-light)]">
+              {errors.plan.message}
+            </p>
+          )}
+        </fieldset>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Nombre" error={errors.firstname?.message}>

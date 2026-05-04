@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { CheckoutClient } from "./CheckoutClient";
-import { DIPLOMADO_PRICE_CLP } from "@/lib/flow/checkout";
 import { getActivePaymentProvider } from "@/lib/payments/provider";
 
 export const metadata = {
@@ -45,7 +44,7 @@ export default function PagoPage() {
             </p>
           </header>
 
-          <CheckoutClient priceClp={DIPLOMADO_PRICE_CLP} />
+          <CheckoutClient provider={provider} />
 
           <p className="mt-8 text-center text-xs text-white/45">
             {providerLabel}

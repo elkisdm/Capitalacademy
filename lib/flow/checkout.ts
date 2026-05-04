@@ -5,6 +5,53 @@ export const DIPLOMADO_PRICE_CLP = 250_000;
 export const FLOW_API_BASE =
   process.env.FLOW_API_BASE ?? "https://www.flow.cl/api";
 
+export type PaymentPlan = "contado" | "webpay-6" | "webpay-12";
+
+// Montos finales según plan (los de tarjeta ya incluyen el recargo
+// que cubre la comisión de Webpay; el pagador asume el costo).
+// paymentMethod de Flow: 1 = Webpay, 9 = todos los medios.
+export const PAYMENT_PLANS: Record<
+  PaymentPlan,
+  {
+    amount: number;
+    paymentMethod: number;
+    label: string;
+    description: string;
+    subjectSuffix: string;
+  }
+> = {
+  contado: {
+    amount: DIPLOMADO_PRICE_CLP,
+    paymentMethod: 9,
+    label: "Pago contado",
+    description: "Webpay 1 cuota, débito o transferencia",
+    subjectSuffix: "",
+  },
+  "webpay-6": {
+    amount: 266_700,
+    paymentMethod: 1,
+    label: "Webpay 6 cuotas",
+    description: "Tarjeta de crédito en 6 cuotas (incluye recargo)",
+    subjectSuffix: " — 6 cuotas",
+  },
+  "webpay-12": {
+    amount: 275_450,
+    paymentMethod: 1,
+    label: "Webpay 12 cuotas",
+    description: "Tarjeta de crédito en 12 cuotas (incluye recargo)",
+    subjectSuffix: " — 12 cuotas",
+  },
+};
+
+export const PAYMENT_PLAN_KEYS = Object.keys(PAYMENT_PLANS) as PaymentPlan[];
+
+export function isPaymentPlan(value: unknown): value is PaymentPlan {
+  return (
+    typeof value === "string" &&
+    (PAYMENT_PLAN_KEYS as string[]).includes(value)
+  );
+}
+
 export interface FlowCheckoutInput {
   paymentId: string;
   commerceOrder: string;
@@ -13,6 +60,7 @@ export interface FlowCheckoutInput {
   rut: string;
   email: string;
   phone: string;
+  plan: PaymentPlan;
 }
 
 export type FlowCheckoutResult =
@@ -50,21 +98,24 @@ export async function createFlowCheckout(
   const baseAppUrl =
     candidate && candidate.startsWith("https://") ? candidate : "https://capitalacademy.cl";
 
+  const planConfig = PAYMENT_PLANS[input.plan];
+
   const optional = JSON.stringify({
     rut: input.rut,
     nombre: `${input.firstname} ${input.lastname}`.trim(),
     phone: input.phone,
     payment_id: input.paymentId,
+    plan: input.plan,
   });
 
   const params = {
     apiKey,
     commerceOrder: input.commerceOrder,
-    subject: "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria",
+    subject: `Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria${planConfig.subjectSuffix}`,
     currency: "CLP",
-    amount: DIPLOMADO_PRICE_CLP,
+    amount: planConfig.amount,
     email: input.email,
-    paymentMethod: 9,
+    paymentMethod: planConfig.paymentMethod,
     urlConfirmation: `${baseAppUrl}/api/flow/webhook`,
     urlReturn: `${baseAppUrl}/pago/resultado`,
     optional,
@@ -103,7 +154,7 @@ export async function createFlowCheckout(
     token: data.token,
     flowOrder: data.flowOrder,
     redirectUrl: `${data.url}?token=${data.token}`,
-    amount: DIPLOMADO_PRICE_CLP,
+    amount: planConfig.amount,
     commerceOrder: input.commerceOrder,
   };
 }

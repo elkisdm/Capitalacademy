@@ -66,7 +66,9 @@ export async function POST(req: Request) {
   // este es un reenvío de Fintoc y NO debemos disparar emails de nuevo.
   const { data: existing } = await supabase
     .from("payments")
-    .select("id, firstname, lastname, email, rut, phone, amount_clp, paid_at")
+    .select(
+      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan",
+    )
     .eq("fintoc_session_id", sessionId)
     .single();
 
@@ -105,6 +107,7 @@ export async function POST(req: Request) {
       phone: existing.phone,
       amountClp: existing.amount_clp,
       paidAt: new Date(paidAtIso),
+      plan: existing.plan,
     };
 
     const [studentResult, teamResult] = await Promise.all([

@@ -246,6 +246,7 @@ export type Database = {
           lastname: string
           paid_at: string | null
           phone: string
+          plan: string | null
           provider: string
           raw_webhook: Json | null
           rut: string
@@ -270,6 +271,7 @@ export type Database = {
           lastname: string
           paid_at?: string | null
           phone: string
+          plan?: string | null
           provider?: string
           raw_webhook?: Json | null
           rut: string
@@ -294,6 +296,7 @@ export type Database = {
           lastname?: string
           paid_at?: string | null
           phone?: string
+          plan?: string | null
           provider?: string
           raw_webhook?: Json | null
           rut?: string

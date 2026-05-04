@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     email,
     phone,
     amount_clp: planAmount,
+    plan: effectivePlan,
     status: "pending",
     provider,
     ip_address:

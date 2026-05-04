@@ -1,4 +1,5 @@
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import { isPaymentPlan, PAYMENT_PLANS } from "@/lib/flow/checkout";
 
 interface PaymentConfirmationInput {
   paymentId: string;
@@ -9,6 +10,17 @@ interface PaymentConfirmationInput {
   phone: string;
   amountClp: number;
   paidAt: Date;
+  // Null para pagos legacy previos a la columna `plan`.
+  plan: string | null;
+}
+
+// Etiqueta legible del plan para mostrar en el email. Para pagos antiguos
+// sin `plan` registrado, devolvemos null y el bloque se omite.
+function planLabel(plan: string | null): string | null {
+  if (plan && isPaymentPlan(plan)) {
+    return PAYMENT_PLANS[plan].label;
+  }
+  return null;
 }
 
 // Base URL pública usada para resolver assets embebidos en el email
@@ -39,14 +51,15 @@ export async function sendPaymentConfirmationEmail(
   const resend = getResendClient();
   const amount = moneyFormatter.format(data.amountClp);
   const date = dateFormatter.format(data.paidAt);
+  const plan = planLabel(data.plan);
 
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.email,
       subject: "Inscripción confirmada · Diplomado Capital Academy",
-      html: studentEmailHtml({ ...data, amount, date }),
-      text: studentEmailText({ ...data, amount, date }),
+      html: studentEmailHtml({ ...data, amount, date, plan }),
+      text: studentEmailText({ ...data, amount, date, plan }),
     });
     if (result.error) {
       return { ok: false, error: result.error.message };
@@ -71,14 +84,15 @@ export async function sendPaymentTeamNotification(
   const resend = getResendClient();
   const amount = moneyFormatter.format(data.amountClp);
   const date = dateFormatter.format(data.paidAt);
+  const plan = planLabel(data.plan);
 
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipient,
       subject: `Pago recibido · ${data.firstname} ${data.lastname} · ${amount}`,
-      html: teamEmailHtml({ ...data, amount, date }),
-      text: teamEmailText({ ...data, amount, date }),
+      html: teamEmailHtml({ ...data, amount, date, plan }),
+      text: teamEmailText({ ...data, amount, date, plan }),
       replyTo: data.email,
     });
     if (result.error) {
@@ -96,6 +110,7 @@ export async function sendPaymentTeamNotification(
 interface RenderInput extends PaymentConfirmationInput {
   amount: string;
   date: string;
+  plan: string | null;
 }
 
 function studentEmailHtml(d: RenderInput): string {
@@ -137,6 +152,14 @@ function studentEmailHtml(d: RenderInput): string {
               <td style="width:35%;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,184,255,0.85);">Valor pagado</td>
               <td style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:14px;color:#ffffff;font-weight:700;">${escapeHtml(d.amount)}</td>
             </tr>
+            ${
+              d.plan
+                ? `<tr>
+              <td style="width:35%;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,184,255,0.85);">Forma de pago</td>
+              <td style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:14px;color:#ffffff;">${escapeHtml(d.plan)}</td>
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="width:35%;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,184,255,0.85);">Fecha</td>
               <td style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:14px;color:#ffffff;">${escapeHtml(d.date)}</td>
@@ -161,7 +184,7 @@ function studentEmailText(d: RenderInput): string {
   return [
     `Hola ${d.firstname},`,
     "",
-    `Recibimos tu pago de ${d.amount}. Tu cupo en el Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria está confirmado.`,
+    `Recibimos tu pago de ${d.amount}${d.plan ? ` (${d.plan})` : ""}. Tu cupo en el Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria está confirmado.`,
     "",
     "Próximos pasos:",
     "• Te contactaremos en las próximas 24 horas con el calendario de clases y el acceso a la plataforma.",
@@ -170,6 +193,7 @@ function studentEmailText(d: RenderInput): string {
     "",
     `ID de pago: ${d.paymentId}`,
     `Fecha: ${d.date}`,
+    ...(d.plan ? [`Forma de pago: ${d.plan}`] : []),
     "",
     "Capital Academy",
   ].join("\n");
@@ -198,6 +222,11 @@ function teamEmailHtml(d: RenderInput): string {
         <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Teléfono</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.phone)}</td></tr>
         <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">RUT</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.rut)}</td></tr>
         <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Pagado el</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.date)}</td></tr>
+        ${
+          d.plan
+            ? `<tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Plan</td><td style="padding:8px 0;color:#0d1340;font-weight:600;">${escapeHtml(d.plan)}</td></tr>`
+            : ""
+        }
         <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Payment ID</td><td style="padding:8px 0;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12px;color:#3a14c7;">${escapeHtml(d.paymentId)}</td></tr>
       </table>
     </td></tr>
@@ -210,12 +239,13 @@ function teamEmailHtml(d: RenderInput): string {
 
 function teamEmailText(d: RenderInput): string {
   return [
-    `Pago recibido: ${d.firstname} ${d.lastname} · ${d.amount}`,
+    `Pago recibido: ${d.firstname} ${d.lastname} · ${d.amount}${d.plan ? ` · ${d.plan}` : ""}`,
     "",
     `Email: ${d.email}`,
     `Teléfono: ${d.phone}`,
     `RUT: ${d.rut}`,
     `Pagado el: ${d.date}`,
+    ...(d.plan ? [`Plan: ${d.plan}`] : []),
     `Payment ID: ${d.paymentId}`,
     "",
     "Responde este correo para contactar al alumno directamente.",

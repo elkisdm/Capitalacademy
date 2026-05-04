@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   const { data: existing } = await supabase
     .from("payments")
     .select(
-      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at",
+      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan",
     )
     .eq("flow_token", token)
     .single();
@@ -63,6 +63,25 @@ export async function POST(req: Request) {
   const wasAlreadyPaid = Boolean(existing.paid_at);
   const paidAtIso = new Date().toISOString();
 
+  // B1: si Flow aprobó un monto distinto al esperado, NO bloqueamos al alumno
+  // (la plata ya fue tomada). Marcamos succeeded igual y dejamos rastro en
+  // failure_reason para reconciliación manual offline.
+  const expectedAmount = existing.amount_clp;
+  const reportedAmount = result.data.amount;
+  const amountMismatch =
+    status === "succeeded" &&
+    typeof reportedAmount === "number" &&
+    reportedAmount !== expectedAmount;
+
+  if (amountMismatch) {
+    console.error("flow webhook: amount mismatch", {
+      paymentId: existing.id,
+      expected: expectedAmount,
+      reported: reportedAmount,
+      flowOrder: result.data.flowOrder,
+    });
+  }
+
   const update: PaymentUpdate = {
     status,
     raw_webhook: result.data as unknown as PaymentUpdate["raw_webhook"],
@@ -70,6 +89,9 @@ export async function POST(req: Request) {
   };
   if (status === "succeeded" && !wasAlreadyPaid) {
     update.paid_at = paidAtIso;
+  }
+  if (amountMismatch) {
+    update.failure_reason = `amount_mismatch:expected=${expectedAmount}:reported=${reportedAmount}`;
   }
 
   const { error } = await supabase
@@ -92,6 +114,7 @@ export async function POST(req: Request) {
       phone: existing.phone,
       amountClp: existing.amount_clp,
       paidAt: new Date(paidAtIso),
+      plan: existing.plan,
     };
 
     const [studentResult, teamResult] = await Promise.all([

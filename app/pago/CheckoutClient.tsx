@@ -10,6 +10,7 @@ import {
   type CheckoutFormInput,
 } from "@/lib/fintoc/schema";
 import {
+  DIPLOMADO_PRICE_CLP,
   PAYMENT_PLANS,
   PAYMENT_PLAN_KEYS,
   type PaymentPlan,
@@ -68,6 +69,7 @@ export function CheckoutClient({ provider }: Props) {
 
   const selectedPlan = (watch("plan") ?? "contado") as PaymentPlan;
   const selectedAmount = PAYMENT_PLANS[selectedPlan].amount;
+  const selectedSurcharge = selectedAmount - DIPLOMADO_PRICE_CLP;
 
   useEffect(
     () => () => {
@@ -155,13 +157,26 @@ export function CheckoutClient({ provider }: Props) {
       onSubmit={onSubmit}
       className="rounded-2xl border border-[var(--border)] bg-[var(--color-surface-container)]/80 p-6 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:p-8"
     >
-      <div className="mb-6 flex items-baseline justify-between border-b border-[var(--border)] pb-4">
-        <span className="text-xs font-medium uppercase tracking-widest text-white/60">
-          Total a pagar
-        </span>
-        <span className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-          {priceFormatter.format(selectedAmount)}
-        </span>
+      <div className="mb-6 border-b border-[var(--border)] pb-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-medium uppercase tracking-widest text-white/60">
+            Total a pagar
+          </span>
+          <span className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+            {priceFormatter.format(selectedAmount)}
+          </span>
+        </div>
+        {selectedSurcharge > 0 && (
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-white/55">
+            <span>
+              Valor base {priceFormatter.format(DIPLOMADO_PRICE_CLP)} + recargo
+              por uso de cuotas{" "}
+              <span className="text-white/75">
+                {priceFormatter.format(selectedSurcharge)}
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
       {availablePlans.length > 1 && (

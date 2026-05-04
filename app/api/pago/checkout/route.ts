@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkoutFormSchema } from "@/lib/fintoc/schema";
-import {
-  DIPLOMADO_PRICE_CLP,
-  createDiplomadoCheckoutSession,
-} from "@/lib/fintoc/checkout";
-import { createFlowCheckout } from "@/lib/flow/checkout";
+import { createDiplomadoCheckoutSession } from "@/lib/fintoc/checkout";
+import { PAYMENT_PLANS, createFlowCheckout } from "@/lib/flow/checkout";
 import { getActivePaymentProvider } from "@/lib/payments/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
@@ -31,7 +28,13 @@ export async function POST(req: Request) {
   }
 
   const provider = getActivePaymentProvider();
-  const { firstname, lastname, rut, email, phone } = parsed.data;
+  const { firstname, lastname, rut, email, phone, plan } = parsed.data;
+
+  // Fintoc no soporta cuotas; si llega un plan con recargo en ese provider,
+  // forzamos el monto contado para no cobrar el recargo sin entregar cuotas.
+  const effectivePlan = provider === "fintoc" ? "contado" : plan;
+  const planAmount = PAYMENT_PLANS[effectivePlan].amount;
+
   const supabase = createAdminClient();
 
   const insertPayload: PaymentInsert = {
@@ -40,7 +43,7 @@ export async function POST(req: Request) {
     rut,
     email,
     phone,
-    amount_clp: DIPLOMADO_PRICE_CLP,
+    amount_clp: planAmount,
     status: "pending",
     provider,
     ip_address:
@@ -72,6 +75,7 @@ export async function POST(req: Request) {
       rut,
       email,
       phone,
+      plan: effectivePlan,
     });
 
     if ("errorMessage" in flow) {

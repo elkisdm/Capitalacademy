@@ -5,6 +5,7 @@ import { PAYMENT_PLANS, createFlowCheckout } from "@/lib/flow/checkout";
 import { getActivePaymentProvider } from "@/lib/payments/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
+import { applyCouponToAmount, lookupCoupon } from "@/lib/coupons/validate";
 
 export const runtime = "nodejs";
 
@@ -28,12 +29,33 @@ export async function POST(req: Request) {
   }
 
   const provider = getActivePaymentProvider();
-  const { firstname, lastname, rut, email, phone, plan } = parsed.data;
+  const { firstname, lastname, rut, email, phone, plan, couponCode } =
+    parsed.data;
 
   // Fintoc no soporta cuotas; si llega un plan con recargo en ese provider,
   // forzamos el monto contado para no cobrar el recargo sin entregar cuotas.
   const effectivePlan = provider === "fintoc" ? "contado" : plan;
-  const planAmount = PAYMENT_PLANS[effectivePlan].amount;
+  const baseAmount = PAYMENT_PLANS[effectivePlan].amount;
+
+  let finalAmount = baseAmount;
+  let appliedCouponId: string | null = null;
+  let appliedCouponCode: string | null = null;
+  let appliedDiscount: number | null = null;
+
+  if (couponCode) {
+    const coupon = await lookupCoupon(couponCode);
+    if (!coupon.ok) {
+      return NextResponse.json(
+        { error: coupon.error },
+        { status: coupon.status },
+      );
+    }
+    const applied = applyCouponToAmount(coupon.coupon, baseAmount);
+    finalAmount = applied.finalAmountClp;
+    appliedCouponId = applied.id;
+    appliedCouponCode = applied.code;
+    appliedDiscount = applied.discountClp;
+  }
 
   const supabase = createAdminClient();
 
@@ -43,13 +65,20 @@ export async function POST(req: Request) {
     rut,
     email,
     phone,
-    amount_clp: planAmount,
+    amount_clp: finalAmount,
     plan: effectivePlan,
     status: "pending",
     provider,
     ip_address:
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     user_agent: req.headers.get("user-agent"),
+    ...(appliedCouponId
+      ? {
+          coupon_id: appliedCouponId,
+          coupon_code: appliedCouponCode,
+          discount_clp: appliedDiscount,
+        }
+      : {}),
   };
 
   const { data: payment, error: insertErr } = await supabase
@@ -77,6 +106,7 @@ export async function POST(req: Request) {
       email,
       phone,
       plan: effectivePlan,
+      amountOverride: appliedCouponId ? finalAmount : undefined,
     });
 
     if ("errorMessage" in flow) {
@@ -118,6 +148,7 @@ export async function POST(req: Request) {
     rut,
     email,
     phone,
+    amountOverride: appliedCouponId ? finalAmount : undefined,
   });
 
   if ("errorMessage" in session) {

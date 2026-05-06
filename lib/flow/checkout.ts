@@ -1,6 +1,7 @@
 import { signFlowParams } from "./sign";
+import { DIPLOMADO_PRICE_CLP } from "@/lib/pricing";
 
-export const DIPLOMADO_PRICE_CLP = 250_000;
+export { DIPLOMADO_PRICE_CLP };
 
 export const FLOW_API_BASE =
   process.env.FLOW_API_BASE ?? "https://www.flow.cl/api";
@@ -28,14 +29,14 @@ export const PAYMENT_PLANS: Record<
     subjectSuffix: "",
   },
   "webpay-6": {
-    amount: 266_700,
+    amount: 533_400,
     paymentMethod: 1,
     label: "Webpay 6 cuotas",
     description: "Tarjeta de crédito en 6 cuotas (incluye recargo)",
     subjectSuffix: " — 6 cuotas",
   },
   "webpay-12": {
-    amount: 275_450,
+    amount: 550_900,
     paymentMethod: 1,
     label: "Webpay 12 cuotas",
     description: "Tarjeta de crédito en 12 cuotas (incluye recargo)",
@@ -61,6 +62,7 @@ export interface FlowCheckoutInput {
   email: string;
   phone: string;
   plan: PaymentPlan;
+  amountOverride?: number;
 }
 
 export type FlowCheckoutResult =
@@ -99,6 +101,7 @@ export async function createFlowCheckout(
     candidate && candidate.startsWith("https://") ? candidate : "https://capitalacademy.cl";
 
   const planConfig = PAYMENT_PLANS[input.plan];
+  const chargeAmount = input.amountOverride ?? planConfig.amount;
 
   const optional = JSON.stringify({
     rut: input.rut,
@@ -113,7 +116,7 @@ export async function createFlowCheckout(
     commerceOrder: input.commerceOrder,
     subject: `Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria${planConfig.subjectSuffix}`,
     currency: "CLP",
-    amount: planConfig.amount,
+    amount: chargeAmount,
     email: input.email,
     paymentMethod: planConfig.paymentMethod,
     urlConfirmation: `${baseAppUrl}/api/flow/webhook`,
@@ -154,7 +157,7 @@ export async function createFlowCheckout(
     token: data.token,
     flowOrder: data.flowOrder,
     redirectUrl: `${data.url}?token=${data.token}`,
-    amount: planConfig.amount,
+    amount: chargeAmount,
     commerceOrder: input.commerceOrder,
   };
 }

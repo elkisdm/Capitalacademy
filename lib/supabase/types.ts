@@ -142,6 +142,48 @@ export type Database = {
           },
         ]
       }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          label: string | null
+          max_redemptions: number | null
+          percent_off: number
+          redemptions: number
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          max_redemptions?: number | null
+          percent_off: number
+          redemptions?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          max_redemptions?: number | null
+          percent_off?: number
+          redemptions?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       enrollments: {
         Row: {
           cohort_id: string
@@ -232,8 +274,11 @@ export type Database = {
         Row: {
           amount_clp: number
           commerce_order: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           currency: string
+          discount_clp: number | null
           email: string
           failure_reason: string | null
           fintoc_payment_id: string | null
@@ -257,8 +302,11 @@ export type Database = {
         Insert: {
           amount_clp: number
           commerce_order?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           currency?: string
+          discount_clp?: number | null
           email: string
           failure_reason?: string | null
           fintoc_payment_id?: string | null
@@ -282,8 +330,11 @@ export type Database = {
         Update: {
           amount_clp?: number
           commerce_order?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           currency?: string
+          discount_clp?: number | null
           email?: string
           failure_reason?: string | null
           fintoc_payment_id?: string | null
@@ -304,7 +355,15 @@ export type Database = {
           updated_at?: string
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payments_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

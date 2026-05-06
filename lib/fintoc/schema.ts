@@ -17,6 +17,13 @@ export const checkoutFormSchema = z.object({
     .max(20)
     .regex(/^[+\d\s()-]+$/, "Solo números, espacios, +, ( y -"),
   plan: z.enum(["contado", "webpay-6", "webpay-12"]).default("contado"),
+  couponCode: z
+    .string()
+    .trim()
+    .max(40)
+    .transform((v) => v.toUpperCase())
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 // Input: lo que envía el formulario antes de aplicar defaults (plan es opcional).

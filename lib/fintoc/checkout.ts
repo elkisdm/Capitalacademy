@@ -1,4 +1,6 @@
-export const DIPLOMADO_PRICE_CLP = 250_000;
+import { DIPLOMADO_PRICE_CLP } from "@/lib/pricing";
+
+export { DIPLOMADO_PRICE_CLP };
 
 const FINTOC_API_BASE_URLS = [
   "https://api.fintoc.com/v2",
@@ -17,6 +19,7 @@ export interface CheckoutSessionInput {
   rut: string;
   email: string;
   phone: string;
+  amountOverride?: number;
 }
 
 export type CheckoutSessionResult =
@@ -44,8 +47,10 @@ export async function createDiplomadoCheckoutSession(
     "https://capitalacademy.cl"
   );
 
+  const chargeAmount = input.amountOverride ?? DIPLOMADO_PRICE_CLP;
+
   const checkoutPayload = {
-    amount: DIPLOMADO_PRICE_CLP,
+    amount: chargeAmount,
     currency: "CLP",
     success_url: `${baseAppUrl}/pago/gracias?id=${input.paymentId}`,
     cancel_url: `${baseAppUrl}/pago`,
@@ -96,7 +101,7 @@ export async function createDiplomadoCheckoutSession(
       return {
         sessionToken,
         checkoutSessionId,
-        amount: DIPLOMADO_PRICE_CLP,
+        amount: chargeAmount,
       };
     }
   }

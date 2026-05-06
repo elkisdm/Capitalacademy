@@ -71,6 +71,55 @@ export function CheckoutClient({ provider }: Props) {
   const selectedAmount = PAYMENT_PLANS[selectedPlan].amount;
   const selectedSurcharge = selectedAmount - DIPLOMADO_PRICE_CLP;
 
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<{
+    code: string;
+    percentOff: number;
+    label: string | null;
+  } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  const discountClp = coupon
+    ? Math.round((selectedAmount * coupon.percentOff) / 100)
+    : 0;
+  const finalAmount = selectedAmount - discountClp;
+
+  async function applyCoupon() {
+    setCouponError("");
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponLoading(true);
+    try {
+      const res = await fetch("/api/pago/cupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, plan: selectedPlan }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        coupon?: { code: string; percentOff: number; label: string | null };
+        error?: string;
+      };
+      if (!res.ok || !data.coupon) {
+        setCoupon(null);
+        setCouponError(data.error ?? "Cupón inválido.");
+        return;
+      }
+      setCoupon(data.coupon);
+      setCouponInput(data.coupon.code);
+    } catch {
+      setCouponError("No pudimos validar el cupón.");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+  }
+
   useEffect(
     () => () => {
       widgetRef.current?.destroy();
@@ -88,7 +137,10 @@ export function CheckoutClient({ provider }: Props) {
       const res = await fetch("/api/pago/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          couponCode: coupon?.code,
+        }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as {
@@ -163,7 +215,7 @@ export function CheckoutClient({ provider }: Props) {
             Total a pagar
           </span>
           <span className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-            {priceFormatter.format(selectedAmount)}
+            {priceFormatter.format(finalAmount)}
           </span>
         </div>
         {selectedSurcharge > 0 && (
@@ -176,6 +228,55 @@ export function CheckoutClient({ provider }: Props) {
               </span>
             </span>
           </div>
+        )}
+        {coupon && (
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-[var(--color-ca-lime)]">
+            <span>
+              Cupón <strong>{coupon.code}</strong> aplicado · −{coupon.percentOff}%
+            </span>
+            <span className="text-white/75">
+              −{priceFormatter.format(discountClp)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-6">
+        <label className="mb-1.5 block text-xs font-medium text-white/70">
+          ¿Tienes un cupón?
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value)}
+            placeholder="Código de cupón"
+            disabled={!!coupon || couponLoading}
+            className={`${inputCls} flex-1 disabled:opacity-60`}
+          />
+          {coupon ? (
+            <button
+              type="button"
+              onClick={removeCoupon}
+              className="h-11 shrink-0 rounded-lg border border-[var(--border)] bg-white/[0.04] px-4 text-xs font-bold uppercase tracking-wider text-white/80 transition-colors hover:border-[var(--color-magenta)]/50 hover:text-white"
+            >
+              Quitar
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={applyCoupon}
+              disabled={couponLoading || !couponInput.trim()}
+              className="h-11 shrink-0 rounded-lg border border-[var(--color-ca-lime)]/40 bg-[var(--color-ca-lime)]/[0.08] px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-lime)] transition-colors hover:bg-[var(--color-ca-lime)]/[0.16] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {couponLoading ? "…" : "Aplicar"}
+            </button>
+          )}
+        </div>
+        {couponError && (
+          <p className="mt-1 text-[11px] text-[var(--color-magenta-light)]">
+            {couponError}
+          </p>
         )}
       </div>
 

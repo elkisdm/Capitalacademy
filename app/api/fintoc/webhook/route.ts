@@ -67,7 +67,7 @@ export async function POST(req: Request) {
   const { data: existing } = await supabase
     .from("payments")
     .select(
-      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan",
+      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, discount_clp",
     )
     .eq("fintoc_session_id", sessionId)
     .single();
@@ -108,6 +108,8 @@ export async function POST(req: Request) {
       amountClp: existing.amount_clp,
       paidAt: new Date(paidAtIso),
       plan: existing.plan,
+      couponCode: existing.coupon_code,
+      discountClp: existing.discount_clp,
     };
 
     const [studentResult, teamResult] = await Promise.all([

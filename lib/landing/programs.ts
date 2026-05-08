@@ -22,10 +22,13 @@ export type ProgramMeta = {
   modules: number;
   modality: string;
   certificate: string;
+  nextStart: string;
+  cohortSize: string;
   audience: string[];
   audienceTags: string[];
   develops: string[];
   areas: string[];
+  includes: string[];
   highlight: string;
   cta: string;
   href: string;
@@ -49,6 +52,8 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     modules: 8,
     modality: "Online en vivo",
     certificate: "Diploma certificado",
+    nextStart: "Próxima cohorte abierta",
+    cohortSize: "Cupos limitados",
     audience: [
       "Brokers y asesores inmobiliarios",
       "Ejecutivos de sala de venta",
@@ -64,6 +69,13 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       "Profesionalización del rol asesor",
     ],
     areas: ["Ventas", "Asesoría", "Mercado", "Educación financiera"],
+    includes: [
+      "Diploma certificado de Capital Academy",
+      "Acceso a la comunidad Capital Inteligente",
+      "Sesiones en vivo grabadas para revisar después",
+      "Casos reales del mercado chileno",
+      "Mentoría grupal con docentes activos en la industria",
+    ],
     highlight:
       "Porque hoy vender propiedades exige mucho más que intención comercial. Exige preparación, criterio y confianza.",
     cta: "Quiero información del Diplomado",
@@ -86,6 +98,8 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     modules: 6,
     modality: "Online en vivo",
     certificate: "Diploma certificado",
+    nextStart: "Próxima cohorte abierta",
+    cohortSize: "Cupos limitados",
     audience: [
       "Jefaturas comerciales",
       "Líderes de equipo",
@@ -101,6 +115,13 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       "Foco en metas y resultados sostenibles",
     ],
     areas: ["Liderazgo", "Equipos", "Gestión", "Performance"],
+    includes: [
+      "Diploma certificado de Capital Academy",
+      "Acceso a la comunidad Capital Inteligente",
+      "Sesiones en vivo grabadas",
+      "Frameworks aplicables a tu equipo desde la primera semana",
+      "Mentoría grupal con líderes de la industria",
+    ],
     highlight:
       "Las grandes metas exigen más que visión: exigen equipo, estructura y liderazgo.",
     cta: "Quiero información del Programa de Liderazgo",
@@ -122,6 +143,8 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     modules: 7,
     modality: "Online en vivo + sesiones presenciales",
     certificate: "Diploma certificado",
+    nextStart: "Próxima cohorte abierta",
+    cohortSize: "Cupos limitados",
     audience: [
       "Emprendedores",
       "Profesionales en etapa de reinvención",
@@ -137,6 +160,13 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       "Proyección profesional dentro de la industria",
     ],
     areas: ["Negocio", "Ecosistema", "Acompañamiento", "Proyección"],
+    includes: [
+      "Diploma certificado de Capital Academy",
+      "Acceso a la comunidad Capital Inteligente",
+      "Sesiones online en vivo + encuentros presenciales",
+      "Acompañamiento experto durante todo el programa",
+      "Conexión con potenciales Business Partners",
+    ],
     highlight:
       "Cuando el desafío actual deja de crecer, puede comenzar una nueva etapa.",
     cta: "Quiero información de Ruta Inmobiliaria",

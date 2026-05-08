@@ -75,7 +75,10 @@ export function Programas() {
                     {p.description}
                   </p>
 
-                  {/* Metadata bar tipo Platzi */}
+                  {/* Spacer empuja la metadata + CTA al fondo, asegurando alineación entre cards */}
+                  <div className="flex-1" />
+
+                  {/* Metadata bar — alturas reservadas para mantener simetría */}
                   <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-[rgba(20,22,58,0.08)] pt-4 text-xs">
                     <div>
                       <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
@@ -97,11 +100,11 @@ export function Programas() {
                       <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
                         Para
                       </dt>
-                      <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                      <dd className="mt-1.5 flex min-h-[3.25rem] flex-wrap content-start gap-1.5">
                         {p.audienceTags.map((tag) => (
                           <span
                             key={tag}
-                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${t.chip}`}
+                            className={`inline-flex h-6 items-center rounded-md border px-2 text-[10px] font-semibold ${t.chip}`}
                           >
                             {tag}
                           </span>
@@ -110,9 +113,31 @@ export function Programas() {
                     </div>
                   </dl>
 
+                  {/* Inicio + CTA — siempre al fondo */}
+                  <div className="mt-5 flex items-center gap-2 rounded-xl bg-[var(--color-ca-bg)] px-3 py-2 text-xs">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 shrink-0 text-[var(--color-ca-violet)]"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      aria-hidden
+                    >
+                      <rect x="3" y="5" width="18" height="16" rx="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4" />
+                    </svg>
+                    <span className="font-semibold text-[var(--color-ca-ink)]">
+                      {p.nextStart}
+                    </span>
+                    <span className="ml-auto text-[var(--color-ca-ink-soft)]">
+                      · {p.cohortSize}
+                    </span>
+                  </div>
+
                   <a
                     href={p.href}
-                    className="mt-6 inline-flex h-11 items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all group-hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="mt-3 inline-flex h-11 items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all group-hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
                     Ver programa
                     <svg

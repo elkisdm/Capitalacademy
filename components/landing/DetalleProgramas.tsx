@@ -65,6 +65,17 @@ const Icons = {
       <path d="M9 14l-2 7 5-3 5 3-2-7" />
     </svg>
   ),
+  start: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  ),
+  check: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
 };
 
 function ProgramaDetalle({ d }: { d: ProgramMeta }) {
@@ -117,6 +128,11 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
                 label="Certificación"
                 value={d.certificate}
                 icon={Icons.certificate}
+              />
+              <MetaItem
+                label="Próxima cohorte"
+                value={`${d.nextStart} · ${d.cohortSize}`}
+                icon={Icons.start}
               />
             </div>
           </div>
@@ -191,7 +207,27 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
               </div>
             </div>
 
-            <blockquote className="mt-10 rounded-3xl border-l-4 border-[var(--color-ca-violet)] bg-white px-6 py-6 shadow-[0_18px_40px_rgba(20,22,58,0.06)]">
+            {/* Lo que incluye — estilo Udemy */}
+            <div className="mt-8 rounded-3xl border border-[var(--color-ca-violet)]/15 bg-gradient-to-br from-[var(--color-ca-violet)]/[0.04] to-[var(--color-ca-lime)]/[0.06] p-6">
+              <h3 className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--color-ca-violet)]">
+                Lo que incluye
+              </h3>
+              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                {d.includes.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-3 text-sm text-[var(--color-ca-ink)]"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-ca-lime)] text-[var(--color-ca-ink)]">
+                      {Icons.check}
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <blockquote className="mt-8 rounded-3xl border-l-4 border-[var(--color-ca-violet)] bg-white px-6 py-6 shadow-[0_18px_40px_rgba(20,22,58,0.06)]">
               <p className="text-base font-semibold leading-snug text-[var(--color-ca-ink)] sm:text-lg">
                 “{d.highlight}”
               </p>

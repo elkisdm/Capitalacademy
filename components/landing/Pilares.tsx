@@ -34,7 +34,11 @@ export function Pilares() {
     <section className="relative overflow-hidden bg-[var(--color-ca-navy-deep)] py-24 sm:py-28">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-40 -top-32 h-[520px] w-[520px] brand-circle-lime opacity-90"
+        className="pointer-events-none absolute -right-32 -top-24 hidden h-[520px] w-[520px] brand-circle-lime opacity-90 md:block"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-20 -top-12 h-48 w-48 brand-circle-lime opacity-60 blur-2xl md:hidden"
       />
       <div
         aria-hidden

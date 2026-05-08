@@ -9,8 +9,10 @@ const montserrat = Montserrat({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
+const SITE_URL = "https://capitalacademy.cl";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://capitalacademy.cl"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default:
       "Capital Academy | Escuela de negocios inmobiliarios de Capital Inteligente",
@@ -18,6 +20,18 @@ export const metadata: Metadata = {
   },
   description:
     "Programas de formación ejecutiva para asesores, líderes y emprendedores de la industria inmobiliaria. Conoce Capital Academy, la escuela de negocios de Capital Inteligente.",
+  keywords: [
+    "Capital Academy",
+    "Capital Inteligente",
+    "escuela de negocios inmobiliarios",
+    "formación ejecutiva inmobiliaria",
+    "diplomado ventas inmobiliarias",
+    "liderazgo equipos comerciales",
+    "ruta inmobiliaria",
+    "broker Chile",
+    "asesor inmobiliario",
+  ],
+  authors: [{ name: "Capital Academy" }],
   openGraph: {
     type: "website",
     locale: "es_CL",
@@ -33,6 +47,59 @@ export const metadata: Metadata = {
     description:
       "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+};
+
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  name: "Capital Academy",
+  alternateName: "Capital Academy · Capital Inteligente",
+  description:
+    "Escuela de negocios de Capital Inteligente. Formación ejecutiva para la industria inmobiliaria.",
+  url: SITE_URL,
+  logo: `${SITE_URL}/brand/logo-light.png`,
+  parentOrganization: {
+    "@type": "Organization",
+    name: "Capital Inteligente",
+  },
+  sameAs: [],
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Programas Capital Academy",
+    itemListElement: [
+      {
+        "@type": "Course",
+        name: "Diplomado en Ventas y Asesoría Inmobiliaria",
+        description:
+          "Formación ejecutiva para brokers, asesores inmobiliarios y ejecutivos de sala de venta.",
+        provider: { "@type": "Organization", name: "Capital Academy" },
+      },
+      {
+        "@type": "Course",
+        name: "Programa de Liderazgo y Gestión de Equipos Comerciales",
+        description:
+          "Programa para jefaturas y líderes que buscan construir y sostener equipos comerciales de alto desempeño.",
+        provider: { "@type": "Organization", name: "Capital Academy" },
+      },
+      {
+        "@type": "Course",
+        name: "Programa Ruta Inmobiliaria",
+        description:
+          "Programa para emprendedores y profesionales que ingresan al mundo inmobiliario.",
+        provider: { "@type": "Organization", name: "Capital Academy" },
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -42,7 +109,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${montserrat.variable} h-full`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-[var(--color-ca-violet)] focus:px-5 focus:py-3 focus:text-sm focus:font-bold focus:text-white focus:shadow-[0_8px_24px_rgba(94,23,235,0.4)]"
+        >
+          Saltar al contenido principal
+        </a>
+        {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
+      </body>
     </html>
   );
 }

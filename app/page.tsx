@@ -31,7 +31,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main className="bg-[var(--color-ca-bg)]">
+      <main id="main" className="bg-[var(--color-ca-bg)]">
         <Hero />
         <QueEs />
         <NuevoEstandar />

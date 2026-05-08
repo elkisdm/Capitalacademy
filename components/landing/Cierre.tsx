@@ -7,7 +7,11 @@ export function Cierre() {
     <section className="relative overflow-hidden bg-[var(--color-ca-violet)] py-24 sm:py-28">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-44 top-10 h-[500px] w-[500px] brand-circle-lime opacity-90"
+        className="pointer-events-none absolute -right-44 top-10 hidden h-[500px] w-[500px] brand-circle-lime opacity-90 lg:block"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-20 -top-12 h-44 w-44 brand-circle-lime opacity-50 blur-2xl lg:hidden"
       />
       <div
         aria-hidden

@@ -10,12 +10,16 @@ const links = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)]/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)]/90 shadow-[0_4px_24px_rgba(20,22,58,0.04)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-3">
+        <Link
+          href="/"
+          aria-label="Capital Academy — Inicio"
+          className="flex items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-ca-bg)]"
+        >
           <Image
             src="/brand/logo-on-light.png"
-            alt="Capital Academy"
+            alt=""
             width={36}
             height={36}
             className="h-9 w-9"
@@ -26,12 +30,12 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Principal" className="hidden items-center gap-8 md:flex">
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-sm font-medium text-[var(--color-ca-ink-soft)] transition-colors hover:text-[var(--color-ca-violet)]"
+              className="rounded text-sm font-medium text-[var(--color-ca-ink-soft)] transition-colors hover:text-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--color-ca-bg)]"
             >
               {l.label}
             </a>
@@ -40,7 +44,7 @@ export function Header() {
 
         <a
           href="#contacto"
-          className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-5 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-[0_8px_24px_rgba(94,23,235,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)]"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-5 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-[0_8px_24px_rgba(94,23,235,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-ca-bg)]"
         >
           Solicitar info
         </a>

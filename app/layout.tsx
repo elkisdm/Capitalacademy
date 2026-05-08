@@ -12,25 +12,26 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL("https://capitalacademy.cl"),
   title: {
-    default: "Capital Academy",
+    default:
+      "Capital Academy | Escuela de negocios inmobiliarios de Capital Inteligente",
     template: "%s · Capital Academy",
   },
   description:
-    "Plataforma académica del Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria.",
+    "Programas de formación ejecutiva para asesores, líderes y emprendedores de la industria inmobiliaria. Conoce Capital Academy, la escuela de negocios de Capital Inteligente.",
   openGraph: {
     type: "website",
     locale: "es_CL",
     siteName: "Capital Academy",
-    title: "Capital Academy",
+    title: "Capital Academy | Escuela de negocios inmobiliarios",
     description:
-      "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Formación profesional para corredores y asesores.",
+      "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Capital Academy",
+    title: "Capital Academy | Escuela de negocios inmobiliarios",
     description:
-      "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Formación profesional para corredores y asesores.",
+      "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
   },
 };
 

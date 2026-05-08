@@ -143,14 +143,31 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
               </div>
 
               {/* CTA persistente — siempre visible mientras el usuario lee */}
-              <div className="border-t border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] p-4">
-                <a
-                  href="#contacto"
-                  className="flex h-11 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-5 text-[12px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_10px_24px_rgba(94,23,235,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
-                >
-                  Solicitar información
-                </a>
-                <p className="mt-2.5 text-center text-[11px] text-[var(--color-ca-ink-soft)]">
+              <div className="space-y-2 border-t border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] p-4">
+                {d.paymentUrl ? (
+                  <>
+                    <a
+                      href={d.paymentUrl}
+                      className="flex h-11 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-5 text-[12px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_10px_24px_rgba(94,23,235,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
+                    >
+                      Inscribirme ahora
+                    </a>
+                    <a
+                      href="#contacto"
+                      className="flex h-10 w-full items-center justify-center rounded-full border border-[rgba(20,22,58,0.15)] bg-white px-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-violet)]/40 hover:text-[var(--color-ca-violet)]"
+                    >
+                      Antes prefiero info
+                    </a>
+                  </>
+                ) : (
+                  <a
+                    href="#contacto"
+                    className="flex h-11 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-5 text-[12px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_10px_24px_rgba(94,23,235,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
+                  >
+                    Solicitar información
+                  </a>
+                )}
+                <p className="text-center text-[11px] text-[var(--color-ca-ink-soft)]">
                   Cupos limitados · Respuesta en 24h
                 </p>
               </div>
@@ -256,9 +273,21 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
             </blockquote>
 
             <div className="mt-8 flex flex-wrap gap-3">
+              {d.paymentUrl && (
+                <a
+                  href={d.paymentUrl}
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-8 text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
+                >
+                  Inscribirme ahora
+                </a>
+              )}
               <a
                 href="#contacto"
-                className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-8 text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
+                className={`inline-flex h-12 items-center justify-center rounded-full px-7 text-sm font-bold uppercase tracking-[0.15em] transition-all ${
+                  d.paymentUrl
+                    ? "border border-[var(--color-ca-ink)]/15 bg-white text-[var(--color-ca-ink)] hover:border-[var(--color-ca-violet)] hover:text-[var(--color-ca-violet)]"
+                    : "bg-[var(--color-ca-violet)] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)]"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2`}
               >
                 {d.cta}
               </a>

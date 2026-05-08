@@ -88,23 +88,51 @@ export function Programas() {
                     </span>
                   </div>
 
-                  <a
-                    href={p.href}
-                    className="inline-flex h-11 w-full items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
-                  >
-                    Ver programa
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="ml-2 h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      aria-hidden
+                  {p.paymentUrl ? (
+                    <div className="grid gap-2">
+                      <a
+                        href={p.paymentUrl}
+                        className="inline-flex h-11 w-full items-center justify-between rounded-full bg-[var(--color-ca-violet)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-[0_8px_24px_rgba(94,23,235,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
+                      >
+                        Inscribirme ahora
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="ml-2 h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          aria-hidden
+                        >
+                          <path d="M5 12h14M13 5l7 7-7 7" />
+                        </svg>
+                      </a>
+                      <a
+                        href={p.href}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[rgba(20,22,58,0.12)] bg-white px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-violet)]/40 hover:text-[var(--color-ca-violet)]"
+                      >
+                        Ver programa completo
+                      </a>
+                    </div>
+                  ) : (
+                    <a
+                      href={p.href}
+                      className="inline-flex h-11 w-full items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
                     >
-                      <path d="M5 12h14M13 5l7 7-7 7" />
-                    </svg>
-                  </a>
+                      Ver programa
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="ml-2 h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        aria-hidden
+                      >
+                        <path d="M5 12h14M13 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </div>
             </article>

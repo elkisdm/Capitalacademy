@@ -42,6 +42,8 @@ export type ProgramMeta = {
   theme: ProgramTheme;
   cardImage: { src: string; alt: string };
   heroImage: { src: string; alt: string };
+  /** URL de pago directo (solo programas con inscripción abierta). */
+  paymentUrl?: string;
 };
 
 export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
@@ -132,6 +134,7 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     theme: "lime",
     cardImage: IMG.programaDiplomadoCard,
     heroImage: IMG.programaDiplomadoHero,
+    paymentUrl: "/pago",
   },
   liderazgo: {
     id: "liderazgo",

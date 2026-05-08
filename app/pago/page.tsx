@@ -38,8 +38,12 @@ export default function PagoPage() {
               priority
               className="mx-auto mb-5 h-16 w-auto sm:h-20"
             />
-            <span className="mb-3 block text-[10px] font-bold uppercase tracking-[0.32em] text-[var(--color-ca-violet)]">
-              Capital Academy
+            <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-ca-violet)]/25 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--color-ca-violet)]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-ca-lime-deep)] opacity-70" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-ca-lime-deep)]" />
+              </span>
+              Cohorte limitada · Cupos disponibles
             </span>
             <h1 className="font-sans text-3xl font-black tracking-[-0.03em] text-[var(--color-ca-ink)] sm:text-4xl">
               Ingreso al{" "}

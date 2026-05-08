@@ -10,6 +10,12 @@ export type ProgramId = "diplomado" | "liderazgo" | "ruta";
 export type ProgramTheme = "lime" | "violet" | "lavender";
 export type ProgramLevel = "Profesional" | "Senior · Líder" | "Iniciación · Reinvención";
 
+export type SyllabusModule = {
+  num: number;
+  title: string;
+  topics: string[];
+};
+
 export type ProgramMeta = {
   id: ProgramId;
   tag: string;
@@ -29,6 +35,7 @@ export type ProgramMeta = {
   develops: string[];
   areas: string[];
   includes: string[];
+  syllabus: SyllabusModule[];
   highlight: string;
   cta: string;
   href: string;
@@ -76,6 +83,48 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       "Casos reales del mercado chileno",
       "Mentoría grupal con docentes activos en la industria",
     ],
+    syllabus: [
+      {
+        num: 1,
+        title: "Fundamentos del negocio inmobiliario",
+        topics: ["Lectura del mercado", "Tipos de propiedad", "Actores del ecosistema"],
+      },
+      {
+        num: 2,
+        title: "Asesoría profesional al cliente",
+        topics: ["Diagnóstico de necesidades", "Construcción de confianza", "Ética profesional"],
+      },
+      {
+        num: 3,
+        title: "Venta consultiva inmobiliaria",
+        topics: ["Discovery", "Pitch estructurado", "Manejo de objeciones reales"],
+      },
+      {
+        num: 4,
+        title: "Educación financiera aplicada",
+        topics: ["UF, intereses, dividendos", "Capacidad de pago", "Argumentos financieros"],
+      },
+      {
+        num: 5,
+        title: "Marco legal y contractual",
+        topics: ["Promesa, escritura", "Crédito hipotecario", "Documentación clave"],
+      },
+      {
+        num: 6,
+        title: "Seguimiento y cierre efectivo",
+        topics: ["CRM y pipeline", "Cadencia de seguimiento", "Cierre profesional"],
+      },
+      {
+        num: 7,
+        title: "Marca personal del asesor",
+        topics: ["Posicionamiento", "Contenido profesional", "Red de referidos"],
+      },
+      {
+        num: 8,
+        title: "Proyecto integrador",
+        topics: ["Plan de gestión", "Presentación a panel", "Devolución de docentes"],
+      },
+    ],
     highlight:
       "Porque hoy vender propiedades exige mucho más que intención comercial. Exige preparación, criterio y confianza.",
     cta: "Quiero información del Diplomado",
@@ -122,6 +171,38 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       "Frameworks aplicables a tu equipo desde la primera semana",
       "Mentoría grupal con líderes de la industria",
     ],
+    syllabus: [
+      {
+        num: 1,
+        title: "Autoliderazgo y rol del líder comercial",
+        topics: ["Identidad de líder", "Gestión emocional", "Foco y disciplina"],
+      },
+      {
+        num: 2,
+        title: "Reclutamiento y selección de talento",
+        topics: ["Perfil de cargo", "Entrevista estructurada", "Onboarding"],
+      },
+      {
+        num: 3,
+        title: "Motivación y desarrollo de equipos",
+        topics: ["Coaching 1:1", "Feedback efectivo", "Planes de desarrollo"],
+      },
+      {
+        num: 4,
+        title: "Gestión por metas y métricas",
+        topics: ["KPI comerciales", "Pipeline review", "Cultura de números"],
+      },
+      {
+        num: 5,
+        title: "Liderazgo en momentos difíciles",
+        topics: ["Ciclos de baja", "Conversaciones difíciles", "Reestructuración"],
+      },
+      {
+        num: 6,
+        title: "Proyecto integrador",
+        topics: ["Plan de gestión 90 días", "Presentación a panel", "Devolución"],
+      },
+    ],
     highlight:
       "Las grandes metas exigen más que visión: exigen equipo, estructura y liderazgo.",
     cta: "Quiero información del Programa de Liderazgo",
@@ -166,6 +247,43 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       "Sesiones online en vivo + encuentros presenciales",
       "Acompañamiento experto durante todo el programa",
       "Conexión con potenciales Business Partners",
+    ],
+    syllabus: [
+      {
+        num: 1,
+        title: "Visión integral del negocio inmobiliario",
+        topics: ["Cómo se gana dinero en el rubro", "Modelos de negocio", "Tipos de player"],
+      },
+      {
+        num: 2,
+        title: "Lectura del ecosistema",
+        topics: ["Mapa del mercado", "Stakeholders clave", "Tendencias 2025–2030"],
+      },
+      {
+        num: 3,
+        title: "Identificación de oportunidades",
+        topics: ["Nichos rentables", "Análisis de viabilidad", "Validación temprana"],
+      },
+      {
+        num: 4,
+        title: "Fundamentos comerciales del rubro",
+        topics: ["Asesoría base", "Lenguaje técnico", "Marco legal aplicado"],
+      },
+      {
+        num: 5,
+        title: "Construcción de tu propuesta de valor",
+        topics: ["Posicionamiento", "Marca personal", "Red profesional"],
+      },
+      {
+        num: 6,
+        title: "Plan de inserción 90 días",
+        topics: ["Roadmap personal", "Indicadores", "Acompañamiento"],
+      },
+      {
+        num: 7,
+        title: "Proyecto integrador + Business Partners",
+        topics: ["Pitch a panel", "Conexión con partners", "Devolución estratégica"],
+      },
     ],
     highlight:
       "Cuando el desafío actual deja de crecer, puede comenzar una nueva etapa.",

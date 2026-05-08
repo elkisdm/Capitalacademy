@@ -5,6 +5,7 @@ import {
   type ProgramMeta,
 } from "@/lib/landing/programs";
 import { ProgramGlyph } from "./ProgramGlyph";
+import { Syllabus } from "./Syllabus";
 
 function MetaItem({
   label,
@@ -206,6 +207,8 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
                 </ul>
               </div>
             </div>
+
+            <Syllabus d={d} />
 
             {/* Lo que incluye — estilo Udemy */}
             <div className="mt-8 rounded-3xl border border-[var(--color-ca-violet)]/15 bg-gradient-to-br from-[var(--color-ca-violet)]/[0.04] to-[var(--color-ca-lime)]/[0.06] p-6">

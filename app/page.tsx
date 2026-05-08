@@ -5,6 +5,7 @@ import { QueEs } from "@/components/landing/QueEs";
 import { NuevoEstandar } from "@/components/landing/NuevoEstandar";
 import { Pilares } from "@/components/landing/Pilares";
 import { Programas } from "@/components/landing/Programas";
+import { Stats } from "@/components/landing/Stats";
 import { DetalleProgramas } from "@/components/landing/DetalleProgramas";
 import { PorQueElegir } from "@/components/landing/PorQueElegir";
 import { SeccionContacto } from "@/components/landing/SeccionContacto";
@@ -36,6 +37,7 @@ export default function Home() {
         <NuevoEstandar />
         <Pilares />
         <Programas />
+        <Stats />
         <DetalleProgramas />
         <PorQueElegir />
         <SeccionContacto />

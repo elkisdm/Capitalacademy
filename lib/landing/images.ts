@@ -1,10 +1,12 @@
 /**
  * Catálogo central de imágenes de la landing.
  * - Hero: foto real de Paola Vicuña (Directora Académica) en /public/team.
- * - Resto: Unsplash directo, fácil de reemplazar por fotos reales cuando estén.
+ * - Resto: imágenes brand-aligned generadas con Flux 1.1 Pro Ultra (Replicate),
+ *   estilo editorial flat geométrico siguiendo el Manual Gráfico oficial.
+ *   Para regenerar: `node scripts/generate-brand-images.mjs [name?]`.
  */
-const u = (id: string, w = 1200, q = 75) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=${q}`;
+
+const local = (name: string) => `/imagery/${name}.png`;
 
 export const IMG = {
   hero: {
@@ -14,39 +16,39 @@ export const IMG = {
     role: "Directora Académica",
   },
   queEs: {
-    src: u("1556761175-b413da4baf72", 1400),
-    alt: "Reunión profesional cerrando una asesoría inmobiliaria",
+    src: local("queEs"),
+    alt: "Composición geométrica violeta y lima representando una escuela de negocios abriéndose como ecosistema de aprendizaje",
   },
   programaDiplomado: {
-    src: u("1554224155-8d04cb21cd6c", 1000),
-    alt: "Asesor inmobiliario presentando una propiedad",
+    src: local("programaDiplomado"),
+    alt: "Escalera ascendente en verde lima sobre semicírculos violeta — crecimiento comercial y profesionalización",
   },
   programaLiderazgo: {
-    src: u("1542744173-8e7e53415bb0", 1000),
-    alt: "Equipo comercial reunido planificando estrategia",
+    src: local("programaLiderazgo"),
+    alt: "Círculos concéntricos en violeta con acentos lima — líder al centro y equipo alrededor",
   },
   programaRuta: {
-    src: u("1521737604893-d14cc237f11d", 1000),
-    alt: "Profesional inmobiliario en nueva etapa de carrera",
+    src: local("programaRuta"),
+    alt: "Línea ondulante navy conectando un punto pequeño con un círculo lima grande — trayectoria de reinvención profesional",
   },
   porQueElegir: {
-    src: u("1556761175-4b46a572b786", 1400),
-    alt: "Equipo de Capital Academy en sesión formativa",
+    src: local("porQueElegir"),
+    alt: "Composición arquitectónica geométrica en violeta y lima — estándar profesional Capital Academy",
   },
   cierre: {
-    src: u("1515187029135-18ee286d815b", 1600),
-    alt: "Comunidad de profesionales inmobiliarios",
+    src: local("cierre"),
+    alt: "Constelación de círculos conectados en paleta brand — comunidad de profesionales inmobiliarios",
   },
   detalleDiplomado: {
-    src: u("1497366216548-37526070297c", 1400),
-    alt: "Profesionales analizando información de mercado",
+    src: local("detalleDiplomado"),
+    alt: "Composición vertical con columna ascendente lima y semicírculo violeta — KPIs y crecimiento comercial",
   },
   detalleLiderazgo: {
-    src: u("1552581234-26160f608093", 1400),
-    alt: "Líder comercial guiando a su equipo",
+    src: local("detalleLiderazgo"),
+    alt: "Torre vertical de círculos violeta con arco lavanda — estructura y liderazgo intencional",
   },
   detalleRuta: {
-    src: u("1556761175-5973dc0f32e7", 1400),
-    alt: "Cierre exitoso entre asesor y cliente inmobiliario",
+    src: local("detalleRuta"),
+    alt: "Arco lavanda y línea ondulante hacia un círculo lima — un nuevo horizonte profesional",
   },
 };

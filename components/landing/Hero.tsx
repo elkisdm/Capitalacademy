@@ -66,38 +66,39 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Visual panel — foto + brand shapes */}
+        {/* Visual panel — Directora Académica + brand shapes */}
         <div className="relative mt-2 lg:mt-0">
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-[0_30px_80px_rgba(20,22,58,0.18)]">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-[var(--color-ca-violet-soft)] shadow-[0_30px_80px_rgba(20,22,58,0.18)]">
             <Image
               src={IMG.hero.src}
               alt={IMG.hero.alt}
               fill
               priority
               sizes="(min-width: 1024px) 540px, 100vw"
-              className="object-cover"
+              className="object-cover object-top"
             />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-[var(--color-ca-violet)]/45 via-[var(--color-ca-violet)]/10 to-transparent mix-blend-multiply" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
-              <div className="rounded-2xl bg-white/95 px-4 py-3 backdrop-blur-sm">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-violet)]">
-                  Formación ejecutiva
-                </p>
-                <p className="mt-1 text-sm font-bold text-[var(--color-ca-ink)]">
-                  Brokers · Líderes · Emprendedores
-                </p>
-              </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--color-ca-navy-deep)]/85 via-[var(--color-ca-navy-deep)]/40 to-transparent" />
+            <div className="absolute inset-x-6 bottom-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--color-ca-lime)]">
+                {IMG.hero.role}
+              </p>
+              <p className="mt-1 text-2xl font-black text-white sm:text-3xl">
+                {IMG.hero.name}
+              </p>
+              <p className="mt-1 text-xs text-white/85">
+                Capital Academy · Capital Inteligente
+              </p>
             </div>
           </div>
 
           {/* Brand decorations alrededor del frame */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -bottom-10 -left-10 h-44 w-44 brand-circle-lime"
+            className="pointer-events-none absolute -left-12 top-20 hidden h-28 w-28 brand-circle-lime lg:block"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-8 top-10 h-24 w-24 brand-circle-violet opacity-90"
+            className="pointer-events-none absolute -right-8 -top-6 h-20 w-20 brand-circle-violet opacity-90"
           />
         </div>
       </div>

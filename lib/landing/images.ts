@@ -1,15 +1,17 @@
 /**
  * Catálogo central de imágenes de la landing.
- * Unsplash directo — fácil de reemplazar por fotos reales cuando estén.
- * Todas las URLs usan IDs estables y crops/parametros optimizados.
+ * - Hero: foto real de Paola Vicuña (Directora Académica) en /public/team.
+ * - Resto: Unsplash directo, fácil de reemplazar por fotos reales cuando estén.
  */
-const u = (id: string, w = 1600, q = 80) =>
+const u = (id: string, w = 1200, q = 75) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=${q}`;
 
 export const IMG = {
   hero: {
-    src: u("1573497019940-1c28c88b4f3e", 1400),
-    alt: "Profesional inmobiliario revisando estrategia de negocio",
+    src: "/team/paola-vicuna.webp",
+    alt: "Paola Vicuña, Directora Académica de Capital Academy",
+    name: "Paola Vicuña",
+    role: "Directora Académica",
   },
   queEs: {
     src: u("1556761175-b413da4baf72", 1400),

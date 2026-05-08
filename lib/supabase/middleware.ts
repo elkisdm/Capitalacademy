@@ -35,11 +35,24 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/public") ||
+    pathname.startsWith("/api/leads") ||
     pathname.startsWith("/pago") ||
     pathname.startsWith("/api/pago") ||
-    pathname.startsWith("/api/fintoc");
+    pathname.startsWith("/api/fintoc") ||
+    pathname.startsWith("/api/flow") ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt";
 
   if (!user && !isPublic) {
+    // Para requests a /api/*, responder 401 JSON en vez de redirect HTML
+    // (que rompía clientes esperando JSON, ej. fetch desde formularios públicos
+    // que cayeran fuera del whitelist).
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Unauthorized", code: "AUTH_REQUIRED" },
+        { status: 401 },
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

@@ -44,6 +44,8 @@ export type ProgramMeta = {
   heroImage: { src: string; alt: string };
   /** URL de pago directo (solo programas con inscripción abierta). */
   paymentUrl?: string;
+  /** Badge de descuento opcional, ej: "−50% lanzamiento". */
+  discountLabel?: string;
 };
 
 export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
@@ -135,6 +137,7 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     cardImage: IMG.programaDiplomadoCard,
     heroImage: IMG.programaDiplomadoHero,
     paymentUrl: "/pago",
+    discountLabel: "−50% Lanzamiento",
   },
   liderazgo: {
     id: "liderazgo",

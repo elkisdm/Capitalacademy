@@ -144,6 +144,13 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
 
               {/* CTA persistente — siempre visible mientras el usuario lee */}
               <div className="space-y-2 border-t border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] p-4">
+                {d.discountLabel && (
+                  <div className="flex items-center justify-center">
+                    <span className="inline-flex items-center rounded-md bg-[var(--color-ca-lime)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-ca-ink)]">
+                      {d.discountLabel}
+                    </span>
+                  </div>
+                )}
                 {d.paymentUrl ? (
                   <>
                     <a

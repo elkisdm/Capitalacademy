@@ -17,7 +17,10 @@ import {
 } from "@/lib/flow/checkout";
 import type { PaymentProvider } from "@/lib/payments/provider";
 import { formatRut } from "@/lib/utils/rut";
-import { COMUNIDAD_WHATSAPP_URL } from "@/lib/landing/constants";
+import {
+  COMUNIDAD_WHATSAPP_URL,
+  DIPLOMADO_REGULAR_PRICE_CLP,
+} from "@/lib/landing/constants";
 
 type Props = { provider: PaymentProvider };
 
@@ -268,12 +271,25 @@ export function CheckoutClient({ provider }: Props) {
         className="rounded-3xl border border-[rgba(20,22,58,0.08)] bg-white p-6 shadow-[0_20px_60px_rgba(20,22,58,0.08)] sm:p-8"
       >
       <div className="mb-6 border-b border-[rgba(20,22,58,0.08)] pb-4">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-baseline justify-between gap-3">
           <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-ca-ink-soft)]">
             Total a pagar
           </span>
-          <span className="text-2xl font-black tracking-tight text-[var(--color-ca-ink)] sm:text-3xl">
-            {priceFormatter.format(finalAmount)}
+          <div className="flex items-baseline gap-2">
+            <span
+              aria-label="Precio regular"
+              className="text-sm font-semibold text-[var(--color-ca-ink-soft)] line-through decoration-[var(--color-ca-ink-soft)]/60 sm:text-base"
+            >
+              {priceFormatter.format(DIPLOMADO_REGULAR_PRICE_CLP)}
+            </span>
+            <span className="text-2xl font-black tracking-tight text-[var(--color-ca-ink)] sm:text-3xl">
+              {priceFormatter.format(finalAmount)}
+            </span>
+          </div>
+        </div>
+        <div className="mt-1.5 flex items-center justify-end">
+          <span className="inline-flex items-center rounded-md bg-[var(--color-ca-lime)] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-ca-ink)]">
+            −50% Lanzamiento
           </span>
         </div>
         {selectedSurcharge > 0 && (

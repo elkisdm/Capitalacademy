@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { CheckoutClient } from "./CheckoutClient";
 import { getActivePaymentProvider } from "@/lib/payments/provider";
+import { daysUntilClose, formatCloseDate } from "@/lib/landing/constants";
 
 export const metadata = {
   title: "Ingreso al Diplomado · Capital Academy",
@@ -8,12 +9,17 @@ export const metadata = {
     "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Pago seguro online.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function PagoPage() {
   const provider = getActivePaymentProvider();
   const providerLabel =
     provider === "flow"
       ? "Pago procesado por Flow · Webpay, transferencia, tarjetas y más."
       : "Pago procesado por Fintoc · Webpay, transferencia y tarjetas chilenas.";
+
+  const days = daysUntilClose();
+  const closeDateLabel = formatCloseDate();
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[var(--color-ca-bg)]">
@@ -43,7 +49,7 @@ export default function PagoPage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-ca-lime-deep)] opacity-70" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-ca-lime-deep)]" />
               </span>
-              Cohorte limitada · Cupos disponibles
+              Cohorte de lanzamiento · −50%
             </span>
             <h1 className="font-sans text-3xl font-black tracking-[-0.03em] text-[var(--color-ca-ink)] sm:text-4xl">
               Ingreso al{" "}
@@ -54,6 +60,26 @@ export default function PagoPage() {
               Reserva tu cupo con un pago único.
             </p>
           </header>
+
+          {/* Banner de urgencia con countdown — solo si quedan días */}
+          {days > 0 && (
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--color-ca-violet)]/25 bg-gradient-to-r from-[var(--color-ca-violet)]/[0.06] via-white to-[var(--color-ca-lime)]/[0.12] px-4 py-3 sm:px-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-ca-violet)] text-white shadow-[0_8px_20px_rgba(94,23,235,0.35)]">
+                <span className="text-lg font-black leading-none tabular-nums">
+                  {days}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-ca-violet)]">
+                  Cierra el {closeDateLabel}
+                </p>
+                <p className="mt-0.5 text-sm font-semibold text-[var(--color-ca-ink)]">
+                  {days === 1 ? "Queda 1 día" : `Quedan ${days} días`} para
+                  inscribirte con −50%
+                </p>
+              </div>
+            </div>
+          )}
 
           <CheckoutClient provider={provider} />
 

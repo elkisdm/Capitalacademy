@@ -113,28 +113,54 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
             </div>
 
             {/* Metadata sidebar — estilo Platzi */}
-            <div className="mt-6 rounded-[1.75rem] border border-[rgba(20,22,58,0.08)] bg-white p-5 shadow-[0_18px_40px_rgba(20,22,58,0.06)] lg:sticky lg:top-24">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-violet)]">
-                Detalles del programa
-              </p>
-              <MetaItem label="Nivel" value={d.level} icon={Icons.level} />
-              <MetaItem label="Duración" value={d.duration} icon={Icons.duration} />
-              <MetaItem
-                label="Módulos"
-                value={`${d.modules} módulos temáticos`}
-                icon={Icons.modules}
-              />
-              <MetaItem label="Modalidad" value={d.modality} icon={Icons.modality} />
-              <MetaItem
-                label="Certificación"
-                value={d.certificate}
-                icon={Icons.certificate}
-              />
-              <MetaItem
-                label="Próxima cohorte"
-                value={`${d.nextStart} · ${d.cohortSize}`}
-                icon={Icons.start}
-              />
+            <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-[rgba(20,22,58,0.08)] bg-white shadow-[0_18px_40px_rgba(20,22,58,0.06)] lg:sticky lg:top-24">
+              {/* Banner urgencia — Próxima cohorte */}
+              <div className="flex items-center gap-3 border-b border-[rgba(20,22,58,0.08)] bg-gradient-to-r from-[var(--color-ca-violet)]/[0.06] to-[var(--color-ca-lime)]/[0.08] px-5 py-4">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-ca-lime-deep)] opacity-60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--color-ca-lime-deep)]" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ca-violet)]">
+                    Próxima cohorte
+                  </p>
+                  <p className="text-sm font-bold text-[var(--color-ca-ink)]">
+                    {d.nextStart} <span className="font-semibold text-[var(--color-ca-ink-soft)]">· {d.cohortSize}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-violet)]">
+                  Detalles del programa
+                </p>
+                <MetaItem label="Nivel" value={d.level} icon={Icons.level} />
+                <MetaItem label="Duración" value={d.duration} icon={Icons.duration} />
+                <MetaItem
+                  label="Módulos"
+                  value={`${d.modules} módulos temáticos`}
+                  icon={Icons.modules}
+                />
+                <MetaItem label="Modalidad" value={d.modality} icon={Icons.modality} />
+                <MetaItem
+                  label="Certificación"
+                  value={d.certificate}
+                  icon={Icons.certificate}
+                />
+              </div>
+
+              {/* CTA persistente — siempre visible mientras el usuario lee */}
+              <div className="border-t border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] p-4">
+                <a
+                  href="#contacto"
+                  className="flex h-11 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-5 text-[12px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_10px_24px_rgba(94,23,235,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
+                >
+                  Solicitar información
+                </a>
+                <p className="mt-2.5 text-center text-[11px] text-[var(--color-ca-ink-soft)]">
+                  Cupos limitados · Respuesta en 24h
+                </p>
+              </div>
             </div>
           </div>
 

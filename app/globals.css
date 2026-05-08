@@ -211,14 +211,67 @@
   border-radius: 9999px;
 }
 
-/* Subtle floating shape animation — disabled under reduced motion */
+/* === Hero brand stage — animaciones brand sutiles === */
 @keyframes brand-float {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(0, -10px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -14px, 0); }
 }
-.brand-float {
-  animation: brand-float 8s ease-in-out infinite;
-  will-change: transform;
+@keyframes brand-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  33% { transform: translate3d(8px, -6px, 0) rotate(2deg); }
+  66% { transform: translate3d(-4px, 8px, 0) rotate(-1deg); }
+}
+@keyframes brand-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6px, 10px, 0) scale(1.04); }
+}
+@keyframes brand-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+@keyframes brand-orbit {
+  0% { transform: rotate(0deg) translateX(20px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(20px) rotate(-360deg); }
+}
+
+.brand-float { animation: brand-float 8s ease-in-out infinite; will-change: transform; }
+.brand-drift-a { animation: brand-drift-a 14s ease-in-out infinite; will-change: transform; }
+.brand-drift-b { animation: brand-drift-b 18s ease-in-out infinite; will-change: transform; }
+.brand-pulse { animation: brand-pulse 6s ease-in-out infinite; will-change: opacity; }
+.brand-orbit { animation: brand-orbit 24s linear infinite; will-change: transform; }
+
+/* Stage de fondo del hero — composición brand con shapes flotantes */
+.hero-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-stage::before,
+.hero-stage::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  will-change: transform, opacity;
+}
+.hero-stage::before {
+  width: 480px;
+  height: 480px;
+  top: -100px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(94, 23, 235, 0.45) 0%, transparent 70%);
+  animation: brand-drift-a 16s ease-in-out infinite, brand-pulse 8s ease-in-out infinite;
+}
+.hero-stage::after {
+  width: 520px;
+  height: 520px;
+  bottom: -160px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(197, 241, 34, 0.55) 0%, transparent 70%);
+  animation: brand-drift-b 20s ease-in-out infinite;
 }
 
 /* Legacy aurora classes — kept harmless (transparent) so existing usage doesn't break */

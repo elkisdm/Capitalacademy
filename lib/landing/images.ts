@@ -47,17 +47,17 @@ export const IMG = {
     src: local("detalleRuta"),
     alt: "Profesional caminando por oficina moderna iniciando una nueva etapa",
   },
-  // === Ilustración brand abstracta (Flux 1.1 Pro Ultra) — identidad por programa ===
+  // === Mockups de diploma físico (gpt-image-2) — producto tangible por programa ===
   programaDiplomado: {
     src: local("programaDiplomado"),
-    alt: "Identidad visual del Diplomado: escalera ascendente lima sobre semicírculos violeta",
+    alt: "Diploma de Capital Academy en Ventas y Asesoría Inmobiliaria con sello dorado y cinta lima",
   },
   programaLiderazgo: {
     src: local("programaLiderazgo"),
-    alt: "Identidad visual del Programa de Liderazgo: círculos concéntricos en violeta y lavanda",
+    alt: "Diploma de Capital Academy en Liderazgo y Gestión de Equipos sobre cuero navy con cinta violeta",
   },
   programaRuta: {
     src: local("programaRuta"),
-    alt: "Identidad visual de Ruta Inmobiliaria: línea ondulante navy hacia un círculo lima — trayectoria",
+    alt: "Diploma de Capital Academy en Ruta Inmobiliaria en flat-lay lavanda con acento geométrico lima",
   },
 };

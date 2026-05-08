@@ -4,9 +4,21 @@ import { IMG } from "@/lib/landing/images";
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-[var(--color-ca-bg)]">
+      {/* Stage animado de fondo brand — composición con shapes flotantes */}
+      <div className="hero-stage" aria-hidden />
+
+      {/* Shapes brand adicionales animadas */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-32 top-44 h-72 w-72 brand-circle-lime opacity-25 blur-2xl"
+        className="pointer-events-none absolute -left-24 top-32 z-0 hidden h-32 w-32 brand-circle-lavender brand-drift-a opacity-70 lg:block"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute right-1/3 top-10 z-0 hidden h-16 w-16 brand-circle-violet brand-orbit opacity-80 lg:block"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/3 bottom-16 z-0 hidden h-12 w-12 brand-circle-lime brand-drift-b lg:block"
       />
 
       <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-6 pb-24 pt-16 sm:pt-24 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16 lg:pb-28">
@@ -21,7 +33,7 @@ export function Hero() {
           />
 
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--color-ca-violet)]/25 bg-white px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--color-ca-violet)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-ca-violet)]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-ca-violet)] brand-pulse" />
             Escuela de negocios · Capital Inteligente
           </span>
 
@@ -53,7 +65,7 @@ export function Hero() {
             </a>
           </div>
 
-          <div className="mt-10 inline-flex max-w-md items-start gap-4 rounded-2xl border border-[rgba(20,22,58,0.1)] bg-white px-5 py-4">
+          <div className="mt-10 inline-flex max-w-md items-start gap-4 rounded-2xl border border-[rgba(20,22,58,0.1)] bg-white/90 px-5 py-4 backdrop-blur-sm">
             <div className="text-3xl leading-none text-[var(--color-ca-violet)]">
               “
             </div>
@@ -66,7 +78,7 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Visual panel — Directora Académica + brand shapes */}
+        {/* Visual panel — Directora Académica + brand shapes animadas */}
         <div className="relative mt-2 lg:mt-0">
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-[var(--color-ca-violet-soft)] shadow-[0_30px_80px_rgba(20,22,58,0.18)]">
             <Image
@@ -91,14 +103,14 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Brand decorations alrededor del frame */}
+          {/* Brand decorations animadas alrededor del frame */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -left-12 top-20 hidden h-28 w-28 brand-circle-lime lg:block"
+            className="pointer-events-none absolute -left-12 top-20 hidden h-28 w-28 brand-circle-lime brand-float lg:block"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-8 -top-6 h-20 w-20 brand-circle-violet opacity-90"
+            className="pointer-events-none absolute -right-8 -top-6 h-20 w-20 brand-circle-violet brand-drift-b opacity-90"
           />
         </div>
       </div>

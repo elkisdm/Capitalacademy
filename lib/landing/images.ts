@@ -13,7 +13,7 @@
  *   node scripts/generate-people-photos.mjs  # fotos editorial de personas
  */
 
-const local = (name: string) => `/imagery/${name}.png`;
+const local = (name: string) => `/imagery/${name}.webp`;
 
 export const IMG = {
   hero: {

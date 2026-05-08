@@ -1,9 +1,16 @@
 /**
  * Catálogo central de imágenes de la landing.
- * - Hero: foto real de Paola Vicuña (Directora Académica) en /public/team.
- * - Resto: imágenes brand-aligned generadas con Flux 1.1 Pro Ultra (Replicate),
- *   estilo editorial flat geométrico siguiendo el Manual Gráfico oficial.
- *   Para regenerar: `node scripts/generate-brand-images.mjs [name?]`.
+ *
+ * Mix intencional:
+ * - 3 cards de programa: ilustración brand abstracta (Flux 1.1 Pro Ultra
+ *   en Replicate) — actúan como "identidad visual" de cada programa.
+ * - 6 secciones humanas (qué es, por qué, comunidad, 3 detalles):
+ *   fotografía editorial de profesionales (gpt-image-2 de OpenAI).
+ * - Hero: foto real de Paola Vicuña (Directora Académica).
+ *
+ * Para regenerar:
+ *   node scripts/generate-brand-images.mjs   # cards abstractas
+ *   node scripts/generate-people-photos.mjs  # fotos editorial de personas
  */
 
 const local = (name: string) => `/imagery/${name}.png`;
@@ -15,40 +22,42 @@ export const IMG = {
     name: "Paola Vicuña",
     role: "Directora Académica",
   },
+  // === Fotografía editorial de personas (gpt-image-2) ===
   queEs: {
     src: local("queEs"),
-    alt: "Composición geométrica violeta y lima representando una escuela de negocios abriéndose como ecosistema de aprendizaje",
-  },
-  programaDiplomado: {
-    src: local("programaDiplomado"),
-    alt: "Escalera ascendente en verde lima sobre semicírculos violeta — crecimiento comercial y profesionalización",
-  },
-  programaLiderazgo: {
-    src: local("programaLiderazgo"),
-    alt: "Círculos concéntricos en violeta con acentos lima — líder al centro y equipo alrededor",
-  },
-  programaRuta: {
-    src: local("programaRuta"),
-    alt: "Línea ondulante navy conectando un punto pequeño con un círculo lima grande — trayectoria de reinvención profesional",
+    alt: "Profesionales en clase ejecutiva tomando notas con expresiones atentas",
   },
   porQueElegir: {
     src: local("porQueElegir"),
-    alt: "Composición arquitectónica geométrica en violeta y lima — estándar profesional Capital Academy",
+    alt: "Ejecutiva en oficina moderna con expresión confidente y mirada estratégica",
   },
   cierre: {
     src: local("cierre"),
-    alt: "Constelación de círculos conectados en paleta brand — comunidad de profesionales inmobiliarios",
+    alt: "Grupo de profesionales conversando en networking de Capital Academy",
   },
   detalleDiplomado: {
     src: local("detalleDiplomado"),
-    alt: "Composición vertical con columna ascendente lima y semicírculo violeta — KPIs y crecimiento comercial",
+    alt: "Asesor inmobiliario presentando una propiedad a una pareja",
   },
   detalleLiderazgo: {
     src: local("detalleLiderazgo"),
-    alt: "Torre vertical de círculos violeta con arco lavanda — estructura y liderazgo intencional",
+    alt: "Líder comercial facilitando reunión con su equipo de ventas",
   },
   detalleRuta: {
     src: local("detalleRuta"),
-    alt: "Arco lavanda y línea ondulante hacia un círculo lima — un nuevo horizonte profesional",
+    alt: "Profesional caminando por oficina moderna iniciando una nueva etapa",
+  },
+  // === Ilustración brand abstracta (Flux 1.1 Pro Ultra) — identidad por programa ===
+  programaDiplomado: {
+    src: local("programaDiplomado"),
+    alt: "Identidad visual del Diplomado: escalera ascendente lima sobre semicírculos violeta",
+  },
+  programaLiderazgo: {
+    src: local("programaLiderazgo"),
+    alt: "Identidad visual del Programa de Liderazgo: círculos concéntricos en violeta y lavanda",
+  },
+  programaRuta: {
+    src: local("programaRuta"),
+    alt: "Identidad visual de Ruta Inmobiliaria: línea ondulante navy hacia un círculo lima — trayectoria",
   },
 };

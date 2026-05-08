@@ -86,7 +86,7 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
   return (
     <section
       id={`detalle-${d.id}`}
-      className={`relative scroll-mt-24 overflow-hidden py-24 sm:py-28 ${t.section}`}
+      className={`relative scroll-mt-24 py-24 sm:py-28 ${t.section}`}
     >
       <div className="relative z-10 mx-auto max-w-6xl px-6">
         <div
@@ -95,7 +95,7 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
           }`}
         >
           {/* Visual + sidebar metadata */}
-          <div className="relative">
+          <div className="relative lg:self-stretch">
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-[0_30px_80px_rgba(20,22,58,0.18)]">
               <Image
                 src={d.detailImage.src}
@@ -113,7 +113,7 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
             </div>
 
             {/* Metadata sidebar — estilo Platzi */}
-            <div className="mt-6 rounded-[1.75rem] border border-[rgba(20,22,58,0.08)] bg-white p-5 shadow-[0_18px_40px_rgba(20,22,58,0.06)]">
+            <div className="mt-6 rounded-[1.75rem] border border-[rgba(20,22,58,0.08)] bg-white p-5 shadow-[0_18px_40px_rgba(20,22,58,0.06)] lg:sticky lg:top-24">
               <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-violet)]">
                 Detalles del programa
               </p>

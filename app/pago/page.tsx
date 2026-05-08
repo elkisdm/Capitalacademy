@@ -16,29 +16,36 @@ export default function PagoPage() {
       : "Pago procesado por Fintoc · Webpay, transferencia y tarjetas chilenas.";
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[var(--color-ca-navy-deep)]">
-      <div className="aurora-blob aurora-blob-lime" aria-hidden />
-      <div className="aurora-blob aurora-blob-violet" aria-hidden />
+    <main className="relative min-h-dvh overflow-hidden bg-[var(--color-ca-bg)]">
+      {/* Brand decorations sutiles */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 top-32 h-72 w-72 brand-circle-lavender opacity-50 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 bottom-32 h-64 w-64 brand-circle-lime opacity-30 blur-3xl"
+      />
 
       <section className="relative z-10 mx-auto flex min-h-dvh max-w-xl items-center px-4 py-16 sm:py-24">
         <div className="w-full">
           <header className="mb-10 text-center">
             <Image
-              src="/brand/logo-light.png"
+              src="/brand/logo-on-light.png"
               alt="Capital Academy"
               width={96}
               height={95}
               priority
-              className="mx-auto mb-5 h-20 w-auto sm:h-24"
+              className="mx-auto mb-5 h-16 w-auto sm:h-20"
             />
-            <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.4em] text-[var(--color-ca-lime)]">
+            <span className="mb-3 block text-[10px] font-bold uppercase tracking-[0.32em] text-[var(--color-ca-violet)]">
               Capital Academy
             </span>
-            <h1 className="font-sans text-3xl font-black tracking-[-0.03em] text-white sm:text-4xl">
+            <h1 className="font-sans text-3xl font-black tracking-[-0.03em] text-[var(--color-ca-ink)] sm:text-4xl">
               Ingreso al{" "}
-              <span className="text-gradient-ca">Diplomado</span>
+              <span className="text-[var(--color-ca-violet)]">Diplomado</span>
             </h1>
-            <p className="mt-3 text-sm text-white/70 sm:text-base">
+            <p className="mt-3 text-sm text-[var(--color-ca-ink-soft)] sm:text-base">
               Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria.
               Reserva tu cupo con un pago único.
             </p>
@@ -46,7 +53,7 @@ export default function PagoPage() {
 
           <CheckoutClient provider={provider} />
 
-          <p className="mt-8 text-center text-xs text-white/45">
+          <p className="mt-8 text-center text-xs text-[var(--color-ca-ink-soft)]/80">
             {providerLabel}
           </p>
         </div>

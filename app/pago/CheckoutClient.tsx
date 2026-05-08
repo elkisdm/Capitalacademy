@@ -207,34 +207,34 @@ export function CheckoutClient({ provider }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-2xl border border-[var(--border)] bg-[var(--color-surface-container)]/80 p-6 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:p-8"
+      className="rounded-3xl border border-[rgba(20,22,58,0.08)] bg-white p-6 shadow-[0_20px_60px_rgba(20,22,58,0.08)] sm:p-8"
     >
-      <div className="mb-6 border-b border-[var(--border)] pb-4">
+      <div className="mb-6 border-b border-[rgba(20,22,58,0.08)] pb-4">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs font-medium uppercase tracking-widest text-white/60">
+          <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-ca-ink-soft)]">
             Total a pagar
           </span>
-          <span className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+          <span className="text-2xl font-black tracking-tight text-[var(--color-ca-ink)] sm:text-3xl">
             {priceFormatter.format(finalAmount)}
           </span>
         </div>
         {selectedSurcharge > 0 && (
-          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-white/55">
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-[var(--color-ca-ink-soft)]">
             <span>
               Valor base {priceFormatter.format(DIPLOMADO_PRICE_CLP)} + recargo
               por uso de cuotas{" "}
-              <span className="text-white/75">
+              <span className="font-semibold text-[var(--color-ca-ink)]">
                 {priceFormatter.format(selectedSurcharge)}
               </span>
             </span>
           </div>
         )}
         {coupon && (
-          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-[var(--color-ca-lime)]">
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-[var(--color-ca-violet-deep)]">
             <span>
               Cupón <strong>{coupon.code}</strong> aplicado · −{coupon.percentOff}%
             </span>
-            <span className="text-white/75">
+            <span className="font-semibold text-[var(--color-ca-ink)]">
               −{priceFormatter.format(discountClp)}
             </span>
           </div>
@@ -242,7 +242,7 @@ export function CheckoutClient({ provider }: Props) {
       </div>
 
       <div className="mb-6">
-        <label className="mb-1.5 block text-xs font-medium text-white/70">
+        <label className="mb-1.5 block text-xs font-medium text-[var(--color-ca-ink-soft)]">
           ¿Tienes un cupón?
         </label>
         <div className="flex gap-2">
@@ -258,7 +258,7 @@ export function CheckoutClient({ provider }: Props) {
             <button
               type="button"
               onClick={removeCoupon}
-              className="h-11 shrink-0 rounded-lg border border-[var(--border)] bg-white/[0.04] px-4 text-xs font-bold uppercase tracking-wider text-white/80 transition-colors hover:border-[var(--color-magenta)]/50 hover:text-white"
+              className="h-11 shrink-0 rounded-lg border border-[rgba(20,22,58,0.12)] bg-white px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-violet)]/40 hover:text-[var(--color-ca-violet)]"
             >
               Quitar
             </button>
@@ -267,14 +267,14 @@ export function CheckoutClient({ provider }: Props) {
               type="button"
               onClick={applyCoupon}
               disabled={couponLoading || !couponInput.trim()}
-              className="h-11 shrink-0 rounded-lg border border-[var(--color-ca-lime)]/40 bg-[var(--color-ca-lime)]/[0.08] px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-lime)] transition-colors hover:bg-[var(--color-ca-lime)]/[0.16] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 shrink-0 rounded-lg border border-[var(--color-ca-violet)]/30 bg-[var(--color-ca-violet)]/[0.06] px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-violet)] transition-colors hover:bg-[var(--color-ca-violet)]/[0.12] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {couponLoading ? "…" : "Aplicar"}
             </button>
           )}
         </div>
         {couponError && (
-          <p className="mt-1 text-[11px] text-[var(--color-magenta-light)]">
+          <p className="mt-1 text-[11px] text-rose-600">
             {couponError}
           </p>
         )}
@@ -282,7 +282,7 @@ export function CheckoutClient({ provider }: Props) {
 
       {availablePlans.length > 1 && (
         <fieldset className="mb-6">
-          <legend className="mb-2 text-xs font-medium uppercase tracking-widest text-white/60">
+          <legend className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--color-ca-ink-soft)]">
             Forma de pago
           </legend>
           <div className="grid grid-cols-1 gap-2">
@@ -292,10 +292,10 @@ export function CheckoutClient({ provider }: Props) {
               return (
                 <label
                   key={planKey}
-                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-xl border px-4 py-3 transition-colors ${
                     isSelected
-                      ? "border-[var(--color-ca-lime)]/70 bg-[var(--color-ca-lime)]/[0.06]"
-                      : "border-[var(--border)] bg-white/[0.02] hover:border-[var(--color-ca-lime)]/30"
+                      ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
+                      : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
                   }`}
                 >
                   <span className="flex items-start gap-3">
@@ -303,18 +303,18 @@ export function CheckoutClient({ provider }: Props) {
                       type="radio"
                       value={planKey}
                       {...register("plan")}
-                      className="mt-1 h-4 w-4 accent-[var(--color-ca-lime)]"
+                      className="mt-1 h-4 w-4 accent-[var(--color-ca-violet)]"
                     />
                     <span className="block">
-                      <span className="block text-sm font-semibold text-white">
+                      <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
                         {plan.label}
                       </span>
-                      <span className="mt-0.5 block text-[11px] text-white/55">
+                      <span className="mt-0.5 block text-[11px] text-[var(--color-ca-ink-soft)]">
                         {plan.description}
                       </span>
                     </span>
                   </span>
-                  <span className="shrink-0 text-sm font-bold text-white">
+                  <span className="shrink-0 text-sm font-bold text-[var(--color-ca-ink)]">
                     {priceFormatter.format(plan.amount)}
                   </span>
                 </label>
@@ -322,7 +322,7 @@ export function CheckoutClient({ provider }: Props) {
             })}
           </div>
           {errors.plan?.message && (
-            <p className="mt-2 text-[11px] text-[var(--color-magenta-light)]">
+            <p className="mt-2 text-[11px] text-rose-600">
               {errors.plan.message}
             </p>
           )}
@@ -385,7 +385,7 @@ export function CheckoutClient({ provider }: Props) {
       </div>
 
       {errorMessage && (
-        <p className="mt-5 rounded-md border border-[var(--color-magenta)]/30 bg-[var(--color-magenta)]/10 px-3 py-2 text-sm text-[var(--color-magenta-light)]">
+        <p className="mt-5 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {errorMessage}
         </p>
       )}
@@ -393,12 +393,12 @@ export function CheckoutClient({ provider }: Props) {
       <button
         type="submit"
         disabled={isBusy}
-        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(91,45,235,0.35)] transition-all duration-200 hover:bg-[var(--color-ca-violet-deep)] hover:shadow-[0_16px_40px_rgba(91,45,235,0.45)] hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all duration-200 hover:bg-[var(--color-ca-violet-deep)] hover:shadow-[0_16px_40px_rgba(94,23,235,0.45)] hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
       >
         {isBusy ? "Procesando…" : "Pagar inscripción"}
       </button>
 
-      <p className="mt-3 text-center text-[11px] text-white/45">
+      <p className="mt-3 text-center text-[11px] text-[var(--color-ca-ink-soft)]/80">
         Al continuar autorizas el cobro y aceptas las condiciones del Diplomado.
       </p>
     </form>
@@ -406,7 +406,7 @@ export function CheckoutClient({ provider }: Props) {
 }
 
 const inputCls =
-  "w-full h-11 rounded-lg border border-[var(--border)] bg-white/[0.04] px-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 hover:border-[var(--color-ca-lime)]/40 focus:border-[var(--color-ca-lime)]/70 focus:bg-white/[0.07] focus:ring-2 focus:ring-[var(--color-ca-violet)]/30";
+  "w-full h-11 rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-3 text-sm text-[var(--color-ca-ink)] outline-none transition-colors placeholder:text-[var(--color-ca-ink-soft)]/60 hover:border-[var(--color-ca-violet)]/40 focus:border-[var(--color-ca-violet)] focus:bg-white focus:ring-2 focus:ring-[var(--color-ca-violet)]/20";
 
 function Field({
   label,
@@ -421,12 +421,12 @@ function Field({
 }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-1.5 block text-xs font-medium text-white/70">
+      <span className="mb-1.5 block text-xs font-medium text-[var(--color-ca-ink-soft)]">
         {label}
       </span>
       {children}
       {error && (
-        <span className="mt-1 block text-[11px] text-[var(--color-magenta-light)]">
+        <span className="mt-1 block text-[11px] text-rose-600">
           {error}
         </span>
       )}

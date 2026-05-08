@@ -1,16 +1,17 @@
 /**
  * Catálogo central de imágenes de la landing.
  *
- * Mix intencional:
- * - 3 cards de programa: ilustración brand abstracta (Flux 1.1 Pro Ultra
- *   en Replicate) — actúan como "identidad visual" de cada programa.
- * - 6 secciones humanas (qué es, por qué, comunidad, 3 detalles):
- *   fotografía editorial de profesionales (gpt-image-2 de OpenAI).
  * - Hero: foto real de Paola Vicuña (Directora Académica).
+ * - Secciones humanas (queEs, porQueElegir, cierre): fotografía
+ *   editorial de profesionales (gpt-image-2).
+ * - Programas: brochure brand-aligned con título + foto + CTA, 2
+ *   variantes por programa (card 16:9 y hero 4:5), generados con
+ *   gpt-image-2 que respeta texto.
  *
  * Para regenerar:
- *   node scripts/generate-brand-images.mjs   # cards abstractas
- *   node scripts/generate-people-photos.mjs  # fotos editorial de personas
+ *   node scripts/generate-people-photos.mjs   # fotos sociales
+ *   node scripts/generate-brochures.mjs       # brochures por programa
+ *   node scripts/optimize-images.mjs          # PNG → WebP
  */
 
 const local = (name: string) => `/imagery/${name}.webp`;
@@ -22,7 +23,6 @@ export const IMG = {
     name: "Paola Vicuña",
     role: "Directora Académica",
   },
-  // === Fotografía editorial de personas (gpt-image-2) ===
   queEs: {
     src: local("queEs"),
     alt: "Profesionales en clase ejecutiva tomando notas con expresiones atentas",
@@ -35,29 +35,30 @@ export const IMG = {
     src: local("cierre"),
     alt: "Grupo de profesionales conversando en networking de Capital Academy",
   },
-  detalleDiplomado: {
-    src: local("detalleDiplomado"),
-    alt: "Asesor inmobiliario presentando una propiedad a una pareja",
+  // === Brochures por programa — variante CARD (16:9, en Programas.tsx) ===
+  programaDiplomadoCard: {
+    src: local("programaDiplomadoCard"),
+    alt: "Brochure del Diplomado en Ventas y Asesoría Inmobiliaria con asesor mostrando una propiedad",
   },
-  detalleLiderazgo: {
-    src: local("detalleLiderazgo"),
-    alt: "Líder comercial facilitando reunión con su equipo de ventas",
+  programaLiderazgoCard: {
+    src: local("programaLiderazgoCard"),
+    alt: "Brochure del Programa de Liderazgo y Gestión de Equipos con líder facilitando reunión",
   },
-  detalleRuta: {
-    src: local("detalleRuta"),
-    alt: "Profesional caminando por oficina moderna iniciando una nueva etapa",
+  programaRutaCard: {
+    src: local("programaRutaCard"),
+    alt: "Brochure del Programa Ruta Inmobiliaria con profesional iniciando una nueva etapa",
   },
-  // === Mockups de diploma físico (gpt-image-2) — producto tangible por programa ===
-  programaDiplomado: {
-    src: local("programaDiplomado"),
-    alt: "Diploma de Capital Academy en Ventas y Asesoría Inmobiliaria con sello dorado y cinta lima",
+  // === Brochures por programa — variante HERO (4:5, en DetalleProgramas.tsx) ===
+  programaDiplomadoHero: {
+    src: local("programaDiplomadoHero"),
+    alt: "Brochure expandido del Diplomado en Ventas y Asesoría Inmobiliaria",
   },
-  programaLiderazgo: {
-    src: local("programaLiderazgo"),
-    alt: "Diploma de Capital Academy en Liderazgo y Gestión de Equipos sobre cuero navy con cinta violeta",
+  programaLiderazgoHero: {
+    src: local("programaLiderazgoHero"),
+    alt: "Brochure expandido del Programa de Liderazgo y Gestión de Equipos",
   },
-  programaRuta: {
-    src: local("programaRuta"),
-    alt: "Diploma de Capital Academy en Ruta Inmobiliaria en flat-lay lavanda con acento geométrico lima",
+  programaRutaHero: {
+    src: local("programaRutaHero"),
+    alt: "Brochure expandido del Programa Ruta Inmobiliaria",
   },
 };

@@ -40,8 +40,8 @@ export type ProgramMeta = {
   cta: string;
   href: string;
   theme: ProgramTheme;
-  image: { src: string; alt: string };
-  detailImage: { src: string; alt: string };
+  cardImage: { src: string; alt: string };
+  heroImage: { src: string; alt: string };
 };
 
 export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
@@ -130,8 +130,8 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     cta: "Quiero información del Diplomado",
     href: "#detalle-diplomado",
     theme: "lime",
-    image: IMG.programaDiplomado,
-    detailImage: IMG.detalleDiplomado,
+    cardImage: IMG.programaDiplomadoCard,
+    heroImage: IMG.programaDiplomadoHero,
   },
   liderazgo: {
     id: "liderazgo",
@@ -208,8 +208,8 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     cta: "Quiero información del Programa de Liderazgo",
     href: "#detalle-liderazgo",
     theme: "violet",
-    image: IMG.programaLiderazgo,
-    detailImage: IMG.detalleLiderazgo,
+    cardImage: IMG.programaLiderazgoCard,
+    heroImage: IMG.programaLiderazgoHero,
   },
   ruta: {
     id: "ruta",
@@ -290,8 +290,8 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     cta: "Quiero información de Ruta Inmobiliaria",
     href: "#detalle-ruta",
     theme: "lavender",
-    image: IMG.programaRuta,
-    detailImage: IMG.detalleRuta,
+    cardImage: IMG.programaRutaCard,
+    heroImage: IMG.programaRutaHero,
   },
 };
 

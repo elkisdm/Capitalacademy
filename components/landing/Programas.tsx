@@ -1,6 +1,5 @@
 import Image from "next/image";
-import { PROGRAMS_LIST, themeStyles } from "@/lib/landing/programs";
-import { ProgramGlyph } from "./ProgramGlyph";
+import { PROGRAMS_LIST } from "@/lib/landing/programs";
 
 export function Programas() {
   return (
@@ -30,91 +29,45 @@ export function Programas() {
         </div>
 
         <div className="mt-16 grid gap-6 lg:grid-cols-3">
-          {PROGRAMS_LIST.map((p) => {
-            const t = themeStyles[p.theme];
-            return (
-              <article
-                key={p.id}
-                className="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-[rgba(20,22,58,0.06)] bg-white transition-all hover:-translate-y-1.5 hover:shadow-[0_36px_72px_rgba(94,23,235,0.18)]"
+          {PROGRAMS_LIST.map((p) => (
+            <article
+              key={p.id}
+              className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-[rgba(20,22,58,0.06)] bg-white transition-all hover:-translate-y-1.5 hover:shadow-[0_36px_72px_rgba(94,23,235,0.18)]"
+            >
+              {/* Brochure brand del programa (gpt-image-2, 16:9) */}
+              <a
+                href={p.href}
+                aria-label={`Ver detalle del programa ${p.title}`}
+                className="relative block aspect-[16/10] w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
               >
-                <div className="relative aspect-[16/10] w-full overflow-hidden">
-                  <Image
-                    src={p.image.src}
-                    alt={p.image.alt}
-                    fill
-                    sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-t ${t.bar} opacity-30 mix-blend-multiply`}
-                  />
-                  <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${t.bar}`} />
-                  {/* Glifo flotante */}
-                  <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_8px_24px_rgba(20,22,58,0.18)]">
-                    <ProgramGlyph program={p.id} className="h-7 w-7" />
-                  </div>
+                <Image
+                  src={p.cardImage.src}
+                  alt={p.cardImage.alt}
+                  fill
+                  sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                />
+              </a>
+
+              {/* Footer informativo + CTA */}
+              <div className="flex flex-1 flex-col p-6">
+                <p className="text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
+                  {p.description}
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-1.5">
+                  {p.audienceTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex h-6 items-center rounded-md border border-[rgba(20,22,58,0.1)] bg-[var(--color-ca-bg)] px-2 text-[10px] font-semibold text-[var(--color-ca-ink-soft)]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
                 </div>
 
-                <div className="flex flex-1 flex-col p-7">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${t.badge}`}
-                    >
-                      {p.tag}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(20,22,58,0.12)] bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ca-ink-soft)]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-ca-violet)]" />
-                      {p.level}
-                    </span>
-                  </div>
-
-                  <h3 className="mt-4 text-xl font-bold leading-tight text-[var(--color-ca-ink)] sm:text-2xl">
-                    {p.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
-                    {p.description}
-                  </p>
-
-                  {/* Spacer empuja la metadata + CTA al fondo, asegurando alineación entre cards */}
-                  <div className="flex-1" />
-
-                  {/* Metadata bar — alturas reservadas para mantener simetría */}
-                  <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-[rgba(20,22,58,0.08)] pt-4 text-xs">
-                    <div>
-                      <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
-                        Duración
-                      </dt>
-                      <dd className="mt-0.5 text-sm font-semibold text-[var(--color-ca-ink)]">
-                        {p.duration}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
-                        Módulos
-                      </dt>
-                      <dd className="mt-0.5 text-sm font-semibold text-[var(--color-ca-ink)]">
-                        {p.modules}
-                      </dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
-                        Para
-                      </dt>
-                      <dd className="mt-1.5 flex min-h-[3.25rem] flex-wrap content-start gap-1.5">
-                        {p.audienceTags.map((tag) => (
-                          <span
-                            key={tag}
-                            className={`inline-flex h-6 items-center rounded-md border px-2 text-[10px] font-semibold ${t.chip}`}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  {/* Inicio + CTA — siempre al fondo */}
-                  <div className="mt-5 flex items-center gap-2 rounded-xl bg-[var(--color-ca-bg)] px-3 py-2 text-xs">
+                <div className="mt-auto pt-5">
+                  <div className="mb-3 flex items-center gap-2 rounded-xl bg-[var(--color-ca-bg)] px-3 py-2 text-xs">
                     <svg
                       viewBox="0 0 24 24"
                       className="h-4 w-4 shrink-0 text-[var(--color-ca-violet)]"
@@ -137,7 +90,7 @@ export function Programas() {
 
                   <a
                     href={p.href}
-                    className="mt-3 inline-flex h-11 items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all group-hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="inline-flex h-11 w-full items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2"
                   >
                     Ver programa
                     <svg
@@ -153,9 +106,9 @@ export function Programas() {
                     </svg>
                   </a>
                 </div>
-              </article>
-            );
-          })}
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>

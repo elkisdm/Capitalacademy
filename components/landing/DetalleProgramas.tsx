@@ -4,7 +4,6 @@ import {
   themeStyles,
   type ProgramMeta,
 } from "@/lib/landing/programs";
-import { ProgramGlyph } from "./ProgramGlyph";
 import { Syllabus } from "./Syllabus";
 
 function MetaItem({
@@ -94,22 +93,16 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
             reverse ? "lg:[&>*:first-child]:order-2" : ""
           }`}
         >
-          {/* Visual + sidebar metadata */}
+          {/* Visual: brochure HERO del programa (gpt-image-2, incluye branding + título + CTA visible) */}
           <div className="relative lg:self-stretch">
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-[0_30px_80px_rgba(20,22,58,0.18)]">
               <Image
-                src={d.detailImage.src}
-                alt={d.detailImage.alt}
+                src={d.heroImage.src}
+                alt={d.heroImage.alt}
                 fill
                 sizes="(min-width: 1024px) 480px, 100vw"
                 className="object-cover"
               />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-[var(--color-ca-violet)]/30 via-transparent to-transparent mix-blend-multiply" />
-
-              {/* Glifo flotante grande */}
-              <div className="absolute left-5 top-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/95 backdrop-blur-sm shadow-[0_12px_32px_rgba(20,22,58,0.25)]">
-                <ProgramGlyph program={d.id} className="h-9 w-9" />
-              </div>
             </div>
 
             {/* Metadata sidebar — estilo Platzi */}

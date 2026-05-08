@@ -1,50 +1,6 @@
 import Image from "next/image";
-import { IMG } from "@/lib/landing/images";
-
-const programas = [
-  {
-    id: "diplomado",
-    tag: "Diplomado",
-    title: "Ventas y Asesoría Inmobiliaria",
-    desc: "Para asesores, brokers y ejecutivos que quieren vender mejor, asesorar con más solidez y elevar su nivel profesional.",
-    href: "#detalle-diplomado",
-    image: IMG.programaDiplomado,
-    accent: "lime",
-  },
-  {
-    id: "liderazgo",
-    tag: "Programa",
-    title: "Liderazgo y Gestión de Equipos",
-    desc: "Para jefaturas, líderes comerciales y profesionales que buscan construir, conducir y sostener equipos de alto desempeño.",
-    href: "#detalle-liderazgo",
-    image: IMG.programaLiderazgo,
-    accent: "lavender",
-  },
-  {
-    id: "ruta",
-    tag: "Programa",
-    title: "Ruta Inmobiliaria",
-    desc: "Para emprendedores y profesionales que buscan abrir una nueva etapa laboral con respaldo, formación y visión de negocio.",
-    href: "#detalle-ruta",
-    image: IMG.programaRuta,
-    accent: "violet",
-  },
-] as const;
-
-const accentMap = {
-  lime: {
-    badge: "bg-[var(--color-ca-lime)] text-[var(--color-ca-ink)]",
-    bar: "from-[var(--color-ca-lime)] to-[var(--color-ca-lime-deep)]",
-  },
-  lavender: {
-    badge: "bg-[var(--color-ca-violet-soft)] text-[var(--color-ca-violet-deep)]",
-    bar: "from-[var(--color-ca-violet-soft)] to-[var(--color-ca-violet)]",
-  },
-  violet: {
-    badge: "bg-[var(--color-ca-violet)] text-white",
-    bar: "from-[var(--color-ca-violet)] to-[var(--color-ca-violet-deep)]",
-  },
-} as const;
+import { PROGRAMS_LIST, themeStyles } from "@/lib/landing/programs";
+import { ProgramGlyph } from "./ProgramGlyph";
 
 export function Programas() {
   return (
@@ -74,8 +30,8 @@ export function Programas() {
         </div>
 
         <div className="mt-16 grid gap-6 lg:grid-cols-3">
-          {programas.map((p) => {
-            const a = accentMap[p.accent];
+          {PROGRAMS_LIST.map((p) => {
+            const t = themeStyles[p.theme];
             return (
               <article
                 key={p.id}
@@ -90,26 +46,73 @@ export function Programas() {
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div
-                    className={`absolute inset-0 bg-gradient-to-t ${a.bar} opacity-30 mix-blend-multiply`}
+                    className={`absolute inset-0 bg-gradient-to-t ${t.bar} opacity-30 mix-blend-multiply`}
                   />
-                  <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${a.bar}`} />
+                  <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${t.bar}`} />
+                  {/* Glifo flotante */}
+                  <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_8px_24px_rgba(20,22,58,0.18)]">
+                    <ProgramGlyph program={p.id} className="h-7 w-7" />
+                  </div>
                 </div>
 
                 <div className="flex flex-1 flex-col p-7">
-                  <span
-                    className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${a.badge}`}
-                  >
-                    {p.tag}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${t.badge}`}
+                    >
+                      {p.tag}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(20,22,58,0.12)] bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ca-ink-soft)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-ca-violet)]" />
+                      {p.level}
+                    </span>
+                  </div>
+
                   <h3 className="mt-4 text-xl font-bold leading-tight text-[var(--color-ca-ink)] sm:text-2xl">
                     {p.title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
-                    {p.desc}
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
+                    {p.description}
                   </p>
+
+                  {/* Metadata bar tipo Platzi */}
+                  <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-[rgba(20,22,58,0.08)] pt-4 text-xs">
+                    <div>
+                      <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
+                        Duración
+                      </dt>
+                      <dd className="mt-0.5 text-sm font-semibold text-[var(--color-ca-ink)]">
+                        {p.duration}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
+                        Módulos
+                      </dt>
+                      <dd className="mt-0.5 text-sm font-semibold text-[var(--color-ca-ink)]">
+                        {p.modules}
+                      </dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="font-bold uppercase tracking-[0.14em] text-[var(--color-ca-ink-soft)]">
+                        Para
+                      </dt>
+                      <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                        {p.audienceTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${t.chip}`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                  </dl>
+
                   <a
                     href={p.href}
-                    className="mt-6 inline-flex h-11 items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all group-hover:bg-[var(--color-ca-violet)]"
+                    className="mt-6 inline-flex h-11 items-center justify-between rounded-full bg-[var(--color-ca-ink)] px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all group-hover:bg-[var(--color-ca-violet)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ca-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
                     Ver programa
                     <svg
@@ -119,6 +122,7 @@ export function Programas() {
                       stroke="currentColor"
                       strokeWidth="2.5"
                       strokeLinecap="round"
+                      aria-hidden
                     >
                       <path d="M5 12h14M13 5l7 7-7 7" />
                     </svg>

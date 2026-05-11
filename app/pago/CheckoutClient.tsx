@@ -407,6 +407,10 @@ export function CheckoutClient({ provider }: Props) {
               {availablePlans.map((planKey) => {
                 const plan = PAYMENT_PLANS[planKey];
                 const isSelected = selectedPlan === planKey;
+                const planDiscount = coupon
+                  ? Math.round((plan.amount * coupon.percentOff) / 100)
+                  : 0;
+                const planFinalAmount = plan.amount - planDiscount;
                 return (
                   <label
                     key={planKey}
@@ -432,8 +436,15 @@ export function CheckoutClient({ provider }: Props) {
                         </span>
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-bold text-[var(--color-ca-ink)]">
-                      {priceFormatter.format(plan.amount)}
+                    <span className="flex shrink-0 flex-col items-end">
+                      {coupon && (
+                        <span className="text-[11px] font-medium text-[var(--color-ca-ink-soft)] line-through decoration-[var(--color-ca-ink-soft)]/60">
+                          {priceFormatter.format(plan.amount)}
+                        </span>
+                      )}
+                      <span className="text-sm font-bold text-[var(--color-ca-ink)]">
+                        {priceFormatter.format(planFinalAmount)}
+                      </span>
                     </span>
                   </label>
                 );

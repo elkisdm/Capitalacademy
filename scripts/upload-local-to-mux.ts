@@ -35,8 +35,6 @@ loadEnv();
 const VIDEO_DIR = resolve(process.env.HOME ?? "~", "Downloads", "optimized");
 
 const SPECIFIC_FILES = [
-  "MasterClass Sandra.mp4",
-  "MasterClass Gonzalez.mp4",
   "MasterClass Matamala.mp4",
   "MasterClass Magner.mp4",
   "MasterClass Raul Cortez.mp4",

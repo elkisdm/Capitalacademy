@@ -48,17 +48,17 @@ export function BrandShapes({ variant = "default" }: { variant?: "default" | "he
 }
 
 const STATUS_MAP = {
-  completed: { label: "Completada", dotBg: "bg-ca-lime-deep", bg: "bg-ca-lime-deep/[0.18]", fg: "text-[#3f5a05]" },
-  in_progress: { label: "En progreso", dotBg: "bg-ca-violet", bg: "bg-ca-violet/10", fg: "text-ca-violet-deep" },
-  available: { label: "Disponible", dotBg: "bg-ca-ink-soft", bg: "bg-transparent", fg: "text-ca-ink" },
-  locked: { label: "Bloqueada", dotBg: "bg-ca-ink-soft", bg: "bg-ca-ink/5", fg: "text-ca-ink-soft" },
+  completed: { label: "Completado", dotBg: "bg-ca-amber", bg: "bg-ca-amber/15", fg: "text-[#8b6914]" },
+  in_progress: { label: "En progreso", dotBg: "bg-ca-lime-deep", bg: "bg-ca-lime-deep/[0.14]", fg: "text-[#3f5a05]" },
+  available: { label: "Disponible", dotBg: "bg-ca-violet", bg: "bg-ca-violet/10", fg: "text-ca-violet-deep" },
+  locked: { label: "Bloqueado", dotBg: "bg-ca-ink-soft", bg: "bg-ca-ink/5", fg: "text-ca-ink-soft" },
   no_video: { label: "Próximamente", dotBg: "bg-ca-ink-soft", bg: "bg-ca-ink/5", fg: "text-ca-ink-soft" },
 } as const;
 
 export function StatusPill({ status, size = "md" }: { status: keyof typeof STATUS_MAP; size?: "sm" | "md" }) {
   const s = STATUS_MAP[status] ?? STATUS_MAP.available;
   const sz = size === "sm" ? "text-[10px] px-2 py-0.5" : "text-[11px] px-2.5 py-1";
-  const border = status === "available" ? "border border-ca-ink/[0.14]" : "";
+  const border = "";
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${sz} ${s.bg} ${s.fg} ${border}`}>
       <span className={`shape-circle h-1.5 w-1.5 ${s.dotBg}`} />
@@ -150,7 +150,7 @@ export function LessonStatusIcon({ status, size = 28 }: { status: string; size?:
   );
 }
 
-export function Breadcrumb({ items }: { items: Array<{ label: string; onClick?: () => void }> }) {
+export function Breadcrumb({ items }: { items: Array<{ label: string; href?: string; onClick?: () => void }> }) {
   return (
     <nav className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
       {items.map((it, i) => (
@@ -160,8 +160,10 @@ export function Breadcrumb({ items }: { items: Array<{ label: string; onClick?: 
               <path d="M9 18l6-6-6-6" />
             </svg>
           )}
-          {it.onClick ? (
-            <button onClick={it.onClick} className="transition-colors hover:text-ca-violet">{it.label}</button>
+          {it.href ? (
+            <a href={it.href} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</a>
+          ) : it.onClick ? (
+            <button onClick={it.onClick} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</button>
           ) : (
             <span className={i === items.length - 1 ? "text-ca-ink" : ""}>{it.label}</span>
           )}

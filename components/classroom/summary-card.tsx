@@ -10,6 +10,8 @@ type SummaryCardProps = {
   glossary: { term: string; definition: string }[];
   modelUsed?: string;
   generatedAt?: string;
+  chapters?: { position_seconds: number; title: string }[];
+  onSeek?: (time: number) => void;
 };
 
 // ── SVG icons — stroke 1.5, matching video-player style ─────
@@ -110,12 +112,20 @@ function SectionLabel({ children }: { children: string }) {
 
 // ── Main component ───────────────────────────────────────────
 
+function fmtChapterTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export function SummaryCard({
   keyPoints,
   summaryText,
   glossary,
   modelUsed,
   generatedAt,
+  chapters,
+  onSeek,
 }: SummaryCardProps) {
   const [expanded, setExpanded] = useState(true);
 
@@ -250,6 +260,29 @@ export function SummaryCard({
                         {entry.definition}
                       </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Chapters (clickable timestamps) ──────── */}
+            {chapters && chapters.length > 0 && onSeek && (
+              <div>
+                <SectionLabel>Capítulos</SectionLabel>
+                <div className="space-y-1">
+                  {chapters.map((ch, i) => (
+                    <button
+                      key={i}
+                      onClick={() => onSeek(ch.position_seconds)}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-ca-bg-soft"
+                    >
+                      <span className="shrink-0 rounded-md bg-ca-violet/[0.08] px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums text-ca-violet">
+                        {fmtChapterTime(ch.position_seconds)}
+                      </span>
+                      <span className="text-[13px] font-semibold text-ca-ink">
+                        {ch.title}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>

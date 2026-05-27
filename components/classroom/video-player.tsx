@@ -249,6 +249,7 @@ export function VideoPlayer({
   // Progress tracking
   const [watchPercentage, setWatchPercentage] = useState(initialWatchPercentage);
   const [completed, setCompleted] = useState(initialCompleted);
+  const [markingComplete, setMarkingComplete] = useState(false);
 
   // Media state
   const [ready, setReady] = useState(false);
@@ -314,6 +315,26 @@ export function VideoPlayer({
     initialPosition,
     onProgressUpdate,
   });
+
+  // ── Manual mark-complete ───────────────────────────────────
+
+  const markComplete = useCallback(async () => {
+    if (completed || markingComplete) return;
+    setMarkingComplete(true);
+    try {
+      const res = await fetch("/api/classroom/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonId }),
+      });
+      if (res.ok) {
+        setCompleted(true);
+        setWatchPercentage(100);
+      }
+    } finally {
+      setMarkingComplete(false);
+    }
+  }, [lessonId, completed, markingComplete]);
 
   // ── HLS / media setup ─────────────────────────────────────
 
@@ -1123,15 +1144,6 @@ export function VideoPlayer({
                 </div>
               </div>
 
-              {/* CENTER — lesson title */}
-              {lessonTitle && (
-                <div className="hidden flex-1 px-4 text-center md:block">
-                  <div className="truncate text-[12px] font-semibold text-white/55">
-                    {lessonTitle}
-                  </div>
-                </div>
-              )}
-
               {/* RIGHT */}
               <div className="flex items-center gap-1.5">
                 {/* CC toggle */}
@@ -1282,11 +1294,14 @@ export function VideoPlayer({
         </div>
       </div>
 
-      {/* Watch progress strip below player */}
+      {/* Lesson progress strip below player */}
       <div
         className="flex items-center gap-3 text-sm"
         style={{ color: "var(--color-ca-ink-soft)" }}
       >
+        <span className="shrink-0 text-[11px] font-semibold">
+          Progreso
+        </span>
         <div className="flex-1">
           <div
             className="h-1.5 w-full overflow-hidden rounded-full"
@@ -1303,15 +1318,23 @@ export function VideoPlayer({
           </div>
         </div>
         <span className="shrink-0 font-mono text-[12px] tabular-nums">
-          {Math.round(watchPercentage)}% visto
+          {Math.round(watchPercentage)}%
         </span>
-        {completed && (
+        {completed ? (
           <span
             className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
             style={{ background: "rgba(168,211,16,0.18)", color: "#3f5a05" }}
           >
-            Completado
+            Completada
           </span>
+        ) : (
+          <button
+            onClick={markComplete}
+            disabled={markingComplete}
+            className="shrink-0 rounded-full border border-ca-violet/30 bg-ca-violet/[0.06] px-3 py-1 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/[0.12] disabled:opacity-50"
+          >
+            {markingComplete ? "Guardando…" : "Marcar completada"}
+          </button>
         )}
       </div>
     </div>

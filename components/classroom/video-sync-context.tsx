@@ -6,6 +6,7 @@ type VideoSyncContextValue = {
   currentTime: number;
   setCurrentTime: (t: number) => void;
   seekRef: MutableRefObject<((time: number) => void) | null>;
+  openTranscriptRef: MutableRefObject<(() => void) | null>;
 };
 
 const VideoSyncContext = createContext<VideoSyncContextValue | null>(null);
@@ -13,6 +14,7 @@ const VideoSyncContext = createContext<VideoSyncContextValue | null>(null);
 export function VideoSyncProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTimeState] = useState(0);
   const seekRef = useRef<((time: number) => void) | null>(null);
+  const openTranscriptRef = useRef<(() => void) | null>(null);
   const lastSync = useRef(0);
 
   const setCurrentTime = useCallback((t: number) => {
@@ -24,7 +26,7 @@ export function VideoSyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <VideoSyncContext.Provider value={{ currentTime, setCurrentTime, seekRef }}>
+    <VideoSyncContext.Provider value={{ currentTime, setCurrentTime, seekRef, openTranscriptRef }}>
       {children}
     </VideoSyncContext.Provider>
   );

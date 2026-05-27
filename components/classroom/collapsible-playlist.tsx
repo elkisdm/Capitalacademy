@@ -32,7 +32,8 @@ export function CollapsiblePlaylist({
   const [hydrated, setHydrated] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mode, setMode] = useState<SidebarMode>("playlist");
-  const { currentTime, seekRef } = useVideoSync();
+  const [transcriptKey, setTranscriptKey] = useState(0);
+  const { currentTime, seekRef, openTranscriptRef } = useVideoSync();
   const trapRef = useFocusTrap(mobileOpen);
   const hasTranscript = !!transcriptVtt;
 
@@ -45,6 +46,19 @@ export function CollapsiblePlaylist({
     }
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hasTranscript) return;
+    openTranscriptRef.current = () => {
+      setCollapsed(false);
+      setMode("transcript");
+      setTranscriptKey((k) => k + 1);
+      try {
+        localStorage.setItem(LS_KEY, "false");
+      } catch { /* noop */ }
+    };
+    return () => { openTranscriptRef.current = null; };
+  }, [hasTranscript, openTranscriptRef]);
 
   const toggle = useCallback(() => {
     setCollapsed((prev) => {
@@ -134,6 +148,7 @@ export function CollapsiblePlaylist({
             {mode === "transcript" && transcriptVtt && (
               <div className="flex-1 overflow-y-auto">
                 <TranscriptPanel
+                  key={transcriptKey}
                   vttContent={transcriptVtt}
                   correctedVtt={correctedVtt}
                   currentTime={currentTime}

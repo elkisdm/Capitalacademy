@@ -30,6 +30,7 @@ type LessonVideoSectionProps = {
   currentUserId: string;
   currentUserName: string;
   currentUserInitials: string;
+  hasTranscript?: boolean;
 };
 
 export function LessonVideoSection({
@@ -47,8 +48,9 @@ export function LessonVideoSection({
   currentUserId,
   currentUserName,
   currentUserInitials,
+  hasTranscript = false,
 }: LessonVideoSectionProps) {
-  const { currentTime, setCurrentTime, seekRef } = useVideoSync();
+  const { currentTime, setCurrentTime, seekRef, openTranscriptRef } = useVideoSync();
   const hasResources = resources.length > 0;
   const hasSummary = !!summary;
 
@@ -93,7 +95,7 @@ export function LessonVideoSection({
       {tabs.length > 0 && (
         <div className="mt-8">
           {/* Tab bar */}
-          <div className="mb-4 flex gap-1 border-b border-ca-ink/[0.08] pb-0">
+          <div className="mb-4 flex items-center gap-1 border-b border-ca-ink/[0.08] pb-0">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -126,6 +128,17 @@ export function LessonVideoSection({
                 )}
               </button>
             ))}
+            {hasTranscript && (
+              <button
+                onClick={() => openTranscriptRef.current?.()}
+                className="ml-auto flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-bold text-ca-ink-soft transition-colors hover:text-ca-violet"
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 8h4M7 12h10M7 16h6" />
+                </svg>
+                Transcripción
+              </button>
+            )}
           </div>
 
           {/* Tab content */}
@@ -136,6 +149,8 @@ export function LessonVideoSection({
               glossary={summary.glossary}
               modelUsed={summary.model_used}
               generatedAt={summary.generated_at}
+              chapters={chapters}
+              onSeek={(time) => seekRef.current?.(time)}
             />
           )}
 

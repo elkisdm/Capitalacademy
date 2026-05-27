@@ -43,14 +43,18 @@ export default async function LessonPage(
   const enrollment = await getEnrollmentForUser(user.id, cohortId);
   if (!enrollment) notFound();
 
-  const lesson = await getLessonById(lessonId);
+  const [lesson, cohort] = await Promise.all([
+    getLessonById(lessonId),
+    getCohortWithProgram(cohortId),
+  ]);
   if (!lesson) notFound();
-
-  const cohort = await getCohortWithProgram(cohortId);
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string };
-  const modules = await getModulesWithLessons(program.id, enrollment.id);
+  const [modules, progress] = await Promise.all([
+    getModulesWithLessons(program.id, enrollment.id),
+    getLessonProgress(enrollment.id, lessonId),
+  ]);
   const currentModule = modules.find((m) => m.id === moduleId);
   const siblingLessons = currentModule?.lessons ?? [];
   const idx = siblingLessons.findIndex((l) => l.id === lessonId);
@@ -73,8 +77,6 @@ export default async function LessonPage(
       </div>
     );
   }
-
-  const progress = await getLessonProgress(enrollment.id, lessonId);
 
   const muxPlaybackId = (lesson as Record<string, unknown>).mux_playback_id as string | null;
   const videoDuration = (lesson as Record<string, unknown>).video_duration_seconds as number | null;
@@ -135,10 +137,40 @@ export default async function LessonPage(
     <div className="ca-fade-up mx-auto w-full max-w-[1600px] px-4 py-4 md:px-8 md:py-6">
       <div className="mb-5">
         <Breadcrumb items={[
-          { label: program.name, onClick: undefined },
-          { label: `Módulo ${String(currentModule?.position ?? 0).padStart(2, "0")}`, onClick: undefined },
+          { label: program.name, href: `/classroom/${cohortSlug}` },
+          { label: `Módulo ${String(currentModule?.position ?? 0).padStart(2, "0")}`, href: `/classroom/${cohortSlug}/${moduleSlug}` },
           { label: `Lec. ${String(idx + 1).padStart(2, "0")} · ${lesson.title}` },
         ]} />
+      </div>
+
+      {/* Title block — above the video */}
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            <span>Lección {String(idx + 1).padStart(2, "0")} de {siblingLessons.length}</span>
+            <span className="opacity-40">·</span>
+            <span>{fmtDuration(videoDuration)}</span>
+            <span className="opacity-40">·</span>
+            <StatusPill status={progress?.completed ? "completed" : (progress && watchPct > 0) ? "in_progress" : "available"} size="sm" />
+          </div>
+          <h1 className="text-[28px] font-black leading-tight tracking-tight text-ca-ink">
+            {lesson.title}
+          </h1>
+          {lesson.description && (
+            <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ca-ink-soft">
+              {lesson.description}
+            </p>
+          )}
+        </div>
+        {currentModule?.teacher?.full_name && (
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Avatar initials={currentModule.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={36} />
+            <div className="text-right">
+              <div className="text-[13px] font-bold tracking-tight text-ca-ink">{currentModule.teacher.full_name}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">Instructor</div>
+            </div>
+          </div>
+        )}
       </div>
 
       <VideoSyncProvider>
@@ -167,6 +199,7 @@ export default async function LessonPage(
               currentUserId={user.id}
               currentUserName={userName}
               currentUserInitials={userInitials}
+              hasTranscript={!!transcriptVtt}
             />
           ) : (
             <div className="video-stage flex aspect-video items-center justify-center rounded-[18px]">
@@ -191,27 +224,6 @@ export default async function LessonPage(
               </div>
             </div>
           )}
-
-          {/* Title block */}
-          <div className="mt-5 flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-                <span>Lección {String(idx + 1).padStart(2, "0")} de {siblingLessons.length}</span>
-                <span className="opacity-40">·</span>
-                <span>{fmtDuration(videoDuration)}</span>
-                <span className="opacity-40">·</span>
-                <StatusPill status={progress?.completed ? "completed" : (progress && watchPct > 0) ? "in_progress" : "available"} size="sm" />
-              </div>
-              <h1 className="text-[28px] font-black leading-tight tracking-tight text-ca-ink">
-                {lesson.title}
-              </h1>
-              {lesson.description && (
-                <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ca-ink-soft">
-                  {lesson.description}
-                </p>
-              )}
-            </div>
-          </div>
 
           {/* Prev / Next */}
           <div className="mt-10 grid gap-3 md:grid-cols-2">

@@ -137,8 +137,27 @@ export function TranscriptPanel({
     return segments.filter((s) => s.text.toLowerCase().includes(lower));
   }, [segments, search]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
-    if (activeIdx == null || userScrolledRef.current || search) return;
+    if (activeIdx == null || search) return;
+
+    if (!initialScrollDone.current) {
+      initialScrollDone.current = true;
+      requestAnimationFrame(() => {
+        const el = itemRefs.current.get(activeIdx);
+        const container = scrollRef.current;
+        if (!el || !container) return;
+        const elTop = el.offsetTop;
+        const elHeight = el.offsetHeight;
+        const containerHeight = container.clientHeight;
+        const targetScroll = elTop - containerHeight / 2 + elHeight / 2;
+        container.scrollTo({ top: Math.max(0, targetScroll), behavior: "instant" });
+      });
+      return;
+    }
+
+    if (userScrolledRef.current) return;
     const el = itemRefs.current.get(activeIdx);
     const container = scrollRef.current;
     if (!el || !container) return;

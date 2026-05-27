@@ -351,6 +351,8 @@ export function VideoPlayer({
           startPosition: initialPosition,
           enableWorker: true,
           lowLatencyMode: false,
+          subtitleDisplay: true,
+          renderTextTracksNatively: true,
         });
         hlsRef.current = hls;
         hls.loadSource(hlsUrl);
@@ -358,6 +360,9 @@ export function VideoPlayer({
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setReady(true);
+          if (ccEnabled && hls.subtitleTracks.length > 0) {
+            hls.subtitleTrack = 0;
+          }
         });
 
         hls.on(Hls.Events.ERROR, (_event, data) => {

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Logo, Avatar } from "./primitives";
-import { SearchPanel } from "./search-panel";
 
 const ICON_PATHS: Record<string, React.ReactNode> = {
   home: <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></>,
@@ -128,12 +127,6 @@ function SidebarContent({
             />
           ))}
         </div>
-
-        {!collapsed && cohortId && (
-          <div className="mt-3 mb-3">
-            <SearchPanel cohortId={cohortId} />
-          </div>
-        )}
 
         {opsItems.length > 0 && (
           <>
@@ -309,12 +302,6 @@ export function ClassroomSidebar({
                   />
                 ))}
               </div>
-
-              {cohortId && (
-                <div className="mt-3 mb-3">
-                  <SearchPanel cohortId={cohortId} />
-                </div>
-              )}
 
               {navItems.some((i) => i.section === "ops") && (
                 <>

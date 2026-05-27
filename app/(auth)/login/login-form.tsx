@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
@@ -80,6 +81,15 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           placeholder="••••••••"
           className="w-full rounded-xl border border-ca-ink/[0.12] bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet focus:ring-2 focus:ring-ca-violet/20"
         />
+      </div>
+
+      <div className="flex justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-[12px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
       </div>
 
       <button

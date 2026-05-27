@@ -23,6 +23,14 @@ export function SetPasswordForm() {
   const [saving, setSaving] = useState(false);
 
   const exchangeCode = useCallback(async () => {
+    const supabase = createClient();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setStep("form");
+      return;
+    }
+
     const code = searchParams.get("code");
     if (!code) {
       setErrorMsg("Enlace de invitación inválido o expirado.");
@@ -30,7 +38,6 @@ export function SetPasswordForm() {
       return;
     }
 
-    const supabase = createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
@@ -80,7 +87,20 @@ export function SetPasswordForm() {
     }
 
     setStep("success");
-    setTimeout(() => router.push("/onboarding/complete-profile"), 1500);
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    let redirectPath = "/onboarding/complete-profile";
+    if (currentUser) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed_at")
+        .eq("id", currentUser.id)
+        .single();
+      if (profile?.onboarding_completed_at) {
+        redirectPath = "/classroom";
+      }
+    }
+    setTimeout(() => router.push(redirectPath), 1500);
   }
 
   return (
@@ -128,6 +148,22 @@ export function SetPasswordForm() {
             <p className="text-sm" style={{ color: "#6b6e8a" }}>
               {errorMsg}
             </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <a
+                href="/login"
+                className="rounded-lg px-4 py-2.5 text-sm font-bold text-white"
+                style={{ background: "#5e17eb" }}
+              >
+                Ir al login
+              </a>
+              <a
+                href="/forgot-password"
+                className="text-sm font-semibold"
+                style={{ color: "#5e17eb" }}
+              >
+                Recuperar contraseña
+              </a>
+            </div>
           </div>
         )}
 

@@ -16,6 +16,7 @@ type ProfileData = {
   linkedin_url: string | null;
   bio: string | null;
   avatar_url: string | null;
+  birthday: string | null;
   system_role: string;
   created_at: string;
   emergency_contact_name: string | null;
@@ -172,6 +173,147 @@ const ROLE_LABELS: Record<string, string> = {
   user: "Alumno",
 };
 
+function formatDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function isoToDisplay(iso: string | null): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "";
+  return `${d}/${m}/${y}`;
+}
+
+function displayToIso(display: string): string | null {
+  const digits = display.replace(/\D/g, "");
+  if (digits.length !== 8) return null;
+  const d = parseInt(digits.slice(0, 2));
+  const m = parseInt(digits.slice(2, 4));
+  const y = parseInt(digits.slice(4, 8));
+  if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900 || y > 2100) return null;
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+function DateField({
+  label,
+  value,
+  onSave,
+}: {
+  label: string;
+  value: string | null;
+  onSave: (iso: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(isoToDisplay(value));
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editing]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDraft(formatDateInput(e.target.value));
+  };
+
+  const iso = displayToIso(draft);
+  const isValid = !!iso;
+
+  const handleSave = async () => {
+    if (!iso) return;
+    setSaving(true);
+    await onSave(iso);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && isValid) handleSave();
+    if (e.key === "Escape") {
+      setDraft(isoToDisplay(value));
+      setEditing(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="ca-card group relative overflow-hidden px-4 py-3.5">
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+          {label}
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="numeric"
+            placeholder="DD/MM/AAAA"
+            value={draft}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            maxLength={10}
+            className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 font-mono text-[14px] font-medium text-ca-ink outline-none focus:border-ca-violet"
+            style={{ borderColor: "rgba(20,22,58,0.12)" }}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving || !isValid}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white disabled:opacity-40"
+            style={{ background: "var(--color-ca-violet)" }}
+          >
+            <CheckIcon />
+          </button>
+          <button
+            onClick={() => { setDraft(isoToDisplay(value)); setEditing(false); }}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+          >
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {draft.length > 0 && !isValid && (
+          <p className="mt-1 text-[11px] text-ca-ink-soft">Formato: DD/MM/AAAA</p>
+        )}
+      </div>
+    );
+  }
+
+  const display = isoToDisplay(value);
+  return (
+    <div
+      className="ca-card group relative cursor-pointer overflow-hidden px-4 py-3.5 transition-all hover:border-ca-ink/[0.14]"
+      onClick={() => { setDraft(isoToDisplay(value)); setEditing(true); }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+          {label}
+        </div>
+        <span className="text-ca-ink-soft opacity-0 transition-opacity group-hover:opacity-100">
+          <PencilIcon />
+        </span>
+      </div>
+      {display ? (
+        <div className="mt-1 flex items-center gap-2 text-[14px] font-semibold text-ca-ink">
+          <CalendarIcon />
+          {display}
+        </div>
+      ) : (
+        <div className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--color-ca-violet)" }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Agregar cumpleaños
+        </div>
+      )}
+    </div>
+  );
+}
+
 type InfoFieldProps = {
   label: string;
   value: string | null;
@@ -278,9 +420,31 @@ function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps
 export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentProfileClientProps) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const initials = getInitials(profile.full_name, profile.email);
   const displayName = profile.full_name || profile.email;
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/classroom/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        router.refresh();
+      }
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
 
   const saveField = async (field: string, value: string) => {
     await fetch("/api/onboarding/complete-profile", {
@@ -308,20 +472,45 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
       <div className="ca-card relative mb-6 overflow-hidden p-6 md:p-8">
         <BrandShapes variant="corner-violet" />
         <div className="relative flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-          <div
-            className="shape-circle grid shrink-0 place-items-center font-black text-white"
-            style={{
-              width: 96,
-              height: 96,
-              fontSize: 32,
-              background: profile.avatar_url ? "transparent" : "var(--color-ca-violet)",
-            }}
-          >
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-            ) : (
-              initials
-            )}
+          <div className="relative shrink-0">
+            <div
+              className="shape-circle grid place-items-center font-black text-white"
+              style={{
+                width: 96,
+                height: 96,
+                fontSize: 32,
+                background: profile.avatar_url ? "transparent" : "var(--color-ca-violet)",
+              }}
+            >
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+              ) : (
+                initials
+              )}
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-ca-violet text-white transition-transform hover:scale-110 disabled:opacity-50"
+              title="Cambiar foto"
+            >
+              {uploadingAvatar ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+            </button>
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
@@ -399,10 +588,10 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
             type="url"
             onSave={(v) => saveField("linkedin_url", v)}
           />
-          <InfoField
+          <DateField
             label="Cumpleaños"
-            value={null}
-            onSave={() => Promise.resolve()}
+            value={profile.birthday}
+            onSave={(v) => saveField("birthday", v)}
           />
         </div>
 

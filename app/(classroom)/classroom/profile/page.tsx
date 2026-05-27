@@ -56,6 +56,7 @@ export default async function ProfilePage() {
           linkedin_url: profile.linkedin_url,
           bio: profile.bio,
           avatar_url: profile.avatar_url,
+          birthday: ((profile as unknown as Record<string, unknown>).birthday as string) ?? null,
           system_role: profile.system_role,
           created_at: profile.created_at,
           emergency_contact_name: profile.emergency_contact_name,

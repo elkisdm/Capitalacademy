@@ -15,6 +15,7 @@ type CompleteProfileBody = {
   address?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+  birthday?: string;
 };
 
 export async function PATCH(req: Request) {
@@ -45,6 +46,7 @@ export async function PATCH(req: Request) {
     address,
     emergency_contact_name,
     emergency_contact_phone,
+    birthday,
   } = body as CompleteProfileBody;
 
   if (!full_name || !phone || !rut) {
@@ -61,21 +63,24 @@ export async function PATCH(req: Request) {
     );
   }
 
+  const updateData: Record<string, unknown> = {
+    full_name,
+    phone,
+    rut,
+    company: company ?? null,
+    job_title: job_title ?? null,
+    linkedin_url: linkedin_url ?? null,
+    bio: bio ?? null,
+    address: address ?? null,
+    emergency_contact_name: emergency_contact_name ?? null,
+    emergency_contact_phone: emergency_contact_phone ?? null,
+    onboarding_completed_at: new Date().toISOString(),
+  };
+  if (birthday !== undefined) updateData.birthday = birthday ?? null;
+
   const { data: profile, error } = await supabase
     .from("profiles")
-    .update({
-      full_name,
-      phone,
-      rut,
-      company: company ?? null,
-      job_title: job_title ?? null,
-      linkedin_url: linkedin_url ?? null,
-      bio: bio ?? null,
-      address: address ?? null,
-      emergency_contact_name: emergency_contact_name ?? null,
-      emergency_contact_phone: emergency_contact_phone ?? null,
-      onboarding_completed_at: new Date().toISOString(),
-    })
+    .update(updateData as never)
     .eq("id", user.id)
     .select()
     .single();

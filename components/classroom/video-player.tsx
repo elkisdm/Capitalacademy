@@ -16,11 +16,10 @@ export function VideoPlayer({
   lessonId,
   durationSeconds,
   initialPosition = 0,
-  title,
 }: VideoPlayerProps) {
   const [watchPercentage, setWatchPercentage] = useState(0);
   const [completed, setCompleted] = useState(false);
-  const [playerMode, setPlayerMode] = useState<"mux" | "mp4" | "loading">("loading");
+  const [error, setError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const onProgressUpdate = useCallback(
@@ -39,60 +38,32 @@ export function VideoPlayer({
   });
 
   useEffect(() => {
-    const mp4Url = `https://stream.mux.com/${playbackId}/medium.mp4`;
-    fetch(mp4Url, { method: "HEAD" })
-      .then((res) => {
-        setPlayerMode(res.ok ? "mp4" : "mux");
-      })
-      .catch(() => {
-        setPlayerMode("mux");
-      });
-  }, [playbackId]);
-
-  useEffect(() => {
-    if (playerMode === "mp4" && videoRef.current && initialPosition > 0) {
+    if (videoRef.current && initialPosition > 0) {
       videoRef.current.currentTime = initialPosition;
     }
-  }, [playerMode, initialPosition]);
+  }, [initialPosition]);
 
-  if (playerMode === "loading") {
+  if (error) {
     return (
       <div className="video-stage flex aspect-video items-center justify-center rounded-[18px]">
-        <div className="ca-spin-slow h-8 w-8 rounded-full border-2 border-white border-r-transparent" />
-      </div>
-    );
-  }
-
-  if (playerMode === "mp4") {
-    return (
-      <div className="space-y-2">
-        <video
-          ref={videoRef}
-          controls
-          className="aspect-video w-full rounded-[18px] bg-black"
-          src={`https://stream.mux.com/${playbackId}/medium.mp4`}
-          poster={`https://image.mux.com/${playbackId}/thumbnail.webp?time=30`}
-          onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
-          onPause={handlePause}
-          onEnded={handleEnded}
-        />
-        <div className="flex items-center gap-3 text-sm" style={{ color: "var(--color-ca-ink-soft)" }}>
-          <div className="flex-1">
-            <div className="shape-circle h-1.5 w-full overflow-hidden" style={{ background: "var(--color-ca-ink, rgba(20,22,58,0.08))" }}>
-              <div
-                className="h-1.5 rounded-full bg-ca-violet transition-all duration-300"
-                style={{ width: `${Math.min(watchPercentage, 100)}%` }}
-              />
-            </div>
+        <div className="max-w-md text-center">
+          <div className="mb-3 mx-auto grid h-14 w-14 place-items-center rounded-full bg-white/10">
+            <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+            </svg>
           </div>
-          <span className="shrink-0 font-mono text-[12px] tabular-nums">
-            {Math.round(watchPercentage)}% visto
-          </span>
-          {completed && (
-            <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(168,211,16,0.18)", color: "#3f5a05" }}>
-              Completado
-            </span>
-          )}
+          <p className="text-[14px] font-semibold text-white/80">
+            No se pudo cargar el video
+          </p>
+          <p className="mt-1 text-[12px] text-white/50">
+            Intenta recargar la página o verifica tu conexión a internet
+          </p>
+          <button
+            onClick={() => { setError(false); videoRef.current?.load(); }}
+            className="mt-4 rounded-full bg-white/10 px-5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/20"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -100,16 +71,19 @@ export function VideoPlayer({
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        <mux-player
-          playback-id={playbackId}
-          start-time={String(initialPosition)}
-          stream-type="on-demand"
-          accent-color="#5e17eb"
-          className="aspect-video w-full rounded-[18px]"
-          style={{ aspectRatio: "16/9", width: "100%", borderRadius: 18 }}
-        />
-      </div>
+      <video
+        ref={videoRef}
+        controls
+        playsInline
+        preload="metadata"
+        className="aspect-video w-full rounded-[18px] bg-black"
+        src={`https://stream.mux.com/${playbackId}/medium.mp4`}
+        poster={`https://image.mux.com/${playbackId}/thumbnail.webp?time=30`}
+        onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
+        onPause={handlePause}
+        onEnded={handleEnded}
+        onError={() => setError(true)}
+      />
       <div className="flex items-center gap-3 text-sm" style={{ color: "var(--color-ca-ink-soft)" }}>
         <div className="flex-1">
           <div className="shape-circle h-1.5 w-full overflow-hidden" style={{ background: "var(--color-ca-ink, rgba(20,22,58,0.08))" }}>
@@ -130,20 +104,4 @@ export function VideoPlayer({
       </div>
     </div>
   );
-}
-
-declare module "react" {
-  namespace JSX {
-    interface IntrinsicElements {
-      "mux-player": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          "playback-id"?: string;
-          "start-time"?: string;
-          "stream-type"?: string;
-          "accent-color"?: string;
-        },
-        HTMLElement
-      >;
-    }
-  }
 }

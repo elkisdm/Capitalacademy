@@ -277,7 +277,7 @@ export default async function LessonPage(
               {siblingLessons.map((l, i) => {
                 const st = getLessonStatus(l);
                 const active = l.id === lessonId;
-                const locked = st === "locked" || st === "no_video";
+                const locked = st === "locked";
                 return (
                   <Link
                     key={l.id}

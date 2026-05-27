@@ -60,6 +60,16 @@ export async function POST(req: Request) {
         process.env.MUX_SIGNING_KEY_ID ? "signed" : "public",
       ],
       encoding_tier: "baseline",
+      input: [
+        {
+          generated_subtitles: [
+            {
+              language_code: "es",
+              name: "Español CC",
+            },
+          ],
+        },
+      ],
     },
     cors_origin: req.headers.get("origin") ?? "*",
   });

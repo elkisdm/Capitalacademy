@@ -23,9 +23,16 @@ export default async function ClassroomLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role, system_role")
+    .select("full_name, role, system_role, onboarding_completed_at")
     .eq("id", user.id)
     .single();
+
+  const sysRole = profile?.system_role ?? profile?.role;
+  const isStaff = sysRole === "admin" || sysRole === "ops";
+
+  if (profile && !profile.onboarding_completed_at && !isStaff) {
+    redirect("/onboarding/complete-profile");
+  }
 
   const { data: enrollment } = await supabase
     .from("enrollments")
@@ -43,9 +50,6 @@ export default async function ClassroomLayout({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const sysRole = profile?.system_role ?? profile?.role;
-  const isStaff = sysRole === "admin" || sysRole === "ops";
 
   // Resolve cohort slug for clean URLs
   const cohortSlug = enrollment?.cohort_id

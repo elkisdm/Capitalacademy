@@ -14,6 +14,7 @@ type CsvImportModalProps = {
   open: boolean;
   onClose: () => void;
   cohorts: CohortOption[];
+  existingEmails?: string[];
 };
 
 type ParsedRow = {
@@ -168,7 +169,7 @@ function StatusDot({ estado }: { estado: ParsedRow["estado"] }) {
   );
 }
 
-export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) {
+export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: CsvImportModalProps) {
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(0);
   const [fileName, setFileName] = useState("");
@@ -207,6 +208,7 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
   };
 
   const processRawData = useCallback((data: Record<string, string>[]) => {
+    const existingSet = new Set(existingEmails.map((e) => e.toLowerCase()));
     const emailsSeen = new Set<string>();
     const parsed: ParsedRow[] = [];
 
@@ -229,6 +231,9 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
       } else if (emailsSeen.has(email)) {
         estado = "duplicate";
         errorMsg = "Email duplicado en el archivo";
+      } else if (existingSet.has(email)) {
+        estado = "duplicate";
+        errorMsg = "Email ya registrado en la plataforma";
       }
 
       emailsSeen.add(email);
@@ -247,7 +252,7 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
 
     setRows(parsed);
     setStep(1);
-  }, []);
+  }, [existingEmails]);
 
   const parseFile = useCallback((file: File) => {
     setFileName(file.name);
@@ -333,23 +338,39 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
 
       const data = await res.json();
 
+      const errorMap = new Map<string, string>();
+      for (const err of data.errors ?? []) {
+        const raw: string = err.reason ?? "";
+        let friendly = raw;
+        if (raw.includes("already been registered") || raw.includes("duplicate"))
+          friendly = "Email ya registrado";
+        else if (raw.includes("unique or exclusion constraint"))
+          friendly = "Ya asignado a esta cohorte";
+        else if (raw.includes("Perfil:"))
+          friendly = "Error al crear perfil";
+        else if (raw.includes("Enrollment:"))
+          friendly = "Error al matricular";
+        else if (raw.includes("Rol:"))
+          friendly = "Error al asignar rol";
+        errorMap.set(err.email, friendly);
+      }
+
       const details: ImportResult["details"] = [];
       for (const row of selected) {
-        const err = data.errors?.find((e: { email: string }) => e.email === row.email);
-        if (err) {
-          details.push({ email: row.email, status: "invalid", reason: err.reason });
+        const reason = errorMap.get(row.email);
+        if (reason) {
+          details.push({ email: row.email, status: "invalid", reason });
         } else {
           details.push({ email: row.email, status: "created" });
         }
       }
 
       const skipped = rows.filter((r) => !r.selected).length;
-      const errCount = data.errors?.length ?? 0;
 
       setResult({
-        created: selected.length - errCount,
+        created: data.created ?? 0,
         skipped,
-        invalid: errCount,
+        invalid: errorMap.size,
         details,
       });
       setStep(2);

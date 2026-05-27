@@ -21,15 +21,15 @@ const STATUS_CONFIG: Record<
 
 type LessonCardProps = {
   lesson: LessonWithProgress;
-  cohortId: string;
-  moduleId: string;
+  cohortSlug: string;
+  moduleSlug: string;
   index: number;
 };
 
 export function LessonCard({
   lesson,
-  cohortId,
-  moduleId,
+  cohortSlug,
+  moduleSlug,
   index,
 }: LessonCardProps) {
   const status = getLessonStatus(lesson);
@@ -98,7 +98,7 @@ export function LessonCard({
 
   return (
     <Link
-      href={`/classroom/${cohortId}/${moduleId}/${lesson.id}`}
+      href={`/classroom/${cohortSlug}/${moduleSlug}/${lesson.slug ?? lesson.id}`}
       prefetch={false}
     >
       {content}

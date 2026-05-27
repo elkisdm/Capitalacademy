@@ -194,7 +194,7 @@ export async function POST(req: Request) {
           role: "student" as const,
           granted_by: user.id,
         },
-        { onConflict: "user_id,cohort_id" },
+        { onConflict: "user_id,cohort_id,role" },
       );
 
       if (roleError) {

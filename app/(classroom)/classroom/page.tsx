@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCohortSlugById } from "@/lib/classroom/queries";
 
 export default async function ClassroomIndexPage() {
   const supabase = await createClient();
@@ -19,7 +20,8 @@ export default async function ClassroomIndexPage() {
     .single();
 
   if (enrollment) {
-    redirect(`/classroom/${enrollment.cohort_id}`);
+    const slug = await getCohortSlugById(enrollment.cohort_id);
+    redirect(`/classroom/${slug ?? enrollment.cohort_id}`);
   }
 
   return (

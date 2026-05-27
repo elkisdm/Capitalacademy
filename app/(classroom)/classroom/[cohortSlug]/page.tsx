@@ -6,6 +6,7 @@ import {
   getCohortWithProgram,
   getModulesWithLessons,
 } from "@/lib/classroom/queries";
+import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import {
   BrandShapes,
@@ -21,7 +22,7 @@ function fmtUnlock(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-function ModuleCard({ mod, cohortId }: { mod: ModuleWithLessons; cohortId: string }) {
+function ModuleCard({ mod, cohortSlug }: { mod: ModuleWithLessons; cohortSlug: string }) {
   const progress = calculateModuleProgress(mod.lessons);
   const isLocked = mod.lessons.length > 0 && mod.lessons.every((l) => l.unlock_at && new Date(l.unlock_at) > new Date());
   const hasProgress = progress.percentage > 0;
@@ -32,7 +33,7 @@ function ModuleCard({ mod, cohortId }: { mod: ModuleWithLessons; cohortId: strin
 
   return (
     <Link
-      href={isLocked ? "#" : `/classroom/${cohortId}/${mod.id}`}
+      href={isLocked ? "#" : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}`}
       className={`ca-card ca-card-hoverable group relative overflow-hidden ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
       aria-disabled={isLocked}
       tabIndex={isLocked ? -1 : undefined}
@@ -131,9 +132,12 @@ function ModuleCard({ mod, cohortId }: { mod: ModuleWithLessons; cohortId: strin
 }
 
 export default async function CohortDashboardPage(
-  props: { params: Promise<{ cohortId: string }> },
+  props: { params: Promise<{ cohortSlug: string }> },
 ) {
-  const { cohortId } = await props.params;
+  const { cohortSlug } = await props.params;
+
+  const cohortId = await resolveCohortSlug(cohortSlug);
+  if (!cohortId) notFound();
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -194,7 +198,7 @@ export default async function CohortDashboardPage(
             <div className="mt-7 flex flex-wrap items-center gap-3">
               {currentModule && currentLesson && (
                 <Link
-                  href={`/classroom/${cohortId}/${currentModule.id}/${currentLesson.id}`}
+                  href={`/classroom/${cohortSlug}/${currentModule.slug ?? currentModule.id}/${currentLesson.slug ?? currentLesson.id}`}
                   className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
                 >
                   <svg width={16} height={16} viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" /></svg>
@@ -287,7 +291,7 @@ export default async function CohortDashboardPage(
               )}
             </div>
             <Link
-              href={`/classroom/${cohortId}/${currentModule.id}/${currentLesson.id}`}
+              href={`/classroom/${cohortSlug}/${currentModule.slug ?? currentModule.id}/${currentLesson.slug ?? currentLesson.id}`}
               className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
             >
               <svg width={16} height={16} viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" /></svg>
@@ -312,7 +316,7 @@ export default async function CohortDashboardPage(
       {/* Module cards grid */}
       <div className="grid gap-5 lg:grid-cols-2">
         {modules.map((mod) => (
-          <ModuleCard key={mod.id} mod={mod} cohortId={cohortId} />
+          <ModuleCard key={mod.id} mod={mod} cohortSlug={cohortSlug} />
         ))}
       </div>
 

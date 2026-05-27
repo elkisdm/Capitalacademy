@@ -138,7 +138,7 @@ function countByFilter(users: AdminUserListItem[], filter: Filter): number {
 }
 
 const MENU_HEIGHT_ESTIMATE = 190;
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 function KebabMenu({
   userId,
@@ -585,7 +585,17 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
                           </div>
                         </td>
                         <td className="px-5 py-3.5">
-                          <PlatformBadge role={u.system_role} />
+                          <div className="flex items-center gap-2">
+                            <PlatformBadge role={u.system_role} />
+                            {u.onboarding_completed_at === null && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                style={{ background: "rgba(217,119,6,0.12)", color: "#92400e" }}
+                              >
+                                Pendiente
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-3.5">
                           {cohortBadges.length > 0 ? (
@@ -658,11 +668,23 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
 
                     <div className="flex items-center gap-3 pr-8">
                       <Avatar initials={initials} size={36} />
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="truncate text-[14px] font-bold text-ca-ink">
-                          {u.full_name ?? "Sin nombre"}
-                        </span>
-                        <PlatformBadge role={u.system_role} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-[14px] font-bold text-ca-ink">
+                            {u.full_name ?? "Sin nombre"}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          <PlatformBadge role={u.system_role} />
+                          {u.onboarding_completed_at === null && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                              style={{ background: "rgba(217,119,6,0.12)", color: "#92400e" }}
+                            >
+                              Pendiente
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -783,6 +805,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
           router.refresh();
         }}
         cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+        existingEmails={users.map((u) => u.email)}
       />
 
       <ToastContainer />

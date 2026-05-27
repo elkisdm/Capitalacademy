@@ -16,10 +16,11 @@ export default function NotFound() {
           100% { transform: scale(1.8); opacity: 0 }
         }
         @keyframes nf-glitch {
-          0%, 92%, 100% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); transform: translateX(0) }
-          93% { clip-path: polygon(0 20%, 100% 20%, 100% 35%, 0 35%); transform: translateX(6px) }
-          95% { clip-path: polygon(0 55%, 100% 55%, 100% 65%, 0 65%); transform: translateX(-4px) }
-          97% { clip-path: polygon(0 75%, 100% 75%, 100% 85%, 0 85%); transform: translateX(3px) }
+          0%, 80%, 100% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); transform: translateX(0) }
+          82% { clip-path: polygon(0 15%, 100% 15%, 100% 30%, 0 30%); transform: translateX(8px) }
+          84% { clip-path: polygon(0 50%, 100% 50%, 100% 62%, 0 62%); transform: translateX(-5px) }
+          86% { clip-path: polygon(0 70%, 100% 70%, 100% 82%, 0 82%); transform: translateX(4px) }
+          88% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); transform: translateX(0) }
         }
         @keyframes nf-fade-up {
           from { opacity: 0; transform: translateY(20px) }

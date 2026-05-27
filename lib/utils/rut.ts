@@ -13,6 +13,8 @@ export function formatRut(value: string): string {
   return `${withDots}-${dv}`;
 }
 
+export const validateRut = isValidRut;
+
 export function isValidRut(value: string): boolean {
   const clean = cleanRut(value);
   if (clean.length < 8 || clean.length > 9) return false;

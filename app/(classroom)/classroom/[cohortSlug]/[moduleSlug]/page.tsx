@@ -6,6 +6,7 @@ import {
   getModulesWithLessons,
   getCohortWithProgram,
 } from "@/lib/classroom/queries";
+import { resolveCohortSlug, resolveModuleSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import {
   StatusPill,
@@ -18,11 +19,11 @@ import {
 import type { LessonWithProgress } from "@/lib/classroom/types";
 import { fmtDuration } from "@/lib/classroom/format";
 
-function ChapterRow({ lesson, index, cohortId, moduleId, isLast }: {
+function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
   lesson: LessonWithProgress;
   index: number;
-  cohortId: string;
-  moduleId: string;
+  cohortSlug: string;
+  moduleSlug: string;
   isLast: boolean;
 }) {
   const status = getLessonStatus(lesson);
@@ -125,16 +126,22 @@ function ChapterRow({ lesson, index, cohortId, moduleId, isLast }: {
   if (isLocked) return <div className="border-b border-ca-ink/[0.08]">{inner}</div>;
 
   return (
-    <Link href={`/classroom/${cohortId}/${moduleId}/${lesson.id}`} prefetch={false} className="block border-b border-ca-ink/[0.08]">
+    <Link href={`/classroom/${cohortSlug}/${moduleSlug}/${lesson.slug ?? lesson.id}`} prefetch={false} className="block border-b border-ca-ink/[0.08]">
       {inner}
     </Link>
   );
 }
 
 export default async function ModulePage(
-  props: { params: Promise<{ cohortId: string; moduleId: string }> },
+  props: { params: Promise<{ cohortSlug: string; moduleSlug: string }> },
 ) {
-  const { cohortId, moduleId } = await props.params;
+  const { cohortSlug, moduleSlug } = await props.params;
+
+  const [cohortId, moduleId] = await Promise.all([
+    resolveCohortSlug(cohortSlug),
+    resolveModuleSlug(moduleSlug),
+  ]);
+  if (!cohortId || !moduleId) notFound();
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -244,8 +251,8 @@ export default async function ModulePage(
               key={l.id}
               lesson={l}
               index={i}
-              cohortId={cohortId}
-              moduleId={moduleId}
+              cohortSlug={cohortSlug}
+              moduleSlug={moduleSlug}
               isLast={i === mod.lessons.length - 1}
             />
           ))}
@@ -255,7 +262,7 @@ export default async function ModulePage(
       {/* Pager */}
       <section className="mt-10 grid gap-3 md:grid-cols-2">
         {prev ? (
-          <Link href={`/classroom/${cohortId}/${prev.id}`} className="ca-card ca-card-hoverable p-5 text-left">
+          <Link href={`/classroom/${cohortSlug}/${prev.slug ?? prev.id}`} className="ca-card ca-card-hoverable p-5 text-left">
             <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
               Anterior
@@ -266,7 +273,7 @@ export default async function ModulePage(
           </Link>
         ) : <div />}
         {next ? (
-          <Link href={`/classroom/${cohortId}/${next.id}`} className="ca-card ca-card-hoverable p-5 text-right">
+          <Link href={`/classroom/${cohortSlug}/${next.slug ?? next.id}`} className="ca-card ca-card-hoverable p-5 text-right">
             <div className="flex items-center justify-end gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               Siguiente
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>

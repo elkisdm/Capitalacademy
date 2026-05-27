@@ -42,6 +42,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/api/fintoc") ||
     pathname.startsWith("/api/flow") ||
     pathname.startsWith("/api/webhooks") ||
+    pathname.startsWith("/api/verify") ||
+    pathname.startsWith("/verificar") ||
     pathname === "/sitemap.xml" ||
     pathname === "/robots.txt";
 

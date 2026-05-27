@@ -5,6 +5,16 @@ import type {
   LessonResource,
 } from "./types";
 
+export async function getCohortSlugById(cohortId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cohorts")
+    .select("slug")
+    .eq("id", cohortId)
+    .single();
+  return data?.slug ?? null;
+}
+
 export async function getEnrollmentForUser(userId: string, cohortId: string) {
   const supabase = await createClient();
   const { data } = await supabase

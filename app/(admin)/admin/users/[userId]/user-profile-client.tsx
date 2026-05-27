@@ -320,6 +320,18 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                   {displayName}
                 </h1>
                 <PlatformBadge role={user.system_role} />
+                {user.onboarding_completed_at === null && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                    style={{ background: "rgba(217,119,6,0.12)", color: "#92400e" }}
+                  >
+                    <span
+                      className="shape-circle h-1.5 w-1.5"
+                      style={{ background: "#92400e" }}
+                    />
+                    Onboarding pendiente
+                  </span>
+                )}
               </div>
               <div className="mt-2 flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 text-[13px] font-medium text-ca-ink-soft">
@@ -393,11 +405,12 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                     <button
                       onClick={() => {
                         setActionsOpen(false);
+                        handleSendInvitation();
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
                     >
                       <MailIcon />
-                      Reenviar email de acceso
+                      Enviar invitación
                     </button>
                     <button
                       onClick={() => {

@@ -98,7 +98,7 @@ export async function PUT(req: Request) {
 
   const { data: config, error } = await admin
     .from("quiz_configs")
-    .upsert(row, { onConflict: "program_id" })
+    .upsert(row as never, { onConflict: "program_id" })
     .select()
     .single();
 

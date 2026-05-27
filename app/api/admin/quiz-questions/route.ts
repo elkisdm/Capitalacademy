@@ -147,7 +147,7 @@ export async function PATCH(req: Request) {
 
   const { data: updated, error } = await admin
     .from("quiz_questions")
-    .update(updates)
+    .update(updates as never)
     .eq("id", questionId)
     .select()
     .single();

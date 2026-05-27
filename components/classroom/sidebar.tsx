@@ -1,10 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Logo, Avatar } from "./primitives";
+
+function SidebarTooltip({ label, parentRef }: { label: string; parentRef: React.RefObject<HTMLElement | null> }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  const show = useCallback(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPos({ top: rect.top + rect.height / 2, left: rect.right + 12 });
+    setVisible(true);
+  }, [parentRef]);
+
+  const hide = useCallback(() => setVisible(false), []);
+
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    el.addEventListener("mouseenter", show);
+    el.addEventListener("mouseleave", hide);
+    return () => {
+      el.removeEventListener("mouseenter", show);
+      el.removeEventListener("mouseleave", hide);
+    };
+  }, [parentRef, show, hide]);
+
+  if (!visible || !pos) return null;
+
+  return (
+    <div
+      className="pointer-events-none fixed z-[100] whitespace-nowrap rounded-lg bg-ca-ink px-2.5 py-1.5 text-[11px] font-bold text-white shadow-lg"
+      style={{ top: pos.top, left: pos.left, transform: "translateY(-50%)" }}
+    >
+      {label}
+      <span className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 bg-ca-ink" />
+    </div>
+  );
+}
 
 const ICON_PATHS: Record<string, React.ReactNode> = {
   home: <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></>,
@@ -50,9 +88,12 @@ function NavItemButton({
   collapsed: boolean;
   onClick?: () => void;
 }) {
+  const navRef = useRef<HTMLSpanElement>(null);
+
   const content = (
     <span
-      className={`group relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
+      ref={navRef}
+      className={`relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
         active ? "bg-ca-violet text-white" : "text-ca-ink hover:bg-ca-bg-soft"
       }`}
     >
@@ -69,14 +110,16 @@ function NavItemButton({
           )}
         </>
       )}
-      {active && <span className="shape-circle absolute right-2 top-2 h-1.5 w-1.5 bg-ca-lime" title="En progreso" />}
+      {active && <span className="shape-circle absolute right-2 top-2 h-1.5 w-1.5 bg-ca-lime" />}
     </span>
   );
 
+  const tooltip = collapsed ? <SidebarTooltip label={item.label} parentRef={navRef} /> : null;
+
   if (item.href) {
-    return <Link href={item.href} prefetch={false} onClick={onClick}>{content}</Link>;
+    return <>{tooltip}<Link href={item.href} prefetch={false} onClick={onClick}>{content}</Link></>;
   }
-  return <button type="button" className="w-full" onClick={onClick}>{content}</button>;
+  return <>{tooltip}<button type="button" className="w-full" onClick={onClick}>{content}</button></>;
 }
 
 function SectionLabel({ children, collapsed }: { children: React.ReactNode; collapsed: boolean }) {
@@ -146,30 +189,72 @@ function SidebarContent({
         )}
       </div>
 
-      <div className="border-t border-ca-ink/[0.08] px-3 py-3">
+      <div className={`border-t border-ca-ink/[0.08] px-3 py-3 ${collapsed ? "flex flex-col items-center" : ""}`}>
         {onCollapse && (
-          <div className="mb-2 flex">
+          <div className={`mb-2 flex ${collapsed ? "justify-center" : "justify-end"}`}>
             <button
               onClick={onCollapse}
-              className="shape-circle ml-auto grid h-8 w-8 place-items-center text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
-              aria-label="Colapsar sidebar"
+              className="shape-circle grid h-8 w-8 place-items-center text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+              aria-label={collapsed ? "Expandir menú" : "Minimizar menú"}
+              title={collapsed ? "Expandir menú" : "Minimizar menú"}
             >
               <SvgIcon name={collapsed ? "chevronsRight" : "chevronsLeft"} size={16} />
             </button>
           </div>
         )}
-        <div className={`flex items-center gap-3 rounded-2xl bg-ca-bg-soft p-2 ${collapsed ? "justify-center" : ""}`}>
-          <Avatar initials={userInitials} size={36} accent="bg-ca-lime" />
-          {!collapsed && (
-            <div className="min-w-0 flex-1 leading-tight">
-              <div className="truncate text-[12px] font-bold text-ca-ink">{userName}</div>
-              <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">
-                {ROLE_LABELS[userRole] ?? "Usuario"}
-              </div>
-            </div>
-          )}
-        </div>
+        <ProfileLink userInitials={userInitials} userName={userName} collapsed={collapsed} />
+        <form action="/api/auth/signout" method="POST" className="mt-2">
+          <button
+            type="submit"
+            className={`w-full rounded-xl py-2 text-center text-[11px] font-bold uppercase tracking-[0.1em] text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink ${collapsed ? "px-1" : ""}`}
+            title="Cerrar sesión"
+          >
+            {collapsed ? (
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="mx-auto">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" />
+              </svg>
+            ) : (
+              "Cerrar sesión"
+            )}
+          </button>
+        </form>
       </div>
+    </>
+  );
+}
+
+function ProfileLink({ userInitials, userName, collapsed, onClick }: { userInitials: string; userName: string; collapsed: boolean; onClick?: () => void }) {
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  return (
+    <>
+      {collapsed && <SidebarTooltip label="Mi perfil" parentRef={linkRef} />}
+      <Link
+        ref={linkRef}
+        href="/classroom/profile"
+        prefetch={false}
+        onClick={onClick}
+        className={`group relative flex items-center gap-3 rounded-2xl bg-ca-bg-soft p-2 transition-all hover:bg-ca-violet/[0.08] hover:ring-1 hover:ring-ca-violet/20 ${collapsed ? "justify-center" : ""}`}
+      >
+        <div className="relative">
+          <Avatar initials={userInitials} size={36} accent="bg-ca-lime" />
+          <div className="absolute inset-0 grid place-items-center rounded-full bg-ca-violet/70 opacity-0 transition-opacity group-hover:opacity-100">
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5z" />
+            </svg>
+          </div>
+        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-[12px] font-bold text-ca-ink">{userName}</div>
+            <div className="flex items-center gap-1 text-[10px] font-semibold text-ca-ink-soft transition-colors group-hover:text-ca-violet">
+              <span>Mi perfil</span>
+              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+          </div>
+        )}
+      </Link>
     </>
   );
 }
@@ -322,15 +407,7 @@ export function ClassroomSidebar({
             </div>
 
             <div className="border-t border-ca-ink/[0.08] px-3 py-3">
-              <div className="flex items-center gap-3 rounded-2xl bg-ca-bg-soft p-2">
-                <Avatar initials={userInitials} size={36} accent="bg-ca-lime" />
-                <div className="min-w-0 flex-1 leading-tight">
-                  <div className="truncate text-[12px] font-bold text-ca-ink">{userName}</div>
-                  <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">
-                    {ROLE_LABELS[userRole] ?? "Usuario"}
-                  </div>
-                </div>
-              </div>
+              <ProfileLink userInitials={userInitials} userName={userName} collapsed={false} onClick={() => setMobileOpen(false)} />
               <form action="/api/auth/signout" method="POST" className="mt-2">
                 <button
                   type="submit"

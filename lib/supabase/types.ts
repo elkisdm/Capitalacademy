@@ -98,6 +98,55 @@ export type Database = {
           },
         ]
       }
+      cohort_roles: {
+        Row: {
+          cohort_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["cohort_role_kind"]
+          user_id: string
+        }
+        Insert: {
+          cohort_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["cohort_role_kind"]
+          user_id: string
+        }
+        Update: {
+          cohort_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["cohort_role_kind"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_roles_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohorts: {
         Row: {
           code: string
@@ -229,44 +278,111 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          ip_hash: string | null
+          message: string | null
+          phone: string
+          program_interest: string
+          role: string | null
+          source: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          ip_hash?: string | null
+          message?: string | null
+          phone: string
+          program_interest: string
+          role?: string | null
+          source?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          ip_hash?: string | null
+          message?: string | null
+          phone?: string
+          program_interest?: string
+          role?: string | null
+          source?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       lesson_resources: {
         Row: {
+          created_at: string
+          created_by: string | null
+          file_size_bytes: number | null
           id: string
           lesson_id: string
+          position: number
+          storage_path: string | null
           title: string
           type: Database["public"]["Enums"]["resource_type"]
           url: string
-          storage_path: string | null
-          file_size_bytes: number | null
-          position: number
-          created_by: string | null
-          created_at: string
         }
         Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_size_bytes?: number | null
           id?: string
           lesson_id: string
+          position?: number
+          storage_path?: string | null
           title: string
           type?: Database["public"]["Enums"]["resource_type"]
           url: string
-          storage_path?: string | null
-          file_size_bytes?: number | null
-          position?: number
-          created_by?: string | null
-          created_at?: string
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
+          file_size_bytes?: number | null
           id?: string
           lesson_id?: string
+          position?: number
+          storage_path?: string | null
           title?: string
           type?: Database["public"]["Enums"]["resource_type"]
           url?: string
-          storage_path?: string | null
-          file_size_bytes?: number | null
-          position?: number
-          created_by?: string | null
-          created_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lesson_resources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lesson_resources_lesson_id_fkey"
             columns: ["lesson_id"]
@@ -274,11 +390,104 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      lesson_summaries: {
+        Row: {
+          id: string
+          lesson_id: string
+          key_points: unknown[]
+          summary_text: string
+          glossary: unknown[]
+          model_used: string
+          prompt_version: number
+          generation_count: number
+          is_manually_edited: boolean
+          generated_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          key_points?: unknown[]
+          summary_text?: string
+          glossary?: unknown[]
+          model_used?: string
+          prompt_version?: number
+          generation_count?: number
+          is_manually_edited?: boolean
+          generated_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          key_points?: unknown[]
+          summary_text?: string
+          glossary?: unknown[]
+          model_used?: string
+          prompt_version?: number
+          generation_count?: number
+          is_manually_edited?: boolean
+          generated_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "lesson_resources_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "lesson_summaries_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_transcripts: {
+        Row: {
+          id: string
+          lesson_id: string
+          content_text: string | null
+          content_vtt: string | null
+          language: string
+          status: string
+          error_message: string | null
+          generated_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          content_text?: string | null
+          content_vtt?: string | null
+          language?: string
+          status?: string
+          error_message?: string | null
+          generated_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          content_text?: string | null
+          content_vtt?: string | null
+          language?: string
+          status?: string
+          error_message?: string | null
+          generated_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_transcripts_lesson_id_fkey"
+            columns: ["lesson_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -292,6 +501,7 @@ export type Database = {
           module_id: string
           mux_asset_id: string | null
           mux_playback_id: string | null
+          mux_track_id: string | null
           mux_upload_id: string | null
           position: number
           thumbnail_url: string | null
@@ -307,6 +517,7 @@ export type Database = {
           module_id: string
           mux_asset_id?: string | null
           mux_playback_id?: string | null
+          mux_track_id?: string | null
           mux_upload_id?: string | null
           position: number
           thumbnail_url?: string | null
@@ -322,6 +533,7 @@ export type Database = {
           module_id?: string
           mux_asset_id?: string | null
           mux_playback_id?: string | null
+          mux_track_id?: string | null
           mux_upload_id?: string | null
           position?: number
           thumbnail_url?: string | null
@@ -335,66 +547,6 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "program_modules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      video_progress: {
-        Row: {
-          id: string
-          enrollment_id: string
-          lesson_id: string
-          playback_position_seconds: number
-          duration_seconds: number
-          max_position_seconds: number
-          watch_percentage: number
-          completed: boolean
-          completed_at: string | null
-          source: Database["public"]["Enums"]["video_progress_source"]
-          last_watched_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          enrollment_id: string
-          lesson_id: string
-          playback_position_seconds?: number
-          duration_seconds: number
-          max_position_seconds?: number
-          watch_percentage?: number
-          completed?: boolean
-          completed_at?: string | null
-          source?: Database["public"]["Enums"]["video_progress_source"]
-          last_watched_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          enrollment_id?: string
-          lesson_id?: string
-          playback_position_seconds?: number
-          duration_seconds?: number
-          max_position_seconds?: number
-          watch_percentage?: number
-          completed?: boolean
-          completed_at?: string | null
-          source?: Database["public"]["Enums"]["video_progress_source"]
-          last_watched_at?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "video_progress_enrollment_id_fkey"
-            columns: ["enrollment_id"]
-            isOneToOne: false
-            referencedRelation: "enrollments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "video_progress_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -503,6 +655,7 @@ export type Database = {
           id: string
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          system_role: Database["public"]["Enums"]["system_role"]
           updated_at: string
         }
         Insert: {
@@ -513,6 +666,7 @@ export type Database = {
           id: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          system_role?: Database["public"]["Enums"]["system_role"]
           updated_at?: string
         }
         Update: {
@@ -523,6 +677,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          system_role?: Database["public"]["Enums"]["system_role"]
           updated_at?: string
         }
         Relationships: []
@@ -611,14 +766,82 @@ export type Database = {
         }
         Relationships: []
       }
+      video_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          duration_seconds: number
+          enrollment_id: string
+          id: string
+          last_watched_at: string
+          lesson_id: string
+          max_position_seconds: number
+          playback_position_seconds: number
+          source: Database["public"]["Enums"]["video_progress_source"]
+          watch_percentage: number
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds: number
+          enrollment_id: string
+          id?: string
+          last_watched_at?: string
+          lesson_id: string
+          max_position_seconds?: number
+          playback_position_seconds?: number
+          source?: Database["public"]["Enums"]["video_progress_source"]
+          watch_percentage?: number
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number
+          enrollment_id?: string
+          id?: string
+          last_watched_at?: string
+          lesson_id?: string
+          max_position_seconds?: number
+          playback_position_seconds?: number
+          source?: Database["public"]["Enums"]["video_progress_source"]
+          watch_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_cohort_role: {
+        Args: { p_cohort_id: string }
+        Returns: Database["public"]["Enums"]["cohort_role_kind"]
+      }
+      has_cohort_access: { Args: { p_cohort_id: string }; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
+      is_cohort_staff: { Args: { p_cohort_id: string }; Returns: boolean }
+      is_platform_staff: { Args: never; Returns: boolean }
     }
     Enums: {
+      cohort_role_kind: "student" | "teacher" | "assistant"
       cohort_status: "planned" | "active" | "closed" | "archived"
       enrollment_status:
         | "invited"
@@ -635,6 +858,7 @@ export type Database = {
         | "refunded"
       resource_type: "pdf" | "link" | "template" | "document" | "other"
       session_status: "scheduled" | "in_progress" | "finished" | "cancelled"
+      system_role: "user" | "ops" | "admin"
       user_role: "student" | "teacher" | "ops" | "admin"
       video_progress_source: "player" | "manual" | "system"
     }
@@ -764,6 +988,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cohort_role_kind: ["student", "teacher", "assistant"],
       cohort_status: ["planned", "active", "closed", "archived"],
       enrollment_status: [
         "invited",
@@ -782,6 +1007,7 @@ export const Constants = {
       ],
       resource_type: ["pdf", "link", "template", "document", "other"],
       session_status: ["scheduled", "in_progress", "finished", "cancelled"],
+      system_role: ["user", "ops", "admin"],
       user_role: ["student", "teacher", "ops", "admin"],
       video_progress_source: ["player", "manual", "system"],
     },

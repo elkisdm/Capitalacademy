@@ -201,6 +201,7 @@ export function ClassroomSidebar({
     { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" },
     { icon: "book", label: "Workshop", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" },
     ...(showOps ? [
+      { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
       { icon: "upload", label: "Subir videos", href: "/admin/lessons", section: "ops" as const },
       { icon: "folder", label: "Recursos", href: "/admin/resources", section: "ops" as const },
       { icon: "users", label: "Progreso cohorte", href: "/admin/progress", section: "ops" as const },

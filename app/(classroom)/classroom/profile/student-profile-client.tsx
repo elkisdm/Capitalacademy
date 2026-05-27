@@ -671,7 +671,7 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <CohortRoleBadge role={cr.role} />
                     <StateBadge state={cr.cohort_status as "active" | "completed" | "suspended" | "upcoming"} />
                   </div>

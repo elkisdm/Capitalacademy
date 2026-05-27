@@ -67,7 +67,7 @@ export function StateBadge({ state }: { state: State }) {
   const s = STATE_STYLES[state] ?? STATE_STYLES.active;
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold"
       style={{ background: s.bg, color: s.fg }}
     >
       <span className="shape-circle h-1.5 w-1.5" style={{ background: s.dot }} />

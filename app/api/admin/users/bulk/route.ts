@@ -6,9 +6,14 @@ import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
-  "https://capitalacademy.cl";
+function getBaseUrl(req: Request): string {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
+  }
+  const host = req.headers.get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
 
 type BulkRow = {
   email: string;
@@ -29,6 +34,7 @@ export async function POST(req: Request) {
   const auth = await authorizeAdmin();
   if ("error" in auth) return auth.error;
   const user = auth.user;
+  const baseUrl = getBaseUrl(req);
 
   let body: unknown;
   try {
@@ -148,7 +154,7 @@ export async function POST(req: Request) {
             type: "invite",
             email: row.email,
             options: {
-              redirectTo: `${BASE_URL}/onboarding/set-password`,
+              redirectTo: `${baseUrl}/onboarding/set-password`,
             },
           });
 

@@ -6,13 +6,26 @@ import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
-  "https://capitalacademy.cl";
+function getBaseUrl(req: Request): string {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
+  }
+  const host = req.headers.get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
 
 type SendInvitationBody = {
   userId?: string;
 };
+
+function buildAppConfirmUrl(
+  hashedToken: string,
+  emailType: string,
+  baseUrl: string,
+): string {
+  return `${baseUrl}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=${emailType}&next=${encodeURIComponent("/onboarding/set-password")}`;
+}
 
 export async function POST(req: Request) {
   const auth = await authorizeAdmin();
@@ -68,24 +81,50 @@ export async function POST(req: Request) {
     )?.name ?? "Capital Academy";
 
   const admin = createAdminClient();
+  const baseUrl = getBaseUrl(req);
 
-  const { data: linkData, error: linkError } =
+  let linkData;
+
+  const { data: inviteData, error: inviteError } =
     await admin.auth.admin.generateLink({
       type: "invite",
       email: targetProfile.email,
       options: {
-        redirectTo: `${BASE_URL}/onboarding/set-password`,
+        redirectTo: `${baseUrl}/onboarding/set-password`,
       },
     });
 
-  if (linkError) {
-    return NextResponse.json(
-      { error: `Error al generar enlace de invitación: ${linkError.message}` },
-      { status: 500 },
-    );
+  if (inviteError) {
+    if (inviteError.message.includes("already been registered")) {
+      const { data: recoveryData, error: recoveryError } =
+        await admin.auth.admin.generateLink({
+          type: "recovery",
+          email: targetProfile.email,
+          options: {
+            redirectTo: `${baseUrl}/onboarding/set-password`,
+          },
+        });
+
+      if (recoveryError) {
+        return NextResponse.json(
+          { error: `Error al generar enlace: ${recoveryError.message}` },
+          { status: 500 },
+        );
+      }
+      linkData = recoveryData;
+    } else {
+      return NextResponse.json(
+        { error: `Error al generar enlace de invitación: ${inviteError.message}` },
+        { status: 500 },
+      );
+    }
+  } else {
+    linkData = inviteData;
   }
 
-  const inviteUrl = linkData.properties.action_link;
+  const hashedToken = linkData.properties.hashed_token;
+  const emailType = linkData.properties.verification_type ?? "invite";
+  const inviteUrl = buildAppConfirmUrl(hashedToken, emailType, baseUrl);
 
   const emailResult = await sendInvitationEmail({
     email: targetProfile.email,

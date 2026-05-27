@@ -156,6 +156,7 @@ export type Database = {
           name: string
           program_id: string
           slack_channel_id: string | null
+          slug: string | null
           start_date: string
           status: Database["public"]["Enums"]["cohort_status"]
         }
@@ -167,6 +168,7 @@ export type Database = {
           name: string
           program_id: string
           slack_channel_id?: string | null
+          slug?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["cohort_status"]
         }
@@ -178,6 +180,7 @@ export type Database = {
           name?: string
           program_id?: string
           slack_channel_id?: string | null
+          slug?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["cohort_status"]
         }
@@ -272,6 +275,51 @@ export type Database = {
           {
             foreignKeyName: "enrollments_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_log: {
+        Row: {
+          channel: string
+          email: string
+          id: string
+          sent_at: string
+          sent_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          email: string
+          id?: string
+          sent_at?: string
+          sent_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          email?: string
+          id?: string
+          sent_at?: string
+          sent_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_log_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_log_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -392,6 +440,96 @@ export type Database = {
           },
         ]
       }
+      lesson_comments: {
+        Row: {
+          id: string
+          lesson_id: string
+          author_id: string
+          parent_id: string | null
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          author_id: string
+          parent_id?: string | null
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          author_id?: string
+          parent_id?: string | null
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_comments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_chapters: {
+        Row: {
+          id: string
+          lesson_id: string
+          position_seconds: number
+          title: string
+          sort_order: number
+          is_generated: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          position_seconds: number
+          title: string
+          sort_order?: number
+          is_generated?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          position_seconds?: number
+          title?: string
+          sort_order?: number
+          is_generated?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_chapters_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_summaries: {
         Row: {
           id: string
@@ -451,6 +589,10 @@ export type Database = {
           lesson_id: string
           content_text: string | null
           content_vtt: string | null
+          corrected_text: string | null
+          corrected_vtt: string | null
+          correction_status: string
+          segments_needing_review: number
           language: string
           status: string
           error_message: string | null
@@ -463,6 +605,10 @@ export type Database = {
           lesson_id: string
           content_text?: string | null
           content_vtt?: string | null
+          corrected_text?: string | null
+          corrected_vtt?: string | null
+          correction_status?: string
+          segments_needing_review?: number
           language?: string
           status?: string
           error_message?: string | null
@@ -475,6 +621,10 @@ export type Database = {
           lesson_id?: string
           content_text?: string | null
           content_vtt?: string | null
+          corrected_text?: string | null
+          corrected_vtt?: string | null
+          correction_status?: string
+          segments_needing_review?: number
           language?: string
           status?: string
           error_message?: string | null
@@ -492,6 +642,62 @@ export type Database = {
           },
         ]
       }
+      transcript_segments: {
+        Row: {
+          id: string
+          transcript_id: string
+          segment_index: number
+          start_seconds: number
+          end_seconds: number
+          original_text: string
+          corrected_text: string | null
+          needs_review: boolean
+          review_reason: string | null
+          manually_edited: boolean
+          edited_by: string | null
+          edited_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          transcript_id: string
+          segment_index: number
+          start_seconds: number
+          end_seconds: number
+          original_text: string
+          corrected_text?: string | null
+          needs_review?: boolean
+          review_reason?: string | null
+          manually_edited?: boolean
+          edited_by?: string | null
+          edited_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          transcript_id?: string
+          segment_index?: number
+          start_seconds?: number
+          end_seconds?: number
+          original_text?: string
+          corrected_text?: string | null
+          needs_review?: boolean
+          review_reason?: string | null
+          manually_edited?: boolean
+          edited_by?: string | null
+          edited_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_segments_transcript_id_fkey"
+            columns: ["transcript_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_transcripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           description: string | null
@@ -502,6 +708,7 @@ export type Database = {
           mux_asset_id: string | null
           mux_playback_id: string | null
           mux_track_id: string | null
+          slug: string | null
           mux_upload_id: string | null
           position: number
           thumbnail_url: string | null
@@ -520,6 +727,7 @@ export type Database = {
           mux_track_id?: string | null
           mux_upload_id?: string | null
           position: number
+          slug?: string | null
           thumbnail_url?: string | null
           title: string
           unlock_at?: string | null
@@ -536,6 +744,7 @@ export type Database = {
           mux_track_id?: string | null
           mux_upload_id?: string | null
           position?: number
+          slug?: string | null
           thumbnail_url?: string | null
           title?: string
           unlock_at?: string | null
@@ -648,35 +857,62 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          bio: string | null
+          company: string | null
           created_at: string
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           full_name: string | null
           id: string
+          job_title: string | null
+          linkedin_url: string | null
+          onboarding_completed_at: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          rut: string | null
           system_role: Database["public"]["Enums"]["system_role"]
           updated_at: string
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
           created_at?: string
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string | null
           id: string
+          job_title?: string | null
+          linkedin_url?: string | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          rut?: string | null
           system_role?: Database["public"]["Enums"]["system_role"]
           updated_at?: string
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
           created_at?: string
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string | null
           id?: string
+          job_title?: string | null
+          linkedin_url?: string | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          rut?: string | null
           system_role?: Database["public"]["Enums"]["system_role"]
           updated_at?: string
         }
@@ -689,6 +925,7 @@ export type Database = {
           id: string
           position: number
           program_id: string
+          slug: string | null
           teacher_id: string | null
           title: string
           weight: number | null
@@ -699,6 +936,7 @@ export type Database = {
           id?: string
           position: number
           program_id: string
+          slug?: string | null
           teacher_id?: string | null
           title: string
           weight?: number | null
@@ -709,6 +947,7 @@ export type Database = {
           id?: string
           position?: number
           program_id?: string
+          slug?: string | null
           teacher_id?: string | null
           title?: string
           weight?: number | null

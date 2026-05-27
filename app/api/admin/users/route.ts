@@ -6,11 +6,14 @@ export const runtime = "nodejs";
 
 type CreateUserBody = {
   email?: string;
-  password?: string;
   full_name?: string;
   phone?: string;
   system_role?: "user" | "ops" | "admin";
 };
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
+  "https://capitalacademy.cl";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -39,12 +42,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { email, password, full_name, phone, system_role } =
-    body as CreateUserBody;
+  const { email, full_name, phone, system_role } = body as CreateUserBody;
 
-  if (!email || !password) {
+  if (!email) {
     return NextResponse.json(
-      { error: "email y password son requeridos" },
+      { error: "email es requerido" },
       { status: 422 },
     );
   }
@@ -63,21 +65,24 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
 
-  const { data: authData, error: authError } =
-    await admin.auth.admin.createUser({
+  const { data: linkData, error: linkError } =
+    await admin.auth.admin.generateLink({
+      type: "invite",
       email,
-      password,
-      email_confirm: true,
+      options: {
+        redirectTo: `${BASE_URL}/onboarding/set-password`,
+      },
     });
 
-  if (authError) {
+  if (linkError) {
     return NextResponse.json(
-      { error: authError.message },
+      { error: linkError.message },
       { status: 400 },
     );
   }
 
-  const newUser = authData.user;
+  const newUser = linkData.user;
+  const inviteUrl = linkData.properties.action_link;
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
@@ -99,5 +104,5 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json(profile, { status: 201 });
+  return NextResponse.json({ ...profile, invite_url: inviteUrl }, { status: 201 });
 }

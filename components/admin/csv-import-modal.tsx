@@ -1,0 +1,736 @@
+"use client";
+
+import { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
+import Papa from "papaparse";
+
+type CohortOption = {
+  id: string;
+  name: string;
+};
+
+type CsvImportModalProps = {
+  open: boolean;
+  onClose: () => void;
+  cohorts: CohortOption[];
+};
+
+type ParsedRow = {
+  nombre: string;
+  email: string;
+  telefono: string;
+  cohorte: string;
+  rol: string;
+  estado: "valid" | "duplicate" | "invalid";
+  errorMsg?: string;
+  selected: boolean;
+};
+
+type ImportResult = {
+  created: number;
+  skipped: number;
+  invalid: number;
+  details: Array<{ email: string; status: "created" | "skipped" | "invalid"; reason?: string }>;
+};
+
+function CloseIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon() {
+  return (
+    <svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
+function AlertTriangleIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const STEPS = [
+  { label: "Subir archivo" },
+  { label: "Vista previa" },
+  { label: "Resultados" },
+];
+
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      {STEPS.map((step, i) => (
+        <div key={step.label} className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <div
+              className="shape-circle grid h-6 w-6 place-items-center text-[10px] font-bold"
+              style={{
+                background: i < current
+                  ? "var(--color-ca-lime)"
+                  : i === current
+                    ? "var(--color-ca-violet)"
+                    : "rgba(20,22,58,0.08)",
+                color: i < current
+                  ? "var(--color-ca-ink)"
+                  : i === current
+                    ? "#fff"
+                    : "var(--color-ca-ink-soft)",
+              }}
+            >
+              {i < current ? (
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                i + 1
+              )}
+            </div>
+            <span
+              className="hidden text-[11px] font-bold sm:block"
+              style={{
+                color: i <= current ? "var(--color-ca-ink)" : "var(--color-ca-ink-soft)",
+              }}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div
+              className="h-px w-6"
+              style={{
+                background: i < current ? "var(--color-ca-lime)" : "rgba(20,22,58,0.12)",
+              }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatusDot({ estado }: { estado: ParsedRow["estado"] }) {
+  const styles = {
+    valid: { bg: "rgba(63,90,5,0.15)", color: "#3f5a05", label: "Válido" },
+    duplicate: { bg: "rgba(217,119,6,0.12)", color: "#92400e", label: "Duplicado" },
+    invalid: { bg: "rgba(225,29,72,0.10)", color: "#9f1b3e", label: "Inválido" },
+  };
+  const s = styles[estado];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold"
+      style={{ background: s.bg, color: s.color }}
+    >
+      <span className="shape-circle h-1.5 w-1.5" style={{ background: s.color }} />
+      {s.label}
+    </span>
+  );
+}
+
+export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [step, setStep] = useState(0);
+  const [fileName, setFileName] = useState("");
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [selectedCohortId, setSelectedCohortId] = useState(cohorts[0]?.id ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  const reset = useCallback(() => {
+    setStep(0);
+    setFileName("");
+    setRows([]);
+    setResult(null);
+    setDragOver(false);
+    setImporting(false);
+  }, []);
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const parseCsv = useCallback((file: File) => {
+    setFileName(file.name);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const emailsSeen = new Set<string>();
+        const parsed: ParsedRow[] = [];
+
+        for (const raw of results.data as Record<string, string>[]) {
+          const nombre = (raw.nombre ?? raw.Nombre ?? raw.name ?? raw.full_name ?? "").trim();
+          const email = (raw.email ?? raw.Email ?? raw.correo ?? "").trim().toLowerCase();
+          const telefono = (raw.telefono ?? raw.Telefono ?? raw.phone ?? raw.Teléfono ?? "").trim();
+          const cohorte = (raw.cohorte ?? raw.Cohorte ?? raw.cohort ?? "").trim();
+          const rol = (raw.rol ?? raw.Rol ?? raw.role ?? "student").trim();
+
+          let estado: ParsedRow["estado"] = "valid";
+          let errorMsg: string | undefined;
+
+          if (!nombre || !email) {
+            estado = "invalid";
+            errorMsg = "Nombre y email son requeridos";
+          } else if (!EMAIL_REGEX.test(email)) {
+            estado = "invalid";
+            errorMsg = "Email inválido";
+          } else if (emailsSeen.has(email)) {
+            estado = "duplicate";
+            errorMsg = "Email duplicado en el archivo";
+          }
+
+          emailsSeen.add(email);
+
+          parsed.push({
+            nombre,
+            email,
+            telefono,
+            cohorte,
+            rol,
+            estado,
+            errorMsg,
+            selected: estado === "valid",
+          });
+        }
+
+        setRows(parsed);
+        setStep(1);
+      },
+    });
+  }, []);
+
+  const handleFileDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith(".csv")) {
+        parseCsv(file);
+      }
+    },
+    [parseCsv],
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) parseCsv(file);
+    },
+    [parseCsv],
+  );
+
+  const validCount = rows.filter((r) => r.estado === "valid").length;
+  const duplicateCount = rows.filter((r) => r.estado === "duplicate").length;
+  const invalidCount = rows.filter((r) => r.estado === "invalid").length;
+  const selectedCount = rows.filter((r) => r.selected).length;
+  const allValidSelected = rows.filter((r) => r.estado === "valid").every((r) => r.selected);
+
+  const toggleSelectAll = () => {
+    const newVal = !allValidSelected;
+    setRows((prev) =>
+      prev.map((r) => (r.estado === "valid" ? { ...r, selected: newVal } : r)),
+    );
+  };
+
+  const toggleRow = (index: number) => {
+    setRows((prev) =>
+      prev.map((r, i) => (i === index && r.estado === "valid" ? { ...r, selected: !r.selected } : r)),
+    );
+  };
+
+  const handleImport = async () => {
+    const selected = rows.filter((r) => r.selected);
+    if (selected.length === 0 || !selectedCohortId) return;
+
+    setImporting(true);
+
+    try {
+      const res = await fetch("/api/admin/users/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rows: selected.map((r) => ({
+            email: r.email,
+            full_name: r.nombre,
+            phone: r.telefono || undefined,
+          })),
+          cohort_id: selectedCohortId,
+          send_invitations: false,
+        }),
+      });
+
+      const data = await res.json();
+
+      const details: ImportResult["details"] = [];
+      for (const row of selected) {
+        const err = data.errors?.find((e: { email: string }) => e.email === row.email);
+        if (err) {
+          details.push({ email: row.email, status: "invalid", reason: err.reason });
+        } else {
+          details.push({ email: row.email, status: "created" });
+        }
+      }
+
+      const skipped = rows.filter((r) => !r.selected).length;
+      const errCount = data.errors?.length ?? 0;
+
+      setResult({
+        created: selected.length - errCount,
+        skipped,
+        invalid: errCount,
+        details,
+      });
+      setStep(2);
+    } catch {
+      setResult({
+        created: 0,
+        skipped: 0,
+        invalid: selected.length,
+        details: selected.map((r) => ({
+          email: r.email,
+          status: "invalid",
+          reason: "Error de conexión",
+        })),
+      });
+      setStep(2);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const csv = "nombre,email,telefono\nJuan Pérez,juan@ejemplo.cl,+56912345678";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "plantilla_importacion.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (!open || !mounted) return null;
+
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[60] bg-black/50"
+        onClick={handleClose}
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
+        <div
+          className="flex max-h-[90vh] w-full max-w-[720px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+            <div>
+              <h2 className="text-[18px] font-black tracking-tight text-ca-ink">
+                Importar usuarios
+              </h2>
+              <div className="mt-1">
+                <StepIndicator current={step} />
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="grid h-9 w-9 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {/* Step 0 — Upload */}
+            {step === 0 && (
+              <div className="flex flex-col items-center">
+                {/* Cohort selector */}
+                <div className="mb-6 w-full max-w-sm">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+                    Cohorte destino
+                  </label>
+                  <select
+                    value={selectedCohortId}
+                    onChange={(e) => setSelectedCohortId(e.target.value)}
+                    className="w-full rounded-xl border bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-[var(--color-ca-violet)]"
+                    style={{ borderColor: "rgba(20,22,58,0.12)" }}
+                  >
+                    {cohorts.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Drop zone */}
+                <div
+                  className="flex w-full cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed px-8 py-12 text-center transition-colors"
+                  style={{
+                    borderColor: dragOver
+                      ? "var(--color-ca-violet)"
+                      : "rgba(20,22,58,0.14)",
+                    background: dragOver
+                      ? "rgba(94,23,235,0.04)"
+                      : "var(--color-ca-bg)",
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleFileDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div
+                    className="mb-4 grid h-16 w-16 place-items-center rounded-2xl"
+                    style={{ background: "rgba(94,23,235,0.10)", color: "var(--color-ca-violet)" }}
+                  >
+                    <UploadIcon />
+                  </div>
+                  <p className="text-[15px] font-bold text-ca-ink">
+                    Arrastra tu archivo CSV aquí
+                  </p>
+                  <p className="mt-1 text-[13px] font-medium text-ca-ink-soft">
+                    o haz clic para seleccionar
+                  </p>
+                  <button
+                    type="button"
+                    className="ca-btn-primary mt-5 px-5 py-2.5 text-[13px] font-bold"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    Seleccionar archivo
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+
+                {/* Template link */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); downloadTemplate(); }}
+                  className="mt-4 inline-flex items-center gap-2 text-[12px] font-bold transition-colors hover:text-ca-violet-deep"
+                  style={{ color: "var(--color-ca-violet)" }}
+                >
+                  <DownloadIcon />
+                  Descargar plantilla CSV
+                </button>
+              </div>
+            )}
+
+            {/* Step 1 — Preview */}
+            {step === 1 && (
+              <div>
+                {/* Summary bar */}
+                <div
+                  className="mb-4 flex flex-wrap items-center gap-4 rounded-xl px-4 py-3"
+                  style={{ background: "var(--color-ca-bg)" }}
+                >
+                  <div className="flex items-center gap-2 text-[13px] font-semibold text-ca-ink">
+                    <FileIcon />
+                    {fileName}
+                  </div>
+                  <div className="h-4 w-px" style={{ background: "rgba(20,22,58,0.12)" }} />
+                  <span className="text-[12px] font-bold text-ca-ink-soft">
+                    {rows.length} filas
+                  </span>
+                  <span className="text-[12px] font-bold" style={{ color: "#3f5a05" }}>
+                    {validCount} válidos
+                  </span>
+                  {duplicateCount > 0 && (
+                    <span className="text-[12px] font-bold" style={{ color: "#92400e" }}>
+                      {duplicateCount} duplicados
+                    </span>
+                  )}
+                  {invalidCount > 0 && (
+                    <span className="text-[12px] font-bold" style={{ color: "#9f1b3e" }}>
+                      {invalidCount} inválidos
+                    </span>
+                  )}
+                </div>
+
+                {/* Warning for issues */}
+                {(duplicateCount > 0 || invalidCount > 0) && (
+                  <div
+                    className="mb-4 flex items-start gap-3 rounded-xl px-4 py-3"
+                    style={{ background: "rgba(217,119,6,0.08)" }}
+                  >
+                    <span className="mt-0.5" style={{ color: "#92400e" }}>
+                      <AlertTriangleIcon />
+                    </span>
+                    <p className="text-[12px] font-semibold" style={{ color: "#92400e" }}>
+                      {duplicateCount > 0 && `${duplicateCount} email(s) duplicado(s) serán omitidos. `}
+                      {invalidCount > 0 && `${invalidCount} fila(s) con datos inválidos no se importarán.`}
+                    </p>
+                  </div>
+                )}
+
+                {/* Table */}
+                <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr style={{ background: "var(--color-ca-bg)" }}>
+                        <th className="px-3 py-2.5">
+                          <input
+                            type="checkbox"
+                            checked={allValidSelected}
+                            onChange={toggleSelectAll}
+                            className="h-4 w-4 rounded accent-[var(--color-ca-violet)]"
+                          />
+                        </th>
+                        <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Nombre</th>
+                        <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Email</th>
+                        <th className="hidden px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft sm:table-cell">Teléfono</th>
+                        <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr
+                          key={i}
+                          className="border-t transition-colors hover:bg-ca-bg-soft/50"
+                          style={{
+                            borderColor: "rgba(20,22,58,0.06)",
+                            opacity: row.estado !== "valid" ? 0.6 : 1,
+                          }}
+                        >
+                          <td className="px-3 py-2.5">
+                            <input
+                              type="checkbox"
+                              checked={row.selected}
+                              disabled={row.estado !== "valid"}
+                              onChange={() => toggleRow(i)}
+                              className="h-4 w-4 rounded accent-[var(--color-ca-violet)] disabled:opacity-40"
+                            />
+                          </td>
+                          <td className="px-3 py-2.5 text-[13px] font-semibold text-ca-ink">
+                            {row.nombre || "—"}
+                          </td>
+                          <td className="px-3 py-2.5 text-[13px] font-medium text-ca-ink-soft">
+                            {row.email || "—"}
+                          </td>
+                          <td className="hidden px-3 py-2.5 text-[13px] font-medium text-ca-ink-soft sm:table-cell">
+                            {row.telefono || "—"}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <StatusDot estado={row.estado} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 text-[12px] font-semibold text-ca-ink-soft">
+                  {selectedCount} de {rows.length} filas seleccionadas para importar
+                </div>
+              </div>
+            )}
+
+            {/* Step 2 — Results */}
+            {step === 2 && result && (
+              <div className="flex flex-col items-center text-center">
+                <div
+                  className="mb-4 grid h-20 w-20 place-items-center rounded-full"
+                  style={{ background: "rgba(63,90,5,0.12)", color: "#3f5a05" }}
+                >
+                  <CheckCircleIcon />
+                </div>
+                <h3 className="text-[20px] font-black tracking-tight text-ca-ink">
+                  Importación completada
+                </h3>
+                <p className="mt-1 text-[13px] font-medium text-ca-ink-soft">
+                  El proceso finalizó con los siguientes resultados
+                </p>
+
+                {/* Stat cards */}
+                <div className="mt-6 grid w-full grid-cols-3 gap-3">
+                  <div className="rounded-xl px-4 py-4" style={{ background: "rgba(63,90,5,0.08)" }}>
+                    <div className="font-mono text-[28px] font-black" style={{ color: "#3f5a05" }}>
+                      {result.created}
+                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#3f5a05" }}>
+                      Creados
+                    </div>
+                  </div>
+                  <div className="rounded-xl px-4 py-4" style={{ background: "rgba(217,119,6,0.08)" }}>
+                    <div className="font-mono text-[28px] font-black" style={{ color: "#92400e" }}>
+                      {result.skipped}
+                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#92400e" }}>
+                      Omitidos
+                    </div>
+                  </div>
+                  <div className="rounded-xl px-4 py-4" style={{ background: "rgba(225,29,72,0.08)" }}>
+                    <div className="font-mono text-[28px] font-black" style={{ color: "#9f1b3e" }}>
+                      {result.invalid}
+                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#9f1b3e" }}>
+                      Inválidos
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detail list */}
+                {result.details.length > 0 && (
+                  <div className="mt-5 w-full max-h-[200px] overflow-y-auto rounded-xl border px-4 py-3 text-left" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+                    {result.details.map((d, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 py-1.5"
+                        style={{ borderTop: i > 0 ? "1px solid rgba(20,22,58,0.06)" : undefined }}
+                      >
+                        <span
+                          className="shape-circle h-2 w-2 shrink-0"
+                          style={{
+                            background: d.status === "created"
+                              ? "#3f5a05"
+                              : d.status === "skipped"
+                                ? "#92400e"
+                                : "#9f1b3e",
+                          }}
+                        />
+                        <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-ca-ink">
+                          {d.email}
+                        </span>
+                        {d.reason && (
+                          <span className="text-[11px] font-semibold text-ca-ink-soft">
+                            {d.reason}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            className="flex items-center justify-between border-t px-6 py-4"
+            style={{ borderColor: "rgba(20,22,58,0.08)" }}
+          >
+            <div>
+              {step === 1 && (
+                <button
+                  onClick={() => { setStep(0); setRows([]); setFileName(""); }}
+                  className="inline-flex items-center gap-2 text-[13px] font-bold text-ca-ink-soft transition-colors hover:text-ca-ink"
+                >
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                  Volver
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {step < 2 && (
+                <button
+                  onClick={handleClose}
+                  className="rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors hover:bg-ca-bg-soft"
+                  style={{ borderColor: "rgba(20,22,58,0.14)", color: "var(--color-ca-ink)" }}
+                >
+                  Cancelar
+                </button>
+              )}
+              {step === 1 && (
+                <button
+                  onClick={handleImport}
+                  disabled={selectedCount === 0 || importing}
+                  className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {importing ? "Importando..." : `Importar ${selectedCount} usuarios`}
+                </button>
+              )}
+              {step === 2 && (
+                <>
+                  <button
+                    onClick={handleClose}
+                    className="rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors hover:bg-ca-bg-soft"
+                    style={{ borderColor: "rgba(20,22,58,0.14)", color: "var(--color-ca-ink)" }}
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    className="ca-btn-primary px-5 py-2.5 text-[13px] font-bold"
+                    onClick={() => {
+                      // TODO: trigger re-send invitations for created users
+                      handleClose();
+                    }}
+                  >
+                    Reenviar invitaciones
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}

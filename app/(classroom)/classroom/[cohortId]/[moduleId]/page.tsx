@@ -34,7 +34,6 @@ function ChapterRow({ lesson, index, cohortId, moduleId, isLast }: {
   const isLocked = status === "locked";
   const isActive = status === "in_progress";
   const progress = lesson.video_progress?.watch_percentage ?? 0;
-  const thumb = index % 2 === 0 ? "thumb-diplomado" : "thumb-liderazgo";
 
   const inner = (
     <span
@@ -55,11 +54,21 @@ function ChapterRow({ lesson, index, cohortId, moduleId, isLast }: {
 
       <span className="hidden sm:block">
         <span
-          className={`relative block h-16 w-28 overflow-hidden rounded-xl ${thumb}`}
+          className={`relative block h-16 w-28 overflow-hidden rounded-xl bg-ca-ink/5`}
           style={{ filter: isLocked ? "grayscale(0.7) brightness(0.7)" : "none" }}
         >
-          <span className="shape-circle absolute -right-2 -top-2 h-8 w-8 bg-white/15" />
-          <span className="shape-circle absolute -bottom-2 -left-2 h-8 w-8 bg-ca-lime opacity-70" />
+          {lesson.mux_playback_id ? (
+            <img
+              src={`https://image.mux.com/${lesson.mux_playback_id}/thumbnail.webp?time=30&width=224&height=128&fit_mode=smartcrop`}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <>
+              <span className="shape-circle absolute -right-2 -top-2 h-8 w-8 bg-white/15" />
+              <span className="shape-circle absolute -bottom-2 -left-2 h-8 w-8 bg-ca-lime opacity-70" />
+            </>
+          )}
           <span className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white">
             {fmtDuration(lesson.video_duration_seconds)}
           </span>

@@ -21,6 +21,7 @@ export function VideoPlayer({
   const [watchPercentage, setWatchPercentage] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState(false);
+  const [debug, setDebug] = useState("init");
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
@@ -40,13 +41,16 @@ export function VideoPlayer({
   });
 
   const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+  const mp4Url = `https://stream.mux.com/${playbackId}/high.mp4`;
   const posterUrl = `https://image.mux.com/${playbackId}/thumbnail.webp?time=30`;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
+    // Safari: native HLS
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      setDebug("native-hls");
       video.src = hlsUrl;
       video.addEventListener("loadedmetadata", () => {
         if (initialPosition > 0) video.currentTime = initialPosition;
@@ -54,22 +58,44 @@ export function VideoPlayer({
       return;
     }
 
+    // Chrome/Firefox: hls.js
     if (Hls.isSupported()) {
-      const hls = new Hls({ startPosition: initialPosition });
+      setDebug("hls.js");
+      const hls = new Hls({
+        startPosition: initialPosition,
+        enableWorker: true,
+        lowLatencyMode: false,
+      });
       hlsRef.current = hls;
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) setError(true);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setDebug("hls.js:manifest-ok");
       });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.error("[HLS Error]", data.type, data.details, data);
+        if (data.fatal) {
+          setDebug(`hls.js:fatal-${data.type}`);
+          // Try MP4 fallback on fatal HLS error
+          hls.destroy();
+          hlsRef.current = null;
+          video.src = mp4Url;
+          video.load();
+        }
+      });
+
       return () => {
         hls.destroy();
         hlsRef.current = null;
       };
     }
 
-    setError(true);
-  }, [playbackId, hlsUrl, initialPosition]);
+    // Last resort: try MP4 directly
+    setDebug("mp4-direct");
+    video.src = mp4Url;
+  }, [playbackId, hlsUrl, mp4Url, initialPosition]);
 
   if (error) {
     return (
@@ -87,24 +113,7 @@ export function VideoPlayer({
             Intenta recargar la página o verifica tu conexión a internet
           </p>
           <button
-            onClick={() => {
-              setError(false);
-              const video = videoRef.current;
-              if (!video) return;
-              if (hlsRef.current) {
-                hlsRef.current.destroy();
-                hlsRef.current = null;
-              }
-              if (Hls.isSupported()) {
-                const hls = new Hls({ startPosition: initialPosition });
-                hlsRef.current = hls;
-                hls.loadSource(hlsUrl);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.ERROR, (_event, data) => {
-                  if (data.fatal) setError(true);
-                });
-              }
-            }}
+            onClick={() => window.location.reload()}
             className="mt-4 rounded-full bg-white/10 px-5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/20"
           >
             Reintentar
@@ -120,11 +129,13 @@ export function VideoPlayer({
         ref={videoRef}
         controls
         playsInline
+        crossOrigin="anonymous"
         poster={posterUrl}
         className="aspect-video w-full rounded-[18px] bg-black"
         onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
         onPause={handlePause}
         onEnded={handleEnded}
+        onError={() => setError(true)}
       />
       <div className="flex items-center gap-3 text-sm" style={{ color: "var(--color-ca-ink-soft)" }}>
         <div className="flex-1">
@@ -144,6 +155,8 @@ export function VideoPlayer({
           </span>
         )}
       </div>
+      {/* Temporary debug — remove after confirming playback works */}
+      <div className="font-mono text-[10px] text-ca-ink-soft/50">{debug}</div>
     </div>
   );
 }

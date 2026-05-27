@@ -8,7 +8,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.fintoc.com https://*.fintoc.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.fintoc.com https://*.fintoc.com https://stream.mux.com https://*.fastly.mux.com",
+  "media-src 'self' https://stream.mux.com https://*.fastly.mux.com blob:",
   "frame-src 'self' https://*.fintoc.com",
   "base-uri 'self'",
   "form-action 'self'",
@@ -18,6 +19,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "image.mux.com" },
     ],
   },
   async headers() {

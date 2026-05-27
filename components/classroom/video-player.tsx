@@ -21,7 +21,6 @@ export function VideoPlayer({
   const [watchPercentage, setWatchPercentage] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState(false);
-  const [debug, setDebug] = useState("init");
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
@@ -48,9 +47,7 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    // Safari: native HLS
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      setDebug("native-hls");
       video.src = hlsUrl;
       video.addEventListener("loadedmetadata", () => {
         if (initialPosition > 0) video.currentTime = initialPosition;
@@ -58,9 +55,7 @@ export function VideoPlayer({
       return;
     }
 
-    // Chrome/Firefox: hls.js
     if (Hls.isSupported()) {
-      setDebug("hls.js");
       const hls = new Hls({
         startPosition: initialPosition,
         enableWorker: true,
@@ -70,15 +65,8 @@ export function VideoPlayer({
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setDebug("hls.js:manifest-ok");
-      });
-
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        console.error("[HLS Error]", data.type, data.details, data);
         if (data.fatal) {
-          setDebug(`hls.js:fatal-${data.type}`);
-          // Try MP4 fallback on fatal HLS error
           hls.destroy();
           hlsRef.current = null;
           video.src = mp4Url;
@@ -92,8 +80,6 @@ export function VideoPlayer({
       };
     }
 
-    // Last resort: try MP4 directly
-    setDebug("mp4-direct");
     video.src = mp4Url;
   }, [playbackId, hlsUrl, mp4Url, initialPosition]);
 
@@ -155,8 +141,6 @@ export function VideoPlayer({
           </span>
         )}
       </div>
-      {/* Temporary debug — remove after confirming playback works */}
-      <div className="font-mono text-[10px] text-ca-ink-soft/50">{debug}</div>
     </div>
   );
 }

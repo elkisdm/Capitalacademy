@@ -132,8 +132,7 @@ export function VideoPlayer({
   );
 }
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
       "mux-player": React.DetailedHTMLProps<

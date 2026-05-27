@@ -64,26 +64,25 @@ export async function getModulesWithLessons(
   );
 
   let progressMap = new Map<string, VideoProgress>();
+  let resourcesMap = new Map<string, LessonResource[]>();
+
   if (lessonIds.length > 0) {
-    const { data: progress } = await supabase
-      .from("video_progress")
-      .select("*")
-      .eq("enrollment_id", enrollmentId)
-      .in("lesson_id", lessonIds);
+    const [{ data: progress }, { data: resources }] = await Promise.all([
+      supabase
+        .from("video_progress")
+        .select("*")
+        .eq("enrollment_id", enrollmentId)
+        .in("lesson_id", lessonIds),
+      supabase
+        .from("lesson_resources")
+        .select("*")
+        .in("lesson_id", lessonIds)
+        .order("position", { ascending: true }),
+    ]);
 
     if (progress) {
       progressMap = new Map(progress.map((p) => [p.lesson_id, p as VideoProgress]));
     }
-  }
-
-  let resourcesMap = new Map<string, LessonResource[]>();
-  if (lessonIds.length > 0) {
-    const { data: resources } = await supabase
-      .from("lesson_resources")
-      .select("*")
-      .in("lesson_id", lessonIds)
-      .order("position", { ascending: true });
-
     if (resources) {
       for (const r of resources as LessonResource[]) {
         const existing = resourcesMap.get(r.lesson_id) ?? [];

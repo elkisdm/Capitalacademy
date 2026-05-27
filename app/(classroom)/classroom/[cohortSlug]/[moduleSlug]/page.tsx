@@ -142,10 +142,11 @@ export default async function ModulePage(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const enrollment = await getEnrollmentForUser(user.id, cohortId);
+  const [enrollment, cohort] = await Promise.all([
+    getEnrollmentForUser(user.id, cohortId),
+    getCohortWithProgram(cohortId),
+  ]);
   if (!enrollment) notFound();
-
-  const cohort = await getCohortWithProgram(cohortId);
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string };

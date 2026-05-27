@@ -106,7 +106,6 @@ export function LessonCard({
             sizes="144px"
             className="object-cover"
             loading="lazy"
-            unoptimized
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-ca-ink-soft/60">

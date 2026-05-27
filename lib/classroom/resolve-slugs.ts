@@ -1,9 +1,10 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-async function resolveSlug(
+const resolveSlug = cache(async (
   table: "cohorts" | "program_modules" | "lessons",
   slug: string,
-): Promise<string | null> {
+): Promise<string | null> => {
   const supabase = createAdminClient();
 
   const { data } = await supabase
@@ -21,7 +22,7 @@ async function resolveSlug(
     .single();
 
   return byId?.id ?? null;
-}
+});
 
 export function resolveCohortSlug(slug: string) {
   return resolveSlug("cohorts", slug);

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf, type CertificateConfig } from "./generate-pdf";
+import { sendCertificateEmail } from "@/lib/email/certificate";
 
 // ---------------------------------------------------------------------------
 // Verification code generator — 8 chars alphanumeric uppercase
@@ -129,7 +130,35 @@ export async function issueCertificate(
     throw new Error(`Failed to insert certificate: ${insertErr?.message}`);
   }
 
-  // 8. Return certificate data
+  // 8. Send certificate email
+  const { data: studentProfile } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", enrollment.student_id)
+    .single();
+
+  if (studentProfile?.email) {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://capitalacademy.cl";
+    const verifyUrl = `${baseUrl}/verificar/${verificationCode}`;
+
+    const emailResult = await sendCertificateEmail({
+      email: studentProfile.email,
+      studentName: profile.full_name,
+      programName: cohort.programs.name,
+      verificationCode,
+      pdfUrl,
+      verifyUrl,
+    });
+
+    if (emailResult.success) {
+      await supabase
+        .from("certificates")
+        .update({ emailed_at: new Date().toISOString() } as never)
+        .eq("id", certificate.id);
+    }
+  }
+
+  // 9. Return certificate data
   return {
     certificateId: certificate.id,
     verificationCode,

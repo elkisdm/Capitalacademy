@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getEnrollmentForUser, getCohortWithProgram } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { CertView } from "@/components/classroom/cert-view";
+import { RetryButton } from "./retry-button";
 
 export const metadata: Metadata = {
   title: "Tu certificado",
@@ -43,8 +44,17 @@ export default async function CertificadoPage(
     .eq("enrollment_id", enrollment.id)
     .single();
 
-  // No certificate yet
+  // No certificate yet — check if quiz was passed (failed generation)
   if (!certificate) {
+    const { data: passedAttempt } = await supabase
+      .from("quiz_attempts")
+      .select("id")
+      .eq("enrollment_id", enrollment.id)
+      .eq("passed", true)
+      .maybeSingle();
+
+    const quizPassed = !!passedAttempt;
+
     return (
       <div className="ca-fade-up mx-auto flex w-full max-w-[800px] flex-col items-center gap-6 px-4 py-16 text-center md:px-8">
         <div
@@ -66,21 +76,27 @@ export default async function CertificadoPage(
           </svg>
         </div>
         <h1 className="text-[28px] font-black tracking-tight text-ca-ink">
-          No tienes certificado aun
+          {quizPassed ? "Certificado pendiente" : "No tienes certificado aún"}
         </h1>
         <p className="max-w-md text-[15px] leading-relaxed text-ca-ink-soft">
-          Para obtener tu certificado ejecutivo de <strong>{program.name}</strong>,
-          necesitas completar el programa y aprobar el quiz final.
+          {quizPassed
+            ? "Aprobaste el quiz pero tu certificado aún no se ha generado. Puedes intentar generarlo ahora."
+            : <>Para obtener tu certificado ejecutivo de <strong>{program.name}</strong>, necesitas completar el programa y aprobar el quiz final.</>
+          }
         </p>
-        <Link
-          href={`/classroom/${cohortSlug}`}
-          className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
-        >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Volver al programa
-        </Link>
+        {quizPassed ? (
+          <RetryButton programId={program.id} />
+        ) : (
+          <Link
+            href={`/classroom/${cohortSlug}`}
+            className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
+          >
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Volver al programa
+          </Link>
+        )}
       </div>
     );
   }

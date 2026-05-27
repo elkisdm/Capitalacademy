@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import QRCode from "qrcode";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -64,30 +65,26 @@ function Icon({
 }
 
 /* ------------------------------------------------------------------ */
-/*  FakeQR                                                            */
+/*  ServerQR — generates real QR code SVG at render time              */
 /* ------------------------------------------------------------------ */
-function FakeQR({ size = 72, fg = "var(--color-ca-ink)", bg = "#fff" }: { size?: number; fg?: string; bg?: string }) {
-  const cells = 13;
-  const cs = size / cells;
-  const filled = (r: number, c: number) => {
-    if ((r < 3 && c < 3) || (r < 3 && c > cells - 4) || (r > cells - 4 && c < 3)) {
-      return r === 0 || r === 2 || c === 0 || c === 2 || (r === 1 && c === 1);
-    }
-    return (r * 31 + c * 17 + r * c) % 7 < 3;
-  };
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ borderRadius: 6, background: bg }}>
-      {Array.from({ length: cells }, (_, r) =>
-        Array.from(
-          { length: cells },
-          (_, c) =>
-            filled(r, c) && (
-              <rect key={`${r}-${c}`} x={c * cs} y={r * cs} width={cs * 0.92} height={cs * 0.92} fill={fg} />
-            ),
-        ),
-      )}
-    </svg>
-  );
+async function ServerQR({ url, size = 130 }: { url: string; size?: number }) {
+  try {
+    const svg = await QRCode.toString(url, {
+      type: "svg",
+      width: size,
+      margin: 1,
+      color: { dark: "#14163a", light: "#ffffff" },
+      errorCorrectionLevel: "M",
+    });
+    return (
+      <div
+        style={{ width: size, height: size, borderRadius: 8, overflow: "hidden" }}
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    );
+  } catch {
+    return <div style={{ width: size, height: size, borderRadius: 8, background: "#f8f8fc" }} />;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -385,7 +382,7 @@ function ValidCertificate({
             <div aria-hidden className="shape-circle absolute -left-3 top-1/4 h-6 w-6" style={{ background: "var(--color-ca-violet)" }} />
             <div aria-hidden className="shape-circle absolute -left-3 bottom-1/4 h-4 w-4" style={{ background: "var(--color-ca-lime)" }} />
             <div className="rounded-xl bg-white p-2">
-              <FakeQR size={130} />
+              <ServerQR url={`https://capitalacademy.cl/verificar/${code}`} size={130} />
             </div>
             <div className="mt-3 text-[10.5px] font-bold uppercase tracking-[0.16em] text-white/65">Escanea para verificar</div>
           </div>

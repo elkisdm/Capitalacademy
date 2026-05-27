@@ -239,10 +239,20 @@ export async function POST(req: Request) {
   }
 
   // --- Trigger certificate generation if passed ------------------------------
+  let certificateResult: { verificationCode: string; pdfUrl: string } | null = null;
+  let certificateError: string | null = null;
+
   if (passed) {
-    issueCertificate(enrollment.id, attemptId).catch((err) =>
-      console.error("Certificate generation failed:", err),
-    );
+    try {
+      const cert = await issueCertificate(enrollment.id, attemptId);
+      certificateResult = {
+        verificationCode: cert.verificationCode,
+        pdfUrl: cert.pdfUrl,
+      };
+    } catch (err) {
+      certificateError = err instanceof Error ? err.message : "Error generando certificado";
+      console.error("Certificate generation failed:", err);
+    }
   }
 
   return NextResponse.json({
@@ -253,5 +263,7 @@ export async function POST(req: Request) {
     correctAnswers,
     attemptId,
     attemptsRemaining: config.max_attempts - (completedAttempts.length + 1),
+    certificate: certificateResult,
+    certificateError,
   });
 }

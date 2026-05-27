@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import QRCode from "qrcode";
 import { Logo } from "@/components/classroom/primitives";
 
 type CertViewProps = {
@@ -79,29 +80,30 @@ function Icon({
 }
 
 /* ------------------------------------------------------------------ */
-/*  FakeQR — procedural QR placeholder (from design primitives)       */
+/*  VerifyQR — real QR code linking to /verificar/{code}              */
 /* ------------------------------------------------------------------ */
-function FakeQR({ size = 72, fg = "var(--color-ca-ink)", bg = "#fff" }: { size?: number; fg?: string; bg?: string }) {
-  const cells = 13;
-  const cs = size / cells;
-  const filled = (r: number, c: number) => {
-    if ((r < 3 && c < 3) || (r < 3 && c > cells - 4) || (r > cells - 4 && c < 3)) {
-      return r === 0 || r === 2 || c === 0 || c === 2 || (r === 1 && c === 1);
-    }
-    return (r * 31 + c * 17 + r * c) % 7 < 3;
-  };
+function VerifyQR({ code, size = 96 }: { code: string; size?: number }) {
+  const [svgHtml, setSvgHtml] = useState("");
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const url = `${baseUrl}/verificar/${code}`;
+
+  useEffect(() => {
+    QRCode.toString(url, {
+      type: "svg",
+      width: size,
+      margin: 1,
+      color: { dark: "#14163a", light: "#ffffff" },
+      errorCorrectionLevel: "M",
+    }).then((svg) => setSvgHtml(svg)).catch(() => {});
+  }, [url, size]);
+
+  if (!svgHtml) return <div style={{ width: size, height: size, borderRadius: 6, background: "#f8f8fc" }} />;
+
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ borderRadius: 6, background: bg }}>
-      {Array.from({ length: cells }, (_, r) =>
-        Array.from(
-          { length: cells },
-          (_, c) =>
-            filled(r, c) && (
-              <rect key={`${r}-${c}`} x={c * cs} y={r * cs} width={cs * 0.92} height={cs * 0.92} fill={fg} />
-            ),
-        ),
-      )}
-    </svg>
+    <div
+      style={{ width: size, height: size, borderRadius: 6, overflow: "hidden" }}
+      dangerouslySetInnerHTML={{ __html: svgHtml }}
+    />
   );
 }
 
@@ -293,7 +295,7 @@ export function CertView({
                   <div className="shape-circle absolute -left-3 top-1/3 h-5 w-5" style={{ background: "var(--color-ca-lime)" }} />
                   <div className="font-mono text-[8px] font-bold uppercase tracking-[0.22em] text-white/60">Validación</div>
                   <div className="mt-3 inline-block rounded-md bg-white p-1.5">
-                    <FakeQR size={96} />
+                    <VerifyQR code={verificationCode} size={96} />
                   </div>
                   <div className="mt-2 space-y-2">
                     {(

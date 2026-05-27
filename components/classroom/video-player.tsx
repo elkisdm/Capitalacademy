@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Hls from "hls.js";
 import { useVideoProgress } from "@/lib/classroom/use-video-progress";
 
 type VideoPlayerProps = {
@@ -21,6 +22,7 @@ export function VideoPlayer({
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   const onProgressUpdate = useCallback(
     (data: { watchPercentage: number; completed: boolean }) => {
@@ -37,11 +39,37 @@ export function VideoPlayer({
     onProgressUpdate,
   });
 
+  const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+  const posterUrl = `https://image.mux.com/${playbackId}/thumbnail.webp?time=30`;
+
   useEffect(() => {
-    if (videoRef.current && initialPosition > 0) {
-      videoRef.current.currentTime = initialPosition;
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = hlsUrl;
+      video.addEventListener("loadedmetadata", () => {
+        if (initialPosition > 0) video.currentTime = initialPosition;
+      }, { once: true });
+      return;
     }
-  }, [initialPosition]);
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ startPosition: initialPosition });
+      hlsRef.current = hls;
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) setError(true);
+      });
+      return () => {
+        hls.destroy();
+        hlsRef.current = null;
+      };
+    }
+
+    setError(true);
+  }, [playbackId, hlsUrl, initialPosition]);
 
   if (error) {
     return (
@@ -59,7 +87,24 @@ export function VideoPlayer({
             Intenta recargar la página o verifica tu conexión a internet
           </p>
           <button
-            onClick={() => { setError(false); videoRef.current?.load(); }}
+            onClick={() => {
+              setError(false);
+              const video = videoRef.current;
+              if (!video) return;
+              if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+              }
+              if (Hls.isSupported()) {
+                const hls = new Hls({ startPosition: initialPosition });
+                hlsRef.current = hls;
+                hls.loadSource(hlsUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.ERROR, (_event, data) => {
+                  if (data.fatal) setError(true);
+                });
+              }
+            }}
             className="mt-4 rounded-full bg-white/10 px-5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/20"
           >
             Reintentar
@@ -75,14 +120,11 @@ export function VideoPlayer({
         ref={videoRef}
         controls
         playsInline
-        preload="metadata"
+        poster={posterUrl}
         className="aspect-video w-full rounded-[18px] bg-black"
-        src={`https://stream.mux.com/${playbackId}/medium.mp4`}
-        poster={`https://image.mux.com/${playbackId}/thumbnail.webp?time=30`}
         onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
         onPause={handlePause}
         onEnded={handleEnded}
-        onError={() => setError(true)}
       />
       <div className="flex items-center gap-3 text-sm" style={{ color: "var(--color-ca-ink-soft)" }}>
         <div className="flex-1">

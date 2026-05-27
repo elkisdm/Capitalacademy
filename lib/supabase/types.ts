@@ -229,6 +229,60 @@ export type Database = {
           },
         ]
       }
+      lesson_resources: {
+        Row: {
+          id: string
+          lesson_id: string
+          title: string
+          type: Database["public"]["Enums"]["resource_type"]
+          url: string
+          storage_path: string | null
+          file_size_bytes: number | null
+          position: number
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          title: string
+          type?: Database["public"]["Enums"]["resource_type"]
+          url: string
+          storage_path?: string | null
+          file_size_bytes?: number | null
+          position?: number
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["resource_type"]
+          url?: string
+          storage_path?: string | null
+          file_size_bytes?: number | null
+          position?: number
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_resources_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_resources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           description: string | null
@@ -236,9 +290,14 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["lesson_kind"]
           module_id: string
+          mux_asset_id: string | null
+          mux_playback_id: string | null
+          mux_upload_id: string | null
           position: number
+          thumbnail_url: string | null
           title: string
           unlock_at: string | null
+          video_duration_seconds: number | null
         }
         Insert: {
           description?: string | null
@@ -246,9 +305,14 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["lesson_kind"]
           module_id: string
+          mux_asset_id?: string | null
+          mux_playback_id?: string | null
+          mux_upload_id?: string | null
           position: number
+          thumbnail_url?: string | null
           title: string
           unlock_at?: string | null
+          video_duration_seconds?: number | null
         }
         Update: {
           description?: string | null
@@ -256,9 +320,14 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["lesson_kind"]
           module_id?: string
+          mux_asset_id?: string | null
+          mux_playback_id?: string | null
+          mux_upload_id?: string | null
           position?: number
+          thumbnail_url?: string | null
           title?: string
           unlock_at?: string | null
+          video_duration_seconds?: number | null
         }
         Relationships: [
           {
@@ -266,6 +335,66 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_progress: {
+        Row: {
+          id: string
+          enrollment_id: string
+          lesson_id: string
+          playback_position_seconds: number
+          duration_seconds: number
+          max_position_seconds: number
+          watch_percentage: number
+          completed: boolean
+          completed_at: string | null
+          source: Database["public"]["Enums"]["video_progress_source"]
+          last_watched_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          enrollment_id: string
+          lesson_id: string
+          playback_position_seconds?: number
+          duration_seconds: number
+          max_position_seconds?: number
+          watch_percentage?: number
+          completed?: boolean
+          completed_at?: string | null
+          source?: Database["public"]["Enums"]["video_progress_source"]
+          last_watched_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          enrollment_id?: string
+          lesson_id?: string
+          playback_position_seconds?: number
+          duration_seconds?: number
+          max_position_seconds?: number
+          watch_percentage?: number
+          completed?: boolean
+          completed_at?: string | null
+          source?: Database["public"]["Enums"]["video_progress_source"]
+          last_watched_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -504,8 +633,10 @@ export type Database = {
         | "succeeded"
         | "failed"
         | "refunded"
+      resource_type: "pdf" | "link" | "template" | "document" | "other"
       session_status: "scheduled" | "in_progress" | "finished" | "cancelled"
       user_role: "student" | "teacher" | "ops" | "admin"
+      video_progress_source: "player" | "manual" | "system"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -649,8 +780,10 @@ export const Constants = {
         "failed",
         "refunded",
       ],
+      resource_type: ["pdf", "link", "template", "document", "other"],
       session_status: ["scheduled", "in_progress", "finished", "cancelled"],
       user_role: ["student", "teacher", "ops", "admin"],
+      video_progress_source: ["player", "manual", "system"],
     },
   },
 } as const

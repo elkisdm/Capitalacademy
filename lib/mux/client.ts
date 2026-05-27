@@ -9,6 +9,11 @@ export function getMuxClient() {
   if (!tokenId || !tokenSecret) {
     throw new Error("Mux credentials are not configured");
   }
-  client = new Mux({ tokenId, tokenSecret });
+  client = new Mux({
+    tokenId,
+    tokenSecret,
+    jwtSigningKey: process.env.MUX_SIGNING_KEY ?? null,
+    jwtPrivateKey: process.env.MUX_PRIVATE_KEY ?? null,
+  });
   return client;
 }

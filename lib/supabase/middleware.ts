@@ -40,6 +40,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/api/pago") ||
     pathname.startsWith("/api/fintoc") ||
     pathname.startsWith("/api/flow") ||
+    pathname.startsWith("/api/webhooks") ||
     pathname === "/sitemap.xml" ||
     pathname === "/robots.txt";
 

@@ -15,10 +15,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Changed
 - Las páginas del classroom cargan más rápido con queries paralelas y skeletons de carga instantánea (`af0e71a`)
+- Crear usuario ahora permite asignar cohorte y enviar invitación en un solo paso (`e982aa5`)
 
 ### Fixed
 - Asignar un alumno a una cohorte desde el panel admin ahora crea la matrícula automáticamente (`c7633b4`)
 - Reenviar invitación ya no falla cuando el usuario ya existe en el sistema (`66eac91`)
+- Asignar cohorte desde la lista de usuarios ahora funciona correctamente (`e93ffca`)
 
 ### Security
 - Verificación real de firma HMAC en webhook de Mux, autorización unificada en rutas admin, y validación de enrollment en proxy de video (`1d74d35`)

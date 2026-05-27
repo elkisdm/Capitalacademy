@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Papa from "papaparse";
-import * as XLSX from "xlsx";
+// XLSX is imported dynamically in parseFile only when handling .xlsx/.xls files
 
 type CohortOption = {
   id: string;
@@ -259,7 +259,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
     const ext = file.name.split(".").pop()?.toLowerCase();
 
     if (ext === "xlsx" || ext === "xls") {
-      file.arrayBuffer().then((buffer) => {
+      Promise.all([file.arrayBuffer(), import("xlsx")]).then(([buffer, XLSX]) => {
         const workbook = XLSX.read(buffer, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
@@ -296,11 +296,17 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
     [parseFile],
   );
 
-  const validCount = rows.filter((r) => r.estado === "valid").length;
-  const duplicateCount = rows.filter((r) => r.estado === "duplicate").length;
-  const invalidCount = rows.filter((r) => r.estado === "invalid").length;
-  const selectedCount = rows.filter((r) => r.selected).length;
-  const allValidSelected = rows.filter((r) => r.estado === "valid").every((r) => r.selected);
+  const { validCount, duplicateCount, invalidCount, selectedCount, allValidSelected } = useMemo(() => {
+    let valid = 0, duplicate = 0, invalid = 0, selected = 0;
+    let allValidSel = true;
+    for (const r of rows) {
+      if (r.estado === "valid") { valid++; if (!r.selected) allValidSel = false; }
+      else if (r.estado === "duplicate") duplicate++;
+      else if (r.estado === "invalid") invalid++;
+      if (r.selected) selected++;
+    }
+    return { validCount: valid, duplicateCount: duplicate, invalidCount: invalid, selectedCount: selected, allValidSelected: allValidSel };
+  }, [rows]);
 
   const toggleSelectAll = () => {
     const newVal = !allValidSelected;

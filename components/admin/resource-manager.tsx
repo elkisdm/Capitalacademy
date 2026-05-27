@@ -92,7 +92,7 @@ export function ResourceManager({
   return (
     <div className="space-y-4">
       {resources.length === 0 && !isAdding && (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-ca-ink-soft">
           No hay recursos para esta lección.
         </p>
       )}
@@ -102,23 +102,23 @@ export function ResourceManager({
         return (
           <div
             key={resource.id}
-            className="flex items-center gap-3 rounded-md border border-gray-100 p-3"
+            className="flex items-center gap-3 rounded-md border border-ca-ink/[0.08] p-3"
           >
-            <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+            <Icon className="h-4 w-4 shrink-0 text-ca-ink-soft" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-700">
+              <p className="truncate text-sm font-medium text-ca-ink">
                 {resource.title}
               </p>
-              <p className="truncate text-xs text-gray-400">{resource.url}</p>
+              <p className="truncate text-xs text-ca-ink-soft">{resource.url}</p>
             </div>
-            <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+            <span className="shrink-0 rounded bg-ca-bg-soft px-1.5 py-0.5 text-xs text-ca-ink-soft">
               {resource.type}
             </span>
             <button
               type="button"
               onClick={() => handleDelete(resource.id)}
               disabled={deletingId === resource.id}
-              className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+              className="shrink-0 rounded p-1 text-ca-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -127,9 +127,9 @@ export function ResourceManager({
       })}
 
       {isAdding ? (
-        <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+        <div className="space-y-3 rounded-lg border border-ca-accent/20 bg-ca-accent/10 p-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
               Título
             </label>
             <input
@@ -137,18 +137,18 @@ export function ResourceManager({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ej: Guía de cierre de ventas"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                 Tipo
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
               >
                 {TYPE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -158,7 +158,7 @@ export function ResourceManager({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                 URL
               </label>
               <input
@@ -166,7 +166,7 @@ export function ResourceManager({
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
               />
             </div>
           </div>
@@ -175,14 +175,14 @@ export function ResourceManager({
               type="button"
               onClick={handleAdd}
               disabled={saving || !title.trim() || !url.trim()}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
             >
               {saving ? "Guardando..." : "Agregar"}
             </button>
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded-md px-4 py-2 text-sm text-ca-ink-soft hover:bg-ca-bg-soft"
             >
               Cancelar
             </button>
@@ -192,7 +192,7 @@ export function ResourceManager({
         <button
           type="button"
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 rounded-md border border-dashed border-gray-300 px-4 py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600"
+          className="flex items-center gap-2 rounded-md border border-dashed border-ca-ink/[0.08] px-4 py-2 text-sm text-ca-ink-soft hover:border-ca-violet/40 hover:text-ca-violet"
         >
           <Plus className="h-4 w-4" />
           Agregar recurso

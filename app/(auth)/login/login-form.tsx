@@ -47,8 +47,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
       <div>
         <label
           htmlFor="email"
-          className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em]"
-          style={{ color: "var(--color-ca-ink-soft)" }}
+          className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft"
         >
           Email
         </label>
@@ -60,20 +59,14 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
-          className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-          style={{
-            background: "var(--color-ca-bg)",
-            borderColor: "rgba(20,22,58,0.12)",
-            color: "var(--color-ca-ink)",
-          }}
+          className="w-full rounded-xl border border-ca-ink/[0.12] bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet focus:ring-2 focus:ring-ca-violet/20"
         />
       </div>
 
       <div>
         <label
           htmlFor="password"
-          className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em]"
-          style={{ color: "var(--color-ca-ink-soft)" }}
+          className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft"
         >
           Contraseña
         </label>
@@ -85,12 +78,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-          style={{
-            background: "var(--color-ca-bg)",
-            borderColor: "rgba(20,22,58,0.12)",
-            color: "var(--color-ca-ink)",
-          }}
+          className="w-full rounded-xl border border-ca-ink/[0.12] bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet focus:ring-2 focus:ring-ca-violet/20"
         />
       </div>
 

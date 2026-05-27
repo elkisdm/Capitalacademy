@@ -3,10 +3,9 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 
 const montserrat = Montserrat({
-  variable: "--font-montserrat",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-montserrat",
 });
 
 const SITE_URL = "https://capitalacademy.cl";
@@ -40,12 +39,14 @@ export const metadata: Metadata = {
     description:
       "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
     url: "/",
+    images: [{ url: "/brand/logo-light.png", width: 400, height: 400 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Capital Academy | Escuela de negocios inmobiliarios",
     description:
       "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
+    images: ["/brand/logo-light.png"],
   },
   robots: {
     index: true,

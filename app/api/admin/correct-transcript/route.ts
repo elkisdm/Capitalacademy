@@ -1,29 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { correctTranscript } from "@/lib/classroom/correct-transcript";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  // --- Auth check: ops or admin only -----------------------------------------
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !["ops", "admin"].includes(profile.role)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
 
   // --- Validate body ---------------------------------------------------------
   let body: unknown;

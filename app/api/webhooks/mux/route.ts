@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { correctTranscript } from "@/lib/classroom/correct-transcript";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
+
+/** Max age for webhook signatures (5 minutes) to prevent replay attacks */
+const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 
 type MuxWebhookEvent = {
   type: string;
@@ -21,18 +25,73 @@ type MuxWebhookEvent = {
   };
 };
 
+/**
+ * Verify Mux webhook signature using HMAC-SHA256.
+ * Header format: t=<timestamp>,v1=<signature>
+ */
+function verifyMuxSignature(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+): boolean {
+  const parts = signatureHeader.split(",");
+  const timestampPart = parts.find((p) => p.startsWith("t="));
+  const signaturePart = parts.find((p) => p.startsWith("v1="));
+
+  if (!timestampPart || !signaturePart) return false;
+
+  const timestamp = timestampPart.slice(2);
+  const receivedSignature = signaturePart.slice(3);
+
+  // Replay attack prevention: reject signatures older than 5 minutes
+  const timestampMs = parseInt(timestamp, 10) * 1000;
+  if (isNaN(timestampMs) || Date.now() - timestampMs > SIGNATURE_MAX_AGE_MS) {
+    return false;
+  }
+
+  const expectedSignature = createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+
+  // Timing-safe comparison to prevent timing attacks
+  const expected = Buffer.from(expectedSignature, "hex");
+  const received = Buffer.from(receivedSignature, "hex");
+
+  if (expected.length !== received.length) return false;
+
+  return timingSafeEqual(expected, received);
+}
+
 export async function POST(req: Request) {
+  // Read raw body FIRST for signature verification, then parse as JSON
+  let rawBody: string;
+  try {
+    rawBody = await req.text();
+  } catch {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+
   const webhookSecret = process.env.MUX_WEBHOOK_SECRET;
   if (webhookSecret) {
     const signature = req.headers.get("mux-signature");
     if (!signature) {
       return NextResponse.json({ error: "Missing signature" }, { status: 401 });
     }
+    if (!verifyMuxSignature(rawBody, signature, webhookSecret)) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 401 },
+      );
+    }
+  } else {
+    console.warn(
+      "MUX_WEBHOOK_SECRET is not set — skipping signature verification (development only)",
+    );
   }
 
   let event: MuxWebhookEvent;
   try {
-    event = (await req.json()) as MuxWebhookEvent;
+    event = JSON.parse(rawBody) as MuxWebhookEvent;
   } catch {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }

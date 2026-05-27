@@ -1,35 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
-
-// ---------------------------------------------------------------------------
-// Auth helper
-// ---------------------------------------------------------------------------
-
-async function authorizeAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ error: "No autenticado" }, { status: 401 }) };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !["ops", "admin"].includes(profile.role)) {
-    return { error: NextResponse.json({ error: "No autorizado" }, { status: 403 }) };
-  }
-
-  return { user };
-}
 
 // ---------------------------------------------------------------------------
 // POST  /api/admin/certificates/issue

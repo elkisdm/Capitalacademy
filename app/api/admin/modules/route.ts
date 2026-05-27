@@ -1,27 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
-  const { data: callerProfile } = await supabase
-    .from("profiles")
-    .select("system_role")
-    .eq("id", user.id)
-    .single();
-
-  if (!callerProfile || !["ops", "admin"].includes(callerProfile.system_role)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
 
   const { searchParams } = new URL(req.url);
   const cohortId = searchParams.get("cohortId");

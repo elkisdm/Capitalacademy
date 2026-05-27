@@ -18,11 +18,11 @@ export default async function AdminLessonsPage() {
 
   if (!modules || modules.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
+        <h1 className="text-2xl font-bold text-ca-ink">
           Gestión de lecciones
         </h1>
-        <p className="mt-4 text-gray-500">
+        <p className="mt-4 text-ca-ink-soft">
           No hay módulos configurados aún. Crea un programa y sus módulos
           primero.
         </p>
@@ -31,8 +31,8 @@ export default async function AdminLessonsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-8 text-2xl font-bold text-gray-900">
+    <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
+      <h1 className="mb-8 text-2xl font-bold text-ca-ink">
         Gestión de lecciones
       </h1>
 
@@ -47,17 +47,17 @@ export default async function AdminLessonsPage() {
 
           return (
             <section key={mod.id}>
-              <div className="mb-3 border-b border-gray-200 pb-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <div className="mb-3 border-b border-ca-ink/[0.08] pb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ca-ink-soft">
                   {program?.name ?? "Programa"}
                 </p>
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-ca-ink">
                   {mod.code} — {mod.title}
                 </h2>
               </div>
 
               {lessons.length === 0 ? (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-ca-ink-soft">
                   Sin lecciones en este módulo.
                 </p>
               ) : (
@@ -68,28 +68,28 @@ export default async function AdminLessonsPage() {
                       <Link
                         key={lesson.id as string}
                         href={`/admin/lessons/${lesson.id as string}`}
-                        className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-blue-300 hover:bg-blue-50/30"
+                        className="flex items-center gap-4 rounded-lg border border-ca-ink/[0.08] bg-ca-surface p-4 transition-colors hover:border-ca-violet/30 hover:bg-ca-violet/[0.04]"
                       >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ca-bg-soft text-xs font-semibold text-ca-ink-soft">
                           {index + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-gray-900">
+                          <p className="truncate font-medium text-ca-ink">
                             {lesson.title as string}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-ca-ink-soft">
                             {lesson.kind as string}
                             {(lesson.duration_minutes as number | null) &&
                               ` · ${lesson.duration_minutes as number} min`}
                           </p>
                         </div>
                         {hasVideo ? (
-                          <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          <span className="flex items-center gap-1 rounded-full bg-ca-lime-mist px-2 py-0.5 text-xs font-medium text-ca-lime-deep">
                             <Video className="h-3 w-3" />
                             Video
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
+                          <span className="flex items-center gap-1 rounded-full bg-ca-bg-soft px-2 py-0.5 text-xs text-ca-ink-soft">
                             <VideoOff className="h-3 w-3" />
                             Sin video
                           </span>

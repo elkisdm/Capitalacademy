@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -246,6 +246,8 @@ export function QuizInProgress({
     timeLimitMinutes != null ? timeLimitMinutes * 60 : null,
   );
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
   /* Timer */
   useEffect(() => {
@@ -267,18 +269,22 @@ export function QuizInProgress({
   /* Auto-submit when timer runs out */
   useEffect(() => {
     if (timeLeft === 0) {
-      onSubmit(answers);
+      onSubmit(answersRef.current);
     }
-  }, [timeLeft]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [timeLeft, onSubmit]);
 
   const currentQ = questions[currentIdx];
   const optionEntries = Object.entries(currentQ.options);
   const selectedLetter = answers[currentQ.id] ?? null;
 
-  const answeredSet = new Set(
-    questions
-      .map((q, i) => (answers[q.id] != null ? i : -1))
-      .filter((i) => i >= 0),
+  const answeredSet = useMemo(
+    () =>
+      new Set(
+        questions
+          .map((q, i) => (answers[q.id] != null ? i : -1))
+          .filter((i) => i >= 0),
+      ),
+    [answers, questions],
   );
 
   const pct = ((currentIdx + 1) / total) * 100;
@@ -335,7 +341,7 @@ export function QuizInProgress({
     <div className="flex h-full flex-col" style={{ background: "var(--color-ca-bg)" }}>
       {/* ---- Top chrome ---- */}
       <div
-        className="flex items-center justify-between gap-3 border-b px-8 py-4"
+        className="flex items-center justify-between gap-3 border-b px-4 py-4 md:px-8"
         style={{
           background: "var(--color-ca-surface)",
           borderColor: "var(--color-ca-outline)",
@@ -434,7 +440,7 @@ export function QuizInProgress({
           />
         </div>
 
-        <div className="relative mx-auto flex h-full max-w-[820px] flex-col px-8 py-10">
+        <div className="relative mx-auto flex h-full max-w-[820px] flex-col px-4 py-6 md:px-8 md:py-10">
           {/* Question header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

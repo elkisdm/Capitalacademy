@@ -37,7 +37,7 @@ export function Hero() {
             Escuela de negocios · Capital Inteligente
           </span>
 
-          <h1 className="font-sans text-5xl font-black leading-[0.95] tracking-[-0.04em] text-[var(--color-ca-ink)] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <h1 className="font-sans text-4xl font-black leading-[0.95] tracking-[-0.04em] text-[var(--color-ca-ink)] md:text-5xl lg:text-6xl xl:text-[5.5rem]">
             Capital{" "}
             <span className="text-[var(--color-ca-violet)]">Academy</span>
           </h1>

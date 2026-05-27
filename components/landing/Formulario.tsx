@@ -114,14 +114,15 @@ export function Formulario() {
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Nombre y apellido" name="full_name" required />
-        <Field label="Correo electrónico" name="email" type="email" required />
+        <Field label="Nombre y apellido" name="full_name" required autoComplete="name" />
+        <Field label="Correo electrónico" name="email" type="email" required autoComplete="email" />
         <Field
           label="Teléfono / WhatsApp"
           name="phone"
           type="tel"
           required
           placeholder="+56 9 ..."
+          autoComplete="tel"
         />
         <Field label="Cargo o actividad actual" name="role" />
         <Field label="Empresa" name="company" />
@@ -166,6 +167,7 @@ function Field({
   required,
   placeholder,
   textarea,
+  autoComplete,
 }: {
   label: string;
   name: string;
@@ -173,6 +175,7 @@ function Field({
   required?: boolean;
   placeholder?: string;
   textarea?: boolean;
+  autoComplete?: string;
 }) {
   const base =
     "w-full rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-4 py-3 text-sm text-[var(--color-ca-ink)] placeholder:text-[var(--color-ca-ink-soft)]/60 transition-colors focus:border-[var(--color-ca-violet)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-ca-violet)]/20";
@@ -188,6 +191,7 @@ function Field({
           required={required}
           placeholder={placeholder}
           rows={4}
+          autoComplete={autoComplete}
           className={base}
         />
       ) : (
@@ -196,6 +200,7 @@ function Field({
           name={name}
           required={required}
           placeholder={placeholder}
+          autoComplete={autoComplete}
           className={base}
         />
       )}

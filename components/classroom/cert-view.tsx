@@ -247,7 +247,7 @@ export function CertView({
                 <div className="p-7">
                   <Logo />
                   <div className="mt-6 font-mono text-[9px] font-bold uppercase tracking-[0.32em] text-ca-ink-soft">
-                    Certificado de finalizacion
+                    Certificado de finalización
                   </div>
                   <div className="mt-1 text-[10px] font-semibold text-ca-ink-soft">Se otorga el presente a</div>
 
@@ -276,8 +276,8 @@ export function CertView({
                   {/* Signatures */}
                   <div className="mt-7 grid max-w-md grid-cols-2 gap-6">
                     <div>
-                      <div className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">Director Academico</div>
-                      <div className="mt-0.5 text-[14px] font-bold italic text-ca-ink">Andres Balmaceda C.</div>
+                      <div className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">Director Académico</div>
+                      <div className="mt-0.5 text-[14px] font-bold italic text-ca-ink">Andrés Balmaceda C.</div>
                       <div className="mt-0.5 h-px" style={{ background: "var(--color-ca-ink)" }} />
                     </div>
                     <div>
@@ -291,7 +291,7 @@ export function CertView({
                 {/* Side panel */}
                 <div className="relative p-5" style={{ background: "var(--color-ca-ink)", color: "#fff", width: 168 }}>
                   <div className="shape-circle absolute -left-3 top-1/3 h-5 w-5" style={{ background: "var(--color-ca-lime)" }} />
-                  <div className="font-mono text-[8px] font-bold uppercase tracking-[0.22em] text-white/60">Validacion</div>
+                  <div className="font-mono text-[8px] font-bold uppercase tracking-[0.22em] text-white/60">Validación</div>
                   <div className="mt-3 inline-block rounded-md bg-white p-1.5">
                     <FakeQR size={96} />
                   </div>
@@ -332,7 +332,7 @@ export function CertView({
                   ["Programa", programTitle],
                   ["Cohorte", cohortName],
                   ["Emitido", fmtDate(issuedAt)],
-                  ["Calificacion", `${scorePct} / 100`],
+                  ["Calificación", `${scorePct} / 100`],
                   ["Horas", academicHours ?? "-"],
                 ] as const
               ).map(([k, v]) => (
@@ -346,7 +346,7 @@ export function CertView({
             {/* Verification code block */}
             <div className="mt-5 rounded-xl p-3" style={{ background: "var(--color-ca-violet-mist)" }}>
               <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--color-ca-violet-deep)" }}>
-                Codigo de verificacion
+                Código de verificación
               </div>
               <div className="mt-1 flex items-center justify-between gap-2">
                 <code className="font-mono text-[15px] font-black tracking-wide" style={{ color: "var(--color-ca-violet-deep)" }}>
@@ -356,7 +356,7 @@ export function CertView({
                   onClick={copyCode}
                   className="shape-circle grid h-7 w-7 place-items-center"
                   style={{ background: "#fff", color: "var(--color-ca-violet)" }}
-                  aria-label="Copiar codigo"
+                  aria-label="Copiar código"
                 >
                   <Icon name={copied ? "check" : "link"} size={12} stroke={2} />
                 </button>

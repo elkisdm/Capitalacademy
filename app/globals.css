@@ -147,15 +147,6 @@
   background-clip: text;
 }
 
-/* Legacy aliases */
-.text-gradient-aqua-magenta,
-.text-gradient-primary {
-  background: linear-gradient(135deg, #5e17eb 0%, #0016ff 60%, #2a3287 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .ca-btn-primary {
   background: var(--color-ca-violet);
   color: #ffffff;
@@ -194,14 +185,6 @@
 }
 
 /* === Brand shapes — semicírculos & círculos del manual === */
-.brand-half-violet {
-  background: var(--color-ca-violet);
-  border-radius: 9999px 0 0 9999px;
-}
-.brand-half-violet-right {
-  background: var(--color-ca-violet);
-  border-radius: 0 9999px 9999px 0;
-}
 .brand-circle-lime {
   background: var(--color-ca-lime);
   border-radius: 9999px;
@@ -212,10 +195,6 @@
 }
 .brand-circle-lavender {
   background: var(--color-ca-violet-soft);
-  border-radius: 9999px;
-}
-.brand-circle-navy {
-  background: var(--color-ca-navy);
   border-radius: 9999px;
 }
 
@@ -242,11 +221,11 @@
   100% { transform: rotate(360deg) translateX(20px) rotate(-360deg); }
 }
 
-.brand-float { animation: brand-float 8s ease-in-out infinite; will-change: transform; }
-.brand-drift-a { animation: brand-drift-a 14s ease-in-out infinite; will-change: transform; }
-.brand-drift-b { animation: brand-drift-b 18s ease-in-out infinite; will-change: transform; }
-.brand-pulse { animation: brand-pulse 6s ease-in-out infinite; will-change: opacity; }
-.brand-orbit { animation: brand-orbit 24s linear infinite; will-change: transform; }
+.brand-float { animation: brand-float 8s ease-in-out infinite; }
+.brand-drift-a { animation: brand-drift-a 14s ease-in-out infinite; }
+.brand-drift-b { animation: brand-drift-b 18s ease-in-out infinite; }
+.brand-pulse { animation: brand-pulse 6s ease-in-out infinite; }
+.brand-orbit { animation: brand-orbit 24s linear infinite; }
 
 /* Stage de fondo del hero — composición brand con shapes flotantes */
 .hero-stage {
@@ -263,7 +242,6 @@
   border-radius: 9999px;
   filter: blur(80px);
   opacity: 0.55;
-  will-change: transform, opacity;
 }
 .hero-stage::before {
   width: 480px;
@@ -282,21 +260,10 @@
   animation: brand-drift-b 20s ease-in-out infinite;
 }
 
-/* Legacy aurora classes — kept harmless (transparent) so existing usage doesn't break */
-.aurora-blob,
-.aurora-blob-lime,
-.aurora-blob-violet,
-.aurora-blob-teal,
-.aurora-blob-pink {
-  display: none;
-}
-
 /* === Classroom design system — shapes, animations, utilities === */
 .shape-circle { border-radius: 9999px; }
 .shape-half-left { border-radius: 9999px 0 0 9999px; }
 .shape-half-right { border-radius: 0 9999px 9999px 0; }
-.shape-half-top { border-radius: 9999px 9999px 0 0; }
-.shape-half-bottom { border-radius: 0 0 9999px 9999px; }
 
 @keyframes ca-pulse { 0%,100% { opacity: .9; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
 @keyframes ca-spin-slow { from { transform: rotate(0); } to { transform: rotate(360deg); } }
@@ -389,20 +356,10 @@
   box-shadow: 0 8px 24px rgba(94, 23, 235, 0.25);
 }
 
-@keyframes ca-check-pop {
-  0% { transform: scale(0.7); opacity: 0; }
-  60% { transform: scale(1.15); }
-  100% { transform: scale(1); opacity: 1; }
-}
-.ca-check-pop { animation: ca-check-pop 350ms ease-out both; }
-
-@keyframes ca-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-.ca-float { animation: ca-float 3s ease-in-out infinite; }
-
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
@@ -16,24 +17,17 @@ const BASE_URL =
   "https://capitalacademy.cl";
 
 export async function POST(req: Request) {
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
+  // Need caller's specific system_role for admin-only guard
   const { data: callerProfile } = await supabase
     .from("profiles")
     .select("system_role")
-    .eq("id", user.id)
+    .eq("id", auth.user.id)
     .single();
-
-  if (!callerProfile || !["ops", "admin"].includes(callerProfile.system_role)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
 
   let body: unknown;
   try {
@@ -54,7 +48,7 @@ export async function POST(req: Request) {
   const targetRole = system_role ?? "user";
 
   if (
-    callerProfile.system_role === "ops" &&
+    callerProfile?.system_role === "ops" &&
     ["ops", "admin"].includes(targetRole)
   ) {
     return NextResponse.json(

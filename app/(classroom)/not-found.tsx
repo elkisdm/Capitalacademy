@@ -1,8 +1,16 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function ClassroomNotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+      <Image
+        src="/brand/logo-on-light.png"
+        alt="Capital Academy"
+        width={96}
+        height={95}
+        className="mb-4 h-12 w-auto"
+      />
       <div className="relative mb-6">
         <div className="shape-circle h-24 w-24 bg-ca-violet opacity-[0.08]" />
         <div className="absolute inset-0 grid place-items-center">

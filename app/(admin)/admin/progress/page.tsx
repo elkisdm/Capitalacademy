@@ -16,7 +16,7 @@ export default async function AdminProgressPage() {
 
   if (!enrollment) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-8">
+      <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
         <h1 className="text-2xl font-black text-ca-ink">Progreso de la cohorte</h1>
         <p className="mt-4 text-ca-ink-soft">No hay cohortes con alumnos matriculados.</p>
       </div>
@@ -27,7 +27,7 @@ export default async function AdminProgressPage() {
 
   if (!report) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-8">
+      <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
         <h1 className="text-2xl font-black text-ca-ink">Progreso de la cohorte</h1>
         <p className="mt-4 text-ca-ink-soft">No se encontró la cohorte.</p>
       </div>
@@ -42,7 +42,7 @@ export default async function AdminProgressPage() {
   const complete = students.filter((s) => s.overall_percentage >= 90).length;
 
   return (
-    <div className="ca-fade-up mx-auto w-full max-w-[1500px] px-8 py-8">
+    <div className="ca-fade-up mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">
       <div className="mb-7">
         <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Operaciones · Reportes

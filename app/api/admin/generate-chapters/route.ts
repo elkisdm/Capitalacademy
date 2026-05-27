@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
@@ -82,25 +83,10 @@ async function callOpenAI(
 }
 
 export async function POST(req: Request) {
-  // --- Auth check: ops or admin only -----------------------------------------
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !["ops", "admin"].includes(profile.role)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
 
   // --- Validate body ---------------------------------------------------------
   let body: unknown;

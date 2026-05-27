@@ -1,32 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaff } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
-async function requireStaff(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !["ops", "admin", "teacher"].includes(profile.role)) {
-    return null;
-  }
-  return user;
-}
-
 export async function POST(req: Request) {
+  const staff = await requireStaff();
+  if ("error" in staff) return staff.error;
+  const user = staff.user;
+
   const supabase = await createClient();
-  const user = await requireStaff(supabase);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
 
   let body: unknown;
   try {
@@ -84,11 +67,10 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const staff = await requireStaff();
+  if ("error" in staff) return staff.error;
+
   const supabase = await createClient();
-  const user = await requireStaff(supabase);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

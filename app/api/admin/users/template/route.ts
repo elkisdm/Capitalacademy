@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
+
   const ws = XLSX.utils.aoa_to_sheet([
     ["nombre_completo", "email", "telefono", "rut"],
     [

@@ -220,7 +220,7 @@ export function TranscriptPanel({
     return (
       <div className="ca-card flex items-center justify-center px-6 py-12">
         <p className="text-[13px] text-ca-ink-soft">
-          La transcripcion no esta disponible para esta leccion
+          La transcripción no está disponible para esta lección
         </p>
       </div>
     );
@@ -242,7 +242,7 @@ export function TranscriptPanel({
             type="text"
             value={searchRaw}
             onChange={(e) => setSearchRaw(e.target.value)}
-            placeholder="Buscar en transcripcion..."
+            placeholder="Buscar en transcripción..."
             className="w-full rounded-xl border border-ca-ink/[0.08] bg-ca-bg-soft py-2 pl-9 pr-3 text-[13px] text-ca-ink outline-none transition-colors placeholder:text-ca-ink-soft/60 focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20"
           />
         </div>

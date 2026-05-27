@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function NotFound() {
@@ -111,12 +112,13 @@ export default function NotFound() {
         {/* Divider */}
         <div className="nf-stagger-2 mb-6 flex items-center gap-4">
           <div className="h-px w-12" style={{ background: "linear-gradient(90deg, transparent, rgba(94,23,235,0.4))" }} />
-          <div
-            className="grid h-9 w-9 place-items-center rounded-lg font-black text-white"
-            style={{ background: "var(--color-ca-violet)", fontSize: 13 }}
-          >
-            CA
-          </div>
+          <Image
+            src="/brand/logo-light.webp"
+            alt="Capital Academy"
+            width={96}
+            height={95}
+            className="h-9 w-auto"
+          />
           <div className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(94,23,235,0.4), transparent)" }} />
         </div>
 

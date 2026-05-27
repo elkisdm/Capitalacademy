@@ -41,13 +41,13 @@ function timeAgo(dateStr: string): string {
   if (hours < 24) return `hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
 
   const days = Math.floor(hours / 24);
-  if (days < 30) return `hace ${days} ${days === 1 ? "dia" : "dias"}`;
+  if (days < 30) return `hace ${days} ${days === 1 ? "día" : "días"}`;
 
   const months = Math.floor(days / 30);
   if (months < 12) return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
 
   const years = Math.floor(months / 12);
-  return `hace ${years} ${years === 1 ? "ano" : "anos"}`;
+  return `hace ${years} ${years === 1 ? "año" : "años"}`;
 }
 
 // ── Initials extractor ──────────────────────────────────────
@@ -611,8 +611,11 @@ export function CommentSection({
 
   // ── Delete ─────────────────────────────────────────────────
 
+  const commentsRef = useRef(comments);
+  commentsRef.current = comments;
+
   const handleDelete = useCallback(async (id: string) => {
-    const backup = comments;
+    const backup = commentsRef.current;
     setComments((prev) => prev.filter((c) => c.id !== id && c.parent_id !== id));
 
     try {
@@ -624,8 +627,7 @@ export function CommentSection({
     } catch {
       setComments(backup);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [comments]);
+  }, []);
 
   // ── Render ─────────────────────────────────────────────────
 
@@ -647,7 +649,7 @@ export function CommentSection({
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
           >
             <SortIcon size={14} />
-            {sortOrder === "newest" ? "Mas recientes" : "Mas antiguos"}
+            {sortOrder === "newest" ? "Más recientes" : "Más antiguos"}
             <ChevronDownIcon size={12} />
           </button>
           {showSortMenu && (
@@ -663,7 +665,7 @@ export function CommentSection({
                     : "text-ca-ink"
                 }`}
               >
-                Mas recientes
+                Más recientes
               </button>
               <button
                 onClick={() => {
@@ -676,7 +678,7 @@ export function CommentSection({
                     : "text-ca-ink"
                 }`}
               >
-                Mas antiguos
+                Más antiguos
               </button>
             </div>
           )}
@@ -711,7 +713,7 @@ export function CommentSection({
             <MessageIcon size={28} />
           </span>
           <p className="text-[13px] text-ca-ink-soft">
-            Se el primero en comentar esta leccion
+            Sé el primero en comentar esta lección
           </p>
         </div>
       )}

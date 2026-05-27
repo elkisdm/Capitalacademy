@@ -1,37 +1,16 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
-
-async function requireStaff(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("system_role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !["ops", "admin"].includes(profile.system_role)) {
-    return null;
-  }
-  return user;
-}
 
 /**
  * GET /api/admin/transcript-segments?lessonId=xxx&needsReview=true
  * Fetch transcript segments for a lesson, optionally filtered to those needing review.
  */
 export async function GET(req: Request) {
-  const supabase = await createClient();
-  const caller = await requireStaff(supabase);
-  if (!caller) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
 
   const { searchParams } = new URL(req.url);
   const lessonId = searchParams.get("lessonId");
@@ -74,11 +53,9 @@ export async function GET(req: Request) {
  * Update a single segment's corrected text, then rebuild the full transcript.
  */
 export async function PATCH(req: Request) {
-  const supabase = await createClient();
-  const caller = await requireStaff(supabase);
-  if (!caller) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
+  const caller = auth.user;
 
   let body: unknown;
   try {

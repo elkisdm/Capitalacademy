@@ -1,15 +1,16 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 
 export function Logo({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="relative h-9 w-9 shrink-0">
-        <div className="shape-circle absolute inset-0 bg-ca-violet" />
-        <div className="shape-circle absolute right-0 top-0 h-3.5 w-3.5 bg-ca-lime" />
-        <div className="absolute inset-0 grid place-items-center text-[13px] font-black tracking-tight text-white">
-          CA
-        </div>
-      </div>
+      <Image
+        src="/brand/logo-on-light.png"
+        alt="Capital Academy"
+        width={96}
+        height={95}
+        className="h-9 w-auto shrink-0"
+      />
       {!collapsed && (
         <div className="leading-tight">
           <div className="text-[13px] font-extrabold tracking-tight text-ca-ink">

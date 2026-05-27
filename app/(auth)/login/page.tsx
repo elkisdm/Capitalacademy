@@ -1,6 +1,12 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
+
+export const metadata = {
+  title: "Iniciar sesión — Capital Academy",
+  description: "Accede a tu cuenta en Capital Academy.",
+};
 
 export default async function LoginPage(
   props: { searchParams: Promise<{ next?: string; error?: string }> },
@@ -27,13 +33,14 @@ export default async function LoginPage(
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center">
-          <div className="relative h-14 w-14">
-            <div className="shape-circle absolute inset-0" style={{ background: "var(--color-ca-violet)" }} />
-            <div className="shape-circle absolute -right-0.5 -top-0.5 h-5 w-5" style={{ background: "var(--color-ca-lime)" }} />
-            <div className="absolute inset-0 grid place-items-center text-[18px] font-black tracking-tight text-white">
-              CA
-            </div>
-          </div>
+          <Image
+            src="/brand/logo-on-light.png"
+            alt="Capital Academy"
+            width={96}
+            height={95}
+            priority
+            className="h-14 w-auto"
+          />
           <h1 className="mt-4 text-[22px] font-black tracking-tight" style={{ color: "var(--color-ca-ink)" }}>
             Capital Academy
           </h1>

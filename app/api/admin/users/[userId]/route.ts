@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { TablesUpdate } from "@/lib/supabase/types";
+import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
@@ -16,24 +17,17 @@ export async function PATCH(
 ) {
   const { userId } = await props.params;
 
+  const auth = await authorizeAdmin();
+  if ("error" in auth) return auth.error;
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
+  // Need caller's specific system_role for admin-only guard
   const { data: callerProfile } = await supabase
     .from("profiles")
     .select("system_role")
-    .eq("id", user.id)
+    .eq("id", auth.user.id)
     .single();
-
-  if (!callerProfile || !["ops", "admin"].includes(callerProfile.system_role)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
 
   let body: unknown;
   try {
@@ -44,7 +38,7 @@ export async function PATCH(
 
   const { full_name, phone, system_role } = body as UpdateUserBody;
 
-  if (system_role !== undefined && callerProfile.system_role !== "admin") {
+  if (system_role !== undefined && callerProfile?.system_role !== "admin") {
     return NextResponse.json(
       { error: "Solo un admin puede cambiar el system_role" },
       { status: 403 },

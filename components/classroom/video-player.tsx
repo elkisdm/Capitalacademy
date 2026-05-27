@@ -8,7 +8,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type MutableRefObject,
 } from "react";
-import Hls from "hls.js";
+import type Hls from "hls.js";
 import { useVideoProgress } from "@/lib/classroom/use-video-progress";
 import { fmtTimestamp } from "@/lib/classroom/format";
 
@@ -325,6 +325,7 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    // Safari / iOS have native HLS — no need to load hls.js at all
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = hlsUrl;
       video.addEventListener(
@@ -339,46 +340,65 @@ export function VideoPlayer({
       return;
     }
 
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        startPosition: initialPosition,
-        enableWorker: true,
-        lowLatencyMode: false,
+    // Non-Safari: dynamically import hls.js only when needed
+    let cancelled = false;
+
+    import("hls.js").then(({ default: Hls }) => {
+      if (cancelled) return;
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          startPosition: initialPosition,
+          enableWorker: true,
+          lowLatencyMode: false,
+        });
+        hlsRef.current = hls;
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          setReady(true);
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) {
+            hls.destroy();
+            hlsRef.current = null;
+            video.src = mp4Url;
+            video.load();
+            video.addEventListener("loadedmetadata", () => setReady(true), {
+              once: true,
+            });
+            video.addEventListener("error", () => setError(true), {
+              once: true,
+            });
+          }
+        });
+      } else {
+        // hls.js loaded but not supported — fall back to mp4
+        video.src = mp4Url;
+        video.addEventListener("loadedmetadata", () => setReady(true), {
+          once: true,
+        });
+        video.addEventListener("error", () => setError(true), { once: true });
+      }
+    }).catch(() => {
+      // Failed to load hls.js — fall back to mp4
+      if (cancelled) return;
+      video.src = mp4Url;
+      video.addEventListener("loadedmetadata", () => setReady(true), {
+        once: true,
       });
-      hlsRef.current = hls;
-      hls.loadSource(hlsUrl);
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setReady(true);
-      });
-
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          hls.destroy();
-          hlsRef.current = null;
-          video.src = mp4Url;
-          video.load();
-          video.addEventListener("loadedmetadata", () => setReady(true), {
-            once: true,
-          });
-          video.addEventListener("error", () => setError(true), {
-            once: true,
-          });
-        }
-      });
-
-      return () => {
-        hls.destroy();
-        hlsRef.current = null;
-      };
-    }
-
-    video.src = mp4Url;
-    video.addEventListener("loadedmetadata", () => setReady(true), {
-      once: true,
+      video.addEventListener("error", () => setError(true), { once: true });
     });
-    video.addEventListener("error", () => setError(true), { once: true });
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
   }, [playbackId, hlsUrl, mp4Url, initialPosition]);
 
   // ── Sync video element events ──────────────────────────────
@@ -1185,6 +1205,20 @@ export function VideoPlayer({
                               e.stopPropagation();
                               setQuality(q);
                               setQualityOpen(false);
+                              if (hlsRef.current) {
+                                if (q === "Auto") {
+                                  hlsRef.current.currentLevel = -1;
+                                } else {
+                                  const targetHeight = parseInt(q);
+                                  const levelIndex =
+                                    hlsRef.current.levels.findIndex(
+                                      (l) => l.height === targetHeight,
+                                    );
+                                  if (levelIndex !== -1) {
+                                    hlsRef.current.currentLevel = levelIndex;
+                                  }
+                                }
+                              }
                               kickIdle();
                             }}
                             className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-white/90 transition-colors hover:bg-white/10"

@@ -1,22 +1,71 @@
 import Link from "next/link";
-import { Lock, Play, CheckCircle2, Circle, VideoOff } from "lucide-react";
 import type { LessonWithProgress, LessonStatus } from "@/lib/classroom/types";
 import { getLessonStatus } from "@/lib/classroom/progress";
 import { fmtDuration } from "@/lib/classroom/format";
 
+/* ── Inline SVG icons (matches classroom design pattern) ─────── */
+
+type IconProps = { size?: number; className?: string };
+
+function PlayIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
+function CircleIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
+}
+
+function LockIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  );
+}
+
+function VideoOffIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.66 5H14a2 2 0 012 2v2.34l1 1L22 7v10" />
+      <path d="M16 16a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2h1.34" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
+type StatusIcon = (props: IconProps) => React.ReactNode;
+
 const STATUS_CONFIG: Record<
   LessonStatus,
-  { icon: typeof Play; label: string; color: string }
+  { icon: StatusIcon; label: string; color: string }
 > = {
   completed: {
-    icon: CheckCircle2,
+    icon: CheckCircleIcon,
     label: "Completada",
-    color: "text-green-600",
+    color: "text-ca-lime-deep",
   },
-  in_progress: { icon: Play, label: "En progreso", color: "text-blue-600" },
-  available: { icon: Circle, label: "Disponible", color: "text-gray-400" },
-  locked: { icon: Lock, label: "Bloqueada", color: "text-gray-300" },
-  no_video: { icon: VideoOff, label: "Próximamente", color: "text-gray-300" },
+  in_progress: { icon: PlayIcon, label: "En progreso", color: "text-ca-violet" },
+  available: { icon: CircleIcon, label: "Disponible", color: "text-ca-ink-soft" },
+  locked: { icon: LockIcon, label: "Bloqueada", color: "text-ca-ink-soft/60" },
+  no_video: { icon: VideoOffIcon, label: "Próximamente", color: "text-ca-ink-soft/60" },
 };
 
 type LessonCardProps = {
@@ -43,11 +92,11 @@ export function LessonCard({
     <div
       className={`group flex items-center gap-4 rounded-lg border p-4 transition-colors ${
         isClickable
-          ? "cursor-pointer border-gray-200 hover:border-blue-300 hover:bg-blue-50/50"
-          : "cursor-not-allowed border-gray-100 bg-gray-50/50 opacity-60"
+          ? "cursor-pointer border-ca-ink/[0.08] hover:border-ca-violet/30 hover:bg-ca-violet/[0.04]"
+          : "cursor-not-allowed border-ca-ink/[0.06] bg-ca-bg-soft/50 opacity-60"
       }`}
     >
-      <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded-md bg-gray-100">
+      <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded-md bg-ca-bg-soft">
         {lesson.thumbnail_url ? (
           <img
             src={lesson.thumbnail_url}
@@ -55,14 +104,14 @@ export function LessonCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <VideoOff className="h-6 w-6 text-gray-300" />
+          <div className="flex h-full w-full items-center justify-center text-ca-ink-soft/60">
+            <VideoOffIcon size={24} />
           </div>
         )}
         {status === "in_progress" && progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-ca-ink/[0.08]">
             <div
-              className="h-full bg-blue-500"
+              className="h-full bg-ca-violet"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -70,15 +119,15 @@ export function LessonCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-400">Lección {index + 1}</p>
-        <h4 className="truncate font-medium text-gray-900">{lesson.title}</h4>
+        <p className="text-xs text-ca-ink-soft">Lección {index + 1}</p>
+        <h4 className="truncate font-medium text-ca-ink">{lesson.title}</h4>
         {lesson.video_duration_seconds && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ca-ink-soft">
             {fmtDuration(lesson.video_duration_seconds)}
           </p>
         )}
         {status === "locked" && lesson.unlock_at && (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ca-ink-soft">
             Disponible{" "}
             {new Date(lesson.unlock_at).toLocaleDateString("es-CL", {
               day: "numeric",

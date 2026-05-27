@@ -21,11 +21,21 @@ export default async function ClassroomLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role, system_role, onboarding_completed_at")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: enrollment }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name, role, system_role, onboarding_completed_at")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("enrollments")
+      .select("cohort_id")
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .order("enrolled_at", { ascending: false })
+      .limit(1)
+      .single(),
+  ]);
 
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
@@ -33,15 +43,6 @@ export default async function ClassroomLayout({
   if (profile && !profile.onboarding_completed_at && !isStaff) {
     redirect("/onboarding/complete-profile");
   }
-
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select("cohort_id")
-    .eq("student_id", user.id)
-    .eq("status", "active")
-    .order("enrolled_at", { ascending: false })
-    .limit(1)
-    .single();
 
   const name = profile?.full_name ?? user.email ?? "Alumno";
   const initials = name

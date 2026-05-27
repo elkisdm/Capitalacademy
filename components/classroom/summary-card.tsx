@@ -146,7 +146,7 @@ export function SummaryCard({
           <EmptyIcon size={18} />
         </span>
         <span className="text-[13px] text-ca-ink-soft">
-          Resumen no disponible para esta leccion
+          Resumen no disponible para esta lección
         </span>
       </div>
     );

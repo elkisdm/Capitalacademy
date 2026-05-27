@@ -49,10 +49,10 @@ export default async function AdminLessonPage(
   const videoDuration = (lesson as Record<string, unknown>).video_duration_seconds as number | null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-6 md:py-8">
       <Link
         href="/admin/lessons"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-ca-ink-soft hover:text-ca-ink"
       >
         <ChevronLeft className="h-4 w-4" />
         Volver a lecciones
@@ -60,21 +60,21 @@ export default async function AdminLessonPage(
 
       <div className="mb-6">
         {mod && (
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-ca-ink-soft">
             {mod.programs?.name} · {mod.code} — {mod.title}
           </p>
         )}
-        <h1 className="mt-1 text-2xl font-bold text-gray-900">
+        <h1 className="mt-1 text-2xl font-bold text-ca-ink">
           {lesson.title}
         </h1>
         {lesson.description && (
-          <p className="mt-1 text-gray-600">{lesson.description}</p>
+          <p className="mt-1 text-ca-ink-soft">{lesson.description}</p>
         )}
       </div>
 
       {/* Video section */}
-      <section className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+      <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
           <Video className="h-5 w-5" />
           Video
         </h2>
@@ -90,21 +90,21 @@ export default async function AdminLessonPage(
                 />
               )}
               <div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ca-ink-soft">
                   <Clock className="mr-1 inline h-3.5 w-3.5" />
                   Duración: {formatDuration(videoDuration)}
                 </p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-ca-ink-soft/60">
                   Asset: {(lesson as Record<string, unknown>).mux_asset_id as string}
                 </p>
-                <p className="mt-3 text-sm font-medium text-green-600">
+                <p className="mt-3 text-sm font-medium text-ca-lime-deep">
                   Video listo y disponible para alumnos
                 </p>
               </div>
             </div>
 
             <div>
-              <p className="mb-2 text-sm text-gray-500">
+              <p className="mb-2 text-sm text-ca-ink-soft">
                 ¿Reemplazar video?
               </p>
               <MuxUploader lessonId={lessonId} />
@@ -112,7 +112,7 @@ export default async function AdminLessonPage(
           </div>
         ) : (
           <div>
-            <p className="mb-4 text-sm text-gray-500">
+            <p className="mb-4 text-sm text-ca-ink-soft">
               Esta lección no tiene video aún. Sube uno para que los alumnos
               puedan verlo.
             </p>
@@ -122,8 +122,8 @@ export default async function AdminLessonPage(
       </section>
 
       {/* Resources section */}
-      <section className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+      <section className="rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
           <FileText className="h-5 w-5" />
           Recursos
         </h2>

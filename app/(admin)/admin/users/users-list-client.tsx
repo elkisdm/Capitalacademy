@@ -388,6 +388,18 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     { key: "student", label: "Alumnos" },
   ];
 
+  const filterCounts = useMemo(() => {
+    const counts: Record<Filter, number> = { all: 0, admin: 0, ops: 0, teacher: 0, student: 0 };
+    for (const u of searchFiltered) {
+      counts.all++;
+      if (u.system_role === "admin") counts.admin++;
+      if (u.system_role === "ops") counts.ops++;
+      if (u.cohort_roles.some((cr) => cr.role === "teacher")) counts.teacher++;
+      if (u.cohort_roles.some((cr) => cr.role === "student")) counts.student++;
+    }
+    return counts;
+  }, [searchFiltered]);
+
   const closeAll = useCallback(() => {
     setDrawerOpen(false);
     setAssignModalOpen(false);
@@ -525,7 +537,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
               <FilterPill
                 key={f.key}
                 label={f.label}
-                count={countByFilter(searchFiltered, f.key)}
+                count={filterCounts[f.key]}
                 active={activeFilter === f.key}
                 onClick={() => setActiveFilter(f.key)}
               />

@@ -14,6 +14,7 @@ import { UserDrawer } from "@/components/admin/user-drawer";
 import { AssignCohortModal } from "@/components/admin/assign-cohort-modal";
 import { DeactivateModal } from "@/components/admin/deactivate-modal";
 import { Avatar } from "@/components/classroom/primitives";
+import { useToast } from "@/components/admin/toast";
 
 type Filter = "all" | "admin" | "ops" | "teacher" | "student";
 
@@ -117,6 +118,7 @@ function countByFilter(users: AdminUserListItem[], filter: Filter): number {
 }
 
 const MENU_HEIGHT_ESTIMATE = 190;
+const PAGE_SIZE = 20;
 
 function KebabMenu({
   userId,
@@ -180,7 +182,7 @@ function KebabMenu({
           e.stopPropagation();
           onToggle();
         }}
-        className="grid h-8 w-8 place-items-center rounded-full text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
+        className="grid h-8 w-8 place-items-center rounded-full text-ca-ink-soft opacity-100 md:opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
       >
         <DotsIcon />
       </button>
@@ -250,11 +252,42 @@ function KebabMenu({
   );
 }
 
+function ChevronLeftIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [];
+  pages.push(1);
+  if (current > 3) pages.push("...");
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+    pages.push(i);
+  }
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
 export function UsersListClient({ users, cohorts }: UsersListClientProps) {
   const router = useRouter();
+  const { toast, ToastContainer } = useToast();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
@@ -295,6 +328,16 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
   const filtered = useMemo(() => {
     return searchFiltered.filter((u) => matchesFilter(u, activeFilter));
   }, [searchFiltered, activeFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, activeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedStart = (safePage - 1) * PAGE_SIZE;
+  const paginatedEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
+  const paginated = filtered.slice(paginatedStart, paginatedEnd);
 
   const hasActiveSearchOrFilter = search.trim() !== "" || activeFilter !== "all";
 
@@ -423,7 +466,8 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
           <EmptyState />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="border-b border-ca-ink/[0.08]">
@@ -443,7 +487,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((u) => {
+                  {paginated.map((u) => {
                     const initials = getInitials(u.full_name, u.email);
                     const cohortBadges: CohortBadge[] = u.cohort_roles.map((cr) => ({
                       name: cr.cohort_name,
@@ -506,10 +550,112 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
               </table>
             </div>
 
-            <div className="flex items-center justify-between border-t border-ca-ink/[0.08] px-5 py-3.5">
+            {/* Mobile card list */}
+            <div className="md:hidden flex flex-col gap-3 px-4 py-4">
+              {paginated.map((u) => {
+                const initials = getInitials(u.full_name, u.email);
+                const cohortBadges: CohortBadge[] = u.cohort_roles.map((cr) => ({
+                  name: cr.cohort_name,
+                  role: cr.role,
+                }));
+
+                return (
+                  <div
+                    key={u.id}
+                    onClick={() => handleRowClick(u.id)}
+                    className="ca-card group relative cursor-pointer p-4 transition-colors hover:bg-ca-bg-soft/60"
+                  >
+                    <div className="absolute right-3 top-3">
+                      <KebabMenu
+                        userId={u.id}
+                        isOpen={openMenuId === u.id}
+                        onToggle={() => setOpenMenuId(openMenuId === u.id ? null : u.id)}
+                        onClose={() => setOpenMenuId(null)}
+                        onViewProfile={() => {
+                          setOpenMenuId(null);
+                          handleRowClick(u.id);
+                        }}
+                        onEdit={() => handleOpenEdit(u)}
+                        onAssign={() => handleOpenAssign(u)}
+                        onDeactivate={() => handleOpenDeactivate(u)}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 pr-8">
+                      <Avatar initials={initials} size={36} />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate text-[14px] font-bold text-ca-ink">
+                          {u.full_name ?? "Sin nombre"}
+                        </span>
+                        <PlatformBadge role={u.system_role} />
+                      </div>
+                    </div>
+
+                    <div className="mt-2 truncate font-mono text-[11px] text-ca-ink-soft pl-[48px]">
+                      {u.email}
+                    </div>
+
+                    <div className="mt-2 pl-[48px]">
+                      {cohortBadges.length > 0 ? (
+                        <CohortBadgeStack cohorts={cohortBadges} />
+                      ) : (
+                        <span className="text-[12px] text-ca-ink-soft">Sin cohortes</span>
+                      )}
+                    </div>
+
+                    <div className="mt-2 pl-[48px] text-[11px] font-semibold text-ca-ink-soft">
+                      Ultimo acceso: {formatLastAccess(u.last_sign_in_at)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination footer */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ca-ink/[0.08] px-5 py-3.5">
               <span className="text-[12px] font-semibold text-ca-ink-soft">
-                Mostrando {filtered.length} de {users.length} usuarios
+                Mostrando {paginatedStart + 1}-{paginatedEnd} de {filtered.length} usuarios
               </span>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <ChevronLeftIcon />
+                  </button>
+
+                  {getPageNumbers(safePage, totalPages).map((n, i) =>
+                    n === "..." ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-[12px] text-ca-ink-soft">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={n}
+                        onClick={() => setPage(n)}
+                        className="grid h-8 w-8 place-items-center rounded-lg text-[12px] font-bold transition-colors"
+                        style={{
+                          background: n === safePage ? "var(--color-ca-ink)" : "transparent",
+                          color: n === safePage ? "#fff" : "var(--color-ca-ink-soft)",
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ),
+                  )}
+
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <ChevronRightIcon />
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -522,6 +668,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
         onClose={() => setDrawerOpen(false)}
         onSave={() => {
           setDrawerOpen(false);
+          toast(drawerMode === "create" ? "Usuario creado" : "Cambios guardados", "success");
           router.refresh();
         }}
       />
@@ -538,6 +685,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
         onClose={() => setAssignModalOpen(false)}
         onAssign={async () => {
           setAssignModalOpen(false);
+          toast("Rol asignado", "success");
           router.refresh();
         }}
       />
@@ -548,9 +696,12 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
         onClose={() => setDeactivateModalOpen(false)}
         onConfirm={async () => {
           setDeactivateModalOpen(false);
+          toast("Usuario desactivado", "success");
           router.refresh();
         }}
       />
+
+      <ToastContainer />
     </>
   );
 }

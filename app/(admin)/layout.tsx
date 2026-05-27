@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCohortSlugById } from "@/lib/classroom/queries";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
 
 export const metadata = {
@@ -20,11 +21,11 @@ export default async function AdminLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, system_role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || !["ops", "admin"].includes(profile.role)) {
+  if (!profile || !["ops", "admin"].includes(profile.system_role ?? profile.role)) {
     redirect("/classroom");
   }
 
@@ -45,12 +46,17 @@ export default async function AdminLayout({
     .slice(0, 2)
     .toUpperCase();
 
+  const cohortSlug = enrollment?.cohort_id
+    ? (await getCohortSlugById(enrollment.cohort_id)) ?? enrollment.cohort_id
+    : undefined;
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
       <ClassroomSidebar
         userInitials={initials}
         userName={name}
-        cohortId={enrollment?.cohort_id}
+        userRole={profile.system_role ?? profile.role}
+        cohortId={cohortSlug}
         showOps={true}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">

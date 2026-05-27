@@ -10,6 +10,7 @@ import { UserDrawer } from "@/components/admin/user-drawer";
 import { AssignCohortModal } from "@/components/admin/assign-cohort-modal";
 import { DeactivateModal } from "@/components/admin/deactivate-modal";
 import { BrandShapes } from "@/components/classroom/primitives";
+import { useToast } from "@/components/admin/toast";
 
 function getInitials(name: string | null, email: string): string {
   if (name) {
@@ -193,6 +194,7 @@ const ACTIONS_MENU_HEIGHT_ESTIMATE = 170;
 
 export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
   const router = useRouter();
+  const { toast, ToastContainer } = useToast();
   const [actionsOpen, setActionsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -228,6 +230,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
 
   const handleEditSave = () => {
     setDrawerOpen(false);
+    toast("Cambios guardados", "success");
     router.refresh();
   };
 
@@ -248,6 +251,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
     });
     if (res.ok) {
       setAssignModalOpen(false);
+      toast("Rol asignado", "success");
       router.refresh();
     }
   };
@@ -667,6 +671,8 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
           router.refresh();
         }}
       />
+
+      <ToastContainer />
     </>
   );
 }

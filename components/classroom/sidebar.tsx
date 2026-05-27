@@ -90,6 +90,7 @@ function SidebarContent({
   cohortId,
   userInitials,
   userName,
+  userRole,
   onCollapse,
   onNavClick,
 }: {
@@ -99,6 +100,7 @@ function SidebarContent({
   cohortId?: string;
   userInitials: string;
   userName: string;
+  userRole: string;
   onCollapse?: () => void;
   onNavClick?: () => void;
 }) {
@@ -167,7 +169,7 @@ function SidebarContent({
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate text-[12px] font-bold text-ca-ink">{userName}</div>
               <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">
-                Alumno
+                {ROLE_LABELS[userRole] ?? "Usuario"}
               </div>
             </div>
           )}
@@ -177,14 +179,24 @@ function SidebarContent({
   );
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  ops: "Operaciones",
+  user: "Usuario",
+  student: "Alumno",
+  teacher: "Profesor",
+};
+
 export function ClassroomSidebar({
   userInitials,
   userName,
+  userRole = "user",
   cohortId,
   showOps = false,
 }: {
   userInitials: string;
   userName: string;
+  userRole?: string;
   cohortId?: string;
   showOps?: boolean;
 }) {
@@ -231,6 +243,7 @@ export function ClassroomSidebar({
           cohortId={cohortId}
           userInitials={userInitials}
           userName={userName}
+          userRole={userRole}
           onCollapse={() => setCollapsed(!collapsed)}
         />
       </aside>
@@ -322,7 +335,7 @@ export function ClassroomSidebar({
                 <div className="min-w-0 flex-1 leading-tight">
                   <div className="truncate text-[12px] font-bold text-ca-ink">{userName}</div>
                   <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">
-                    Alumno
+                    {ROLE_LABELS[userRole] ?? "Usuario"}
                   </div>
                 </div>
               </div>

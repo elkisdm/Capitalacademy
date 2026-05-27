@@ -10,7 +10,6 @@ import {
   getCohortWithProgram,
 } from "@/lib/classroom/queries";
 import { getLessonStatus } from "@/lib/classroom/progress";
-import { getSignedPlaybackToken } from "@/lib/mux/signing";
 import { VideoPlayer } from "@/components/classroom/video-player";
 import {
   StatusPill,
@@ -108,7 +107,6 @@ export default async function LessonPage(
           {muxPlaybackId && videoDuration ? (
             <VideoPlayer
               playbackId={muxPlaybackId}
-              playbackToken={await getSignedPlaybackToken(muxPlaybackId)}
               lessonId={lessonId}
               durationSeconds={videoDuration}
               initialPosition={progress?.playback_position_seconds ?? 0}

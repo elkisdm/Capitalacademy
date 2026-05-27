@@ -5,7 +5,6 @@ import MuxPlayer from "@mux/mux-player-react";
 import { useVideoProgress } from "@/lib/classroom/use-video-progress";
 
 type VideoPlayerProps = {
-  playbackToken: string;
   playbackId: string;
   lessonId: string;
   durationSeconds: number;
@@ -14,7 +13,6 @@ type VideoPlayerProps = {
 };
 
 export function VideoPlayer({
-  playbackToken,
   playbackId,
   lessonId,
   durationSeconds,
@@ -43,7 +41,6 @@ export function VideoPlayer({
     <div className="space-y-2">
       <MuxPlayer
         playbackId={playbackId}
-        tokens={{ playback: playbackToken }}
         startTime={initialPosition}
         metadata={{ video_title: title }}
         accentColor="#22c55e"

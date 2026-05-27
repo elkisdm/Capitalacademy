@@ -67,15 +67,7 @@ export async function POST(req: Request) {
   };
 
   const supabase = createAdminClient();
-  // La tabla `leads` aún no está en los tipos generados de Supabase.
-  // Bypass tipado mientras no se regeneran los tipos.
-  const { error } = await (
-    supabase as unknown as {
-      from: (table: string) => {
-        insert: (values: unknown) => Promise<{ error: { message: string } | null }>;
-      };
-    }
-  )
+  const { error } = await supabase
     .from("leads")
     .insert(payload);
 

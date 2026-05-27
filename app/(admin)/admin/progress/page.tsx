@@ -2,34 +2,56 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortProgressReport } from "@/lib/classroom/admin-queries";
 import { ProgressTable } from "@/components/admin/progress-table";
+import { CohortSelector } from "./cohort-selector";
 
-export default async function AdminProgressPage() {
+export default async function AdminProgressPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cohort?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select("cohort_id")
-    .limit(1)
-    .single();
+  const { data: cohorts } = await supabase
+    .from("cohorts")
+    .select("id, name, code, status, programs(name)")
+    .order("created_at", { ascending: false });
 
-  if (!enrollment) {
+  if (!cohorts || cohorts.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
         <h1 className="text-2xl font-black text-ca-ink">Progreso de la cohorte</h1>
-        <p className="mt-4 text-ca-ink-soft">No hay cohortes con alumnos matriculados.</p>
+        <p className="mt-4 text-ca-ink-soft">No hay cohortes registradas.</p>
       </div>
     );
   }
 
-  const report = await getCohortProgressReport(enrollment.cohort_id);
+  const params = await searchParams;
+  const selectedCohortId = params.cohort ?? cohorts[0].id;
+
+  const cohortOptions = cohorts.map((c) => ({
+    id: c.id,
+    name: c.name,
+    code: c.code,
+    programName: (c.programs as { name: string } | null)?.name ?? "",
+  }));
+
+  const report = await getCohortProgressReport(selectedCohortId);
 
   if (!report) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
-        <h1 className="text-2xl font-black text-ca-ink">Progreso de la cohorte</h1>
-        <p className="mt-4 text-ca-ink-soft">No se encontró la cohorte.</p>
+      <div className="ca-fade-up mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">
+        <div className="mb-7">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            Operaciones · Reportes
+          </div>
+          <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">
+            Progreso de la cohorte
+          </h1>
+        </div>
+        <CohortSelector cohorts={cohortOptions} selectedId={selectedCohortId} />
+        <p className="mt-4 text-ca-ink-soft">No se encontró la cohorte seleccionada.</p>
       </div>
     );
   }
@@ -54,6 +76,8 @@ export default async function AdminProgressPage() {
           {(program as { name: string }).name} · {cohort.name} · {students.length} alumnos activos
         </p>
       </div>
+
+      <CohortSelector cohorts={cohortOptions} selectedId={selectedCohortId} />
 
       {/* Stat cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">

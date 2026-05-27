@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import type { CohortRole } from "./user-primitives";
 
 type CohortOption = {
@@ -79,6 +80,7 @@ const INPUT_CLASS =
   "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
 
 export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: AssignCohortModalProps) {
+  const trapRef = useFocusTrap(open);
   const [selectedCohortId, setSelectedCohortId] = useState("");
   const [selectedRole, setSelectedRole] = useState<CohortRole>("student");
   const [selectedModuleId, setSelectedModuleId] = useState("");
@@ -168,7 +170,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
       className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
       style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
     >
-      <div className="ca-card relative flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden">
+      <div ref={trapRef} className="ca-card relative flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-ca-ink/[0.08] px-6 py-5">
           <div>

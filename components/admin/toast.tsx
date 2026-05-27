@@ -6,13 +6,11 @@ import { createPortal } from "react-dom";
 type ToastType = "success" | "error";
 
 type ToastItem = {
-  id: number;
+  id: string;
   message: string;
   type: ToastType;
   exiting: boolean;
 };
-
-let nextId = 0;
 
 function CheckIcon() {
   return (
@@ -85,7 +83,7 @@ export function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const toast = useCallback((message: string, type: ToastType) => {
-    const id = ++nextId;
+    const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
 
     setTimeout(() => {

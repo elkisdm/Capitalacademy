@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Avatar } from "@/components/classroom/primitives";
 
 type DeactivateModalProps = {
@@ -34,6 +35,7 @@ function CloseIcon() {
 }
 
 export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateModalProps) {
+  const trapRef = useFocusTrap(open);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
       className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
       style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
     >
-      <div className="ca-card relative w-full max-w-[460px] overflow-hidden">
+      <div ref={trapRef} className="ca-card relative w-full max-w-[460px] overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6">
           <div

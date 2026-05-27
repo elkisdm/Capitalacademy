@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Avatar } from "@/components/classroom/primitives";
 import type { CohortStudentProgress } from "@/lib/classroom/admin-queries";
 
@@ -36,12 +37,13 @@ function DrillDownModal({ student, modules, onClose }: {
   modules: Array<{ id: string; title: string; position: number }>;
   onClose: () => void;
 }) {
+  const trapRef = useFocusTrap(true);
   return (
     <div
       className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
       style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
     >
-      <div className="ca-card relative flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden">
+      <div ref={trapRef} className="ca-card relative flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden">
         <div className="relative flex items-start justify-between border-b border-ca-ink/[0.08] p-6">
           <div className="flex items-center gap-4">
             <Avatar initials={student.initials} size={56} accent="bg-ca-lime" />
@@ -199,8 +201,8 @@ export function ProgressTable({ students, modules }: ProgressTableProps) {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="ca-card overflow-hidden">
+      {/* Desktop Table (md and up) */}
+      <div className="ca-card hidden overflow-hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -270,6 +272,71 @@ export function ProgressTable({ students, modules }: ProgressTableProps) {
               <div className="text-[12px] text-ca-ink-soft">Ajusta el filtro para ver más resultados.</div>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Mobile Card Layout (below md) */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="ca-card grid place-items-center py-16">
+            <div className="text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-ca-bg-soft">
+                <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+                </svg>
+              </div>
+              <div className="mt-3 text-[14px] font-bold text-ca-ink">Sin alumnos en este filtro</div>
+              <div className="text-[12px] text-ca-ink-soft">Ajusta el filtro para ver más resultados.</div>
+            </div>
+          </div>
+        ) : (
+          filtered.map((s) => {
+            const overallTone = progressTone(s.overall_percentage);
+            return (
+              <button
+                key={s.student_id}
+                onClick={() => setDrillStudent(s)}
+                className="ca-card w-full p-4 text-left transition-colors hover:bg-ca-bg-soft/60"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar initials={s.initials} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-bold text-ca-ink">{s.full_name}</div>
+                    <div className="font-mono text-[10px] text-ca-ink-soft">{s.email}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono text-[20px] font-black" style={{ color: overallTone.fg }}>
+                      {s.overall_percentage}%
+                    </div>
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: overallTone.fg, opacity: 0.8 }}>
+                      {overallTone.label}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col gap-1.5">
+                  {s.module_progress.map((mp) => {
+                    const tone = progressTone(mp.percentage);
+                    return (
+                      <div key={mp.module_id} className="flex items-center gap-2">
+                        <span className="w-10 shrink-0 font-mono text-[10px] font-bold text-ca-ink-soft">
+                          M{String(mp.module_position).padStart(2, "0")}
+                        </span>
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/[0.06]">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${mp.percentage}%`, background: tone.fg, opacity: 0.7 }}
+                          />
+                        </div>
+                        <span className="w-10 shrink-0 text-right font-mono text-[11px] font-bold" style={{ color: tone.fg }}>
+                          {mp.percentage}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
 

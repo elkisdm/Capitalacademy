@@ -93,7 +93,7 @@ export function Comparador() {
 
         {/* ============ DESKTOP ============ */}
         <div className="mt-14 hidden lg:block">
-          <div className="grid grid-cols-[220px_1fr_1fr_1fr] gap-4">
+          <div className="grid grid-cols-[180px_1fr_1fr_1fr] xl:grid-cols-[220px_1fr_1fr_1fr] gap-4">
             {/* Header column (label gutter) */}
             <div />
 
@@ -140,7 +140,7 @@ export function Comparador() {
               {rows.map((row, idx) => (
                 <div
                   key={row.label}
-                  className={`grid grid-cols-[220px_1fr_1fr_1fr] ${
+                  className={`grid grid-cols-[180px_1fr_1fr_1fr] xl:grid-cols-[220px_1fr_1fr_1fr] ${
                     idx !== rows.length - 1
                       ? "border-b border-[rgba(20,22,58,0.06)]"
                       : ""

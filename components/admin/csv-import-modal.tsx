@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import Papa from "papaparse";
 // XLSX is imported dynamically in parseFile only when handling .xlsx/.xls files
 
@@ -179,6 +180,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
   const [dragOver, setDragOver] = useState(false);
   const [selectedCohortId, setSelectedCohortId] = useState(cohorts[0]?.id ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const trapRef = useFocusTrap(open);
 
   useEffect(() => {
     setMounted(true);
@@ -414,6 +416,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
       {/* Modal */}
       <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
         <div
+          ref={trapRef}
           className="flex max-h-[90vh] w-full max-w-[720px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
@@ -753,11 +756,9 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                     Cerrar
                   </button>
                   <button
-                    className="ca-btn-primary px-5 py-2.5 text-[13px] font-bold"
-                    onClick={() => {
-                      // TODO: trigger re-send invitations for created users
-                      handleClose();
-                    }}
+                    disabled
+                    title="Próximamente"
+                    className="ca-btn-primary px-5 py-2.5 text-[13px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Reenviar invitaciones
                   </button>

@@ -16,6 +16,15 @@ import { DeactivateModal } from "@/components/admin/deactivate-modal";
 import { CsvImportModal } from "@/components/admin/csv-import-modal";
 import { Avatar } from "@/components/classroom/primitives";
 import { useToast } from "@/components/admin/toast";
+import {
+  SearchIcon,
+  PlusIcon,
+  UploadIcon,
+  MailIcon,
+  DotsIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@/components/admin/icons";
 
 type Filter = "all" | "admin" | "ops" | "teacher" | "student";
 
@@ -29,52 +38,6 @@ type MenuPosition = {
   bottom?: number;
   left: number;
 };
-
-function SearchIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
-
-function MailIconSmall() {
-  return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="M22 7l-10 7L2 7" />
-    </svg>
-  );
-}
-
-function DotsIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
-  );
-}
 
 function EmptyState() {
   return (
@@ -266,7 +229,7 @@ function KebabMenu({
                 }}
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
               >
-                <MailIconSmall />
+                <MailIcon />
                 Enviar invitación
               </button>
             )}
@@ -285,22 +248,6 @@ function KebabMenu({
         document.body,
       )}
     </>
-  );
-}
-
-function ChevronLeftIcon() {
-  return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15 18l-6-6 6-6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 18l6-6-6-6" />
-    </svg>
   );
 }
 
@@ -517,7 +464,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       <div className="ca-card overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-ca-ink/[0.08] px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div className="relative max-w-sm flex-1">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-50">
               <SearchIcon />
             </span>
             <input

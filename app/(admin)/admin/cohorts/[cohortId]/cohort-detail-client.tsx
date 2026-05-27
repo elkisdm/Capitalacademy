@@ -10,6 +10,18 @@ import {
   type CohortRole,
 } from "@/components/admin/user-primitives";
 import type { CohortMember } from "@/lib/admin/user-queries";
+import {
+  ArrowLeftIcon,
+  UsersIcon,
+  InfoIcon,
+  ChartIcon,
+  SearchIcon,
+  PlusIcon,
+  UploadIcon,
+  DownloadIcon,
+  MailIcon,
+  MoreIcon,
+} from "@/components/admin/icons";
 
 type CohortInfo = {
   id: string;
@@ -67,94 +79,7 @@ function formatDate(iso: string): string {
   });
 }
 
-function ArrowLeftIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 12H5M12 19l-7-7 7-7" />
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4M12 8h.01" />
-    </svg>
-  );
-}
-
-function ChartIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 20V10M12 20V4M6 20v-6" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  );
-}
-
-function MailIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="M22 7l-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7" />
-    </svg>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
-  );
-}
-
-const TABS: { key: Tab; label: string; icon: () => React.ReactNode }[] = [
+const TABS: { key: Tab; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
   { key: "info", label: "Información", icon: InfoIcon },
   { key: "participantes", label: "Participantes", icon: UsersIcon },
   { key: "progreso", label: "Progreso", icon: ChartIcon },
@@ -463,7 +388,7 @@ function InfoTab({
     { label: "Ayudantes", value: String(members.assistants.length) },
   ];
 
-  const actions: { label: string; icon: () => React.ReactNode; description: string }[] = [
+  const actions: { label: string; icon: React.ComponentType<{ size?: number }>; description: string }[] = [
     {
       label: "Agregar participante",
       icon: PlusIcon,
@@ -535,7 +460,9 @@ function InfoTab({
           {actions.map((action) => (
             <button
               key={action.label}
-              className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left transition-colors hover:border-ca-violet/30 hover:bg-ca-violet/[0.03]"
+              disabled
+              title="Próximamente"
+              className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left opacity-50 cursor-not-allowed"
             >
               <div
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"

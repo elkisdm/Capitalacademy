@@ -250,20 +250,28 @@ export async function correctTranscript(
     correctionByIndex.set(c.index, c);
   }
 
-  // 5. Upsert into transcript_segments and build corrected text map
+  // 5. Collect segments for batch upsert and build corrected text map
   const correctedTextMap = new Map<number, string>();
   let changedCount = 0;
   let reviewCount = 0;
+
+  const segmentsToUpsert: Array<{
+    transcript_id: string;
+    segment_index: number;
+    start_seconds: number;
+    end_seconds: number;
+    original_text: string;
+    corrected_text: string | null;
+    needs_review: boolean;
+    review_reason: string | null;
+  }> = [];
 
   for (const seg of segments) {
     const correction = correctionByIndex.get(seg.index);
     if (!correction) continue;
 
-    // Track for VTT rebuild regardless of manual edit status
     if (correction.changed) {
-      // If manually edited, preserve the human edit in VTT too
       if (manuallyEditedIndices.has(seg.index)) {
-        // Don't overwrite — the VTT rebuild will use the original text
         continue;
       }
 
@@ -274,37 +282,42 @@ export async function correctTranscript(
         reviewCount++;
       }
 
-      // Upsert segment
-      await admin.from("transcript_segments").upsert(
-        {
+      segmentsToUpsert.push({
+        transcript_id: transcript.id,
+        segment_index: seg.index,
+        start_seconds: seg.start,
+        end_seconds: seg.end,
+        original_text: seg.text,
+        corrected_text: correction.corrected,
+        needs_review: correction.needs_review,
+        review_reason: correction.review_reason,
+      });
+    } else {
+      if (!manuallyEditedIndices.has(seg.index)) {
+        segmentsToUpsert.push({
           transcript_id: transcript.id,
           segment_index: seg.index,
           start_seconds: seg.start,
           end_seconds: seg.end,
           original_text: seg.text,
-          corrected_text: correction.corrected,
-          needs_review: correction.needs_review,
-          review_reason: correction.review_reason,
-        },
-        { onConflict: "transcript_id,segment_index" },
-      );
-    } else {
-      // Unchanged — still upsert so we have the segment stored
-      if (!manuallyEditedIndices.has(seg.index)) {
-        await admin.from("transcript_segments").upsert(
-          {
-            transcript_id: transcript.id,
-            segment_index: seg.index,
-            start_seconds: seg.start,
-            end_seconds: seg.end,
-            original_text: seg.text,
-            corrected_text: null,
-            needs_review: false,
-            review_reason: null,
-          },
-          { onConflict: "transcript_id,segment_index" },
-        );
+          corrected_text: null,
+          needs_review: false,
+          review_reason: null,
+        });
       }
+    }
+  }
+
+  // Batch upsert all segments in a single query
+  if (segmentsToUpsert.length > 0) {
+    const { error: upsertError } = await admin
+      .from("transcript_segments")
+      .upsert(segmentsToUpsert, { onConflict: "transcript_id,segment_index" });
+
+    if (upsertError) {
+      throw new Error(
+        `Failed to batch upsert transcript_segments: ${upsertError.message}`,
+      );
     }
   }
 

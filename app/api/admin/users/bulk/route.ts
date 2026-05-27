@@ -83,31 +83,66 @@ export async function POST(req: Request) {
   let assigned = 0;
   const errors: RowError[] = [];
 
+  // --- Pre-validate rows -----------------------------------------------------
+  const validRows: Array<{ index: number; row: BulkRow }> = [];
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const rowNum = i + 1;
-
     if (!row.email || !row.full_name) {
       errors.push({
-        row: rowNum,
+        row: i + 1,
         email: row.email ?? "",
         reason: "email y full_name son requeridos",
       });
-      continue;
+    } else {
+      validRows.push({ index: i, row });
     }
+  }
+
+  // --- Batch lookup: fetch ALL existing profiles by email in ONE query --------
+  const allEmails = validRows.map((v) => v.row.email);
+  const { data: existingProfiles } = await admin
+    .from("profiles")
+    .select("id, email")
+    .in("email", allEmails);
+
+  const profileByEmail = new Map(
+    (existingProfiles ?? []).map((p) => [p.email, p.id]),
+  );
+
+  // --- Process each row (auth API calls can't be batched) --------------------
+  // Collect successful enrollments and roles for batch upsert after the loop
+  const enrollmentsToUpsert: Array<{
+    student_id: string;
+    cohort_id: string;
+    status: "active";
+  }> = [];
+  const rolesToUpsert: Array<{
+    user_id: string;
+    cohort_id: string;
+    role: "student";
+    granted_by: string;
+  }> = [];
+  const profilesToUpsert: Array<{
+    id: string;
+    email: string;
+    full_name: string;
+    phone: string | null;
+    system_role: "user";
+  }> = [];
+
+  // Track which rows succeeded through the auth phase
+  const succeededUserIds: Array<{ rowIndex: number; userId: string }> = [];
+
+  for (const { index, row } of validRows) {
+    const rowNum = index + 1;
 
     try {
-      const { data: existingByEmail } = await admin
-        .from("profiles")
-        .select("id")
-        .eq("email", row.email)
-        .maybeSingle();
+      const existingId = profileByEmail.get(row.email);
 
-      let targetUserId: string;
-
-      if (existingByEmail) {
-        targetUserId = existingByEmail.id;
+      if (existingId) {
+        succeededUserIds.push({ rowIndex: index, userId: existingId });
       } else {
+        // Auth API call — cannot be batched
         const { data: linkData, error: linkError } =
           await admin.auth.admin.generateLink({
             type: "invite",
@@ -122,9 +157,9 @@ export async function POST(req: Request) {
           continue;
         }
 
-        targetUserId = linkData.user.id;
+        const targetUserId = linkData.user.id;
 
-        const { error: profileError } = await admin.from("profiles").upsert({
+        profilesToUpsert.push({
           id: targetUserId,
           email: row.email,
           full_name: row.full_name,
@@ -132,16 +167,8 @@ export async function POST(req: Request) {
           system_role: "user",
         });
 
-        if (profileError) {
-          errors.push({
-            row: rowNum,
-            email: row.email,
-            reason: `Perfil: ${profileError.message}`,
-          });
-          continue;
-        }
-
         created++;
+        succeededUserIds.push({ rowIndex: index, userId: targetUserId });
 
         if (send_invitations) {
           await sendInvitationEmail({
@@ -153,45 +180,6 @@ export async function POST(req: Request) {
           });
         }
       }
-
-      const { error: enrollmentError } = await admin.from("enrollments").upsert(
-        {
-          student_id: targetUserId,
-          cohort_id,
-          status: "active",
-        },
-        { onConflict: "student_id,cohort_id" },
-      );
-
-      if (enrollmentError) {
-        errors.push({
-          row: rowNum,
-          email: row.email,
-          reason: `Enrollment: ${enrollmentError.message}`,
-        });
-        continue;
-      }
-
-      const { error: roleError } = await admin.from("cohort_roles").upsert(
-        {
-          user_id: targetUserId,
-          cohort_id,
-          role: "student" as const,
-          granted_by: user.id,
-        },
-        { onConflict: "user_id,cohort_id,role" },
-      );
-
-      if (roleError) {
-        errors.push({
-          row: rowNum,
-          email: row.email,
-          reason: `Rol: ${roleError.message}`,
-        });
-        continue;
-      }
-
-      assigned++;
     } catch (err) {
       errors.push({
         row: rowNum,
@@ -200,6 +188,84 @@ export async function POST(req: Request) {
       });
     }
   }
+
+  // --- Batch upsert: profiles ------------------------------------------------
+  if (profilesToUpsert.length > 0) {
+    const { error: profileError } = await admin
+      .from("profiles")
+      .upsert(profilesToUpsert);
+
+    if (profileError) {
+      // If batch profile upsert fails, all new users are affected
+      for (const p of profilesToUpsert) {
+        errors.push({
+          row:
+            validRows.find((v) => v.row.email === p.email)!.index + 1,
+          email: p.email,
+          reason: `Perfil: ${profileError.message}`,
+        });
+      }
+      // Remove failed users from succeededUserIds
+      const failedEmails = new Set(profilesToUpsert.map((p) => p.email));
+      const filteredSucceeded = succeededUserIds.filter(
+        ({ rowIndex }) => !failedEmails.has(rows[rowIndex].email),
+      );
+      succeededUserIds.length = 0;
+      succeededUserIds.push(...filteredSucceeded);
+      created = 0;
+    }
+  }
+
+  // --- Batch upsert: enrollments and roles -----------------------------------
+  for (const { userId } of succeededUserIds) {
+    enrollmentsToUpsert.push({
+      student_id: userId,
+      cohort_id,
+      status: "active",
+    });
+    rolesToUpsert.push({
+      user_id: userId,
+      cohort_id,
+      role: "student" as const,
+      granted_by: user.id,
+    });
+  }
+
+  if (enrollmentsToUpsert.length > 0) {
+    const { error: enrollmentError } = await admin
+      .from("enrollments")
+      .upsert(enrollmentsToUpsert, { onConflict: "student_id,cohort_id" });
+
+    if (enrollmentError) {
+      for (const { rowIndex } of succeededUserIds) {
+        errors.push({
+          row: rowIndex + 1,
+          email: rows[rowIndex].email,
+          reason: `Enrollment: ${enrollmentError.message}`,
+        });
+      }
+      return NextResponse.json({ created, assigned: 0, errors });
+    }
+  }
+
+  if (rolesToUpsert.length > 0) {
+    const { error: roleError } = await admin
+      .from("cohort_roles")
+      .upsert(rolesToUpsert, { onConflict: "user_id,cohort_id,role" });
+
+    if (roleError) {
+      for (const { rowIndex } of succeededUserIds) {
+        errors.push({
+          row: rowIndex + 1,
+          email: rows[rowIndex].email,
+          reason: `Rol: ${roleError.message}`,
+        });
+      }
+      return NextResponse.json({ created, assigned: 0, errors });
+    }
+  }
+
+  assigned = succeededUserIds.length;
 
   return NextResponse.json({ created, assigned, errors });
 }

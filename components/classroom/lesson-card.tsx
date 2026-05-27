@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { LessonWithProgress, LessonStatus } from "@/lib/classroom/types";
 import { getLessonStatus } from "@/lib/classroom/progress";
 import { fmtDuration } from "@/lib/classroom/format";
@@ -98,10 +99,13 @@ export function LessonCard({
     >
       <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded-md bg-ca-bg-soft">
         {lesson.thumbnail_url ? (
-          <img
+          <Image
             src={lesson.thumbnail_url}
-            alt=""
-            className="h-full w-full object-cover"
+            alt={lesson.title}
+            fill
+            sizes="144px"
+            className="object-cover"
+            unoptimized
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-ca-ink-soft/60">

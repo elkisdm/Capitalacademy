@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { TranscriptPanel } from "@/components/classroom/transcript-panel";
 import { useVideoSync } from "@/components/classroom/video-sync-context";
 
@@ -32,6 +33,7 @@ export function CollapsiblePlaylist({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mode, setMode] = useState<SidebarMode>("playlist");
   const { currentTime, seekRef } = useVideoSync();
+  const trapRef = useFocusTrap(mobileOpen);
   const hasTranscript = !!transcriptVtt;
 
   useEffect(() => {
@@ -250,7 +252,7 @@ export function CollapsiblePlaylist({
               onClick={() => setMobileOpen(false)}
             />
             {/* Drawer from right */}
-            <aside className="ca-fade-up absolute bottom-0 right-0 top-0 flex w-[320px] max-w-[85vw] flex-col bg-ca-surface shadow-2xl">
+            <aside ref={trapRef} className="ca-fade-up absolute bottom-0 right-0 top-0 flex w-[320px] max-w-[85vw] flex-col bg-ca-surface shadow-2xl">
               {/* Drawer header */}
               <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-5 py-4">
                 <div>

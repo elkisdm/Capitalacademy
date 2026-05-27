@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Logo, Avatar } from "./primitives";
 import { SearchPanel } from "./search-panel";
 
@@ -203,6 +204,7 @@ export function ClassroomSidebar({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const trapRef = useFocusTrap(mobileOpen);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -280,6 +282,7 @@ export function ClassroomSidebar({
 
           {/* Drawer */}
           <aside
+            ref={trapRef}
             className="ca-fade-up absolute bottom-0 left-0 top-0 flex w-[280px] flex-col bg-ca-surface shadow-2xl"
           >
             <div className="flex items-center justify-between px-4 py-3">

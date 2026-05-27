@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import type { PlatformRole } from "./user-primitives";
 
 type UserData = {
@@ -47,7 +48,7 @@ export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProp
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap(open);
 
   useEffect(() => {
     setMounted(true);
@@ -143,7 +144,7 @@ export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProp
     }
   };
 
-  if (!mounted) return null;
+  if (!mounted || !open) return null;
 
   return createPortal(
     <>
@@ -161,7 +162,7 @@ export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProp
 
       {/* Panel */}
       <div
-        ref={panelRef}
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         className="fixed inset-y-0 right-0 z-[61] flex w-full max-w-[480px] flex-col bg-white shadow-2xl transition-transform duration-200 ease-out"

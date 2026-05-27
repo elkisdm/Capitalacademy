@@ -178,9 +178,9 @@ export function CompleteProfileClient({ email, profile }: CompleteProfileClientP
             </div>
           </div>
 
-          <h2 className="mt-10 text-[26px] font-black leading-tight tracking-[-0.025em] text-white lg:text-[30px]">
+          <h1 className="mt-10 text-[26px] font-black leading-tight tracking-[-0.025em] text-white lg:text-[30px]">
             Cuéntanos quién eres
-          </h2>
+          </h1>
           <p className="mt-3 text-[14px] font-medium leading-relaxed text-white/60">
             Tu perfil nos ayuda a personalizar tu experiencia de aprendizaje.
           </p>

@@ -53,7 +53,7 @@ function NavItemButton({
   const content = (
     <span
       className={`group relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
-        active ? "bg-ca-ink text-white" : "text-ca-ink hover:bg-ca-bg-soft"
+        active ? "bg-ca-violet text-white" : "text-ca-ink hover:bg-ca-bg-soft"
       }`}
     >
       <span className="grid h-7 w-7 shrink-0 place-items-center">
@@ -69,7 +69,7 @@ function NavItemButton({
           )}
         </>
       )}
-      {active && <span className="shape-circle absolute right-2 top-2 h-1.5 w-1.5 bg-ca-lime" />}
+      {active && <span className="shape-circle absolute right-2 top-2 h-1.5 w-1.5 bg-ca-lime" title="En progreso" />}
     </span>
   );
 

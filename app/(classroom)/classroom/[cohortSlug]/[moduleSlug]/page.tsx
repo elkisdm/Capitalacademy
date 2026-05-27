@@ -13,7 +13,6 @@ import {
   ProgressBar,
   Avatar,
   LessonStatusIcon,
-  Breadcrumb,
   BrandShapes,
 } from "@/components/classroom/primitives";
 import type { LessonWithProgress } from "@/lib/classroom/types";
@@ -90,31 +89,27 @@ function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
         >
           {lesson.title}
         </span>
-        {(isActive || status === "completed" || progress > 0) && (
-          <span className="mt-2 flex items-center gap-2.5">
-            <span className="block max-w-[280px] flex-1">
-              <ProgressBar value={progress} completed={status === "completed"} />
-            </span>
-            <span
-              className="font-mono text-[10px] font-bold"
-              style={{ color: status === "completed" ? "var(--color-ca-lime-deep)" : "var(--color-ca-ink-soft)" }}
-            >
-              {Math.round(progress)}%
-            </span>
+        <span className="mt-2 flex items-center gap-2.5">
+          <span className="block max-w-[280px] flex-1">
+            <ProgressBar value={progress} completed={status === "completed"} />
           </span>
-        )}
+          <span
+            className="font-mono text-[11px] font-bold"
+            style={{ color: status === "completed" ? "var(--color-ca-lime-deep)" : progress > 0 ? "var(--color-ca-ink)" : "var(--color-ca-ink-soft)" }}
+          >
+            {status === "available" && progress === 0 ? "No iniciada" : `${Math.round(progress)}%`}
+          </span>
+        </span>
       </span>
 
-      <span className="hidden shrink-0 items-center gap-3 sm:flex">
-        <span className="text-right">
-          <span className="block font-mono text-[11px] font-bold text-ca-ink">{fmtDuration(lesson.video_duration_seconds)}</span>
-        </span>
+      <span className="hidden shrink-0 sm:flex">
         {!isLocked && (
           <span
-            className="grid h-10 w-10 place-items-center rounded-full text-white transition-transform group-hover:scale-110"
-            style={{ background: isActive ? "var(--color-ca-violet)" : "var(--color-ca-ink)" }}
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold text-white transition-transform group-hover:scale-[1.03]"
+            style={{ background: isActive ? "var(--color-ca-violet)" : status === "completed" ? "var(--color-ca-lime-deep)" : "var(--color-ca-ink)" }}
           >
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            {status === "completed" ? "Revisar" : isActive ? "Continuar" : "Empezar"}
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </span>
@@ -126,7 +121,7 @@ function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
   if (isLocked) return <div className="border-b border-ca-ink/[0.08]">{inner}</div>;
 
   return (
-    <Link href={`/classroom/${cohortSlug}/${moduleSlug}/${lesson.slug ?? lesson.id}`} prefetch={false} className="block border-b border-ca-ink/[0.08]">
+    <Link href={`/classroom/${cohortSlug}/${moduleSlug}/${lesson.slug ?? lesson.id}`} prefetch={false} className="block border-b border-ca-ink/[0.08]" aria-label={`${isActive ? "Continuar" : status === "completed" ? "Revisar" : "Empezar"} lección: ${lesson.title}`}>
       {inner}
     </Link>
   );
@@ -171,10 +166,13 @@ export default async function ModulePage(
       {/* Hero */}
       <section className="relative grid gap-8 lg:grid-cols-[1.5fr_1fr]">
         <div>
-          <Breadcrumb items={[
-            { label: program.name, onClick: undefined },
-            { label: `Módulo ${String(mod.position).padStart(2, "0")}` },
-          ]} />
+          <nav className="flex items-center gap-2 text-[12px] font-semibold tracking-tight text-ca-ink-soft">
+            <Link href={`/classroom/${cohortSlug}`} className="transition-colors hover:text-ca-violet">
+              {program.name}
+            </Link>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+            <span className="text-ca-ink">Módulo {String(mod.position).padStart(2, "0")}</span>
+          </nav>
 
           <h1 className="mt-3 text-[28px] font-black leading-[1] tracking-[-0.035em] text-ca-ink md:text-[42px]">
             {mod.title}
@@ -195,40 +193,52 @@ export default async function ModulePage(
           )}
 
           <div className="mt-6 grid grid-cols-3 gap-3">
-            {[
-              { label: "Lecciones", value: `${mod.lessons.length}` },
-              { label: "Avance", value: `${progress.percentage}%`, accent: true },
-              { label: "Completadas", value: `${progress.completed_lessons}` },
-            ].map((m) => (
-              <div key={m.label} className="ca-card p-4 text-left">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">{m.label}</div>
-                <div
-                  className="mt-1 font-mono text-[24px] font-black tracking-tight"
-                  style={{ color: m.accent && isCompleted ? "var(--color-ca-lime-deep)" : "var(--color-ca-ink)" }}
-                >
-                  {m.value}
-                </div>
+            <div className="ca-card flex items-center gap-3 p-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ca-violet/10 text-ca-violet">
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>
+              </span>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">Lecciones</div>
+                <div className="font-mono text-[20px] font-black tracking-tight text-ca-ink">{mod.lessons.length}</div>
               </div>
-            ))}
+            </div>
+            <div className="ca-card flex items-center gap-3 p-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ca-violet/10 text-ca-violet">
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+              </span>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">Avance</div>
+                <div className="font-mono text-[20px] font-black tracking-tight" style={{ color: isCompleted ? "var(--color-ca-lime-deep)" : "var(--color-ca-ink)" }}>{progress.percentage}%</div>
+              </div>
+            </div>
+            <div className="ca-card flex items-center gap-3 p-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ca-lime-deep/10 text-ca-lime-deep">
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><path d="M22 4L12 14.01l-3-3" /></svg>
+              </span>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">Completadas</div>
+                <div className="font-mono text-[20px] font-black tracking-tight text-ca-ink">{progress.completed_lessons} / {progress.total_lessons}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className={`relative overflow-hidden rounded-3xl ${thumb}`} style={{ minHeight: 340, background: undefined }}>
-          <div className="shape-circle absolute -right-12 -top-12 h-56 w-56 bg-ca-violet opacity-85" />
-          <div className="shape-half-right absolute -left-8 bottom-12 h-24 w-12 bg-ca-lime" />
-          <div className="shape-circle absolute bottom-10 right-14 h-4 w-4 bg-ca-lime" />
-          <div className="relative flex h-full flex-col justify-between p-7 text-white">
-            <div>
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Módulo</div>
-              <div className="mt-2 font-black leading-none tracking-[-0.04em]" style={{ fontSize: 200 }}>
+        <div className={`relative overflow-hidden rounded-3xl ${thumb}`} style={{ minHeight: 240, background: undefined }}>
+          <div className="shape-circle absolute -right-8 -top-8 h-40 w-40 bg-ca-violet opacity-85" />
+          <div className="shape-half-right absolute -left-6 bottom-8 h-16 w-8 bg-ca-lime" />
+          <div className="shape-circle absolute bottom-8 right-10 h-3 w-3 bg-ca-lime" />
+          <div className="relative flex h-full flex-col justify-between p-6 text-white">
+            <div className="flex items-baseline gap-3">
+              <div className="font-black leading-none tracking-[-0.04em]" style={{ fontSize: 120 }}>
                 {String(mod.position).padStart(2, "0")}
               </div>
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Módulo</div>
             </div>
             <div>
               <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/65">
                 {progress.completed_lessons} de {progress.total_lessons} lecciones completadas
               </div>
-              <ProgressBar value={progress.percentage} track="bg-white/15" color="bg-ca-lime" height={8} />
+              <ProgressBar value={progress.percentage} track="bg-white/15" color="bg-ca-lime" height={6} />
             </div>
           </div>
         </div>

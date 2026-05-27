@@ -351,8 +351,6 @@ export function VideoPlayer({
           startPosition: initialPosition,
           enableWorker: true,
           lowLatencyMode: false,
-          subtitleDisplay: true,
-          renderTextTracksNatively: true,
         });
         hlsRef.current = hls;
         hls.loadSource(hlsUrl);

@@ -75,7 +75,29 @@ export async function POST(req: Request) {
     );
   }
 
-  // Optionally set teacher_id on unassigned modules of this cohort's program
+  if (role === "student") {
+    const { data: existingEnrollment } = await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("student_id", user_id)
+      .eq("cohort_id", cohort_id)
+      .maybeSingle();
+
+    if (!existingEnrollment) {
+      const { error: enrollError } = await supabase
+        .from("enrollments")
+        .insert({
+          student_id: user_id,
+          cohort_id,
+          status: "active",
+        });
+
+      if (enrollError) {
+        console.error("enrollment insert error", enrollError);
+      }
+    }
+  }
+
   if (role === "teacher") {
     const { data: cohort } = await supabase
       .from("cohorts")
@@ -111,10 +133,24 @@ export async function DELETE(req: Request) {
     );
   }
 
+  const { data: roleToDelete } = await supabase
+    .from("cohort_roles")
+    .select("user_id, cohort_id, role")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("cohort_roles")
     .delete()
     .eq("id", id);
+
+  if (!error && roleToDelete?.role === "student") {
+    await supabase
+      .from("enrollments")
+      .update({ status: "dropped" })
+      .eq("student_id", roleToDelete.user_id)
+      .eq("cohort_id", roleToDelete.cohort_id);
+  }
 
   if (error) {
     console.error("cohort_role delete error", error);

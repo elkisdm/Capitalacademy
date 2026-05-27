@@ -456,7 +456,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <CohortRoleBadge role={cr.role} />
                       <StateBadge state="active" />
                     </div>

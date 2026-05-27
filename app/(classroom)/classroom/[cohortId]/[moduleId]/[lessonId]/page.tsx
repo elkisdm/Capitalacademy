@@ -20,20 +20,7 @@ import {
 } from "@/components/classroom/primitives";
 import { ResourceList } from "@/components/classroom/resource-list";
 import type { LessonResource } from "@/lib/classroom/types";
-
-function fmtDuration(seconds: number | null) {
-  if (!seconds) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  if (m < 60) return `${m}:${String(s).padStart(2, "0")}`;
-  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function fmtTimePretty(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+import { fmtDuration, fmtTimestamp } from "@/lib/classroom/format";
 
 export default async function LessonPage(
   props: { params: Promise<{ cohortId: string; moduleId: string; lessonId: string }> },
@@ -110,7 +97,8 @@ export default async function LessonPage(
               lessonId={lessonId}
               durationSeconds={videoDuration}
               initialPosition={progress?.playback_position_seconds ?? 0}
-              title={lesson.title}
+              initialWatchPercentage={watchPct}
+              initialCompleted={progress?.completed ?? false}
             />
           ) : (
             <div className="video-stage flex aspect-video items-center justify-center rounded-[18px]">
@@ -144,7 +132,7 @@ export default async function LessonPage(
                 <span className="opacity-40">·</span>
                 <span>{fmtDuration(videoDuration)}</span>
                 <span className="opacity-40">·</span>
-                <StatusPill status={progress?.completed ? "completed" : progress ? "in_progress" : "available"} size="sm" />
+                <StatusPill status={progress?.completed ? "completed" : (progress && watchPct > 0) ? "in_progress" : "available"} size="sm" />
               </div>
               <h1 className="text-[28px] font-black leading-tight tracking-tight text-ca-ink">
                 {lesson.title}
@@ -169,7 +157,7 @@ export default async function LessonPage(
                 <div className="flex items-center justify-between text-[12px] font-bold">
                   <span className="text-ca-ink">Visto: {Math.round(watchPct)}%</span>
                   <span className="font-mono text-ca-ink-soft">
-                    {progress ? fmtTimePretty(progress.playback_position_seconds) : "00:00"} / {fmtTimePretty(videoDuration)} · Se marca completo al 90%
+                    {progress ? fmtTimestamp(progress.playback_position_seconds) : "00:00"} / {fmtTimestamp(videoDuration)} · Se marca completo al 90%
                   </span>
                 </div>
                 <div className="mt-2">
@@ -294,7 +282,7 @@ export default async function LessonPage(
                     <div className="shrink-0"><LessonStatusIcon status={st} size={28} /></div>
                     <div className="min-w-0 flex-1">
                       <div className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
-                        Lec. {String(i + 1).padStart(2, "0")} · {l.video_duration_seconds ? `${Math.floor(l.video_duration_seconds / 60)} min` : "—"}
+                        Lec. {String(i + 1).padStart(2, "0")} · {fmtDuration(l.video_duration_seconds)}
                       </div>
                       <div className={`mt-0.5 text-[13px] font-bold leading-snug ${locked ? "text-ca-ink-soft" : "text-ca-ink"}`}>
                         {l.title}

@@ -124,7 +124,7 @@ function DrillDownModal({ student, modules, onClose }: {
 
         <div className="relative flex items-center justify-between gap-3 border-t border-ca-ink/[0.08] bg-ca-bg-soft px-6 py-4">
           <div className="text-[11px] font-semibold text-ca-ink-soft">
-            Datos en vivo · sincronizado con video_progress
+            Datos en vivo · se actualiza con cada reproducción
           </div>
         </div>
       </div>

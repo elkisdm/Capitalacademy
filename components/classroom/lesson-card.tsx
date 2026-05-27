@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Lock, Play, CheckCircle2, Circle, VideoOff } from "lucide-react";
 import type { LessonWithProgress, LessonStatus } from "@/lib/classroom/types";
 import { getLessonStatus } from "@/lib/classroom/progress";
+import { fmtDuration } from "@/lib/classroom/format";
 
 const STATUS_CONFIG: Record<
   LessonStatus,
@@ -24,12 +25,6 @@ type LessonCardProps = {
   moduleId: string;
   index: number;
 };
-
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "";
-  const m = Math.floor(seconds / 60);
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
-}
 
 export function LessonCard({
   lesson,
@@ -79,7 +74,7 @@ export function LessonCard({
         <h4 className="truncate font-medium text-gray-900">{lesson.title}</h4>
         {lesson.video_duration_seconds && (
           <p className="text-sm text-gray-500">
-            {formatDuration(lesson.video_duration_seconds)}
+            {fmtDuration(lesson.video_duration_seconds)}
           </p>
         )}
         {status === "locked" && lesson.unlock_at && (

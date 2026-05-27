@@ -16,12 +16,7 @@ import {
   BrandShapes,
 } from "@/components/classroom/primitives";
 import type { LessonWithProgress } from "@/lib/classroom/types";
-
-function fmtDuration(seconds: number | null) {
-  if (!seconds) return "—";
-  const m = Math.floor(seconds / 60);
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
-}
+import { fmtDuration } from "@/lib/classroom/format";
 
 function ChapterRow({ lesson, index, cohortId, moduleId, isLast }: {
   lesson: LessonWithProgress;

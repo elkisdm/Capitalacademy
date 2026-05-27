@@ -9,7 +9,8 @@ type VideoPlayerProps = {
   lessonId: string;
   durationSeconds: number;
   initialPosition?: number;
-  title?: string;
+  initialWatchPercentage?: number;
+  initialCompleted?: boolean;
 };
 
 export function VideoPlayer({
@@ -17,9 +18,12 @@ export function VideoPlayer({
   lessonId,
   durationSeconds,
   initialPosition = 0,
+  initialWatchPercentage = 0,
+  initialCompleted = false,
 }: VideoPlayerProps) {
-  const [watchPercentage, setWatchPercentage] = useState(0);
-  const [completed, setCompleted] = useState(false);
+  const [watchPercentage, setWatchPercentage] = useState(initialWatchPercentage);
+  const [completed, setCompleted] = useState(initialCompleted);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -47,14 +51,18 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    // Safari: native HLS support
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = hlsUrl;
       video.addEventListener("loadedmetadata", () => {
+        setReady(true);
         if (initialPosition > 0) video.currentTime = initialPosition;
       }, { once: true });
+      video.addEventListener("error", () => setError(true), { once: true });
       return;
     }
 
+    // Chrome/Firefox: hls.js
     if (Hls.isSupported()) {
       const hls = new Hls({
         startPosition: initialPosition,
@@ -65,12 +73,19 @@ export function VideoPlayer({
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
 
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setReady(true);
+      });
+
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           hls.destroy();
           hlsRef.current = null;
+          // Fallback to MP4
           video.src = mp4Url;
           video.load();
+          video.addEventListener("loadedmetadata", () => setReady(true), { once: true });
+          video.addEventListener("error", () => setError(true), { once: true });
         }
       });
 
@@ -80,7 +95,10 @@ export function VideoPlayer({
       };
     }
 
+    // Last resort: direct MP4
     video.src = mp4Url;
+    video.addEventListener("loadedmetadata", () => setReady(true), { once: true });
+    video.addEventListener("error", () => setError(true), { once: true });
   }, [playbackId, hlsUrl, mp4Url, initialPosition]);
 
   if (error) {
@@ -100,7 +118,7 @@ export function VideoPlayer({
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-full bg-white/10 px-5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/20"
+            className="mt-4 rounded-full bg-ca-violet px-5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-ca-violet/80"
           >
             Reintentar
           </button>
@@ -111,18 +129,24 @@ export function VideoPlayer({
 
   return (
     <div className="space-y-2">
-      <video
-        ref={videoRef}
-        controls
-        playsInline
-        crossOrigin="anonymous"
-        poster={posterUrl}
-        className="aspect-video w-full rounded-[18px] bg-black"
-        onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
-        onPause={handlePause}
-        onEnded={handleEnded}
-        onError={() => setError(true)}
-      />
+      <div className="relative">
+        {!ready && (
+          <div className="video-stage absolute inset-0 z-10 flex aspect-video items-center justify-center rounded-[18px]">
+            <div className="ca-spin-slow h-8 w-8 rounded-full border-2 border-white border-r-transparent" />
+          </div>
+        )}
+        <video
+          ref={videoRef}
+          controls
+          playsInline
+          crossOrigin="anonymous"
+          poster={posterUrl}
+          className="aspect-video w-full rounded-[18px] bg-black"
+          onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
+          onPause={handlePause}
+          onEnded={handleEnded}
+        />
+      </div>
       <div className="flex items-center gap-3 text-sm" style={{ color: "var(--color-ca-ink-soft)" }}>
         <div className="flex-1">
           <div className="shape-circle h-1.5 w-full overflow-hidden" style={{ background: "var(--color-ca-ink, rgba(20,22,58,0.08))" }}>

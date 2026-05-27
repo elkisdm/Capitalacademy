@@ -59,6 +59,7 @@ export async function getCohortProgressReport(cohortId: string) {
   let allProgress: Array<{
     enrollment_id: string;
     lesson_id: string;
+    watch_percentage: number;
     completed: boolean;
     last_watched_at: string;
   }> = [];
@@ -66,7 +67,7 @@ export async function getCohortProgressReport(cohortId: string) {
   if (enrollmentIds.length > 0) {
     const { data: progress } = await supabase
       .from("video_progress")
-      .select("enrollment_id, lesson_id, completed, last_watched_at")
+      .select("enrollment_id, lesson_id, watch_percentage, completed, last_watched_at")
       .in("enrollment_id", enrollmentIds);
     allProgress = (progress ?? []) as typeof allProgress;
   }
@@ -99,13 +100,19 @@ export async function getCohortProgressReport(cohortId: string) {
         studentProgress.some((p) => p.lesson_id === lid && p.completed),
       ).length;
       const total = modLessons.length;
+      const avgWatch = total > 0
+        ? modLessons.reduce((sum, lid) => {
+            const p = studentProgress.find((sp) => sp.lesson_id === lid);
+            return sum + (p ? Number(p.watch_percentage) : 0);
+          }, 0) / total
+        : 0;
       return {
         module_id: mod.id,
         module_title: mod.title,
         module_position: mod.position,
         total_lessons: total,
         completed_lessons: completedLessons,
-        percentage: total > 0 ? Math.round((completedLessons / total) * 100) : 0,
+        percentage: Math.round(avgWatch),
       };
     });
 

@@ -188,8 +188,11 @@ export function ClassroomSidebar({
   }, [pathname]);
 
   const isActive = (path: string) => {
+    if (path === "/classroom") {
+      return pathname === "/classroom";
+    }
     if (path === `/classroom/${cohortId}`) {
-      return pathname === path || pathname === "/classroom";
+      return pathname.startsWith(`/classroom/${cohortId}`);
     }
     return pathname.startsWith(path);
   };

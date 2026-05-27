@@ -215,7 +215,7 @@ export default async function ModulePage(
             </div>
             <div>
               <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/65">
-                {progress.completed_lessons} de {progress.total_with_video} lecciones completadas
+                {progress.completed_lessons} de {progress.total_lessons} lecciones completadas
               </div>
               <ProgressBar value={progress.percentage} track="bg-white/15" color="bg-ca-lime" height={8} />
             </div>

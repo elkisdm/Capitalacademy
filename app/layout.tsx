@@ -109,7 +109,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${montserrat.variable} h-full`}>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-[var(--color-ca-violet)] focus:px-5 focus:py-3 focus:text-sm focus:font-bold focus:text-white focus:shadow-[0_8px_24px_rgba(94,23,235,0.4)]"

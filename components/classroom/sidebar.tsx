@@ -197,7 +197,6 @@ export function ClassroomSidebar({
   const navItems: NavItem[] = [
     { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" },
     { icon: "book", label: "Workshop", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" },
-    { icon: "chart", label: "Mi progreso", section: "learn" },
     ...(showOps ? [
       { icon: "upload", label: "Subir videos", href: "/admin/lessons", section: "ops" as const },
       { icon: "folder", label: "Recursos", href: "/admin/resources", section: "ops" as const },

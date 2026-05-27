@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo, Avatar } from "./primitives";
+import { SearchPanel } from "./search-panel";
 
 const ICON_PATHS: Record<string, React.ReactNode> = {
   home: <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></>,
@@ -86,6 +87,7 @@ function SidebarContent({
   items,
   isActive,
   collapsed,
+  cohortId,
   userInitials,
   userName,
   onCollapse,
@@ -94,6 +96,7 @@ function SidebarContent({
   items: NavItem[];
   isActive: (path: string) => boolean;
   collapsed: boolean;
+  cohortId?: string;
   userInitials: string;
   userName: string;
   onCollapse?: () => void;
@@ -121,6 +124,12 @@ function SidebarContent({
             />
           ))}
         </div>
+
+        {!collapsed && cohortId && (
+          <div className="mt-3 mb-3">
+            <SearchPanel cohortId={cohortId} />
+          </div>
+        )}
 
         {opsItems.length > 0 && (
           <>
@@ -219,6 +228,7 @@ export function ClassroomSidebar({
           items={navItems}
           isActive={isActive}
           collapsed={collapsed}
+          cohortId={cohortId}
           userInitials={userInitials}
           userName={userName}
           onCollapse={() => setCollapsed(!collapsed)}
@@ -281,6 +291,12 @@ export function ClassroomSidebar({
                   />
                 ))}
               </div>
+
+              {cohortId && (
+                <div className="mt-3 mb-3">
+                  <SearchPanel cohortId={cohortId} />
+                </div>
+              )}
 
               {navItems.some((i) => i.section === "ops") && (
                 <>

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { AdminUserProfile, CohortPickerItem } from "@/lib/admin/user-queries";
 import { PlatformBadge, CohortRoleBadge, StateBadge } from "@/components/admin/user-primitives";
 import type { CohortRole } from "@/components/admin/user-primitives";
 import { UserDrawer } from "@/components/admin/user-drawer";
 import { AssignCohortModal } from "@/components/admin/assign-cohort-modal";
+import { DeactivateModal } from "@/components/admin/deactivate-modal";
 import { BrandShapes } from "@/components/classroom/primitives";
 
 function getInitials(name: string | null, email: string): string {
@@ -181,11 +183,41 @@ type UserProfileClientProps = {
   cohorts: CohortPickerItem[];
 };
 
+type ActionsMenuPosition = {
+  top?: number;
+  bottom?: number;
+  left: number;
+};
+
+const ACTIONS_MENU_HEIGHT_ESTIMATE = 170;
+
 export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
   const router = useRouter();
   const [actionsOpen, setActionsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const actionsBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<ActionsMenuPosition | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (actionsOpen && actionsBtnRef.current) {
+      const rect = actionsBtnRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuWidth = 224;
+
+      if (spaceBelow >= ACTIONS_MENU_HEIGHT_ESTIMATE) {
+        setMenuPos({ top: rect.bottom + 8, left: rect.right - menuWidth });
+      } else {
+        setMenuPos({ bottom: window.innerHeight - rect.top + 8, left: rect.right - menuWidth });
+      }
+    }
+  }, [actionsOpen]);
 
   const initials = getInitials(user.full_name, user.email);
   const displayName = user.full_name || user.email;
@@ -194,26 +226,9 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
   const studentCount = user.cohort_roles.filter((r) => r.role === "student").length;
   const teacherCount = user.cohort_roles.filter((r) => r.role === "teacher").length;
 
-  const handleEditSave = async (data: {
-    id?: string;
-    full_name: string;
-    email: string;
-    phone: string;
-    role: "user" | "ops" | "admin";
-  }) => {
-    const res = await fetch(`/api/admin/users/${user.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        full_name: data.full_name,
-        phone: data.phone,
-        system_role: data.role,
-      }),
-    });
-    if (res.ok) {
-      setDrawerOpen(false);
-      router.refresh();
-    }
+  const handleEditSave = () => {
+    setDrawerOpen(false);
+    router.refresh();
   };
 
   const handleAssign = async (data: {
@@ -317,18 +332,28 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
             </button>
             <div className="relative">
               <button
+                ref={actionsBtnRef}
                 onClick={() => setActionsOpen(!actionsOpen)}
                 className="grid h-10 w-10 place-items-center rounded-full border border-ca-ink/[0.14] transition-colors hover:bg-ca-bg-soft"
               >
                 <DotsIcon />
               </button>
-              {actionsOpen && (
+              {actionsOpen && mounted && menuPos && createPortal(
                 <>
+                  {/* Invisible backdrop */}
                   <div
-                    className="fixed inset-0 z-30"
+                    className="fixed inset-0 z-[54]"
                     onClick={() => setActionsOpen(false)}
                   />
-                  <div className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white shadow-lg">
+                  {/* Menu */}
+                  <div
+                    className="fixed z-[55] w-56 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white shadow-lg"
+                    style={{
+                      top: menuPos.top != null ? menuPos.top : undefined,
+                      bottom: menuPos.bottom != null ? menuPos.bottom : undefined,
+                      left: menuPos.left,
+                    }}
+                  >
                     <button
                       onClick={() => {
                         setActionsOpen(false);
@@ -354,6 +379,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                     <button
                       onClick={() => {
                         setActionsOpen(false);
+                        setDeactivateOpen(true);
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-[13px] font-semibold text-red-600 transition-colors hover:bg-red-50"
                     >
@@ -364,7 +390,8 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                       Desactivar usuario
                     </button>
                   </div>
-                </>
+                </>,
+                document.body,
               )}
             </div>
           </div>
@@ -623,6 +650,22 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
         }))}
         onClose={() => setAssignModalOpen(false)}
         onAssign={handleAssign}
+      />
+
+      <DeactivateModal
+        open={deactivateOpen}
+        user={{
+          id: user.id,
+          full_name: user.full_name ?? user.email,
+          email: user.email,
+          initials,
+          active_cohorts_count: user.cohort_roles.length,
+        }}
+        onClose={() => setDeactivateOpen(false)}
+        onConfirm={async () => {
+          setDeactivateOpen(false);
+          router.refresh();
+        }}
       />
     </>
   );

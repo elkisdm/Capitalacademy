@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { AdminUserListItem, CohortPickerItem } from "@/lib/admin/user-queries";
 import {
@@ -19,6 +20,12 @@ type Filter = "all" | "admin" | "ops" | "teacher" | "student";
 type UsersListClientProps = {
   users: AdminUserListItem[];
   cohorts: CohortPickerItem[];
+};
+
+type MenuPosition = {
+  top?: number;
+  bottom?: number;
+  left: number;
 };
 
 function SearchIcon() {
@@ -109,12 +116,145 @@ function countByFilter(users: AdminUserListItem[], filter: Filter): number {
   return users.filter((u) => matchesFilter(u, filter)).length;
 }
 
+const MENU_HEIGHT_ESTIMATE = 190;
+
+function KebabMenu({
+  userId,
+  isOpen,
+  onToggle,
+  onClose,
+  onViewProfile,
+  onEdit,
+  onAssign,
+  onDeactivate,
+}: {
+  userId: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onViewProfile: () => void;
+  onEdit: () => void;
+  onAssign: () => void;
+  onDeactivate: () => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<MenuPosition | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuWidth = 208;
+
+      if (spaceBelow >= MENU_HEIGHT_ESTIMATE) {
+        setPos({ top: rect.bottom + 4, left: rect.right - menuWidth });
+      } else {
+        setPos({ bottom: window.innerHeight - rect.top + 4, left: rect.right - menuWidth });
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        btnRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isOpen, onClose]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        className="grid h-8 w-8 place-items-center rounded-full text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
+      >
+        <DotsIcon />
+      </button>
+
+      {isOpen && mounted && pos && createPortal(
+        <>
+          {/* Invisible backdrop */}
+          <div
+            className="fixed inset-0 z-[54]"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+          />
+          {/* Menu */}
+          <div
+            className="fixed z-[55] w-52 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white py-1 shadow-lg"
+            style={{
+              top: pos.top != null ? pos.top : undefined,
+              bottom: pos.bottom != null ? pos.bottom : undefined,
+              left: pos.left,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewProfile();
+              }}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
+            >
+              Ver perfil
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
+            >
+              Editar
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAssign();
+              }}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
+            >
+              Asignar a cohorte
+            </button>
+            <div className="my-1 border-t border-ca-ink/[0.06]" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeactivate();
+              }}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-red-600 transition-colors hover:bg-red-50"
+            >
+              Desactivar
+            </button>
+          </div>
+        </>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 export function UsersListClient({ users, cohorts }: UsersListClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
@@ -142,28 +282,21 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     active_cohorts_count: number;
   } | null>(null);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenuId(null);
-      }
-    }
-    if (openMenuId) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [openMenuId]);
-
-  const filtered = useMemo(() => {
+  const searchFiltered = useMemo(() => {
     const q = search.toLowerCase().trim();
+    if (!q) return users;
     return users.filter((u) => {
-      if (!matchesFilter(u, activeFilter)) return false;
-      if (!q) return true;
       const name = (u.full_name ?? "").toLowerCase();
       const email = u.email.toLowerCase();
       return name.includes(q) || email.includes(q);
     });
-  }, [users, search, activeFilter]);
+  }, [users, search]);
+
+  const filtered = useMemo(() => {
+    return searchFiltered.filter((u) => matchesFilter(u, activeFilter));
+  }, [searchFiltered, activeFilter]);
+
+  const hasActiveSearchOrFilter = search.trim() !== "" || activeFilter !== "all";
 
   const filters: Array<{ key: Filter; label: string }> = [
     { key: "all", label: "Todos" },
@@ -173,13 +306,22 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     { key: "student", label: "Alumnos" },
   ];
 
+  const closeAll = useCallback(() => {
+    setDrawerOpen(false);
+    setAssignModalOpen(false);
+    setDeactivateModalOpen(false);
+    setOpenMenuId(null);
+  }, []);
+
   function handleOpenCreate() {
+    closeAll();
     setDrawerMode("create");
     setDrawerUser(null);
     setDrawerOpen(true);
   }
 
   function handleOpenEdit(u: AdminUserListItem) {
+    closeAll();
     setDrawerMode("edit");
     setDrawerUser({
       id: u.id,
@@ -189,10 +331,10 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       role: u.system_role,
     });
     setDrawerOpen(true);
-    setOpenMenuId(null);
   }
 
   function handleOpenAssign(u: AdminUserListItem) {
+    closeAll();
     setAssignUser({
       id: u.id,
       full_name: u.full_name ?? u.email,
@@ -202,10 +344,10 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       })),
     });
     setAssignModalOpen(true);
-    setOpenMenuId(null);
   }
 
   function handleOpenDeactivate(u: AdminUserListItem) {
+    closeAll();
     setDeactivateUser({
       id: u.id,
       full_name: u.full_name ?? u.email,
@@ -214,7 +356,6 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       active_cohorts_count: u.cohort_roles.length,
     });
     setDeactivateModalOpen(true);
-    setOpenMenuId(null);
   }
 
   function handleRowClick(userId: string) {
@@ -234,7 +375,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
               className="inline-flex items-center rounded-full px-3 py-0.5 text-[13px] font-bold"
               style={{ background: "rgba(94,23,235,0.10)", color: "var(--color-ca-violet)" }}
             >
-              {users.length}
+              {hasActiveSearchOrFilter ? filtered.length : users.length}
             </span>
           </h1>
         </div>
@@ -258,6 +399,9 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre o email..."
+              autoComplete="off"
+              name="ca-user-search"
+              data-form-type="other"
               className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
             />
           </div>
@@ -267,7 +411,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
               <FilterPill
                 key={f.key}
                 label={f.label}
-                count={countByFilter(users, f.key)}
+                count={countByFilter(searchFiltered, f.key)}
                 active={activeFilter === f.key}
                 onClick={() => setActiveFilter(f.key)}
               />
@@ -341,53 +485,19 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
                           </span>
                         </td>
                         <td className="px-3 py-3.5">
-                          <div className="relative" ref={openMenuId === u.id ? menuRef : undefined}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenuId(openMenuId === u.id ? null : u.id);
-                              }}
-                              className="grid h-8 w-8 place-items-center rounded-full text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
-                            >
-                              <DotsIcon />
-                            </button>
-
-                            {openMenuId === u.id && (
-                              <div
-                                className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white py-1 shadow-lg"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button
-                                  onClick={() => {
-                                    handleRowClick(u.id);
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
-                                >
-                                  Ver perfil
-                                </button>
-                                <button
-                                  onClick={() => handleOpenEdit(u)}
-                                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  onClick={() => handleOpenAssign(u)}
-                                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
-                                >
-                                  Asignar a cohorte
-                                </button>
-                                <div className="my-1 border-t border-ca-ink/[0.06]" />
-                                <button
-                                  onClick={() => handleOpenDeactivate(u)}
-                                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-red-600 transition-colors hover:bg-red-50"
-                                >
-                                  Desactivar
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          <KebabMenu
+                            userId={u.id}
+                            isOpen={openMenuId === u.id}
+                            onToggle={() => setOpenMenuId(openMenuId === u.id ? null : u.id)}
+                            onClose={() => setOpenMenuId(null)}
+                            onViewProfile={() => {
+                              setOpenMenuId(null);
+                              handleRowClick(u.id);
+                            }}
+                            onEdit={() => handleOpenEdit(u)}
+                            onAssign={() => handleOpenAssign(u)}
+                            onDeactivate={() => handleOpenDeactivate(u)}
+                          />
                         </td>
                       </tr>
                     );
@@ -410,7 +520,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
         mode={drawerMode}
         user={drawerUser}
         onClose={() => setDrawerOpen(false)}
-        onSave={async () => {
+        onSave={() => {
           setDrawerOpen(false);
           router.refresh();
         }}

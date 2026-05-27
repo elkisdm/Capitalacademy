@@ -25,7 +25,6 @@ type AssignCohortModalProps = {
   open: boolean;
   user: { id: string; full_name: string; existing_assignments?: ExistingAssignment[] } | null;
   cohorts: CohortOption[];
-  modules?: ModuleOption[];
   onClose: () => void;
   onAssign: (data: { userId: string; cohortId: string; role: CohortRole; moduleId?: string }) => void | Promise<void>;
 };
@@ -79,13 +78,15 @@ const ROLE_STYLES: Record<CohortRole, { bg: string; border: string; dot: string 
 const INPUT_CLASS =
   "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
 
-export function AssignCohortModal({ open, user, cohorts, modules, onClose, onAssign }: AssignCohortModalProps) {
+export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: AssignCohortModalProps) {
   const [selectedCohortId, setSelectedCohortId] = useState("");
   const [selectedRole, setSelectedRole] = useState<CohortRole>("student");
   const [selectedModuleId, setSelectedModuleId] = useState("");
   const [cohortDropdownOpen, setCohortDropdownOpen] = useState(false);
   const [cohortSearch, setCohortSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [localModules, setLocalModules] = useState<ModuleOption[]>([]);
+  const [loadingModules, setLoadingModules] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -95,8 +96,26 @@ export function AssignCohortModal({ open, user, cohorts, modules, onClose, onAss
       setCohortDropdownOpen(false);
       setCohortSearch("");
       setSaving(false);
+      setLocalModules([]);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (selectedRole !== "teacher" || !selectedCohortId) {
+      setLocalModules([]);
+      setSelectedModuleId("");
+      return;
+    }
+    setLoadingModules(true);
+    fetch(`/api/admin/modules?cohortId=${encodeURIComponent(selectedCohortId)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setLocalModules(data);
+        else setLocalModules([]);
+      })
+      .catch(() => setLocalModules([]))
+      .finally(() => setLoadingModules(false));
+  }, [selectedRole, selectedCohortId]);
 
   useEffect(() => {
     if (!open) return;
@@ -181,7 +200,9 @@ export function AssignCohortModal({ open, user, cohorts, modules, onClose, onAss
                 >
                   <span className={selectedCohort ? "text-ca-ink" : "text-ca-ink-soft"}>
                     {selectedCohort
-                      ? `${selectedCohort.program_name} — ${selectedCohort.name}`
+                      ? selectedCohort.name.startsWith(selectedCohort.program_name)
+                        ? selectedCohort.name
+                        : `${selectedCohort.program_name} — ${selectedCohort.name}`
                       : "Selecciona una cohorte"}
                   </span>
                   <ChevronDown />
@@ -272,24 +293,43 @@ export function AssignCohortModal({ open, user, cohorts, modules, onClose, onAss
               </div>
             </div>
 
-            {/* Module select for teachers */}
-            {selectedRole === "teacher" && modules && modules.length > 0 && (
+            {selectedRole === "teacher" && !selectedCohortId && (
+              <div className="flex items-center gap-2 rounded-xl border border-ca-ink/[0.08] px-4 py-2.5">
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ca-ink-soft">
+                  <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+                </svg>
+                <span className="text-[12px] font-semibold text-ca-ink-soft">
+                  Selecciona una cohorte para ver los módulos disponibles
+                </span>
+              </div>
+            )}
+            {selectedRole === "teacher" && selectedCohortId && (
               <div>
                 <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Módulo asignado
                 </label>
-                <select
-                  value={selectedModuleId}
-                  onChange={(e) => setSelectedModuleId(e.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Todos los módulos</option>
-                  {modules.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      M{String(m.position).padStart(2, "0")} — {m.title}
-                    </option>
-                  ))}
-                </select>
+                {loadingModules ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] text-ca-ink-soft">
+                    Cargando módulos...
+                  </div>
+                ) : localModules.length > 0 ? (
+                  <select
+                    value={selectedModuleId}
+                    onChange={(e) => setSelectedModuleId(e.target.value)}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="">Todos los módulos</option>
+                    {localModules.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        M{String(m.position).padStart(2, "0")} — {m.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] text-ca-ink-soft">
+                    Sin módulos configurados para este programa
+                  </div>
+                )}
               </div>
             )}
 

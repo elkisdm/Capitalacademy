@@ -44,6 +44,7 @@ export function Instructor() {
                   fill
                   sizes="(min-width: 1024px) 280px, 100vw"
                   className="object-cover object-top"
+                  priority
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--color-ca-navy-deep)]/60 to-transparent" />
                 <div

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
 
 export const metadata = {
-  title: "Iniciar sesión — Capital Academy",
+  title: "Iniciar sesión",
   description: "Accede a tu cuenta en Capital Academy.",
 };
 

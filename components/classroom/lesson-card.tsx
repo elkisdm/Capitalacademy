@@ -105,6 +105,7 @@ export function LessonCard({
             fill
             sizes="144px"
             className="object-cover"
+            loading="lazy"
             unoptimized
           />
         ) : (

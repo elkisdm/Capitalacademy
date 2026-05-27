@@ -739,10 +739,24 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
           status: c.status,
         }))}
         onClose={() => setAssignModalOpen(false)}
-        onAssign={async () => {
-          setAssignModalOpen(false);
-          toast("Rol asignado", "success");
-          router.refresh();
+        onAssign={async (data) => {
+          const res = await fetch("/api/admin/cohort-roles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: data.userId,
+              cohort_id: data.cohortId,
+              role: data.role,
+            }),
+          });
+          if (res.ok) {
+            setAssignModalOpen(false);
+            toast("Rol asignado", "success");
+            router.refresh();
+          } else {
+            const err = await res.json().catch(() => ({}));
+            toast(err.error ?? "Error al asignar rol", "error");
+          }
         }}
       />
 

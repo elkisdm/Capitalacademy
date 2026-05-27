@@ -13,6 +13,7 @@ import type { CohortBadge } from "@/components/admin/user-primitives";
 import { UserDrawer } from "@/components/admin/user-drawer";
 import { AssignCohortModal } from "@/components/admin/assign-cohort-modal";
 import { DeactivateModal } from "@/components/admin/deactivate-modal";
+import { CsvImportModal } from "@/components/admin/csv-import-modal";
 import { Avatar } from "@/components/classroom/primitives";
 import { useToast } from "@/components/admin/toast";
 
@@ -42,6 +43,25 @@ function PlusIcon() {
   return (
     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  );
+}
+
+function MailIconSmall() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M22 7l-10 7L2 7" />
     </svg>
   );
 }
@@ -128,6 +148,8 @@ function KebabMenu({
   onViewProfile,
   onEdit,
   onAssign,
+  onSendInvitation,
+  showInvitation,
   onDeactivate,
 }: {
   userId: string;
@@ -137,6 +159,8 @@ function KebabMenu({
   onViewProfile: () => void;
   onEdit: () => void;
   onAssign: () => void;
+  onSendInvitation?: () => void;
+  showInvitation?: boolean;
   onDeactivate: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -234,6 +258,18 @@ function KebabMenu({
             >
               Asignar a cohorte
             </button>
+            {showInvitation && onSendInvitation && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSendInvitation();
+                }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
+              >
+                <MailIconSmall />
+                Enviar invitación
+              </button>
+            )}
             <div className="my-1 border-t border-ca-ink/[0.06]" />
             <button
               onClick={(e) => {
@@ -306,6 +342,9 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     existing_assignments?: Array<{ cohort_id: string; role: "student" | "teacher" | "assistant" }>;
   } | null>(null);
 
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [sendingInvitationId, setSendingInvitationId] = useState<string | null>(null);
+
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
   const [deactivateUser, setDeactivateUser] = useState<{
     id: string;
@@ -353,8 +392,31 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     setDrawerOpen(false);
     setAssignModalOpen(false);
     setDeactivateModalOpen(false);
+    setCsvImportOpen(false);
     setOpenMenuId(null);
   }, []);
+
+  async function handleSendInvitation(userId: string) {
+    setSendingInvitationId(userId);
+    setOpenMenuId(null);
+    try {
+      const res = await fetch("/api/admin/send-invitation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        toast("Invitación enviada", "success");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data.error ?? "Error al enviar invitación", "error");
+      }
+    } catch {
+      toast("Error de conexión", "error");
+    } finally {
+      setSendingInvitationId(null);
+    }
+  }
 
   function handleOpenCreate() {
     closeAll();
@@ -422,13 +484,22 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
             </span>
           </h1>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="ca-btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold"
-        >
-          <PlusIcon />
-          Nuevo usuario
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCsvImportOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-ca-ink px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-ca-ink/90"
+          >
+            <UploadIcon />
+            Importar CSV
+          </button>
+          <button
+            onClick={handleOpenCreate}
+            className="ca-btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold"
+          >
+            <PlusIcon />
+            Nuevo usuario
+          </button>
+        </div>
       </div>
 
       <div className="ca-card overflow-hidden">
@@ -540,6 +611,8 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
                             }}
                             onEdit={() => handleOpenEdit(u)}
                             onAssign={() => handleOpenAssign(u)}
+                            showInvitation={u.onboarding_completed_at === null}
+                            onSendInvitation={() => handleSendInvitation(u.id)}
                             onDeactivate={() => handleOpenDeactivate(u)}
                           />
                         </td>
@@ -577,6 +650,8 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
                         }}
                         onEdit={() => handleOpenEdit(u)}
                         onAssign={() => handleOpenAssign(u)}
+                        showInvitation={u.onboarding_completed_at === null}
+                        onSendInvitation={() => handleSendInvitation(u.id)}
                         onDeactivate={() => handleOpenDeactivate(u)}
                       />
                     </div>
@@ -699,6 +774,15 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
           toast("Usuario desactivado", "success");
           router.refresh();
         }}
+      />
+
+      <CsvImportModal
+        open={csvImportOpen}
+        onClose={() => {
+          setCsvImportOpen(false);
+          router.refresh();
+        }}
+        cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
       />
 
       <ToastContainer />

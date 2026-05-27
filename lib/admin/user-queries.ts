@@ -8,6 +8,7 @@ export type AdminUserListItem = {
   system_role: "user" | "ops" | "admin";
   created_at: string;
   last_sign_in_at: string | null;
+  onboarding_completed_at: string | null;
   cohort_roles: Array<{
     cohort_id: string;
     cohort_name: string;
@@ -49,7 +50,7 @@ export async function getAdminUsersList(): Promise<AdminUserListItem[]> {
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, email, full_name, phone, system_role, created_at")
+    .select("id, email, full_name, phone, system_role, created_at, onboarding_completed_at")
     .order("created_at", { ascending: false });
 
   if (!profiles || profiles.length === 0) return [];
@@ -83,6 +84,7 @@ export async function getAdminUsersList(): Promise<AdminUserListItem[]> {
     system_role: p.system_role,
     created_at: p.created_at,
     last_sign_in_at: null,
+    onboarding_completed_at: p.onboarding_completed_at ?? null,
     cohort_roles: rolesMap.get(p.id) ?? [],
   }));
 }
@@ -155,6 +157,7 @@ export async function getAdminUserProfile(
     created_at: profile.created_at,
     updated_at: profile.updated_at,
     last_sign_in_at: null,
+    onboarding_completed_at: profile.onboarding_completed_at ?? null,
     cohort_roles: cohortRoles,
     recent_activity: recentActivity,
   };

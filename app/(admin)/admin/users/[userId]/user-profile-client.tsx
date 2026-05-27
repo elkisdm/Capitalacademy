@@ -197,6 +197,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
   const { toast, ToastContainer } = useToast();
   const [actionsOpen, setActionsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sendingInvitation, setSendingInvitation] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -232,6 +233,27 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
     setDrawerOpen(false);
     toast("Cambios guardados", "success");
     router.refresh();
+  };
+
+  const handleSendInvitation = async () => {
+    setSendingInvitation(true);
+    try {
+      const res = await fetch("/api/admin/send-invitation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      if (res.ok) {
+        toast("Invitación enviada", "success");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data.error ?? "Error al enviar invitación", "error");
+      }
+    } catch {
+      toast("Error de conexión", "error");
+    } finally {
+      setSendingInvitation(false);
+    }
   };
 
   const handleAssign = async (data: {
@@ -327,6 +349,16 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {user.onboarding_completed_at === null && (
+              <button
+                onClick={handleSendInvitation}
+                disabled={sendingInvitation}
+                className="inline-flex items-center gap-2 rounded-full border border-ca-ink/[0.14] px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-ca-bg-soft disabled:opacity-50"
+              >
+                <MailIcon />
+                {sendingInvitation ? "Enviando..." : "Reenviar invitación"}
+              </button>
+            )}
             <button
               onClick={() => setDrawerOpen(true)}
               className="inline-flex items-center gap-2 rounded-full border border-ca-ink/[0.14] px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-ca-bg-soft"

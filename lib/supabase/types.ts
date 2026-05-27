@@ -698,6 +698,259 @@ export type Database = {
           },
         ]
       }
+      quiz_configs: {
+        Row: {
+          id: string
+          program_id: string
+          min_completion_pct: number
+          passing_grade_pct: number
+          questions_per_attempt: number
+          max_attempts: number
+          time_limit_minutes: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          min_completion_pct?: number
+          passing_grade_pct?: number
+          questions_per_attempt?: number
+          max_attempts?: number
+          time_limit_minutes?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          min_completion_pct?: number
+          passing_grade_pct?: number
+          questions_per_attempt?: number
+          max_attempts?: number
+          time_limit_minutes?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_configs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: true
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          id: string
+          program_id: string
+          lesson_id: string | null
+          question_text: string
+          options: Record<string, string>
+          correct_option: string
+          explanation: string | null
+          is_generated: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          lesson_id?: string | null
+          question_text: string
+          options: Record<string, string>
+          correct_option: string
+          explanation?: string | null
+          is_generated?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          lesson_id?: string | null
+          question_text?: string
+          options?: Record<string, string>
+          correct_option?: string
+          explanation?: string | null
+          is_generated?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          id: string
+          enrollment_id: string
+          program_id: string
+          questions_presented: string[]
+          answers: Record<string, string>
+          score_pct: number | null
+          passed: boolean | null
+          started_at: string
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          enrollment_id: string
+          program_id: string
+          questions_presented: string[]
+          answers?: Record<string, string>
+          score_pct?: number | null
+          passed?: boolean | null
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          enrollment_id?: string
+          program_id?: string
+          questions_presented?: string[]
+          answers?: Record<string, string>
+          score_pct?: number | null
+          passed?: boolean | null
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificate_templates: {
+        Row: {
+          id: string
+          program_id: string
+          template_png_path: string
+          font_family: string
+          font_path: string
+          name_center_x: number
+          name_baseline_y: number
+          default_font_size: number
+          min_font_size: number
+          max_name_width: number
+          name_color_hex: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          template_png_path: string
+          font_family?: string
+          font_path?: string
+          name_center_x?: number
+          name_baseline_y?: number
+          default_font_size?: number
+          min_font_size?: number
+          max_name_width?: number
+          name_color_hex?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          template_png_path?: string
+          font_family?: string
+          font_path?: string
+          name_center_x?: number
+          name_baseline_y?: number
+          default_font_size?: number
+          min_font_size?: number
+          max_name_width?: number
+          name_color_hex?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_templates_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: true
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificates: {
+        Row: {
+          id: string
+          enrollment_id: string
+          program_id: string
+          quiz_attempt_id: string | null
+          student_name: string
+          verification_code: string
+          pdf_storage_path: string
+          pdf_url: string | null
+          emailed_at: string | null
+          issued_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          enrollment_id: string
+          program_id: string
+          quiz_attempt_id?: string | null
+          student_name: string
+          verification_code: string
+          pdf_storage_path: string
+          pdf_url?: string | null
+          emailed_at?: string | null
+          issued_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          enrollment_id?: string
+          program_id?: string
+          quiz_attempt_id?: string | null
+          student_name?: string
+          verification_code?: string
+          pdf_storage_path?: string
+          pdf_url?: string | null
+          emailed_at?: string | null
+          issued_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           description: string | null

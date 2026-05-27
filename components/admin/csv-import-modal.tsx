@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 
 type CohortOption = {
   id: string;
@@ -205,75 +206,89 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
     onClose();
   };
 
-  const parseCsv = useCallback((file: File) => {
-    setFileName(file.name);
+  const processRawData = useCallback((data: Record<string, string>[]) => {
+    const emailsSeen = new Set<string>();
+    const parsed: ParsedRow[] = [];
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const emailsSeen = new Set<string>();
-        const parsed: ParsedRow[] = [];
+    for (const raw of data) {
+      const nombre = (raw.nombre ?? raw.Nombre ?? raw.name ?? raw.full_name ?? raw.nombre_completo ?? "").trim();
+      const email = (raw.email ?? raw.Email ?? raw.correo ?? "").trim().toLowerCase();
+      const telefono = (raw.telefono ?? raw.Telefono ?? raw.phone ?? raw.Teléfono ?? raw["teléfono"] ?? "").trim();
+      const cohorte = (raw.cohorte ?? raw.Cohorte ?? raw.cohort ?? "").trim();
+      const rol = (raw.rol ?? raw.Rol ?? raw.role ?? "student").trim();
 
-        for (const raw of results.data as Record<string, string>[]) {
-          const nombre = (raw.nombre ?? raw.Nombre ?? raw.name ?? raw.full_name ?? "").trim();
-          const email = (raw.email ?? raw.Email ?? raw.correo ?? "").trim().toLowerCase();
-          const telefono = (raw.telefono ?? raw.Telefono ?? raw.phone ?? raw.Teléfono ?? "").trim();
-          const cohorte = (raw.cohorte ?? raw.Cohorte ?? raw.cohort ?? "").trim();
-          const rol = (raw.rol ?? raw.Rol ?? raw.role ?? "student").trim();
+      let estado: ParsedRow["estado"] = "valid";
+      let errorMsg: string | undefined;
 
-          let estado: ParsedRow["estado"] = "valid";
-          let errorMsg: string | undefined;
+      if (!nombre || !email) {
+        estado = "invalid";
+        errorMsg = "Nombre y email son requeridos";
+      } else if (!EMAIL_REGEX.test(email)) {
+        estado = "invalid";
+        errorMsg = "Email inválido";
+      } else if (emailsSeen.has(email)) {
+        estado = "duplicate";
+        errorMsg = "Email duplicado en el archivo";
+      }
 
-          if (!nombre || !email) {
-            estado = "invalid";
-            errorMsg = "Nombre y email son requeridos";
-          } else if (!EMAIL_REGEX.test(email)) {
-            estado = "invalid";
-            errorMsg = "Email inválido";
-          } else if (emailsSeen.has(email)) {
-            estado = "duplicate";
-            errorMsg = "Email duplicado en el archivo";
-          }
+      emailsSeen.add(email);
 
-          emailsSeen.add(email);
+      parsed.push({
+        nombre,
+        email,
+        telefono,
+        cohorte,
+        rol,
+        estado,
+        errorMsg,
+        selected: estado === "valid",
+      });
+    }
 
-          parsed.push({
-            nombre,
-            email,
-            telefono,
-            cohorte,
-            rol,
-            estado,
-            errorMsg,
-            selected: estado === "valid",
-          });
-        }
-
-        setRows(parsed);
-        setStep(1);
-      },
-    });
+    setRows(parsed);
+    setStep(1);
   }, []);
+
+  const parseFile = useCallback((file: File) => {
+    setFileName(file.name);
+    const ext = file.name.split(".").pop()?.toLowerCase();
+
+    if (ext === "xlsx" || ext === "xls") {
+      file.arrayBuffer().then((buffer) => {
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
+        processRawData(jsonData);
+      });
+    } else {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          processRawData(results.data as Record<string, string>[]);
+        },
+      });
+    }
+  }, [processRawData]);
 
   const handleFileDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith(".csv")) {
-        parseCsv(file);
+      if (file && /\.(csv|xlsx|xls)$/i.test(file.name)) {
+        parseFile(file);
       }
     },
-    [parseCsv],
+    [parseFile],
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) parseCsv(file);
+      if (file) parseFile(file);
     },
-    [parseCsv],
+    [parseFile],
   );
 
   const validCount = rows.filter((r) => r.estado === "valid").length;
@@ -356,14 +371,7 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
   };
 
   const downloadTemplate = () => {
-    const csv = "nombre,email,telefono\nJuan Pérez,juan@ejemplo.cl,+56912345678";
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "plantilla_importacion.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    window.open("/api/admin/users/template", "_blank");
   };
 
   if (!open || !mounted) return null;
@@ -445,10 +453,12 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
                     <UploadIcon />
                   </div>
                   <p className="text-[15px] font-bold text-ca-ink">
-                    Arrastra tu archivo CSV aquí
+                    Arrastra tu archivo CSV o Excel aquí
                   </p>
-                  <p className="mt-1 text-[13px] font-medium text-ca-ink-soft">
-                    o haz clic para seleccionar
+                  <p className="mt-1 flex items-center justify-center gap-2 text-[13px] font-medium text-ca-ink-soft">
+                    <span className="rounded bg-ca-bg-soft px-1.5 py-0.5 font-mono text-[10px] font-bold text-ca-ink-soft">CSV</span>
+                    <span className="rounded bg-ca-bg-soft px-1.5 py-0.5 font-mono text-[10px] font-bold text-ca-ink-soft">XLSX</span>
+                    <span className="text-ca-ink-soft">o haz clic para seleccionar</span>
                   </p>
                   <button
                     type="button"
@@ -463,7 +473,7 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     className="hidden"
                     onChange={handleFileSelect}
                   />
@@ -476,7 +486,7 @@ export function CsvImportModal({ open, onClose, cohorts }: CsvImportModalProps) 
                   style={{ color: "var(--color-ca-violet)" }}
                 >
                   <DownloadIcon />
-                  Descargar plantilla CSV
+                  Descargar plantilla
                 </button>
               </div>
             )}

@@ -721,6 +721,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
         open={drawerOpen}
         mode={drawerMode}
         user={drawerUser}
+        cohorts={cohorts.map((c) => ({ id: c.id, name: c.name, program_name: c.program_name, status: c.status }))}
         onClose={() => setDrawerOpen(false)}
         onSave={() => {
           setDrawerOpen(false);

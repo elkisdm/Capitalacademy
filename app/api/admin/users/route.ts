@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import { sendInvitationEmail } from "@/lib/email/invitation";
 
 export const runtime = "nodejs";
 
@@ -10,11 +11,18 @@ type CreateUserBody = {
   full_name?: string;
   phone?: string;
   system_role?: "user" | "ops" | "admin";
+  cohort_id?: string;
+  send_invite?: boolean;
 };
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
-  "https://capitalacademy.cl";
+function getBaseUrl(req: Request): string {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
+  }
+  const host = req.headers.get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
 
 export async function POST(req: Request) {
   const auth = await authorizeAdmin();
@@ -36,7 +44,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { email, full_name, phone, system_role } = body as CreateUserBody;
+  const { email, full_name, phone, system_role, cohort_id, send_invite } =
+    body as CreateUserBody;
 
   if (!email) {
     return NextResponse.json(
@@ -58,13 +67,14 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
+  const baseUrl = getBaseUrl(req);
 
   const { data: linkData, error: linkError } =
     await admin.auth.admin.generateLink({
       type: "invite",
       email,
       options: {
-        redirectTo: `${BASE_URL}/onboarding/set-password`,
+        redirectTo: `${baseUrl}/onboarding/set-password`,
       },
     });
 
@@ -76,7 +86,6 @@ export async function POST(req: Request) {
   }
 
   const newUser = linkData.user;
-  const inviteUrl = linkData.properties.action_link;
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
@@ -98,5 +107,62 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ ...profile, invite_url: inviteUrl }, { status: 201 });
+  if (cohort_id) {
+    await admin
+      .from("cohort_roles")
+      .upsert(
+        { user_id: newUser.id, cohort_id, role: "student", granted_by: auth.user.id },
+        { onConflict: "user_id,cohort_id,role" },
+      );
+
+    await admin
+      .from("enrollments")
+      .upsert(
+        { student_id: newUser.id, cohort_id, status: "active" },
+        { onConflict: "student_id,cohort_id" },
+      );
+  }
+
+  if (send_invite) {
+    const hashedToken = linkData.properties.hashed_token;
+    const emailType = linkData.properties.verification_type ?? "invite";
+    const inviteUrl = `${baseUrl}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=${emailType}&next=${encodeURIComponent("/onboarding/set-password")}`;
+
+    let programName = "Capital Academy";
+    let cohortName = "Sin cohorte";
+
+    if (cohort_id) {
+      const { data: cohort } = await admin
+        .from("cohorts")
+        .select("name, programs(name)")
+        .eq("id", cohort_id)
+        .single();
+      if (cohort) {
+        cohortName = cohort.name;
+        programName = (cohort.programs as { name: string } | null)?.name ?? programName;
+      }
+    }
+
+    await sendInvitationEmail({
+      email,
+      fullName: full_name ?? email,
+      inviteUrl,
+      programName,
+      cohortName,
+    });
+
+    await admin
+      .from("invitation_log")
+      .insert({
+        user_id: newUser.id,
+        sent_by: auth.user.id,
+        sent_at: new Date().toISOString(),
+        email,
+      })
+      .then(({ error: logErr }) => {
+        if (logErr) console.error("invitation_log insert failed:", logErr);
+      });
+  }
+
+  return NextResponse.json(profile, { status: 201 });
 }

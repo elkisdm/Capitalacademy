@@ -13,10 +13,18 @@ type UserData = {
   role: PlatformRole;
 };
 
+type CohortOption = {
+  id: string;
+  name: string;
+  program_name: string;
+  status: string;
+};
+
 type UserDrawerProps = {
   open: boolean;
   mode: "create" | "edit";
   user?: UserData | null;
+  cohorts?: CohortOption[];
   onClose: () => void;
   onSave: () => void;
 };
@@ -38,12 +46,13 @@ const ROLE_OPTIONS: { value: PlatformRole; label: string }[] = [
 const INPUT_CLASS =
   "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
 
-export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProps) {
+export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserDrawerProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<PlatformRole>("user");
   const [sendInvite, setSendInvite] = useState(true);
+  const [selectedCohortId, setSelectedCohortId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -67,6 +76,7 @@ export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProp
         setPhone("");
         setRole("user");
         setSendInvite(true);
+        setSelectedCohortId("");
       }
       setSaving(false);
       setError(null);
@@ -110,6 +120,7 @@ export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProp
             phone: phone.trim(),
             system_role: role,
             send_invite: sendInvite,
+            cohort_id: selectedCohortId || undefined,
           }
         : {
             full_name: name.trim(),
@@ -263,6 +274,32 @@ export function UserDrawer({ open, mode, user, onClose, onSave }: UserDrawerProp
                   ))}
                 </select>
               </div>
+
+              {/* Cohort selector — create only */}
+              {mode === "create" && cohorts && cohorts.length > 0 && (
+                <div>
+                  <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                    Asignar a cohorte
+                  </label>
+                  <select
+                    value={selectedCohortId}
+                    onChange={(e) => setSelectedCohortId(e.target.value)}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="">Sin asignar (solo crear cuenta)</option>
+                    {cohorts
+                      .filter((c) => c.status === "active")
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.program_name} — {c.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-ca-ink-soft">
+                    El usuario será asignado como alumno a esta cohorte
+                  </p>
+                </div>
+              )}
 
               {/* Send invite email — create only */}
               {mode === "create" && (

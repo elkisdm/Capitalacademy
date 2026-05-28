@@ -30,6 +30,7 @@ type LessonVideoSectionProps = {
   currentUserId: string;
   currentUserName: string;
   currentUserInitials: string;
+  currentUserAvatarUrl?: string | null;
   hasTranscript?: boolean;
 };
 
@@ -48,6 +49,7 @@ export function LessonVideoSection({
   currentUserId,
   currentUserName,
   currentUserInitials,
+  currentUserAvatarUrl,
   hasTranscript = false,
 }: LessonVideoSectionProps) {
   const { currentTime, setCurrentTime, seekRef, openTranscriptRef } = useVideoSync();
@@ -95,12 +97,12 @@ export function LessonVideoSection({
       {tabs.length > 0 && (
         <div className="mt-8">
           {/* Tab bar */}
-          <div className="mb-4 flex items-center gap-1 border-b border-ca-ink/[0.08] pb-0">
+          <div className="mb-4 flex items-center gap-0.5 overflow-x-auto border-b border-ca-ink/[0.08] pb-0 md:gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="relative px-4 py-3 text-[13px] font-bold tracking-tight transition-colors"
+                className="relative shrink-0 px-3 py-3 text-[12px] font-bold tracking-tight transition-colors md:px-4 md:text-[13px]"
                 style={{
                   color:
                     activeTab === tab.id
@@ -242,6 +244,7 @@ export function LessonVideoSection({
               currentUserId={currentUserId}
               currentUserName={currentUserName}
               currentUserInitials={currentUserInitials}
+              currentUserAvatarUrl={currentUserAvatarUrl}
             />
           )}
         </div>

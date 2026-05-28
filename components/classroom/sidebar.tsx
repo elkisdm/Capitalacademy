@@ -135,6 +135,7 @@ function SidebarContent({
   userInitials,
   userName,
   userRole,
+  userAvatarUrl,
   onCollapse,
   onNavClick,
 }: {
@@ -145,6 +146,7 @@ function SidebarContent({
   userInitials: string;
   userName: string;
   userRole: string;
+  userAvatarUrl?: string | null;
   onCollapse?: () => void;
   onNavClick?: () => void;
 }) {
@@ -202,7 +204,7 @@ function SidebarContent({
             </button>
           </div>
         )}
-        <ProfileLink userInitials={userInitials} userName={userName} collapsed={collapsed} />
+        <ProfileLink userInitials={userInitials} userName={userName} userAvatarUrl={userAvatarUrl} collapsed={collapsed} />
         <form action="/api/auth/signout" method="POST" className="mt-2">
           <button
             type="submit"
@@ -223,7 +225,7 @@ function SidebarContent({
   );
 }
 
-function ProfileLink({ userInitials, userName, collapsed, onClick }: { userInitials: string; userName: string; collapsed: boolean; onClick?: () => void }) {
+function ProfileLink({ userInitials, userName, userAvatarUrl, collapsed, onClick }: { userInitials: string; userName: string; userAvatarUrl?: string | null; collapsed: boolean; onClick?: () => void }) {
   const linkRef = useRef<HTMLAnchorElement>(null);
   return (
     <>
@@ -236,7 +238,7 @@ function ProfileLink({ userInitials, userName, collapsed, onClick }: { userIniti
         className={`group relative flex items-center gap-3 rounded-2xl bg-ca-bg-soft p-2 transition-all hover:bg-ca-violet/[0.08] hover:ring-1 hover:ring-ca-violet/20 ${collapsed ? "justify-center" : ""}`}
       >
         <div className="relative">
-          <Avatar initials={userInitials} size={36} accent="bg-ca-lime" />
+          <Avatar initials={userInitials} avatarUrl={userAvatarUrl} size={36} accent="bg-ca-lime" />
           <div className="absolute inset-0 grid place-items-center rounded-full bg-ca-violet/70 opacity-0 transition-opacity group-hover:opacity-100">
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5z" />
@@ -271,12 +273,14 @@ export function ClassroomSidebar({
   userInitials,
   userName,
   userRole = "user",
+  userAvatarUrl,
   cohortId,
   showOps = false,
 }: {
   userInitials: string;
   userName: string;
   userRole?: string;
+  userAvatarUrl?: string | null;
   cohortId?: string;
   showOps?: boolean;
 }) {
@@ -326,25 +330,28 @@ export function ClassroomSidebar({
           userInitials={userInitials}
           userName={userName}
           userRole={userRole}
+          userAvatarUrl={userAvatarUrl}
           onCollapse={() => setCollapsed(!collapsed)}
         />
       </aside>
 
       {/* Mobile header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-ca-ink/[0.08] bg-ca-surface px-4 py-3 md:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-ca-ink/[0.08] bg-ca-surface px-4 py-2.5 md:hidden">
         <button
           onClick={() => setMobileOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-xl text-ca-ink transition-colors hover:bg-ca-bg-soft"
+          className="grid h-11 w-11 place-items-center rounded-xl text-ca-ink transition-colors hover:bg-ca-bg-soft"
           aria-label="Abrir menú"
         >
           <SvgIcon name="menu" size={20} />
         </button>
         <Logo />
-        <div className="flex items-center gap-2">
-          <button className="grid h-10 w-10 place-items-center rounded-xl text-ca-ink-soft transition-colors hover:bg-ca-bg-soft" aria-label="Notificaciones">
+        <div className="flex items-center gap-1">
+          <button className="grid h-11 w-11 place-items-center rounded-xl text-ca-ink-soft transition-colors hover:bg-ca-bg-soft" aria-label="Notificaciones">
             <SvgIcon name="bell" size={18} />
           </button>
-          <Avatar initials={userInitials} size={32} accent="bg-ca-lime" />
+          <Link href="/classroom/profile" prefetch={false} className="grid h-11 w-11 place-items-center">
+            <Avatar initials={userInitials} avatarUrl={userAvatarUrl} size={34} accent="bg-ca-lime" />
+          </Link>
         </div>
       </header>
 
@@ -407,7 +414,7 @@ export function ClassroomSidebar({
             </div>
 
             <div className="border-t border-ca-ink/[0.08] px-3 py-3">
-              <ProfileLink userInitials={userInitials} userName={userName} collapsed={false} onClick={() => setMobileOpen(false)} />
+              <ProfileLink userInitials={userInitials} userName={userName} userAvatarUrl={userAvatarUrl} collapsed={false} onClick={() => setMobileOpen(false)} />
               <form action="/api/auth/signout" method="POST" className="mt-2">
                 <button
                   type="submit"

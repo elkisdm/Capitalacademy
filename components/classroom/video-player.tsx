@@ -617,7 +617,7 @@ export function VideoPlayer({
     }
   }, [ccEnabled]);
 
-  // ── Playback toggle ────────────────────────────────────────
+  // ── Playback toggle (touch-aware) ──────────────────────────
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
@@ -625,6 +625,18 @@ export function VideoPlayer({
     video.paused ? video.play() : video.pause();
     kickIdle();
   }, [error, kickIdle]);
+
+  const handleVideoAreaTap = useCallback(() => {
+    if (!started) {
+      togglePlay();
+      return;
+    }
+    if (!mouseActive) {
+      kickIdle();
+      return;
+    }
+    togglePlay();
+  }, [started, mouseActive, kickIdle, togglePlay]);
 
   // ── Speed control ──────────────────────────────────────────
 
@@ -792,8 +804,7 @@ export function VideoPlayer({
         onMouseLeave={() => {
           if (playing && !qualityOpen) setMouseActive(false);
         }}
-        onDoubleClick={toggleFullscreen}
-        className="vp-frame relative aspect-video w-full overflow-hidden rounded-[18px] bg-black select-none"
+        className="vp-frame relative aspect-video w-full overflow-hidden rounded-[18px] bg-black select-none touch-manipulation"
         style={{
           boxShadow:
             "0 30px 80px -20px rgba(20,22,58,0.35), 0 0 0 1px rgba(20,22,58,0.06)",
@@ -850,9 +861,9 @@ export function VideoPlayer({
           </div>
         )}
 
-        {/* Click area to toggle play */}
+        {/* Click/tap area — touch: first tap shows controls, second pauses */}
         <button
-          onClick={togglePlay}
+          onClick={handleVideoAreaTap}
           className="absolute inset-0 z-10 cursor-pointer bg-transparent"
           aria-label="Reproducir o pausar"
         />
@@ -1046,14 +1057,14 @@ export function VideoPlayer({
             {/* Controls row */}
             <div className="flex items-center justify-between gap-3 text-white">
               {/* LEFT */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 md:gap-1.5">
                 {/* LIME play/pause — primary action */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     togglePlay();
                   }}
-                  className="grid h-10 w-10 place-items-center rounded-full transition-transform hover:scale-105"
+                  className="grid h-11 w-11 place-items-center rounded-full transition-transform hover:scale-105"
                   style={{
                     background: CA.lime,
                     color: CA.navy,
@@ -1075,7 +1086,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     skipBack();
                   }}
-                  className="grid h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12]"
+                  className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon name="skip-back" size={14} color="#ffffff" />
                 </button>
@@ -1084,14 +1095,14 @@ export function VideoPlayer({
                     e.stopPropagation();
                     skipForward();
                   }}
-                  className="grid h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12]"
+                  className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon name="skip-fwd" size={14} color="#ffffff" />
                 </button>
 
-                {/* Volume */}
+                {/* Volume — hidden on mobile (use device volume) */}
                 <div
-                  className="flex items-center"
+                  className="hidden items-center md:flex"
                   onMouseEnter={() => setVolumeOpen(true)}
                   onMouseLeave={() => setVolumeOpen(false)}
                 >
@@ -1135,9 +1146,9 @@ export function VideoPlayer({
                 </div>
 
                 {/* Timestamps */}
-                <div className="ml-1.5 font-mono text-[11px] font-semibold tabular-nums text-white/80">
+                <div className="ml-1 font-mono text-[10px] font-semibold tabular-nums text-white/80 md:ml-1.5 md:text-[11px]">
                   <span>{fmtTimestamp(currentTime)}</span>
-                  <span className="mx-1 text-white/35">/</span>
+                  <span className="mx-0.5 text-white/35 md:mx-1">/</span>
                   <span className="text-white/55">
                     {fmtTimestamp(durationSeconds)}
                   </span>
@@ -1145,19 +1156,19 @@ export function VideoPlayer({
               </div>
 
               {/* RIGHT */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 md:gap-1.5">
                 {/* CC toggle */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setCcEnabled((v) => !v);
                   }}
-                  className="relative grid h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12]"
+                  className="relative grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon name="cc" size={18} color="#ffffff" />
                   {ccEnabled && (
                     <span
-                      className="absolute bottom-1 left-1/2 h-[2px] w-4 -translate-x-1/2 rounded-full"
+                      className="absolute bottom-1.5 left-1/2 h-[2px] w-4 -translate-x-1/2 rounded-full md:bottom-1"
                       style={{ background: CA.lime }}
                     />
                   )}
@@ -1169,8 +1180,8 @@ export function VideoPlayer({
                     e.stopPropagation();
                     cycleSpeed();
                   }}
-                  className="rounded-full px-2.5 py-1 font-mono text-[11px] font-bold tabular-nums transition-colors hover:bg-white/[0.12]"
-                  style={{ border: "1px solid rgba(255,255,255,0.10)" }}
+                  className="rounded-full px-2 py-1.5 font-mono text-[11px] font-bold tabular-nums transition-colors hover:bg-white/[0.12] md:px-2.5 md:py-1"
+                  style={{ border: "1px solid rgba(255,255,255,0.10)", minHeight: 44, minWidth: 44, display: "grid", placeItems: "center" }}
                 >
                   {speed}x
                 </button>
@@ -1280,11 +1291,11 @@ export function VideoPlayer({
                     e.stopPropagation();
                     toggleFullscreen();
                   }}
-                  className="grid h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12]"
+                  className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon
                     name={isFullscreen ? "fullscreen-exit" : "fullscreen"}
-                    size={18}
+                    size={20}
                     color="#ffffff"
                   />
                 </button>
@@ -1296,13 +1307,13 @@ export function VideoPlayer({
 
       {/* Lesson progress strip below player */}
       <div
-        className="flex items-center gap-3 text-sm"
+        className="flex flex-wrap items-center gap-2 text-sm md:gap-3"
         style={{ color: "var(--color-ca-ink-soft)" }}
       >
         <span className="shrink-0 text-[11px] font-semibold">
           Progreso
         </span>
-        <div className="flex-1">
+        <div className="min-w-[100px] flex-1">
           <div
             className="h-1.5 w-full overflow-hidden rounded-full"
             style={{

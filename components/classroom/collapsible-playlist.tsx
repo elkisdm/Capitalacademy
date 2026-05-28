@@ -51,6 +51,7 @@ export function CollapsiblePlaylist({
     if (!hasTranscript) return;
     openTranscriptRef.current = () => {
       setCollapsed(false);
+      setMobileOpen(true);
       setMode("transcript");
       setTranscriptKey((k) => k + 1);
       try {

@@ -116,7 +116,7 @@ export default async function LessonPage(
       .eq("lesson_id", lessonId),
     supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, avatar_url")
       .eq("id", user.id)
       .single(),
   ]);
@@ -144,28 +144,28 @@ export default async function LessonPage(
       </div>
 
       {/* Title block — above the video */}
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-4 flex flex-col gap-3 md:mb-5 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
             <span>Lección {String(idx + 1).padStart(2, "0")} de {siblingLessons.length}</span>
             <span className="opacity-40">·</span>
             <span>{fmtDuration(videoDuration)}</span>
             <span className="opacity-40">·</span>
             <StatusPill status={progress?.completed ? "completed" : (progress && watchPct > 0) ? "in_progress" : "available"} size="sm" />
           </div>
-          <h1 className="text-[28px] font-black leading-tight tracking-tight text-ca-ink">
+          <h1 className="text-[22px] font-black leading-tight tracking-tight text-ca-ink md:text-[28px]">
             {lesson.title}
           </h1>
           {lesson.description && (
-            <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ca-ink-soft">
+            <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ca-ink-soft md:mt-2 md:text-[14px]">
               {lesson.description}
             </p>
           )}
         </div>
         {currentModule?.teacher?.full_name && (
           <div className="flex shrink-0 items-center gap-2.5">
-            <Avatar initials={currentModule.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={36} />
-            <div className="text-right">
+            <Avatar initials={currentModule.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={32} />
+            <div className="md:text-right">
               <div className="text-[13px] font-bold tracking-tight text-ca-ink">{currentModule.teacher.full_name}</div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">Instructor</div>
             </div>
@@ -199,6 +199,7 @@ export default async function LessonPage(
               currentUserId={user.id}
               currentUserName={userName}
               currentUserInitials={userInitials}
+              currentUserAvatarUrl={profile?.avatar_url ?? null}
               hasTranscript={!!transcriptVtt}
             />
           ) : (

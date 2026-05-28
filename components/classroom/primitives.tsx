@@ -96,10 +96,12 @@ export function ProgressBar({
 
 export function Avatar({
   initials,
+  avatarUrl,
   size = 36,
   accent = "bg-ca-violet",
 }: {
   initials: string;
+  avatarUrl?: string | null;
   size?: number;
   accent?: string;
 }) {
@@ -108,7 +110,11 @@ export function Avatar({
       className="shape-circle relative inline-grid shrink-0 place-items-center bg-ca-navy-ink font-bold text-white"
       style={{ width: size, height: size, fontSize: Math.max(10, size * 0.36) }}
     >
-      {initials}
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+      ) : (
+        initials
+      )}
       <span
         className={`shape-circle absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 border-2 border-ca-surface ${accent}`}
       />

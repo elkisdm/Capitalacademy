@@ -9,9 +9,10 @@ type CommentSectionProps = {
   currentUserId: string;
   currentUserName: string;
   currentUserInitials: string;
+  currentUserAvatarUrl?: string | null;
 };
 
-type Profile = { id: string; full_name: string };
+type Profile = { id: string; full_name: string; avatar_url?: string | null };
 
 type Comment = {
   id: string;
@@ -133,10 +134,12 @@ function MessageIcon({ size = 20 }: { size?: number }) {
 
 function CommentAvatar({
   initials,
+  avatarUrl,
   isCurrentUser,
   size = 32,
 }: {
   initials: string;
+  avatarUrl?: string | null;
   isCurrentUser: boolean;
   size?: number;
 }) {
@@ -151,7 +154,11 @@ function CommentAvatar({
         fontSize: Math.max(10, size * 0.36),
       }}
     >
-      {initials}
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+      ) : (
+        initials
+      )}
     </div>
   );
 }
@@ -160,6 +167,7 @@ function CommentAvatar({
 
 function CommentInput({
   initials,
+  avatarUrl,
   placeholder,
   onSubmit,
   onCancel,
@@ -167,6 +175,7 @@ function CommentInput({
   compact = false,
 }: {
   initials: string;
+  avatarUrl?: string | null;
   placeholder: string;
   onSubmit: (content: string) => void;
   onCancel?: () => void;
@@ -211,6 +220,7 @@ function CommentInput({
     <div className={`flex gap-3 ${compact ? "" : ""}`}>
       <CommentAvatar
         initials={initials}
+        avatarUrl={avatarUrl}
         isCurrentUser
         size={compact ? 28 : 32}
       />
@@ -255,6 +265,7 @@ function CommentItem({
   comment,
   currentUserId,
   currentUserInitials,
+  currentUserAvatarUrl,
   replies,
   onReply,
   onDelete,
@@ -262,6 +273,7 @@ function CommentItem({
   comment: Comment;
   currentUserId: string;
   currentUserInitials: string;
+  currentUserAvatarUrl?: string | null;
   replies: Comment[];
   onReply: (parentId: string, content: string) => void;
   onDelete: (id: string) => void;
@@ -291,6 +303,7 @@ function CommentItem({
       <div className="flex gap-3">
         <CommentAvatar
           initials={authorInitials}
+          avatarUrl={comment.profiles.avatar_url}
           isCurrentUser={isOwn}
           size={32}
         />
@@ -389,6 +402,7 @@ function CommentItem({
         <div className="ml-[44px] mt-3">
           <CommentInput
             initials={currentUserInitials}
+            avatarUrl={currentUserAvatarUrl}
             placeholder="Escribe una respuesta..."
             onSubmit={(content) => {
               onReply(comment.id, content);
@@ -433,7 +447,7 @@ function ReplyItem({
 
   return (
     <div className="group mb-3 flex gap-3">
-      <CommentAvatar initials={initials} isCurrentUser={isOwn} size={28} />
+      <CommentAvatar initials={initials} avatarUrl={reply.profiles.avatar_url} isCurrentUser={isOwn} size={28} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[12px] font-bold text-ca-ink">
@@ -483,6 +497,7 @@ export function CommentSection({
   currentUserId,
   currentUserName,
   currentUserInitials,
+  currentUserAvatarUrl,
 }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -688,6 +703,7 @@ export function CommentSection({
       {/* Main comment input */}
       <CommentInput
         initials={currentUserInitials}
+        avatarUrl={currentUserAvatarUrl}
         placeholder="Escribe un comentario..."
         onSubmit={handleAddComment}
       />
@@ -727,6 +743,7 @@ export function CommentSection({
               comment={comment}
               currentUserId={currentUserId}
               currentUserInitials={currentUserInitials}
+              currentUserAvatarUrl={currentUserAvatarUrl}
               replies={repliesMap.get(comment.id) ?? []}
               onReply={handleAddReply}
               onDelete={handleDelete}

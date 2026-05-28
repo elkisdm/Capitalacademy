@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatRut, cleanRut, isValidRut } from "@/lib/utils/rut";
 import { BrandShapes } from "@/components/classroom/primitives";
 import { CohortRoleBadge, StateBadge } from "@/components/admin/user-primitives";
+import { useToast } from "@/components/admin/toast";
 
 type ProfileData = {
   full_name: string | null;
@@ -419,6 +420,7 @@ function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps
 
 export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentProfileClientProps) {
   const router = useRouter();
+  const { toast, ToastContainer } = useToast();
   const [signingOut, setSigningOut] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -438,8 +440,13 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
         body: formData,
       });
       if (res.ok) {
+        toast("Foto de perfil actualizada", "success");
         router.refresh();
+      } else {
+        toast("Error al subir la imagen", "error");
       }
+    } catch {
+      toast("Error al subir la imagen", "error");
     } finally {
       setUploadingAvatar(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -447,16 +454,25 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
   };
 
   const saveField = async (field: string, value: string) => {
-    await fetch("/api/onboarding/complete-profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        full_name: profile.full_name ?? "",
-        phone: profile.phone ?? "",
-        rut: profile.rut ?? "",
-        [field]: value || null,
-      }),
-    });
+    try {
+      const res = await fetch("/api/onboarding/complete-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: profile.full_name ?? "",
+          phone: profile.phone ?? "",
+          rut: profile.rut ?? "",
+          [field]: value || null,
+        }),
+      });
+      if (res.ok) {
+        toast("Perfil actualizado", "success");
+      } else {
+        toast("Error al guardar", "error");
+      }
+    } catch {
+      toast("Error al guardar", "error");
+    }
     router.refresh();
   };
 
@@ -468,6 +484,7 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
 
   return (
     <>
+      <ToastContainer />
       {/* Hero card */}
       <div className="ca-card relative mb-6 overflow-hidden p-6 md:p-8">
         <BrandShapes variant="corner-violet" />

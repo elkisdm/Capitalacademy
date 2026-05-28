@@ -24,7 +24,7 @@ export default async function ClassroomLayout({
   const [{ data: profile }, { data: enrollment }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, role, system_role, onboarding_completed_at")
+      .select("full_name, role, system_role, onboarding_completed_at, avatar_url")
       .eq("id", user.id)
       .single(),
     supabase
@@ -63,6 +63,7 @@ export default async function ClassroomLayout({
         userInitials={initials}
         userName={name}
         userRole={sysRole ?? "user"}
+        userAvatarUrl={profile?.avatar_url ?? null}
         cohortId={cohortSlug}
         showOps={isStaff}
       />

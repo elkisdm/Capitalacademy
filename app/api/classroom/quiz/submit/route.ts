@@ -77,6 +77,10 @@ export async function POST(req: Request) {
   }
 
   // --- Verify student can submit (check attempts) ----------------------------
+  // NOTE: The check-then-act pattern below is vulnerable to race conditions
+  // under concurrent submissions. A database-level advisory lock or unique
+  // partial index on (enrollment_id, program_id) WHERE passed = true
+  // would fully prevent duplicate passing attempts.
   const { data: existingAttempts } = await admin
     .from("quiz_attempts")
     .select("id, passed, completed_at, questions_presented")

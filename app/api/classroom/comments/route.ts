@@ -5,6 +5,11 @@ import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+/** Strip HTML tags to prevent storing malicious content. */
+function stripHtml(str: string): string {
+  return str.replace(/<[^>]*>/g, "");
+}
+
 const commentLimiter = createRateLimiter({ limit: 10, windowSeconds: 60 });
 
 const commentPostSchema = z.object({
@@ -86,7 +91,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const { lessonId, content, parentId } = parsed.data;
+  const { lessonId, parentId } = parsed.data;
+  const content = stripHtml(parsed.data.content);
 
   const { data, error } = await supabase
     .from("lesson_comments")

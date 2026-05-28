@@ -2,19 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { getBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 
 const limiter = createRateLimiter({ limit: 3, windowSeconds: 300 });
-
-function getBaseUrl(req: Request): string {
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
-  const host = req.headers.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
-}
 
 export async function POST(req: Request) {
   const rl = limiter.check(getClientIp(req));

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { sendInvitationEmail } from "@/lib/email/invitation";
+import { getBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 
@@ -15,15 +16,6 @@ const createUserSchema = z.object({
   cohort_id: z.string().uuid().optional(),
   send_invite: z.boolean().default(false),
 });
-
-function getBaseUrl(req: Request): string {
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
-  const host = req.headers.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
-}
 
 export async function POST(req: Request) {
   const auth = await authorizeAdmin();

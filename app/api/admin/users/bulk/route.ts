@@ -2,18 +2,10 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendInvitationEmail } from "@/lib/email/invitation";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import { getBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function getBaseUrl(req: Request): string {
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
-  const host = req.headers.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
-}
 
 type BulkRow = {
   email: string;

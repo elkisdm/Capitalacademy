@@ -16,7 +16,7 @@ export default function AdminError({
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+    <div role="alert" className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
       <Image
         src="/brand/logo-on-light.png"
         alt="Capital Academy"

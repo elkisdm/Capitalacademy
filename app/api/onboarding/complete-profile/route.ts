@@ -79,7 +79,7 @@ export async function PATCH(req: Request) {
     .from("profiles")
     .update(updateData as never)
     .eq("id", user.id)
-    .select()
+    .select("id, full_name, phone, avatar_url, onboarding_completed_at")
     .single();
 
   if (error) {

@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+const commentLimiter = createRateLimiter({ limit: 10, windowSeconds: 60 });
+
+const commentPostSchema = z.object({
+  lessonId: z.string().uuid(),
+  content: z.string().trim().min(1, "El comentario no puede estar vacío").max(2000),
+  parentId: z.string().uuid().optional(),
+});
 
 // ── GET /api/classroom/comments?lessonId=xxx ────────────────
 // Returns flat list of comments with author info. Client builds the tree.
@@ -19,9 +29,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const lessonId = searchParams.get("lessonId");
 
-  if (!lessonId) {
+  if (!lessonId || !z.string().uuid().safeParse(lessonId).success) {
     return NextResponse.json(
-      { error: "lessonId es requerido" },
+      { error: "lessonId es requerido y debe ser un UUID válido" },
       { status: 422 },
     );
   }
@@ -29,7 +39,7 @@ export async function GET(req: Request) {
   const { data, error } = await supabase
     .from("lesson_comments")
     .select(
-      "id, content, parent_id, created_at, updated_at, profiles!inner(id, full_name)",
+      "id, content, parent_id, created_at, updated_at, profiles!inner(id, full_name, avatar_url)",
     )
     .eq("lesson_id", lessonId)
     .order("created_at", { ascending: true });
@@ -58,6 +68,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
 
+  const rl = commentLimiter.check(user.id);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   let body: unknown;
   try {
     body = await req.json();
@@ -65,29 +78,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body invalido" }, { status: 400 });
   }
 
-  const { lessonId, content, parentId } = body as {
-    lessonId?: string;
-    content?: string;
-    parentId?: string;
-  };
-
-  if (!lessonId || !content?.trim()) {
+  const parsed = commentPostSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "lessonId y content son requeridos" },
+      { error: "Validación fallida", issues: parsed.error.issues },
       { status: 422 },
     );
   }
+
+  const { lessonId, content, parentId } = parsed.data;
 
   const { data, error } = await supabase
     .from("lesson_comments")
     .insert({
       lesson_id: lessonId,
       author_id: user.id,
-      parent_id: parentId || null,
-      content: content.trim(),
+      parent_id: parentId ?? null,
+      content,
     })
     .select(
-      "id, content, parent_id, created_at, profiles!inner(id, full_name)",
+      "id, content, parent_id, created_at, profiles!inner(id, full_name, avatar_url)",
     )
     .single();
 
@@ -118,9 +128,9 @@ export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
-  if (!id) {
+  if (!id || !z.string().uuid().safeParse(id).success) {
     return NextResponse.json(
-      { error: "id es requerido" },
+      { error: "id es requerido y debe ser un UUID válido" },
       { status: 422 },
     );
   }

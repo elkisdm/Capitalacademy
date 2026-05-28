@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
 
 export const runtime = "nodejs";
+
+const submitSchema = z.object({
+  programId: z.string().uuid(),
+  answers: z
+    .record(z.string().uuid(), z.enum(["A", "B", "C", "D"]))
+    .refine((obj) => Object.keys(obj).length > 0, "Debe contener al menos una respuesta"),
+});
 
 export async function POST(req: Request) {
   // --- Auth check ------------------------------------------------------------
@@ -24,43 +32,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body invalido" }, { status: 400 });
   }
 
-  const { programId, answers } = body as {
-    programId?: string;
-    answers?: Record<string, string>;
-  };
-
-  if (!programId) {
+  const parsed = submitSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "programId es requerido" },
+      { error: "Validación fallida", issues: parsed.error.issues },
       { status: 422 },
     );
   }
 
-  if (!answers || typeof answers !== "object" || Object.keys(answers).length === 0) {
-    return NextResponse.json(
-      { error: "answers es requerido y debe contener al menos una respuesta" },
-      { status: 422 },
-    );
-  }
-
-  // Validate answer keys are UUIDs and values are valid options
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const validOptions = ["A", "B", "C", "D"];
-  for (const [questionId, answer] of Object.entries(answers)) {
-    if (!uuidRegex.test(questionId)) {
-      return NextResponse.json(
-        { error: `ID de pregunta invalido: ${questionId}` },
-        { status: 422 },
-      );
-    }
-    if (!validOptions.includes(answer)) {
-      return NextResponse.json(
-        { error: `Respuesta invalida "${answer}" para pregunta ${questionId}. Opciones validas: A, B, C, D` },
-        { status: 422 },
-      );
-    }
-  }
+  const { programId, answers } = parsed.data;
 
   // --- Fetch enrollment ------------------------------------------------------
   const { data: enrollment, error: enrollmentError } = await supabase

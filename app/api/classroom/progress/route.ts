@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { computeServerProgress } from "@/lib/classroom/progress";
 import { verifyEnrollment } from "@/lib/classroom/verify-enrollment";
 
 export const runtime = "nodejs";
+
+const progressPatchSchema = z.object({
+  lessonId: z.string().uuid(),
+  playbackPositionSeconds: z.number().int().min(0),
+  durationSeconds: z.number().int().positive(),
+});
+
+const progressPostSchema = z.object({
+  lessonId: z.string().uuid(),
+});
 
 export async function PATCH(req: Request) {
   const supabase = await createClient();
@@ -22,23 +33,15 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { lessonId, playbackPositionSeconds, durationSeconds } = body as {
-    lessonId?: string;
-    playbackPositionSeconds?: number;
-    durationSeconds?: number;
-  };
-
-  if (
-    !lessonId ||
-    typeof playbackPositionSeconds !== "number" ||
-    typeof durationSeconds !== "number" ||
-    durationSeconds <= 0
-  ) {
+  const parsed = progressPatchSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "lessonId, playbackPositionSeconds, y durationSeconds son requeridos" },
+      { error: "Validación fallida", issues: parsed.error.issues },
       { status: 422 },
     );
   }
+
+  const { lessonId, playbackPositionSeconds, durationSeconds } = parsed.data;
 
   const enrollmentId = await verifyEnrollment(user.id, lessonId);
 
@@ -111,14 +114,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { lessonId } = body as { lessonId?: string };
-
-  if (!lessonId) {
+  const parsed = progressPostSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "lessonId es requerido" },
+      { error: "Validación fallida", issues: parsed.error.issues },
       { status: 422 },
     );
   }
+
+  const { lessonId } = parsed.data;
 
   const enrollmentId = await verifyEnrollment(user.id, lessonId);
 

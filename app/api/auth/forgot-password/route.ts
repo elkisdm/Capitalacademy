@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+const limiter = createRateLimiter({ limit: 3, windowSeconds: 300 });
 
 function getBaseUrl(req: Request): string {
   if (process.env.NEXT_PUBLIC_BASE_URL) {
@@ -14,6 +17,9 @@ function getBaseUrl(req: Request): string {
 }
 
 export async function POST(req: Request) {
+  const rl = limiter.check(getClientIp(req));
+  if (!rl.ok) return rateLimitResponse(rl);
+
   let body: unknown;
   try {
     body = await req.json();

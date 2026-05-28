@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
@@ -6,14 +7,14 @@ import { sendInvitationEmail } from "@/lib/email/invitation";
 
 export const runtime = "nodejs";
 
-type CreateUserBody = {
-  email?: string;
-  full_name?: string;
-  phone?: string;
-  system_role?: "user" | "ops" | "admin";
-  cohort_id?: string;
-  send_invite?: boolean;
-};
+const createUserSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(160),
+  full_name: z.string().trim().min(2).max(120).optional(),
+  phone: z.string().trim().max(40).optional(),
+  system_role: z.enum(["user", "ops", "admin"]).default("user"),
+  cohort_id: z.string().uuid().optional(),
+  send_invite: z.boolean().default(false),
+});
 
 function getBaseUrl(req: Request): string {
   if (process.env.NEXT_PUBLIC_BASE_URL) {
@@ -44,17 +45,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { email, full_name, phone, system_role, cohort_id, send_invite } =
-    body as CreateUserBody;
-
-  if (!email) {
+  const parsed = createUserSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "email es requerido" },
+      { error: "Validación fallida", issues: parsed.error.issues },
       { status: 422 },
     );
   }
 
-  const targetRole = system_role ?? "user";
+  const { email, full_name, phone, system_role, cohort_id, send_invite } =
+    parsed.data;
+
+  const targetRole = system_role;
 
   if (
     callerProfile?.system_role === "ops" &&

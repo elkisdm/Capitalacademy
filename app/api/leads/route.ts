@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const limiter = createRateLimiter({ limit: 5, windowSeconds: 60 });
 
 const bodySchema = z.object({
   full_name: z.string().trim().min(2).max(120),
@@ -28,6 +31,9 @@ function emptyToNull<T extends string | undefined>(v: T) {
 }
 
 export async function POST(req: Request) {
+  const rl = limiter.check(getClientIp(req));
+  if (!rl.ok) return rateLimitResponse(rl);
+
   let json: unknown;
   try {
     json = await req.json();

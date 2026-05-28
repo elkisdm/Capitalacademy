@@ -6,13 +6,19 @@ import { getActivePaymentProvider } from "@/lib/payments/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 import { applyCouponToAmount, lookupCoupon } from "@/lib/coupons/validate";
+import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+const limiter = createRateLimiter({ limit: 5, windowSeconds: 300 });
 
 type PaymentInsert = Database["public"]["Tables"]["payments"]["Insert"];
 type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
 
 export async function POST(req: Request) {
+  const rl = limiter.check(getClientIp(req));
+  if (!rl.ok) return rateLimitResponse(rl);
+
   let json: unknown;
   try {
     json = await req.json();

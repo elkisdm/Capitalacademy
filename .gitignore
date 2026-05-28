@@ -52,3 +52,16 @@ supabase/.branches/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# working files (documentos, audio, hojas de cálculo locales)
+*.m4a
+*.wav
+*.srt
+*.xlsx
+*.csv
+knowledge/
+documentacion_flow.md
+certificados_individuales/
+Capital-Academy-*.pdf
+certificados*.pdf
+reunion_capital_academy.*

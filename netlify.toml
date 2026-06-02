@@ -1,0 +1,10 @@
+[build]
+  command = "pnpm install --ignore-scripts && pnpm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20.20.0"
+  PNPM_VERSION = "9.15.0"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

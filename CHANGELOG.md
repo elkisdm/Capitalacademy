@@ -24,6 +24,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Asignar un alumno a una cohorte desde el panel admin ahora crea la matrícula automáticamente (`c7633b4`)
 - Reenviar invitación ya no falla cuando el usuario ya existe en el sistema (`66eac91`)
 - Asignar cohorte desde la lista de usuarios ahora funciona correctamente (`e93ffca`)
+- El progreso de video, los comentarios y el quiz del workshop vuelven a guardarse/cargar: la validación de IDs rechazaba las clases del classroom y devolvía error (`f5b6592`)
 
 ### Security
 - Sanitización de comentarios, filtrado de datos sensibles en respuestas API, políticas RLS para pagos/cupones, y corrección de contraste WCAG AA (`e7fd0a3`)

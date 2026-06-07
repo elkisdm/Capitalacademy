@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
 
@@ -13,9 +14,9 @@ function stripHtml(str: string): string {
 const commentLimiter = createRateLimiter({ limit: 10, windowSeconds: 60 });
 
 const commentPostSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: uuidLike,
   content: z.string().trim().min(1, "El comentario no puede estar vacío").max(2000),
-  parentId: z.string().uuid().optional(),
+  parentId: uuidLike.optional(),
 });
 
 // ── GET /api/classroom/comments?lessonId=xxx ────────────────
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const lessonId = searchParams.get("lessonId");
 
-  if (!lessonId || !z.string().uuid().safeParse(lessonId).success) {
+  if (!lessonId || !uuidLike.safeParse(lessonId).success) {
     return NextResponse.json(
       { error: "lessonId es requerido y debe ser un UUID válido" },
       { status: 422 },
@@ -134,7 +135,7 @@ export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
-  if (!id || !z.string().uuid().safeParse(id).success) {
+  if (!id || !uuidLike.safeParse(id).success) {
     return NextResponse.json(
       { error: "id es requerido y debe ser un UUID válido" },
       { status: 422 },

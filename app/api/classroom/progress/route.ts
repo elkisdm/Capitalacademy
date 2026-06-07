@@ -3,17 +3,18 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { computeServerProgress } from "@/lib/classroom/progress";
 import { verifyEnrollment } from "@/lib/classroom/verify-enrollment";
+import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
 
 const progressPatchSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: uuidLike,
   playbackPositionSeconds: z.number().int().min(0),
   durationSeconds: z.number().int().positive(),
 });
 
 const progressPostSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: uuidLike,
 });
 
 export async function PATCH(req: Request) {

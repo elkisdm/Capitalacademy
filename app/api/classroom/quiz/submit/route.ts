@@ -3,13 +3,14 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
+import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
 
 const submitSchema = z.object({
-  programId: z.string().uuid(),
+  programId: uuidLike,
   answers: z
-    .record(z.string().uuid(), z.enum(["A", "B", "C", "D"]))
+    .record(uuidLike, z.enum(["A", "B", "C", "D"]))
     .refine((obj) => Object.keys(obj).length > 0, "Debe contener al menos una respuesta"),
 });
 

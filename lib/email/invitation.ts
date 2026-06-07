@@ -47,7 +47,7 @@ function invitationHtml(d: InvitationEmailInput): string {
         <tr><td style="padding:0;background:#14163a;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
             <tr><td align="center" style="padding:32px 28px;">
-              <p style="margin:0 0 4px 0;font-size:22px;font-weight:900;color:#ffffff;letter-spacing:0.02em;">Capital Academy</p>
+              <img src="https://capitalacademy.cl/brand/logo-light.png" alt="Capital Academy" width="200" style="display:block;width:200px;max-width:62%;height:auto;margin:0 auto 10px auto;border:0;outline:none;text-decoration:none;" />
               <p style="margin:0;font-size:11px;letter-spacing:0.3em;color:#c5f122;text-transform:uppercase;font-weight:700;">Plataforma educativa</p>
             </td></tr>
           </table>
@@ -56,7 +56,7 @@ function invitationHtml(d: InvitationEmailInput): string {
         <!-- Body -->
         <tr><td style="padding:32px 32px 16px 32px;">
           <h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;color:#14163a;font-weight:800;">&iexcl;Bienvenido a Capital Academy, ${esc(firstName)}!</h1>
-          <p style="margin:0 0 24px 0;font-size:15px;line-height:1.65;color:#3a3d5c;">Has sido inscrito en <strong style="color:#5e17eb;">${esc(d.programName)}</strong> &mdash; <strong>${esc(d.cohortName)}</strong>.</p>
+          <p style="margin:0 0 24px 0;font-size:15px;line-height:1.65;color:#3a3d5c;">Has sido inscrito en <strong style="color:#5e17eb;">${esc(courseLabel(d.programName, d.cohortName))}</strong>.</p>
         </td></tr>
 
         <!-- CTA -->
@@ -105,7 +105,7 @@ function invitationText(d: InvitationEmailInput): string {
   return [
     `¡Bienvenido a Capital Academy, ${firstName}!`,
     "",
-    `Has sido inscrito en ${d.programName} — ${d.cohortName}.`,
+    `Has sido inscrito en ${courseLabel(d.programName, d.cohortName)}.`,
     "",
     `Crea tu contraseña: ${d.inviteUrl}`,
     "",
@@ -118,6 +118,18 @@ function invitationText(d: InvitationEmailInput): string {
     "",
     "Capital Academy · capitalacademy.cl",
   ].join("\n");
+}
+
+// Evita duplicar el programa cuando el cohort ya lo incluye como prefijo.
+// Ej: programa "Workshop Inmobiliario" + cohort "Workshop Inmobiliario — Mayo 2026"
+// => "Workshop Inmobiliario — Mayo 2026" (no "Workshop Inmobiliario — Workshop Inmobiliario — Mayo 2026").
+function courseLabel(programName: string, cohortName: string): string {
+  const p = (programName ?? "").trim();
+  const c = (cohortName ?? "").trim();
+  if (!p) return c;
+  if (!c) return p;
+  if (c.toLowerCase().startsWith(p.toLowerCase())) return c;
+  return `${p} — ${c}`;
 }
 
 function esc(s: string): string {

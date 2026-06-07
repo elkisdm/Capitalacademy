@@ -19,6 +19,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Avatares en comentarios, mejoras responsive en sidebar, selector de calidad en video player, y campo de cumpleaños en perfil (`45b7d4f`)
 - Las páginas del classroom cargan más rápido con queries paralelas y skeletons de carga instantánea (`af0e71a`)
 - Crear usuario ahora permite asignar cohorte y enviar invitación en un solo paso (`e982aa5`)
+- El correo de invitación muestra el logo en el header y ya no duplica el nombre del programa (`65f6067`)
 
 ### Fixed
 - Asignar un alumno a una cohorte desde el panel admin ahora crea la matrícula automáticamente (`c7633b4`)

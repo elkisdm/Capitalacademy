@@ -1,7 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CobroCheckoutClient } from "./CobroCheckoutClient";
-import { getCobroSigningSecret, verifyCobroAmount } from "@/lib/cobro/sign";
+import {
+  getCobroSigningSecret,
+  normalizeConcepto,
+  verifyCobro,
+} from "@/lib/cobro/sign";
 
 export const dynamic = "force-dynamic";
 
@@ -11,22 +15,26 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const COBRO_CONCEPT = "Pago a Capital Academy";
+const DEFAULT_CONCEPT = "Pago a Capital Academy";
 
 export default async function CobroPage({
   searchParams,
 }: {
-  searchParams: Promise<{ monto?: string; sig?: string }>;
+  searchParams: Promise<{ monto?: string; sig?: string; concepto?: string }>;
 }) {
   const sp = await searchParams;
   const secret = getCobroSigningSecret();
   const monto = Number(sp.monto);
   const sig = sp.sig ?? "";
+  const concepto = normalizeConcepto(sp.concepto);
 
   const valid =
     secret !== null &&
     Number.isInteger(monto) &&
-    verifyCobroAmount(monto, sig, secret);
+    verifyCobro(monto, concepto, sig, secret);
+
+  // El concepto firmado se muestra como título; si viene vacío, default neutro.
+  const displayConcept = concepto || DEFAULT_CONCEPT;
 
   return (
     <main className="relative overflow-hidden bg-[var(--color-ca-bg)]">
@@ -55,7 +63,7 @@ export default async function CobroPage({
             />
           </Link>
           <h1 className="font-sans text-3xl font-black tracking-[-0.03em] text-[var(--color-ca-ink)] sm:text-4xl">
-            {COBRO_CONCEPT}
+            {displayConcept}
           </h1>
         </header>
 
@@ -63,7 +71,8 @@ export default async function CobroPage({
           <CobroCheckoutClient
             amountClp={monto}
             sig={sig}
-            concept={COBRO_CONCEPT}
+            concepto={concepto}
+            concept={displayConcept}
           />
         ) : (
           <div className="rounded-3xl border border-rose-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(20,22,58,0.08)]">

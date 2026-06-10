@@ -1,5 +1,10 @@
 import { CobroGenerator } from "./cobro-generator";
-import { getCobroSigningSecret, signCobroAmount } from "@/lib/cobro/sign";
+import {
+  getCobroSigningSecret,
+  MAX_CONCEPTO_LEN,
+  normalizeConcepto,
+  signCobro,
+} from "@/lib/cobro/sign";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +15,13 @@ const MAX_CLP = 5_000_000;
 export default async function AdminCobrosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ monto?: string }>;
+  searchParams: Promise<{ monto?: string; concepto?: string }>;
 }) {
   const sp = await searchParams;
   const secret = getCobroSigningSecret();
 
   let monto: number | null = null;
+  const concepto = normalizeConcepto(sp.concepto);
   let generatedLink: string | null = null;
   let error: string | null = null;
 
@@ -30,8 +36,11 @@ export default async function AdminCobrosPage({
       const baseUrl = (
         process.env.NEXT_PUBLIC_APP_URL ?? "https://capitalacademy.cl"
       ).replace(/\/$/, "");
-      const sig = signCobroAmount(parsed, secret);
-      generatedLink = `${baseUrl}/pago/cobro?monto=${parsed}&sig=${sig}`;
+      const sig = signCobro(parsed, concepto, secret);
+      const conceptoParam = concepto
+        ? `&concepto=${encodeURIComponent(concepto)}`
+        : "";
+      generatedLink = `${baseUrl}/pago/cobro?monto=${parsed}${conceptoParam}&sig=${sig}`;
     }
   }
 
@@ -52,9 +61,11 @@ export default async function AdminCobrosPage({
 
       <CobroGenerator
         monto={monto}
+        concepto={concepto}
         generatedLink={generatedLink}
         error={error}
         maxClp={MAX_CLP}
+        maxConceptoLen={MAX_CONCEPTO_LEN}
       />
     </div>
   );

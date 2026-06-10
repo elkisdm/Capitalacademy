@@ -19,6 +19,9 @@ type CobroFormInput = z.input<typeof cobroFormSchema>;
 type Props = {
   amountClp: number;
   sig: string;
+  /** Concepto firmado tal cual viaja en la URL (vacío si no hay). */
+  concepto: string;
+  /** Texto a mostrar (concepto o default neutro). */
   concept: string;
 };
 
@@ -30,7 +33,12 @@ const priceFormatter = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
-export function CobroCheckoutClient({ amountClp, sig, concept }: Props) {
+export function CobroCheckoutClient({
+  amountClp,
+  sig,
+  concepto,
+  concept,
+}: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -56,7 +64,7 @@ export function CobroCheckoutClient({ amountClp, sig, concept }: Props) {
       const res = await fetch("/api/pago/cobro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, monto: amountClp, sig }),
+        body: JSON.stringify({ ...values, monto: amountClp, concepto, sig }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };

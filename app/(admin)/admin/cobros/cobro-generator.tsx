@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   monto: number | null;
+  concepto: string;
   generatedLink: string | null;
   error: string | null;
   maxClp: number;
+  maxConceptoLen: number;
 };
 
 const priceFormatter = new Intl.NumberFormat("es-CL", {
@@ -16,9 +18,17 @@ const priceFormatter = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
-export function CobroGenerator({ monto, generatedLink, error, maxClp }: Props) {
+export function CobroGenerator({
+  monto,
+  concepto,
+  generatedLink,
+  error,
+  maxClp,
+  maxConceptoLen,
+}: Props) {
   const router = useRouter();
   const [input, setInput] = useState(monto ? String(monto) : "");
+  const [conceptoInput, setConceptoInput] = useState(concepto);
   const [copied, setCopied] = useState(false);
 
   const parsed = Number(input.replace(/\D/g, ""));
@@ -27,7 +37,9 @@ export function CobroGenerator({ monto, generatedLink, error, maxClp }: Props) {
   function generate() {
     if (!canGenerate) return;
     setCopied(false);
-    router.push(`/admin/cobros?monto=${parsed}`);
+    const c = conceptoInput.trim().slice(0, maxConceptoLen);
+    const q = c ? `&concepto=${encodeURIComponent(c)}` : "";
+    router.push(`/admin/cobros?monto=${parsed}${q}`);
   }
 
   async function copy() {
@@ -69,6 +81,21 @@ export function CobroGenerator({ monto, generatedLink, error, maxClp }: Props) {
             Generar link
           </button>
         </div>
+
+        <label className="mb-1.5 mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-ca-ink-soft)]">
+          Concepto <span className="font-medium normal-case tracking-normal text-[var(--color-ca-ink-soft)]/70">(opcional — lo verá quien paga)</span>
+        </label>
+        <input
+          type="text"
+          value={conceptoInput}
+          maxLength={maxConceptoLen}
+          onChange={(e) => setConceptoInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") generate();
+          }}
+          placeholder="Pago a Capital Academy"
+          className="h-12 w-full rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-4 text-base text-[var(--color-ca-ink)] outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:bg-white focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
+        />
         {canGenerate && (
           <p className="mt-2 text-sm text-[var(--color-ca-ink-soft)]">
             Vas a generar un link de cobro por{" "}

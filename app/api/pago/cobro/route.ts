@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { checkoutFormSchema } from "@/lib/fintoc/schema";
 import { createFlowCheckout } from "@/lib/flow/checkout";
-import { getCobroSigningSecret, verifyCobroAmount } from "@/lib/cobro/sign";
+import {
+  getCobroSigningSecret,
+  MAX_CONCEPTO_LEN,
+  normalizeConcepto,
+  verifyCobro,
+} from "@/lib/cobro/sign";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 import {
@@ -18,8 +23,8 @@ const limiter = createRateLimiter({ limit: 5, windowSeconds: 300 });
 type PaymentInsert = Database["public"]["Tables"]["payments"]["Insert"];
 type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
 
-// Concepto genérico mostrado en Flow y en el registro del pago.
-const COBRO_CONCEPT = "Pago a Capital Academy";
+// Concepto por defecto cuando el link no trae uno.
+const DEFAULT_CONCEPT = "Pago a Capital Academy";
 
 // Reusa la validación de datos personales del diplomado (RUT, email, etc.) y
 // agrega el monto firmado. NUNCA confiamos en `monto` sin su firma.
@@ -33,6 +38,7 @@ const cobroSchema = checkoutFormSchema
   })
   .extend({
     monto: z.number().int().positive().max(5_000_000),
+    concepto: z.string().max(MAX_CONCEPTO_LEN).optional(),
     sig: z.string().regex(/^[0-9a-f]{64}$/i),
   });
 
@@ -65,10 +71,12 @@ export async function POST(req: Request) {
   }
 
   const { firstname, lastname, rut, email, phone, monto, sig } = parsed.data;
+  const concepto = normalizeConcepto(parsed.data.concepto);
 
-  // FRONTERA DE SEGURIDAD: el monto solo es válido si su firma coincide. Así el
-  // pagador no puede cambiar `monto` en la URL/body para pagar menos.
-  if (!verifyCobroAmount(monto, sig, secret)) {
+  // FRONTERA DE SEGURIDAD: monto y concepto solo son válidos si la firma
+  // coincide. Así el pagador no puede cambiar `monto` (pagar menos) ni el
+  // `concepto` en la URL/body.
+  if (!verifyCobro(monto, concepto, sig, secret)) {
     return NextResponse.json(
       { error: "El monto del cobro no es válido." },
       { status: 403 },
@@ -120,7 +128,7 @@ export async function POST(req: Request) {
     phone,
     plan: "contado",
     amountOverride: monto,
-    subjectOverride: COBRO_CONCEPT,
+    subjectOverride: concepto || DEFAULT_CONCEPT,
   });
 
   if ("errorMessage" in flow) {

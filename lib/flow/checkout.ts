@@ -63,6 +63,8 @@ export interface FlowCheckoutInput {
   phone: string;
   plan: PaymentPlan;
   amountOverride?: number;
+  /** Reemplaza el subject (por defecto, el del Diplomado). Para cobros genéricos. */
+  subjectOverride?: string;
 }
 
 export type FlowCheckoutResult =
@@ -114,7 +116,9 @@ export async function createFlowCheckout(
   const params = {
     apiKey,
     commerceOrder: input.commerceOrder,
-    subject: `Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria${planConfig.subjectSuffix}`,
+    subject:
+      input.subjectOverride ??
+      `Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria${planConfig.subjectSuffix}`,
     currency: "CLP",
     amount: chargeAmount,
     email: input.email,

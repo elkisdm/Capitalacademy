@@ -84,7 +84,10 @@ export async function POST(req: Request) {
     email,
     phone,
     amount_clp: monto,
-    plan: "cobro",
+    // Un cobro genérico no tiene "plan" del diplomado. La columna tiene un CHECK
+    // (payments_plan_check) que solo acepta los planes del diplomado, así que va
+    // null. El cobro se distingue por el prefijo "CO-" en commerce_order.
+    plan: null,
     status: "pending",
     provider: "flow",
     ip_address:

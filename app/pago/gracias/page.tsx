@@ -44,8 +44,8 @@ export default function GraciasPage() {
             <span className="text-[var(--color-ca-violet)]">recibido</span>
           </h1>
           <p className="mt-3 text-sm text-[var(--color-ca-ink-soft)] sm:text-base">
-            Estamos confirmando tu inscripción al Diplomado. Te enviaremos un
-            correo con los siguientes pasos en los próximos minutos.
+            Estamos confirmando tu inscripción. Te enviaremos un correo con los
+            siguientes pasos en los próximos minutos.
           </p>
           <p className="mt-6 text-[11px] text-[var(--color-ca-ink-soft)]/80">
             Si no recibes nada en 30 minutos, escríbenos respondiendo al

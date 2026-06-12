@@ -1,5 +1,27 @@
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { isPaymentPlan, PAYMENT_PLANS } from "@/lib/flow/checkout";
+import {
+  isLiderazgoPlan,
+  liderazgoPlanLabel,
+  LIDERAZGO_PROGRAM_NAME,
+  LIDERAZGO_PROGRAM_SHORT,
+} from "@/lib/programs/liderazgo";
+
+const DIPLOMADO_PROGRAM_NAME =
+  "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria";
+const DIPLOMADO_PROGRAM_SHORT = "Diplomado";
+
+// Resuelve el programa a partir de la clave de plan. Default: Diplomado
+// (cubre pagos legacy sin plan y los planes del Diplomado).
+function resolveProgram(plan: string | null): {
+  name: string;
+  short: string;
+} {
+  if (plan && isLiderazgoPlan(plan)) {
+    return { name: LIDERAZGO_PROGRAM_NAME, short: LIDERAZGO_PROGRAM_SHORT };
+  }
+  return { name: DIPLOMADO_PROGRAM_NAME, short: DIPLOMADO_PROGRAM_SHORT };
+}
 
 interface PaymentConfirmationInput {
   paymentId: string;
@@ -22,7 +44,7 @@ function planLabel(plan: string | null): string | null {
   if (plan && isPaymentPlan(plan)) {
     return PAYMENT_PLANS[plan].label;
   }
-  return null;
+  return liderazgoPlanLabel(plan);
 }
 
 // Base URL pública usada para resolver assets embebidos en el email
@@ -54,6 +76,7 @@ export async function sendPaymentConfirmationEmail(
   const amount = moneyFormatter.format(data.amountClp);
   const date = dateFormatter.format(data.paidAt);
   const plan = planLabel(data.plan);
+  const program = resolveProgram(data.plan);
   const discountFormatted =
     data.couponCode && data.discountClp && data.discountClp > 0
       ? moneyFormatter.format(data.discountClp)
@@ -63,9 +86,23 @@ export async function sendPaymentConfirmationEmail(
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.email,
-      subject: "Inscripción confirmada · Diplomado Capital Academy",
-      html: studentEmailHtml({ ...data, amount, date, plan, discountFormatted }),
-      text: studentEmailText({ ...data, amount, date, plan, discountFormatted }),
+      subject: `Inscripción confirmada · ${program.short} · Capital Academy`,
+      html: studentEmailHtml({
+        ...data,
+        amount,
+        date,
+        plan,
+        discountFormatted,
+        programName: program.name,
+      }),
+      text: studentEmailText({
+        ...data,
+        amount,
+        date,
+        plan,
+        discountFormatted,
+        programName: program.name,
+      }),
     });
     if (result.error) {
       return { ok: false, error: result.error.message };
@@ -91,6 +128,7 @@ export async function sendPaymentTeamNotification(
   const amount = moneyFormatter.format(data.amountClp);
   const date = dateFormatter.format(data.paidAt);
   const plan = planLabel(data.plan);
+  const program = resolveProgram(data.plan);
   const discountFormatted =
     data.couponCode && data.discountClp && data.discountClp > 0
       ? moneyFormatter.format(data.discountClp)
@@ -100,9 +138,23 @@ export async function sendPaymentTeamNotification(
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipient,
-      subject: `Pago recibido · ${data.firstname} ${data.lastname} · ${amount}`,
-      html: teamEmailHtml({ ...data, amount, date, plan, discountFormatted }),
-      text: teamEmailText({ ...data, amount, date, plan, discountFormatted }),
+      subject: `Pago recibido · ${program.short} · ${data.firstname} ${data.lastname} · ${amount}`,
+      html: teamEmailHtml({
+        ...data,
+        amount,
+        date,
+        plan,
+        discountFormatted,
+        programName: program.name,
+      }),
+      text: teamEmailText({
+        ...data,
+        amount,
+        date,
+        plan,
+        discountFormatted,
+        programName: program.name,
+      }),
       replyTo: data.email,
     });
     if (result.error) {
@@ -122,6 +174,7 @@ interface RenderInput extends PaymentConfirmationInput {
   date: string;
   plan: string | null;
   discountFormatted: string | null;
+  programName: string;
 }
 
 function studentEmailHtml(d: RenderInput): string {
@@ -143,7 +196,7 @@ function studentEmailHtml(d: RenderInput): string {
         </td></tr>
         <tr><td style="padding:32px 32px 8px 32px;">
           <p style="margin:0 0 18px 0;font-size:16px;line-height:1.55;color:#ffffff;">Hola <strong style="color:#d9f55e;">${escapeHtml(d.firstname)}</strong>,</p>
-          <p style="margin:0 0 6px 0;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.86);">Tu pago de <strong style="color:#d9f55e;">${escapeHtml(d.amount)}</strong> fue aprobado. Tu cupo en el <strong style="color:#ffffff;">Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria</strong> queda confirmado.</p>
+          <p style="margin:0 0 6px 0;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.86);">Tu pago de <strong style="color:#d9f55e;">${escapeHtml(d.amount)}</strong> fue aprobado. Tu cupo en el <strong style="color:#ffffff;">${escapeHtml(d.programName)}</strong> queda confirmado.</p>
         </td></tr>
         <tr><td style="padding:20px 32px 8px 32px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:rgba(91,45,235,0.18);border:1px solid rgba(217,245,94,0.22);border-radius:16px;">
@@ -203,7 +256,7 @@ function studentEmailText(d: RenderInput): string {
   return [
     `Hola ${d.firstname},`,
     "",
-    `Recibimos tu pago de ${d.amount}${d.plan ? ` (${d.plan})` : ""}. Tu cupo en el Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria está confirmado.`,
+    `Recibimos tu pago de ${d.amount}${d.plan ? ` (${d.plan})` : ""}. Tu cupo en el ${d.programName} está confirmado.`,
     "",
     "Próximos pasos:",
     "• Te contactaremos en las próximas 24 horas con el calendario de clases y el acceso a la plataforma.",

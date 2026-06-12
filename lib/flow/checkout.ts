@@ -61,10 +61,13 @@ export interface FlowCheckoutInput {
   rut: string;
   email: string;
   phone: string;
-  plan: PaymentPlan;
+  /** Clave de plan. Acepta planes del Diplomado o de otros programas (string libre). */
+  plan: string;
   amountOverride?: number;
-  /** Reemplaza el subject (por defecto, el del Diplomado). Para cobros genéricos. */
+  /** Reemplaza el subject (por defecto, el del Diplomado). Para cobros genéricos / otros programas. */
   subjectOverride?: string;
+  /** Reemplaza el paymentMethod de Flow. Necesario para planes fuera de PAYMENT_PLANS. */
+  paymentMethodOverride?: number;
 }
 
 export type FlowCheckoutResult =
@@ -102,8 +105,12 @@ export async function createFlowCheckout(
   const baseAppUrl =
     candidate && candidate.startsWith("https://") ? candidate : "https://capitalacademy.cl";
 
-  const planConfig = PAYMENT_PLANS[input.plan];
-  const chargeAmount = input.amountOverride ?? planConfig.amount;
+  // planConfig solo existe para los planes del Diplomado. Para otros programas
+  // (liderazgo, cobros genéricos) llega undefined y se usan los overrides.
+  const planConfig = PAYMENT_PLANS[input.plan as PaymentPlan] as
+    | (typeof PAYMENT_PLANS)[PaymentPlan]
+    | undefined;
+  const chargeAmount = input.amountOverride ?? planConfig?.amount ?? 0;
 
   const optional = JSON.stringify({
     rut: input.rut,
@@ -118,11 +125,11 @@ export async function createFlowCheckout(
     commerceOrder: input.commerceOrder,
     subject:
       input.subjectOverride ??
-      `Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria${planConfig.subjectSuffix}`,
+      `Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria${planConfig?.subjectSuffix ?? ""}`,
     currency: "CLP",
     amount: chargeAmount,
     email: input.email,
-    paymentMethod: planConfig.paymentMethod,
+    paymentMethod: input.paymentMethodOverride ?? planConfig?.paymentMethod ?? 9,
     urlConfirmation: `${baseAppUrl}/api/flow/webhook`,
     urlReturn: `${baseAppUrl}/pago/resultado`,
     optional,

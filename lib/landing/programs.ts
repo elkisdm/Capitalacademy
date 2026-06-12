@@ -46,24 +46,30 @@ export type ProgramMeta = {
   paymentUrl?: string;
   /** Badge de descuento opcional, ej: "−50% lanzamiento". */
   discountLabel?: string;
+  /** Cifras de prueba social — exclusivo de programas que las declaran (ej. diplomado). */
+  socialProof?: { value: string; label: string }[];
+  /** Bloques de horario — exclusivo de programas con calendario fijo. */
+  schedule?: { day: string; mode: string; time: string }[];
+  /** Dirección presencial — solo programas con sede física. */
+  location?: string;
 };
 
 export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
   diplomado: {
     id: "diplomado",
     tag: "Diplomado",
-    title: "Ventas y Asesoría Inmobiliaria",
+    title: "Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria",
     shortTitle: "Diplomado Ventas",
     subtitle:
-      "Formación ejecutiva para quienes quieren vender mejor y asesorar con más criterio.",
+      "Eleva tu nivel: de ejecutivo comercial a asesor de inversión con criterio profesional.",
     description:
       "Un programa diseñado para brokers, asesores inmobiliarios y ejecutivos de sala de venta que buscan fortalecer su gestión comercial, comprender mejor el mercado y desarrollar una asesoría más sólida, profesional y confiable.",
     level: "Profesional",
-    duration: "16 semanas",
-    modules: 8,
-    modality: "Online en vivo",
+    duration: "12 semanas",
+    modules: 2,
+    modality: "Híbrida (online + presencial)",
     certificate: "Diploma certificado",
-    nextStart: "Próxima cohorte abierta",
+    nextStart: "Sábado 20 de junio",
     cohortSize: "Cupos limitados",
     audience: [
       "Brokers y asesores inmobiliarios",
@@ -90,43 +96,22 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     syllabus: [
       {
         num: 1,
-        title: "Fundamentos del negocio inmobiliario",
-        topics: ["Lectura del mercado", "Tipos de propiedad", "Actores del ecosistema"],
+        title: "Módulo Teórico — los 4 cursos integrados",
+        topics: [
+          "Pensar como inversionista: mercado, educación financiera y lectura de inversión",
+          "Vender como asesor: metodología comercial, diagnóstico, propuesta y cierre",
+          "Operar como profesional: crédito, legal, marketing, IA y tributario",
+          "Sostener resultados: hábitos, mentalidad e inteligencia emocional",
+        ],
       },
       {
         num: 2,
-        title: "Asesoría profesional al cliente",
-        topics: ["Diagnóstico de necesidades", "Construcción de confianza", "Ética profesional"],
-      },
-      {
-        num: 3,
-        title: "Venta consultiva inmobiliaria",
-        topics: ["Discovery", "Pitch estructurado", "Manejo de objeciones reales"],
-      },
-      {
-        num: 4,
-        title: "Educación financiera aplicada",
-        topics: ["UF, intereses, dividendos", "Capacidad de pago", "Argumentos financieros"],
-      },
-      {
-        num: 5,
-        title: "Marco legal y contractual",
-        topics: ["Promesa, escritura", "Crédito hipotecario", "Documentación clave"],
-      },
-      {
-        num: 6,
-        title: "Seguimiento y cierre efectivo",
-        topics: ["CRM y pipeline", "Cadencia de seguimiento", "Cierre profesional"],
-      },
-      {
-        num: 7,
-        title: "Marca personal del asesor",
-        topics: ["Posicionamiento", "Contenido profesional", "Red de referidos"],
-      },
-      {
-        num: 8,
-        title: "Proyecto integrador",
-        topics: ["Plan de gestión", "Presentación a panel", "Devolución de docentes"],
+        title: "Módulo Práctico — aplicación guiada",
+        topics: [
+          "Práctica guiada y feedback individual",
+          "Challenge Day y Role Play",
+          "Evaluaciones y casos reales",
+        ],
       },
     ],
     highlight:
@@ -138,6 +123,17 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     heroImage: IMG.programaDiplomadoHero,
     paymentUrl: "/pago",
     discountLabel: "−50% Lanzamiento",
+    socialProof: [
+      { value: "+100", label: "Asesores formados" },
+      { value: "17", label: "Profesores especialistas" },
+      { value: "9,5/10", label: "De satisfacción" },
+      { value: "Capital Inteligente", label: "Certificación respaldada por" },
+    ],
+    schedule: [
+      { day: "Miércoles", mode: "Online", time: "19:00–21:00" },
+      { day: "Sábados por medio", mode: "Presencial", time: "09:30–16:30" },
+    ],
+    location: "Av. Pdte. Kennedy 8017, Piso 4, Las Condes, Santiago",
   },
   liderazgo: {
     id: "liderazgo",
@@ -149,9 +145,9 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     description:
       "Un programa diseñado para jefaturas, líderes comerciales, team leaders y profesionales que buscan construir, conducir y sostener equipos de venta con mayor estructura, foco y desempeño.",
     level: "Senior · Líder",
-    duration: "12 semanas",
-    modules: 6,
-    modality: "Online en vivo",
+    duration: "4 jornadas",
+    modules: 3,
+    modality: "Presencial",
     certificate: "Diploma certificado",
     nextStart: "Próxima cohorte abierta",
     cohortSize: "Cupos limitados",

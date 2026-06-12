@@ -76,6 +76,12 @@ const Icons = {
       <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
+  pin: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  ),
 };
 
 function ProgramaDetalle({ d }: { d: ProgramMeta }) {
@@ -221,6 +227,55 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
                 ))}
               </div>
             </div>
+
+            {/* Prueba social — exclusivo del diplomado (data-driven) */}
+            {d.socialProof && d.socialProof.length > 0 && (
+              <div className="mt-8 overflow-hidden rounded-3xl border border-[var(--color-ca-lime-deep)]/25 bg-gradient-to-br from-[var(--color-ca-lime)]/[0.10] to-[var(--color-ca-lime)]/[0.04] p-6">
+                <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-violet)]">
+                  Por qué confían en este diplomado
+                </p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+                  {d.socialProof.map((s) => (
+                    <div key={s.label} className="flex flex-col">
+                      <span className="text-2xl font-black leading-none tracking-[-0.02em] text-[var(--color-ca-ink)] sm:text-3xl">
+                        {s.value}
+                      </span>
+                      <span className="mt-1.5 text-[11px] font-semibold leading-snug text-[var(--color-ca-ink-soft)]">
+                        {s.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Horarios y sede — exclusivo del diplomado (data-driven) */}
+            {(d.schedule?.length || d.location) && (
+              <div className="mt-6 rounded-3xl border border-[rgba(20,22,58,0.08)] bg-white p-6">
+                <h3 className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--color-ca-violet)]">
+                  Horarios y sede
+                </h3>
+                {d.schedule && d.schedule.length > 0 && (
+                  <ul className="mt-4 space-y-3">
+                    {d.schedule.map((s) => (
+                      <li key={`${s.day}-${s.time}`} className="flex flex-wrap items-center gap-2.5 text-sm text-[var(--color-ca-ink)]">
+                        <span className="font-semibold">{s.day}</span>
+                        <span className="inline-flex items-center rounded-md bg-[var(--color-ca-violet)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-ca-violet)]">
+                          {s.mode}
+                        </span>
+                        <span className="text-[var(--color-ca-ink-soft)]">{s.time}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {d.location && (
+                  <div className="mt-4 flex items-start gap-2.5 border-t border-[rgba(20,22,58,0.08)] pt-4 text-sm text-[var(--color-ca-ink)]">
+                    <span className="mt-0.5 text-[var(--color-ca-violet)]">{Icons.pin}</span>
+                    <span>{d.location}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-10 grid gap-5 sm:grid-cols-2">
               <div className="rounded-3xl border border-[rgba(20,22,58,0.08)] bg-white p-6">

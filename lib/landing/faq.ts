@@ -22,7 +22,7 @@ export const FAQ: FAQItem[] = [
   },
   {
     q: "¿Cuándo es la próxima cohorte?",
-    a: "Las cohortes son limitadas y se abren periódicamente. Solicita información a través del formulario y te confirmamos las próximas fechas y cupos disponibles.",
+    a: "El Diplomado (4ª generación) inicia el sábado 20 de junio. Las cohortes de los demás programas se abren periódicamente y son limitadas: solicita información a través del formulario y te confirmamos las próximas fechas y cupos disponibles.",
   },
   {
     q: "¿Qué requisitos tengo que cumplir para inscribirme?",

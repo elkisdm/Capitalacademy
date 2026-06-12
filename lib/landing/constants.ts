@@ -1,8 +1,9 @@
 export const COMUNIDAD_WHATSAPP_URL =
   "https://chat.whatsapp.com/DCRICRJ7cQ1B2d7P2u9g8j?mode=gi_t";
 
-/** Fecha de cierre de la próxima cohorte del Diplomado (ISO YYYY-MM-DD). */
-export const DIPLOMADO_CLOSE_DATE = "2026-07-15";
+/** Fecha de cierre de inscripciones de la 4ª cohorte del Diplomado (ISO YYYY-MM-DD).
+ *  Coincide con el inicio (sábado 20 de junio 2026): último día para inscribirse. */
+export const DIPLOMADO_CLOSE_DATE = "2026-06-20";
 
 /** Precio regular del Diplomado (sin descuento de cohorte de lanzamiento). */
 export const DIPLOMADO_REGULAR_PRICE_CLP = 1_000_000;

@@ -111,17 +111,35 @@ export function resolveLiderazgoAmount(
 
 // Schema del formulario de inscripción (mismos validadores que el Diplomado).
 export const liderazgoCheckoutSchema = z.object({
-  firstname: z.string().trim().min(2, "Nombre muy corto").max(80),
-  lastname: z.string().trim().min(2, "Apellido muy corto").max(80),
+  firstname: z
+    .string()
+    .trim()
+    .min(1, "Campo requerido")
+    .min(2, "Nombre muy corto")
+    .max(80),
+  lastname: z
+    .string()
+    .trim()
+    .min(1, "Campo requerido")
+    .min(2, "Apellido muy corto")
+    .max(80),
   rut: z
     .string()
     .trim()
+    .min(1, "Campo requerido")
     .refine(isValidRut, "RUT inválido")
     .transform((v) => cleanRut(v)),
-  email: z.string().trim().toLowerCase().email("Email inválido").max(160),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, "Campo requerido")
+    .email("Email inválido")
+    .max(160),
   phone: z
     .string()
     .trim()
+    .min(1, "Campo requerido")
     .min(8, "Teléfono muy corto")
     .max(20)
     .regex(/^[+\d\s()-]+$/, "Solo números, espacios, +, ( y -"),

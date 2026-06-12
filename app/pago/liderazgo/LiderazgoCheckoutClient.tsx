@@ -30,7 +30,11 @@ const priceFormatter = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
-export function LiderazgoCheckoutClient() {
+export function LiderazgoCheckoutClient({
+  initialCode,
+}: {
+  initialCode?: string;
+}) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -51,8 +55,13 @@ export function LiderazgoCheckoutClient() {
 
   // El código de lanzamiento es de marketing (público): el cliente lo valida
   // solo para PREVISUALIZAR los precios. El monto cobrado lo recomputa el server.
-  const [launchInput, setLaunchInput] = useState("");
-  const [launchApplied, setLaunchApplied] = useState(false);
+  // Si el link trae ?codigo=LIDERAZGO20, se auto-aplica al cargar (funnel WhatsApp).
+  const [launchInput, setLaunchInput] = useState(() =>
+    isLaunchCode(initialCode) ? LIDERAZGO_LAUNCH_CODE : "",
+  );
+  const [launchApplied, setLaunchApplied] = useState(() =>
+    isLaunchCode(initialCode),
+  );
   const [launchError, setLaunchError] = useState("");
 
   function amountFor(plan: LiderazgoPlan): number {
@@ -225,73 +234,6 @@ export function LiderazgoCheckoutClient() {
           </div>
         </header>
 
-        {/* Resumen del precio */}
-        <div className="mb-5 rounded-2xl border border-[var(--color-ca-violet)]/15 bg-gradient-to-br from-[var(--color-ca-violet)]/[0.04] to-[var(--color-ca-lime)]/[0.06] px-5 py-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ca-violet)]">
-              Total a pagar
-            </span>
-            <div className="flex items-baseline gap-2">
-              {launchApplied && (
-                <span
-                  aria-label="Precio normal"
-                  className="text-sm font-semibold text-[var(--color-ca-ink-soft)] line-through decoration-[var(--color-ca-ink-soft)]/60 sm:text-base"
-                >
-                  {priceFormatter.format(selectedConfig.amount)}
-                </span>
-              )}
-              <span className="text-2xl font-black tracking-tight text-[var(--color-ca-ink)] sm:text-3xl">
-                {priceFormatter.format(selectedAmount)}
-              </span>
-            </div>
-          </div>
-          {launchApplied && (
-            <div className="mt-2 flex items-center justify-end">
-              <span className="inline-flex items-center rounded-md bg-[var(--color-ca-lime)] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-ca-ink)]">
-                Precio lanzamiento
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Código de lanzamiento */}
-        <div className="mb-5">
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-ca-ink-soft)]">
-            ¿Tienes un código de lanzamiento?
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={launchInput}
-              onChange={(e) => setLaunchInput(e.target.value)}
-              placeholder="Código de lanzamiento"
-              disabled={launchApplied}
-              className={`${inputCls} flex-1 disabled:opacity-60`}
-            />
-            {launchApplied ? (
-              <button
-                type="button"
-                onClick={removeLaunch}
-                className="h-11 shrink-0 rounded-lg border border-[rgba(20,22,58,0.12)] bg-white px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-violet)]/40 hover:text-[var(--color-ca-violet)]"
-              >
-                Quitar
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={applyLaunch}
-                disabled={!launchInput.trim()}
-                className="h-11 shrink-0 rounded-lg border border-[var(--color-ca-violet)]/30 bg-[var(--color-ca-violet)]/[0.06] px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-violet)] transition-colors hover:bg-[var(--color-ca-violet)]/[0.12] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Aplicar
-              </button>
-            )}
-          </div>
-          {launchError && (
-            <p className="mt-1 text-[11px] text-rose-600">{launchError}</p>
-          )}
-        </div>
-
         {/* Forma de pago */}
         <fieldset className="mb-5">
           <legend className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--color-ca-ink-soft)]">
@@ -347,6 +289,90 @@ export function LiderazgoCheckoutClient() {
             </p>
           )}
         </fieldset>
+
+        {/* Código de lanzamiento */}
+        <div className="mb-5">
+          <label className="mb-1.5 block text-xs font-medium text-[var(--color-ca-ink-soft)]">
+            ¿Tienes un código de lanzamiento?
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={launchInput}
+              onChange={(e) => setLaunchInput(e.target.value)}
+              placeholder="Código de lanzamiento"
+              disabled={launchApplied}
+              className={`${inputCls} flex-1 disabled:opacity-60`}
+            />
+            {launchApplied ? (
+              <button
+                type="button"
+                onClick={removeLaunch}
+                className="h-11 shrink-0 rounded-lg border border-[rgba(20,22,58,0.12)] bg-white px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-violet)]/40 hover:text-[var(--color-ca-violet)]"
+              >
+                Quitar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={applyLaunch}
+                disabled={!launchInput.trim()}
+                className="h-11 shrink-0 rounded-lg border border-[var(--color-ca-violet)]/30 bg-[var(--color-ca-violet)]/[0.06] px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-violet)] transition-colors hover:bg-[var(--color-ca-violet)]/[0.12] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Aplicar
+              </button>
+            )}
+          </div>
+          {launchError && (
+            <p className="mt-1 text-[11px] text-rose-600">{launchError}</p>
+          )}
+          {launchApplied && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-ca-violet-deep)]">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Código aplicado · precio de lanzamiento activado
+            </p>
+          )}
+        </div>
+
+        {/* Resumen del precio (confirmación final antes de pagar) */}
+        <div className="mb-5 rounded-2xl border border-[var(--color-ca-violet)]/15 bg-gradient-to-br from-[var(--color-ca-violet)]/[0.04] to-[var(--color-ca-lime)]/[0.06] px-5 py-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ca-violet)]">
+              Total a pagar
+            </span>
+            <div className="flex items-baseline gap-2">
+              {launchApplied && (
+                <span
+                  aria-label="Precio normal"
+                  className="text-sm font-semibold text-[var(--color-ca-ink-soft)] line-through decoration-[var(--color-ca-ink-soft)]/60 sm:text-base"
+                >
+                  {priceFormatter.format(selectedConfig.amount)}
+                </span>
+              )}
+              <span className="text-2xl font-black tracking-tight text-[var(--color-ca-ink)] sm:text-3xl">
+                {priceFormatter.format(selectedAmount)}
+              </span>
+            </div>
+          </div>
+          {launchApplied && (
+            <div className="mt-2 flex items-center justify-end">
+              <span className="inline-flex items-center rounded-md bg-[var(--color-ca-lime)] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-ca-ink)]">
+                Precio lanzamiento
+              </span>
+            </div>
+          )}
+        </div>
 
         {errorMessage && (
           <p className="mb-5 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">

@@ -7,9 +7,9 @@ import { PROGRAMS } from "@/lib/landing/programs";
 import { Syllabus } from "@/components/landing/Syllabus";
 
 export const metadata = {
-  title: "Ingreso al Diplomado · Capital Academy",
+  title: "Ingreso al Diplomado",
   description:
-    "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria. Pago seguro online.",
+    "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria. Pago seguro online.",
 };
 
 export const dynamic = "force-dynamic";
@@ -136,7 +136,7 @@ export default function PagoPage() {
               Modalidad
             </p>
             <p className="mt-1 text-sm font-bold text-[var(--color-ca-ink)]">
-              Online en vivo
+              {d.modality}
             </p>
           </li>
         </ul>

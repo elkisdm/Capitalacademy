@@ -5,7 +5,7 @@ import { PROGRAMS } from "@/lib/landing/programs";
 import { Syllabus } from "@/components/landing/Syllabus";
 
 export const metadata = {
-  title: "Inscripción · Programa de Liderazgo · Capital Academy",
+  title: "Inscripción · Programa de Liderazgo",
   description:
     "Inscripción al Programa de Liderazgo y Gestión de Equipos Comerciales. Cupos limitados. Pago seguro online.",
 };
@@ -31,7 +31,14 @@ const FAQ = [
   },
 ];
 
-export default function PagoLiderazgoPage() {
+export default async function PagoLiderazgoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ codigo?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const codigoRaw = params.codigo;
+  const codigo = Array.isArray(codigoRaw) ? codigoRaw[0] : codigoRaw;
   const d = PROGRAMS.liderazgo;
 
   return (
@@ -115,7 +122,7 @@ export default function PagoLiderazgoPage() {
         </ul>
 
         {/* FORM */}
-        <LiderazgoCheckoutClient />
+        <LiderazgoCheckoutClient initialCode={codigo} />
 
         <p className="mt-6 text-center text-xs text-[var(--color-ca-ink-soft)]/80">
           Pago procesado por Flow · Webpay, transferencia, tarjetas y más.

@@ -83,7 +83,7 @@ function invitationHtml(d: InvitationEmailInput): string {
             </tr>
             <tr>
               <td style="padding:4px 12px 4px 0;color:#5e17eb;font-weight:800;vertical-align:top;">3.</td>
-              <td style="padding:4px 0;"><strong>Explora tu primera Masterclass</strong> <span style="color:#9b9db5;">(cuando quieras)</span></td>
+              <td style="padding:4px 0;"><strong>Revisa tu calendario y te esperamos en tu primera clase</strong></td>
             </tr>
           </table>
         </td></tr>
@@ -114,7 +114,7 @@ function invitationText(d: InvitationEmailInput): string {
     "¿Qué viene después?",
     "  1. Crea tu contraseña (1 min)",
     "  2. Completa tu perfil — RUT, teléfono (2 min)",
-    "  3. Explora tu primera Masterclass (cuando quieras)",
+    "  3. Revisa tu calendario y te esperamos en tu primera clase",
     "",
     "Capital Academy · capitalacademy.cl",
   ].join("\n");

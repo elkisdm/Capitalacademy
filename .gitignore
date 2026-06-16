@@ -65,3 +65,14 @@ certificados_individuales/
 Capital-Academy-*.pdf
 certificados*.pdf
 reunion_capital_academy.*
+
+# Local Netlify folder
+.netlify
+
+# Materiales locales del diplomado (PII, binarios, notas) — NO versionar
+*.opus
+*.docx
+/*.pdf
+/4ta generacion diplomado/
+/docs/marketing/
+*Notas de Gemini*.md

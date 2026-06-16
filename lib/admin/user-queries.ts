@@ -35,6 +35,9 @@ export type CohortMember = {
   email: string;
   role: "student" | "teacher" | "assistant";
   granted_at: string;
+  // Segmento de la matrícula del alumno en este cohorte (migración 0024).
+  // null = sin segmento; 'capital_inteligente' = alumno Capital Inteligente.
+  segment: "capital_inteligente" | null;
 };
 
 export type CohortPickerItem = {
@@ -176,6 +179,21 @@ export async function getCohortMembers(cohortId: string) {
 
   if (!roles) return { teachers: [], assistants: [], students: [] };
 
+  // Segmento por alumno: vive en enrollments (no en cohort_roles). Lo traemos
+  // en un solo query y lo cruzamos por student_id. `segment` se agrega en la
+  // migración 0024; hasta regenerar los tipos usamos cast localizado.
+  const { data: enrollments } = await supabase
+    .from("enrollments")
+    .select("student_id, segment")
+    .eq("cohort_id", cohortId);
+
+  const segmentByStudent = new Map<string, "capital_inteligente" | null>(
+    ((enrollments ?? []) as unknown as Array<{
+      student_id: string;
+      segment: "capital_inteligente" | null;
+    }>).map((e) => [e.student_id, e.segment ?? null]),
+  );
+
   const members: CohortMember[] = roles.map((r) => {
     const profile = r.profiles as { full_name: string | null; email: string } | null;
     return {
@@ -184,6 +202,7 @@ export async function getCohortMembers(cohortId: string) {
       email: profile?.email ?? "",
       role: r.role,
       granted_at: r.granted_at,
+      segment: segmentByStudent.get(r.user_id) ?? null,
     };
   });
 

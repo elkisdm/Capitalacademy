@@ -9,7 +9,9 @@ import {
   type State,
   type CohortRole,
 } from "@/components/admin/user-primitives";
+import { SegmentToggle } from "@/components/admin/segment-toggle";
 import type { CohortMember } from "@/lib/admin/user-queries";
+import Link from "next/link";
 import {
   ArrowLeftIcon,
   UsersIcon,
@@ -21,6 +23,7 @@ import {
   DownloadIcon,
   MailIcon,
   MoreIcon,
+  CalendarIcon,
 } from "@/components/admin/icons";
 
 type CohortInfo = {
@@ -181,6 +184,7 @@ export function CohortDetailClient({
 
       {activeTab === "participantes" && (
         <ParticipantesTab
+          cohortId={cohort.id}
           members={members}
           search={search}
           onSearchChange={setSearch}
@@ -198,11 +202,13 @@ export function CohortDetailClient({
 }
 
 function ParticipantesTab({
+  cohortId,
   members,
   search,
   onSearchChange,
   onRowClick,
 }: {
+  cohortId: string;
   members: Members;
   search: string;
   onSearchChange: (v: string) => void;
@@ -290,16 +296,19 @@ function ParticipantesTab({
           role="teacher"
           members={filteredTeachers}
           onRowClick={onRowClick}
+          cohortId={cohortId}
         />
         <RoleSection
           role="assistant"
           members={filteredAssistants}
           onRowClick={onRowClick}
+          cohortId={cohortId}
         />
         <RoleSection
           role="student"
           members={filteredStudents}
           onRowClick={onRowClick}
+          cohortId={cohortId}
         />
       </div>
     </div>
@@ -310,10 +319,12 @@ function RoleSection({
   role,
   members,
   onRowClick,
+  cohortId,
 }: {
   role: CohortRole;
   members: CohortMember[];
   onRowClick: (userId: string) => void;
+  cohortId: string;
 }) {
   const labels = ROLE_LABELS[role];
   if (members.length === 0) return null;
@@ -350,6 +361,13 @@ function RoleSection({
                 {m.email}
               </div>
             </div>
+            {role === "student" && (
+              <SegmentToggle
+                cohortId={cohortId}
+                studentId={m.user_id}
+                initialSegment={m.segment}
+              />
+            )}
             <div className="hidden text-[11px] font-medium text-ca-ink-soft sm:block">
               {formatDate(m.granted_at)}
             </div>
@@ -388,7 +406,13 @@ function InfoTab({
     { label: "Ayudantes", value: String(members.assistants.length) },
   ];
 
-  const actions: { label: string; icon: React.ComponentType<{ size?: number }>; description: string }[] = [
+  const actions: { label: string; icon: React.ComponentType<{ size?: number }>; description: string; href?: string }[] = [
+    {
+      label: "Gestionar calendario",
+      icon: CalendarIcon,
+      description: "Crea, edita y reprograma las clases de la cohorte",
+      href: `/admin/cohorts/${cohort.id}/sesiones`,
+    },
     {
       label: "Agregar participante",
       icon: PlusIcon,
@@ -457,29 +481,44 @@ function InfoTab({
           Acciones rápidas
         </h3>
         <div className="flex flex-col gap-3">
-          {actions.map((action) => (
-            <button
-              key={action.label}
-              disabled
-              title="Próximamente"
-              className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left opacity-50 cursor-not-allowed"
-            >
-              <div
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-                style={{ background: "var(--color-ca-bg-soft)" }}
+          {actions.map((action) => {
+            const inner = (
+              <>
+                <div
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                  style={{ background: "var(--color-ca-bg-soft)" }}
+                >
+                  <action.icon />
+                </div>
+                <div>
+                  <div className="text-[13px] font-bold text-ca-ink">
+                    {action.label}
+                  </div>
+                  <div className="text-[11px] font-medium text-ca-ink-soft">
+                    {action.description}
+                  </div>
+                </div>
+              </>
+            );
+            return action.href ? (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left transition-colors hover:border-ca-violet/40 hover:bg-ca-bg-soft"
               >
-                <action.icon />
-              </div>
-              <div>
-                <div className="text-[13px] font-bold text-ca-ink">
-                  {action.label}
-                </div>
-                <div className="text-[11px] font-medium text-ca-ink-soft">
-                  {action.description}
-                </div>
-              </div>
-            </button>
-          ))}
+                {inner}
+              </Link>
+            ) : (
+              <button
+                key={action.label}
+                disabled
+                title="Próximamente"
+                className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left opacity-50 cursor-not-allowed"
+              >
+                {inner}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

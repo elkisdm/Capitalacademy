@@ -6,5 +6,8 @@
   NODE_VERSION = "20.20.0"
   PNPM_VERSION = "10.30.3"
 
+[functions]
+  directory = "netlify/functions"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"

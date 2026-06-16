@@ -60,6 +60,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   bell: <><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></>,
   clipboardCheck: <><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" /><path d="M9 14l2 2 4-4" /></>,
   creditCard: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></>,
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>,
 };
 
 function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -94,7 +95,7 @@ function NavItemButton({
   const content = (
     <span
       ref={navRef}
-      className={`relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
+      className={`relative flex w-full min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
         active ? "bg-ca-violet text-white" : "text-ca-ink hover:bg-ca-bg-soft"
       }`}
     >
@@ -103,7 +104,7 @@ function NavItemButton({
       </span>
       {!collapsed && (
         <>
-          <span className="flex-1 text-[13px] font-semibold tracking-tight">{item.label}</span>
+          <span className="flex-1 truncate text-[13px] font-semibold tracking-tight" title={item.label}>{item.label}</span>
           {item.badge && (
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-ca-lime text-ca-ink" : "bg-ca-violet text-white"}`}>
               {item.badge}
@@ -132,10 +133,8 @@ function SidebarContent({
   items,
   isActive,
   collapsed,
-  cohortId,
   userInitials,
   userName,
-  userRole,
   userAvatarUrl,
   onCollapse,
   onNavClick,
@@ -143,10 +142,8 @@ function SidebarContent({
   items: NavItem[];
   isActive: (path: string) => boolean;
   collapsed: boolean;
-  cohortId?: string;
   userInitials: string;
   userName: string;
-  userRole: string;
   userAvatarUrl?: string | null;
   onCollapse?: () => void;
   onNavClick?: () => void;
@@ -262,20 +259,13 @@ function ProfileLink({ userInitials, userName, userAvatarUrl, collapsed, onClick
   );
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  ops: "Operaciones",
-  user: "Usuario",
-  student: "Alumno",
-  teacher: "Profesor",
-};
-
 export function ClassroomSidebar({
   userInitials,
   userName,
   userRole = "user",
   userAvatarUrl,
   cohortId,
+  cohortLabel,
   showOps = false,
 }: {
   userInitials: string;
@@ -283,6 +273,7 @@ export function ClassroomSidebar({
   userRole?: string;
   userAvatarUrl?: string | null;
   cohortId?: string;
+  cohortLabel?: string;
   showOps?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -290,7 +281,10 @@ export function ClassroomSidebar({
   const trapRef = useFocusTrap(mobileOpen);
   const pathname = usePathname();
 
+  // Cierra el drawer móvil al navegar a otra ruta. El setState en effect es
+  // intencional (sincroniza con el cambio de pathname externo).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileOpen(false);
   }, [pathname]);
 
@@ -299,14 +293,18 @@ export function ClassroomSidebar({
       return pathname === "/classroom";
     }
     if (path === `/classroom/${cohortId}`) {
-      return pathname.startsWith(`/classroom/${cohortId}`);
+      return (
+        pathname.startsWith(`/classroom/${cohortId}`) &&
+        !pathname.startsWith(`/classroom/${cohortId}/calendario`)
+      );
     }
     return pathname.startsWith(path);
   };
 
   const navItems: NavItem[] = [
     { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" },
-    { icon: "book", label: "Workshop", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" },
+    { icon: "book", label: cohortLabel ?? "Mi programa", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" },
+    { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" },
     ...(showOps ? [
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
       { icon: "upload", label: "Subir videos", href: "/admin/lessons", section: "ops" as const },
@@ -328,10 +326,8 @@ export function ClassroomSidebar({
           items={navItems}
           isActive={isActive}
           collapsed={collapsed}
-          cohortId={cohortId}
           userInitials={userInitials}
           userName={userName}
-          userRole={userRole}
           userAvatarUrl={userAvatarUrl}
           onCollapse={() => setCollapsed(!collapsed)}
         />

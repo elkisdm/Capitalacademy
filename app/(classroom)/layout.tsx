@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCohortSlugById } from "@/lib/classroom/queries";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
 
 export const metadata = {
@@ -52,10 +51,19 @@ export default async function ClassroomLayout({
     .slice(0, 2)
     .toUpperCase();
 
-  // Resolve cohort slug for clean URLs
-  const cohortSlug = enrollment?.cohort_id
-    ? (await getCohortSlugById(enrollment.cohort_id)) ?? enrollment.cohort_id
-    : undefined;
+  // Resolve cohort slug (clean URLs) + program name (sidebar label).
+  let cohortSlug: string | undefined;
+  let cohortLabel: string | undefined;
+  if (enrollment?.cohort_id) {
+    const { data: cohortRow } = await supabase
+      .from("cohorts")
+      .select("slug, programs(name)")
+      .eq("id", enrollment.cohort_id)
+      .single();
+    cohortSlug = cohortRow?.slug ?? enrollment.cohort_id;
+    cohortLabel =
+      (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
+  }
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
@@ -65,6 +73,7 @@ export default async function ClassroomLayout({
         userRole={sysRole ?? "user"}
         userAvatarUrl={profile?.avatar_url ?? null}
         cohortId={cohortSlug}
+        cohortLabel={cohortLabel}
         showOps={isStaff}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">

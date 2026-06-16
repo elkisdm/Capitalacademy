@@ -57,3 +57,39 @@ export type ModuleProgress = {
 export type LessonStatus = "locked" | "available" | "in_progress" | "completed" | "no_video";
 
 export const COMPLETION_THRESHOLD = 90;
+
+// --- Calendario de sesiones (clases en vivo) ---------------------------------
+// `title` y `teacher_id` se agregan en la migración 0022; `audience` en la 0024.
+// Hasta regenerar los tipos de Supabase (`supabase gen types`) no están en
+// Tables<"class_sessions">, por eso se declaran aquí explícitamente.
+export type SessionAudience = "all" | "capital_inteligente";
+
+export type ClassSession = Tables<"class_sessions"> & {
+  title: string | null;
+  teacher_id: string | null;
+  audience: SessionAudience;
+};
+
+export type SessionInstructor = {
+  id: string;
+  full_name: string;
+  photo_url: string | null;
+};
+
+export type SessionResourceType = "pdf" | "link" | "template" | "document" | "other";
+
+export type SessionResource = {
+  id: string;
+  session_id: string;
+  title: string;
+  type: SessionResourceType;
+  url: string;
+  position: number;
+};
+
+export type ScheduleSession = ClassSession & {
+  teacher: SessionInstructor | null;
+  resources: SessionResource[];
+};
+
+export type SessionTiming = "past" | "live" | "upcoming";

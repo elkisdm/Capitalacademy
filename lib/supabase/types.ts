@@ -29,6 +29,9 @@ export type Database = {
           rescheduled_from: string | null
           starts_at: string
           status: Database["public"]["Enums"]["session_status"]
+          teacher_id: string | null
+          title: string | null
+          audience: string
         }
         Insert: {
           cohort_id: string
@@ -44,6 +47,9 @@ export type Database = {
           rescheduled_from?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["session_status"]
+          teacher_id?: string | null
+          title?: string | null
+          audience?: string
         }
         Update: {
           cohort_id?: string
@@ -59,6 +65,9 @@ export type Database = {
           rescheduled_from?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["session_status"]
+          teacher_id?: string | null
+          title?: string | null
+          audience?: string
         }
         Relationships: [
           {
@@ -94,6 +103,54 @@ export type Database = {
             columns: ["rescheduled_from"]
             isOneToOne: false
             referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_sessions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instructors: {
+        Row: {
+          bio: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          photo_url: string | null
+          profile_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          photo_url?: string | null
+          profile_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          photo_url?: string | null
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -243,6 +300,7 @@ export type Database = {
           drive_folder_url: string | null
           enrolled_at: string
           id: string
+          segment: string | null
           status: Database["public"]["Enums"]["enrollment_status"]
           student_id: string
         }
@@ -252,6 +310,7 @@ export type Database = {
           drive_folder_url?: string | null
           enrolled_at?: string
           id?: string
+          segment?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           student_id: string
         }
@@ -261,6 +320,7 @@ export type Database = {
           drive_folder_url?: string | null
           enrolled_at?: string
           id?: string
+          segment?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           student_id?: string
         }
@@ -277,6 +337,91 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_reminders: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          recipients_count: number
+          sent_at: string
+          session_id: string
+          status: Database["public"]["Enums"]["reminder_status"]
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          recipients_count?: number
+          sent_at?: string
+          session_id: string
+          status?: Database["public"]["Enums"]["reminder_status"]
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          recipients_count?: number
+          sent_at?: string
+          session_id?: string
+          status?: Database["public"]["Enums"]["reminder_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_reminders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_resources: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          position: number
+          session_id: string
+          title: string
+          type: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          position?: number
+          session_id: string
+          title: string
+          type: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          position?: number
+          session_id?: string
+          title?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_resources_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1348,6 +1493,7 @@ export type Database = {
         | "succeeded"
         | "failed"
         | "refunded"
+      reminder_status: "sent" | "skipped" | "failed"
       resource_type: "pdf" | "link" | "template" | "document" | "other"
       session_status: "scheduled" | "in_progress" | "finished" | "cancelled"
       system_role: "user" | "ops" | "admin"
@@ -1497,6 +1643,7 @@ export const Constants = {
         "failed",
         "refunded",
       ],
+      reminder_status: ["sent", "skipped", "failed"],
       resource_type: ["pdf", "link", "template", "document", "other"],
       session_status: ["scheduled", "in_progress", "finished", "cancelled"],
       system_role: ["user", "ops", "admin"],

@@ -3,6 +3,10 @@ import type {
   ModuleWithLessons,
   VideoProgress,
   LessonResource,
+  ClassSession,
+  ScheduleSession,
+  SessionInstructor,
+  SessionResource,
 } from "./types";
 
 export async function getCohortSlugById(cohortId: string): Promise<string | null> {
@@ -64,7 +68,7 @@ export async function getModulesWithLessons(
   );
 
   let progressMap = new Map<string, VideoProgress>();
-  let resourcesMap = new Map<string, LessonResource[]>();
+  const resourcesMap = new Map<string, LessonResource[]>();
 
   if (lessonIds.length > 0) {
     const [{ data: progress }, { data: resources }] = await Promise.all([
@@ -106,6 +110,72 @@ export async function getModulesWithLessons(
         resources: resourcesMap.get(lesson.id as string) ?? [],
       })),
   })) as ModuleWithLessons[];
+}
+
+/**
+ * Calendario de sesiones en vivo de un cohorte, ordenado por fecha.
+ *
+ * Lee class_sessions (RLS: matrícula activa o staff, ver migración 0023) y
+ * resuelve el docente desde el catálogo `instructors` con un segundo query +
+ * join en JS — se evita el embed por FK porque los tipos generados aún no
+ * incluyen class_sessions.teacher_id (se agrega en 0022).
+ */
+export async function getCohortSchedule(
+  cohortId: string,
+): Promise<ScheduleSession[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("class_sessions")
+    .select("*")
+    .eq("cohort_id", cohortId)
+    .order("starts_at", { ascending: true });
+
+  const sessions = (data ?? []) as unknown as ClassSession[];
+  if (sessions.length === 0) return [];
+
+  const teacherIds = [
+    ...new Set(
+      sessions
+        .map((s) => s.teacher_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  const teacherMap = new Map<string, SessionInstructor>();
+  if (teacherIds.length > 0) {
+    const { data: instructors } = await supabase
+      .from("instructors")
+      .select("id, full_name, photo_url")
+      .in("id", teacherIds);
+
+    for (const i of (instructors ?? []) as SessionInstructor[]) {
+      teacherMap.set(i.id, i);
+    }
+  }
+
+  // Recursos asociados a cada sesión (materiales de clases presenciales/online).
+  const sessionIds = sessions.map((s) => s.id);
+  const resourcesMap = new Map<string, SessionResource[]>();
+  if (sessionIds.length > 0) {
+    const { data: resources } = await supabase
+      .from("session_resources")
+      .select("id, session_id, title, type, url, position")
+      .in("session_id", sessionIds)
+      .order("position", { ascending: true });
+
+    for (const r of (resources ?? []) as SessionResource[]) {
+      const arr = resourcesMap.get(r.session_id) ?? [];
+      arr.push(r);
+      resourcesMap.set(r.session_id, arr);
+    }
+  }
+
+  return sessions.map((s) => ({
+    ...s,
+    teacher: s.teacher_id ? (teacherMap.get(s.teacher_id) ?? null) : null,
+    resources: resourcesMap.get(s.id) ?? [],
+  }));
 }
 
 export async function getLessonById(lessonId: string) {

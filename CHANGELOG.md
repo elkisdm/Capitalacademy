@@ -28,6 +28,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El correo de invitación muestra el logo en el header y ya no duplica el nombre del programa (`65f6067`)
 
 ### Fixed
+- Los enlaces de activación/invitación ahora mantienen al usuario en capitalacademy.cl al confirmar la sesión, en vez de rebotar a una URL interna de Netlify y caer en login (`2f1ef8a`)
 - Asignar un alumno a una cohorte desde el panel admin ahora crea la matrícula automáticamente (`c7633b4`)
 - Reenviar invitación ya no falla cuando el usuario ya existe en el sistema (`66eac91`)
 - Asignar cohorte desde la lista de usuarios ahora funciona correctamente (`e93ffca`)

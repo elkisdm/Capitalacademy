@@ -1,6 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf, type CertificateConfig } from "./generate-pdf";
 import { sendCertificateEmail } from "@/lib/email/certificate";
+import {
+  getCertificateSignedUrl,
+  CERT_URL_EXPIRY_EMAIL,
+} from "./get-certificate-url";
 
 // ---------------------------------------------------------------------------
 // Verification code generator — 8 chars alphanumeric uppercase
@@ -104,14 +108,11 @@ export async function issueCertificate(
     throw new Error(`Failed to upload certificate PDF: ${uploadErr.message}`);
   }
 
-  // 6. Get public URL for the PDF
-  const { data: urlData } = supabase.storage
-    .from("certificates")
-    .getPublicUrl(storagePath);
+  // 6. Generar signed URL de larga vigencia para el correo (bucket privado).
+  const pdfUrl =
+    (await getCertificateSignedUrl(storagePath, CERT_URL_EXPIRY_EMAIL)) ?? "";
 
-  const pdfUrl = urlData.publicUrl;
-
-  // 7. Insert into certificates table
+  // 7. Insert into certificates table (pdf_url no se persiste: se genera on-demand)
   const { data: certificate, error: insertErr } = await supabase
     .from("certificates")
     .insert({
@@ -121,7 +122,6 @@ export async function issueCertificate(
       student_name: profile.full_name,
       verification_code: verificationCode,
       pdf_storage_path: storagePath,
-      pdf_url: pdfUrl,
     })
     .select("id")
     .single();

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getCertificateSignedUrl } from "@/lib/certificates/get-certificate-url";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
 
   const { data: certificate, error } = await supabase
     .from("certificates")
-    .select("id, verification_code, pdf_url, student_name, issued_at")
+    .select("id, verification_code, pdf_storage_path, student_name, issued_at")
     .eq("enrollment_id", enrollment.id)
     .single();
 
@@ -59,5 +60,7 @@ export async function GET(req: Request) {
     );
   }
 
-  return NextResponse.json(certificate);
+  const pdfUrl = await getCertificateSignedUrl(certificate.pdf_storage_path);
+
+  return NextResponse.json({ ...certificate, pdf_url: pdfUrl });
 }

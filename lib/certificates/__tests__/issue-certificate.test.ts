@@ -4,9 +4,10 @@ const mockFrom = vi.fn();
 const mockStorage = {
   from: vi.fn(() => ({
     upload: vi.fn().mockResolvedValue({ error: null }),
-    getPublicUrl: vi.fn(() => ({
-      data: { publicUrl: "https://storage.example.com/cert.pdf" },
-    })),
+    createSignedUrl: vi.fn().mockResolvedValue({
+      data: { signedUrl: "https://storage.example.com/signed-cert.pdf" },
+      error: null,
+    }),
   })),
 };
 
@@ -199,6 +200,6 @@ describe("issueCertificate", () => {
 
     expect(result.certificateId).toBe(insertedCertId);
     expect(result.verificationCode).toMatch(/^[A-Z2-9]{8}$/);
-    expect(result.pdfUrl).toBe("https://storage.example.com/cert.pdf");
+    expect(result.pdfUrl).toBe("https://storage.example.com/signed-cert.pdf");
   });
 });

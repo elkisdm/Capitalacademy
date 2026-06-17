@@ -25,9 +25,8 @@
 | `app/api/pago/cobro/route.ts` | Inicia cobro genérico; re-verifica firma del monto | `POST /api/pago/cobro` | — |
 | `app/api/pago/cupon/route.ts` | Valida cupones de descuento | `POST /api/pago/cupon` | — |
 | `app/api/flow/webhook/route.ts` | Confirma pago Flow vía getStatus + email confirmación | `POST /api/flow/webhook` | — |
-| `app/api/fintoc/webhook/route.ts` | Confirma pago Fintoc | `POST /api/fintoc/webhook` | — |
 | `lib/flow/` | Cliente Flow: `createFlowCheckout` (acepta `amountOverride`/`subjectOverride`), firma HMAC, status | — | — |
-| `lib/fintoc/` | Cliente Fintoc: checkout session, schema de form, webhook | — | — |
+| `lib/fintoc/` | Schema de form del checkout (aún importado en la ruta de pago) | — | — |
 | `lib/cobro/sign.ts` | Firma/verifica el monto del cobro genérico (HMAC-SHA256) | — | — |
 | `lib/cobro/plans.ts` | Planes de cuotas del cobro (factor de recargo contado/6/12) + `resolveCobroAmount` | — | — |
 | `lib/payments/provider.ts` | Resuelve el provider activo (`PAYMENT_PROVIDER`) | — | — |
@@ -160,5 +159,5 @@
 | `lib/rate-limit.ts` | Rate limiting de rutas API | — | — |
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
 | `lib/utils/` | Utilidades: `cn`, `rut`, `zod` (UUID no-RFC), `use-focus-trap` | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0027`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0029`) | — | — |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

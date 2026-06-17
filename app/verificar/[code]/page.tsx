@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCertificateSignedUrl } from "@/lib/certificates/get-certificate-url";
 
 export const metadata: Metadata = {
   title: "Verificar certificado | Capital Academy",
@@ -210,7 +211,7 @@ async function verifyCertificate(code: string) {
     cohortYear: cohort ? new Date(cohort.start_date).getFullYear() : new Date().getFullYear(),
     issuedAt: certificate.issued_at,
     scorePct,
-    pdfUrl: certificate.pdf_url,
+    pdfUrl: await getCertificateSignedUrl(certificate.pdf_storage_path),
     verificationCode: certificate.verification_code,
   };
 }

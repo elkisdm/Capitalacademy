@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getEnrollmentForUser, getCohortWithProgram } from "@/lib/classroom/queries";
+import { getCertificateSignedUrl } from "@/lib/certificates/get-certificate-url";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { CertView } from "@/components/classroom/cert-view";
 import { RetryButton } from "./retry-button";
@@ -120,7 +121,7 @@ export default async function CertificadoPage(
       verificationCode={certificate.verification_code}
       issuedAt={certificate.issued_at}
       scorePct={scorePct}
-      pdfUrl={certificate.pdf_url ?? "#"}
+      pdfUrl={(await getCertificateSignedUrl(certificate.pdf_storage_path)) ?? "#"}
     />
   );
 }

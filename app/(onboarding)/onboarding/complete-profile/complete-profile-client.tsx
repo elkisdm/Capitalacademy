@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatRut, cleanRut, isValidRut } from "@/lib/utils/rut";
+import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
 
 type ProfileData = {
   full_name: string;
@@ -18,6 +19,8 @@ type ProfileData = {
 type CompleteProfileClientProps = {
   email: string;
   profile: ProfileData;
+  /** Marca del entorno. Default genérico Capital Academy. */
+  brand?: ProgramBrand;
 };
 
 function CameraIcon() {
@@ -57,7 +60,7 @@ function InfoIcon() {
 
 const BIO_MAX = 200;
 
-export function CompleteProfileClient({ email, profile }: CompleteProfileClientProps) {
+export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }: CompleteProfileClientProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,7 +128,7 @@ export function CompleteProfileClient({ email, profile }: CompleteProfileClientP
         return;
       }
 
-      router.push("/classroom");
+      router.push(brand.redirectTo);
       router.refresh();
     } catch {
       setError("Error de conexión");
@@ -173,16 +176,16 @@ export function CompleteProfileClient({ email, profile }: CompleteProfileClientP
               </div>
             </div>
             <div className="leading-tight">
-              <div className="text-[13px] font-extrabold tracking-tight text-white">Capital Academy</div>
+              <div className="text-[13px] font-extrabold tracking-tight text-white">{brand.shortName}</div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">Onboarding</div>
             </div>
           </div>
 
           <h1 className="mt-10 text-[26px] font-black leading-tight tracking-[-0.025em] text-white lg:text-[30px]">
-            Cuéntanos quién eres
+            {brand.onboarding.welcomeTitle}
           </h1>
           <p className="mt-3 text-[14px] font-medium leading-relaxed text-white/60">
-            Tu perfil nos ayuda a personalizar tu experiencia de aprendizaje.
+            {brand.onboarding.welcomeSubtitle}
           </p>
         </div>
 
@@ -243,7 +246,7 @@ export function CompleteProfileClient({ email, profile }: CompleteProfileClientP
             </div>
           </div>
           <div>
-            <div className="text-[14px] font-black tracking-tight text-ca-ink">Cuéntanos quién eres</div>
+            <div className="text-[14px] font-black tracking-tight text-ca-ink">{brand.onboarding.welcomeTitle}</div>
             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">Paso 2 de 2</div>
           </div>
         </div>

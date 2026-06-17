@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
 
 const REQUIREMENTS = [
   { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
@@ -13,9 +14,22 @@ const REQUIREMENTS = [
 
 type Step = "exchanging" | "form" | "success" | "error";
 
-export function SetPasswordForm() {
+export function SetPasswordForm({
+  brand = DEFAULT_BRAND,
+}: {
+  brand?: ProgramBrand;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Complete-profile branded del mismo entorno (genérico para la marca default).
+  const completeProfilePath =
+    brand.slug === DEFAULT_BRAND.slug
+      ? "/onboarding/complete-profile"
+      : `/onboarding/${brand.slug}/complete-profile`;
+
+  const loginPath =
+    brand.slug === DEFAULT_BRAND.slug ? "/login" : `/login/${brand.slug}`;
   const [step, setStep] = useState<Step>("exchanging");
   const [errorMsg, setErrorMsg] = useState("");
   const [password, setPassword] = useState("");
@@ -89,7 +103,7 @@ export function SetPasswordForm() {
     setStep("success");
 
     const { data: { user: currentUser } } = await supabase.auth.getUser();
-    let redirectPath = "/onboarding/complete-profile";
+    let redirectPath = completeProfilePath;
     if (currentUser) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -112,13 +126,13 @@ export function SetPasswordForm() {
         {/* Header */}
         <div className="mb-8 text-center">
           <p className="text-[22px] font-black tracking-tight" style={{ color: "#14163a" }}>
-            Capital Academy
+            {brand.shortName}
           </p>
           <p
             className="text-[11px] font-bold uppercase tracking-[0.3em]"
-            style={{ color: "#c5f122" }}
+            style={{ color: brand.accent }}
           >
-            Plataforma educativa
+            {brand.eyebrow}
           </p>
         </div>
 
@@ -126,7 +140,7 @@ export function SetPasswordForm() {
           <div className="text-center">
             <div
               className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
-              style={{ borderColor: "#5e17eb", borderTopColor: "transparent" }}
+              style={{ borderColor: brand.accent, borderTopColor: "transparent" }}
             />
             <p className="text-sm" style={{ color: "#6b6e8a" }}>
               Verificando tu invitación&hellip;
@@ -150,16 +164,16 @@ export function SetPasswordForm() {
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <a
-                href="/login"
+                href={loginPath}
                 className="rounded-lg px-4 py-2.5 text-sm font-bold text-white"
-                style={{ background: "#5e17eb" }}
+                style={{ background: brand.accent }}
               >
                 Ir al login
               </a>
               <a
                 href="/forgot-password"
                 className="text-sm font-semibold"
-                style={{ color: "#5e17eb" }}
+                style={{ color: brand.accent }}
               >
                 Recuperar contraseña
               </a>
@@ -173,10 +187,10 @@ export function SetPasswordForm() {
               className="mb-2 text-xl font-extrabold"
               style={{ color: "#14163a" }}
             >
-              Crea tu contraseña
+              {brand.onboarding.setPasswordTitle}
             </h1>
             <p className="mb-6 text-sm" style={{ color: "#6b6e8a" }}>
-              Elige una contraseña segura para acceder a tu cuenta.
+              {brand.onboarding.setPasswordSubtitle}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -278,7 +292,7 @@ export function SetPasswordForm() {
                 type="submit"
                 disabled={!canSubmit}
                 className="w-full rounded-lg px-4 py-3 text-sm font-bold text-white transition-opacity disabled:opacity-40"
-                style={{ background: "#5e17eb" }}
+                style={{ background: brand.accent }}
               >
                 {saving ? "Guardando…" : "Crear contraseña"}
               </button>

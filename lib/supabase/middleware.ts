@@ -35,7 +35,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/api/auth/") ||
-    pathname.startsWith("/onboarding/set-password") ||
+    // set-password (genérico y branded por entorno: /onboarding/<slug>/set-password)
+    // es público: el invitado canjea el código de invitación antes de tener sesión.
+    (pathname.startsWith("/onboarding/") && pathname.endsWith("/set-password")) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/public") ||
     pathname.startsWith("/api/leads") ||

@@ -1,9 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendDiplomadoInvitationEmail } from "@/lib/email/diplomado-invitation";
+import { getBrandBySlug, onboardingSetPasswordPath } from "@/lib/programs/registry";
 
 // Cohorte del Diplomado en curso (IV Generación). Si en el futuro hay una nueva
 // generación, este mapeo debe actualizarse (o derivarse del plan).
 const DIPLOMADO_COHORT_ID = "b0000000-0000-0000-0000-000000000002";
+
+// Onboarding branded del Diplomado: /onboarding/diplomado/set-password.
+const DIPLOMADO_ONBOARDING_PATH = onboardingSetPasswordPath(
+  getBrandBySlug("diplomado"),
+);
 
 const INTERNAL_DOMAIN = "@capitalinteligente.cl";
 
@@ -36,7 +42,7 @@ export async function enrollDiplomadoBuyer(input: {
   const fullName =
     `${input.firstname ?? ""} ${input.lastname ?? ""}`.trim() || email;
   const base = siteUrl();
-  const redirectTo = `${base}/onboarding/set-password`;
+  const redirectTo = `${base}${DIPLOMADO_ONBOARDING_PATH}`;
 
   try {
     const admin = createAdminClient();
@@ -67,7 +73,7 @@ export async function enrollDiplomadoBuyer(input: {
 
     const inviteUrl =
       `${base}/auth/confirm?token_hash=${encodeURIComponent(hashed)}` +
-      `&type=${vtype}&next=${encodeURIComponent("/onboarding/set-password")}`;
+      `&type=${vtype}&next=${encodeURIComponent(DIPLOMADO_ONBOARDING_PATH)}`;
 
     // 2. Perfil (rol student).
     const { error: profileErr } = await admin

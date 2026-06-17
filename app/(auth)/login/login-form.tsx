@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 
-export function LoginForm({ redirectTo }: { redirectTo: string }) {
+export function LoginForm({
+  redirectTo,
+  accent,
+}: {
+  redirectTo: string;
+  /** Acento de marca (hex) para el botón principal. Default ca-violet. */
+  accent?: string;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -96,6 +103,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
         type="submit"
         disabled={loading}
         className="ca-btn-primary mt-2 flex items-center justify-center gap-2 py-3 text-[13px] font-bold uppercase tracking-[0.08em] disabled:opacity-50"
+        style={accent ? { background: accent } : undefined}
       >
         {loading ? (
           <>

@@ -1,15 +1,32 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CompleteProfileClient } from "./complete-profile-client";
-import { DEFAULT_BRAND, getBrandByProgramId } from "@/lib/programs/registry";
+import { CompleteProfileClient } from "../../complete-profile/complete-profile-client";
+import { getBrandBySlug } from "@/lib/programs/registry";
 
-export default async function CompleteProfilePage() {
+export async function generateMetadata(
+  props: { params: Promise<{ programa: string }> },
+) {
+  const { programa } = await props.params;
+  const brand = getBrandBySlug(programa);
+  return { title: `Completa tu perfil · ${brand.shortName}` };
+}
+
+/**
+ * Complete-profile branded por entorno: /onboarding/diplomado/complete-profile.
+ * La marca viene del slug de la URL; slug desconocido → marca genérica.
+ */
+export default async function ProgramCompleteProfilePage(
+  props: { params: Promise<{ programa: string }> },
+) {
+  const { programa } = await props.params;
+  const brand = getBrandBySlug(programa);
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect(`/login/${programa}`);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -18,20 +35,6 @@ export default async function CompleteProfilePage() {
     )
     .eq("id", user.id)
     .single();
-
-  // Marca derivada del entorno del usuario: su matrícula activa más reciente →
-  // cohort → programa. Sin matrícula (ej. staff) cae a la marca genérica.
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select("cohort:cohorts(program_id)")
-    .eq("student_id", user.id)
-    .eq("status", "active")
-    .order("enrolled_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  const programId = (enrollment?.cohort as { program_id: string } | null)?.program_id;
-  const brand = programId ? getBrandByProgramId(programId) : DEFAULT_BRAND;
 
   return (
     <CompleteProfileClient

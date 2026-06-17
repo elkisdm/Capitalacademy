@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
 
@@ -20,21 +21,11 @@ export default async function ClassroomLayout({
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: enrollment }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("full_name, role, system_role, onboarding_completed_at, avatar_url")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("enrollments")
-      .select("cohort_id")
-      .eq("student_id", user.id)
-      .eq("status", "active")
-      .order("enrolled_at", { ascending: false })
-      .limit(1)
-      .single(),
-  ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, role, system_role, onboarding_completed_at, avatar_url")
+    .eq("id", user.id)
+    .single();
 
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
@@ -51,18 +42,45 @@ export default async function ClassroomLayout({
     .slice(0, 2)
     .toUpperCase();
 
-  // Resolve cohort slug (clean URLs) + program name (sidebar label).
+  // Resolve cohort slug + program name for the sidebar.
+  // Priority: URL path > user's most recent enrollment (fallback for /classroom root).
   let cohortSlug: string | undefined;
   let cohortLabel: string | undefined;
-  if (enrollment?.cohort_id) {
+
+  const hdrs = await headers();
+  const pathname = hdrs.get("x-pathname") ?? "";
+  const parts = pathname.split("/").filter(Boolean); // ['classroom', '<slug>', ...]
+  const cohortSlugFromPath = parts[0] === "classroom" && parts[1] ? parts[1] : undefined;
+
+  if (cohortSlugFromPath) {
     const { data: cohortRow } = await supabase
       .from("cohorts")
       .select("slug, programs(name)")
-      .eq("id", enrollment.cohort_id)
-      .single();
-    cohortSlug = cohortRow?.slug ?? enrollment.cohort_id;
+      .or(`slug.eq.${cohortSlugFromPath},id.eq.${cohortSlugFromPath}`)
+      .maybeSingle();
+    cohortSlug = cohortRow?.slug ?? cohortSlugFromPath;
     cohortLabel =
       (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
+  } else {
+    // Fallback: most recent enrollment (for /classroom dashboard)
+    const { data: enrollment } = await supabase
+      .from("enrollments")
+      .select("cohort_id")
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .order("enrolled_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (enrollment?.cohort_id) {
+      const { data: cohortRow } = await supabase
+        .from("cohorts")
+        .select("slug, programs(name)")
+        .eq("id", enrollment.cohort_id)
+        .single();
+      cohortSlug = cohortRow?.slug ?? enrollment.cohort_id;
+      cohortLabel =
+        (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
+    }
   }
 
   return (

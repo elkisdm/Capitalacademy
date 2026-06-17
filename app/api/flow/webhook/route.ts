@@ -5,6 +5,8 @@ import {
   sendPaymentConfirmationEmail,
   sendPaymentTeamNotification,
 } from "@/lib/email/payment-confirmation";
+import { enrollDiplomadoBuyer } from "@/lib/classroom/enroll-from-payment";
+import { PAYMENT_PLAN_KEYS } from "@/lib/flow/checkout";
 import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
@@ -135,6 +137,25 @@ export async function POST(req: Request) {
         paymentId: existing.id,
         error: teamResult.error,
       });
+    }
+
+    // Link checkout → matrícula: si el pago es del Diplomado (plan en
+    // PAYMENT_PLAN_KEYS), matricular al comprador en el classroom (G4) y
+    // enviarle el onboarding con link de activación. Idempotente y no rompe el
+    // webhook si falla (la plata ya fue tomada; se loguea para reconciliar).
+    if (existing.plan && (PAYMENT_PLAN_KEYS as readonly string[]).includes(existing.plan)) {
+      const enrollResult = await enrollDiplomadoBuyer({
+        email: existing.email,
+        firstname: existing.firstname,
+        lastname: existing.lastname,
+      });
+      if (!enrollResult.ok) {
+        console.error("diplomado enroll-on-payment failed (flow)", {
+          paymentId: existing.id,
+          email: existing.email,
+          error: enrollResult.error,
+        });
+      }
     }
   }
 

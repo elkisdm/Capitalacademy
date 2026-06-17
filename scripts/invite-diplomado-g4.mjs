@@ -113,7 +113,8 @@ function invitationHtml({ fullName, inviteUrl }) {
       </td></tr></table></td></tr>
       <tr><td style="padding:32px 32px 8px 32px;">
         <h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;color:#14163a;font-weight:800;">&iexcl;Bienvenido a Capital Academy, ${esc(firstName)}!</h1>
-        <p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:#3a3d5c;">Quedaste inscrito en el <strong>${esc(label)}</strong>. Hoy damos el siguiente paso: tu acceso a <strong style="color:#5e17eb;">Capital Academy</strong>, donde encontrar&aacute;s tu calendario de clases en vivo, el material de cada sesi&oacute;n y todo lo que necesitas durante el programa.</p>
+        <p style="margin:0 0 14px 0;font-size:15px;line-height:1.65;color:#3a3d5c;">Es un placer darte la bienvenida a la <strong>IV Generaci&oacute;n</strong> del <strong>${esc(PROGRAM_NAME)}</strong>. Est&aacute;s a punto de iniciar un camino que transformar&aacute; tu forma de entender y ejercer la venta inmobiliaria: una nueva metodolog&iacute;a comercial, t&eacute;cnicas de cierre, herramientas de soporte al asesor, gesti&oacute;n de clientes y negociaci&oacute;n.</p>
+        <p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:#3a3d5c;">Hoy damos el primer paso: tu acceso a <strong style="color:#5e17eb;">Capital Academy</strong>, donde tendr&aacute;s tu calendario de clases, el material de cada sesi&oacute;n y todo lo que necesitas durante el programa.</p>
       </td></tr>
       <tr><td style="padding:0 32px 8px 32px;">
         <p style="margin:0 0 12px 0;font-size:12px;letter-spacing:0.15em;color:#5e17eb;text-transform:uppercase;font-weight:800;">Qu&eacute; encontrar&aacute;s adentro</p>
@@ -135,6 +136,19 @@ function invitationHtml({ fullName, inviteUrl }) {
           <tr><td style="padding:4px 12px 4px 0;color:#5e17eb;font-weight:800;vertical-align:top;">3.</td><td style="padding:4px 0;"><strong>Revisa tu calendario y te esperamos en tu primera clase</strong></td></tr>
         </table>
       </td></tr>
+      <tr><td style="padding:0 32px 22px 32px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f1ff;border-radius:12px;border:1px solid #e7defc;">
+          <tr><td style="padding:18px 20px;">
+            <p style="margin:0 0 10px 0;font-size:12px;letter-spacing:0.15em;color:#5e17eb;text-transform:uppercase;font-weight:800;">Tu primera clase &middot; presencial</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:1.55;color:#3a3d5c;">
+              <tr><td style="padding:3px 12px 3px 0;vertical-align:top;width:24px;">&#128197;</td><td style="padding:3px 0;"><strong>S&aacute;bado 20 de junio</strong> &middot; 9:30 a.m.</td></tr>
+              <tr><td style="padding:3px 12px 3px 0;vertical-align:top;">&#128205;</td><td style="padding:3px 0;">Av. Presidente Kennedy 8017 (edificio Sony), piso 4, Las Condes.</td></tr>
+              <tr><td style="padding:3px 12px 3px 0;vertical-align:top;">&#128663;</td><td style="padding:3px 0;">Estacionamientos disponibles. Te sugerimos llegar unos minutos antes.</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="padding:0 32px 28px 32px;"><p style="margin:0;font-size:14px;line-height:1.6;color:#3a3d5c;">&iexcl;Te esperamos con todo listo! Si tienes alguna consulta antes del inicio, escr&iacute;benos.<br/><strong>Equipo Capital Academy</strong></p></td></tr>
       <tr><td style="padding:20px 32px;background:#f9f9fb;border-top:1px solid #ededf0;"><p style="margin:0;font-size:12px;color:#9b9db5;text-align:center;">Capital Academy &middot; <a href="https://capitalacademy.cl" style="color:#5e17eb;text-decoration:none;">capitalacademy.cl</a></p></td></tr>
     </table>
   </td></tr></table>
@@ -144,7 +158,8 @@ function invitationText({ fullName, inviteUrl }) {
   const firstName = fullName.split(" ")[0];
   return [
     `¡Bienvenido a Capital Academy, ${firstName}!`, "",
-    `Quedaste inscrito en el ${courseLabel(PROGRAM_NAME, COHORT_NAME)}. Hoy damos el siguiente paso: tu acceso a Capital Academy, donde encontrarás tu calendario de clases en vivo, el material de cada sesión y todo lo que necesitas durante el programa.`, "",
+    `Es un placer darte la bienvenida a la IV Generación del ${PROGRAM_NAME}. Estás a punto de iniciar un camino que transformará tu forma de entender y ejercer la venta inmobiliaria: una nueva metodología comercial, técnicas de cierre, herramientas de soporte al asesor, gestión de clientes y negociación.`, "",
+    "Hoy damos el primer paso: tu acceso a Capital Academy, donde tendrás tu calendario de clases, el material de cada sesión y todo lo que necesitas durante el programa.", "",
     "Qué encontrarás adentro:",
     "  • Tu calendario de clases en vivo, con fechas, horarios y docentes.",
     "  • Material y recursos complementarios de cada sesión.",
@@ -155,6 +170,12 @@ function invitationText({ fullName, inviteUrl }) {
     "  1. Activa tu cuenta — crea tu contraseña (1 min)",
     "  2. Completa tu perfil — RUT, teléfono (2 min)",
     "  3. Revisa tu calendario y te esperamos en tu primera clase", "",
+    "TU PRIMERA CLASE (presencial):",
+    "  • Sábado 20 de junio · 9:30 a.m.",
+    "  • Av. Presidente Kennedy 8017 (edificio Sony), piso 4, Las Condes.",
+    "  • Estacionamientos disponibles. Te sugerimos llegar unos minutos antes.", "",
+    "¡Te esperamos con todo listo! Si tienes alguna consulta antes del inicio, escríbenos.",
+    "Equipo Capital Academy", "",
     "Capital Academy · capitalacademy.cl",
   ].join("\n");
 }
@@ -193,7 +214,8 @@ async function makeInviteUrl(email) {
 
 // ---------------------------------------------------------------- alumnos (xlsx)
 function loadStudents() {
-  const wb = XLSX.readFile(XLSX_PATH);
+  // XLSX.readFile no existe en el build ESM (no trae fs); leemos el buffer.
+  const wb = XLSX.read(readFileSync(XLSX_PATH), { type: "buffer" });
   const ws = wb.Sheets[wb.SheetNames[0]];
   // header:1 => arrays por fila. fila 0 = título, fila 1 = headers, resto = datos.
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });

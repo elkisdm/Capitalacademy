@@ -8,6 +8,7 @@ import {
   normalizeConcepto,
   verifyCobro,
 } from "@/lib/cobro/sign";
+import { COBRO_PLAN_KEYS, COBRO_PLANS, resolveCobroAmount } from "@/lib/cobro/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 import {
@@ -40,6 +41,11 @@ const cobroSchema = checkoutFormSchema
     monto: z.number().int().positive().max(5_000_000),
     concepto: z.string().max(MAX_CONCEPTO_LEN).optional(),
     sig: z.string().regex(/^[0-9a-f]{64}$/i),
+    // El plan de cuotas lo elige el pagador en el checkout. La firma cubre solo
+    // el monto base (contado); el recargo se recomputa server-side desde el plan.
+    plan: z
+      .enum(COBRO_PLAN_KEYS as [string, ...string[]])
+      .default("contado"),
   });
 
 export async function POST(req: Request) {
@@ -72,16 +78,21 @@ export async function POST(req: Request) {
 
   const { firstname, lastname, rut, email, phone, monto, sig } = parsed.data;
   const concepto = normalizeConcepto(parsed.data.concepto);
+  const plan = parsed.data.plan as keyof typeof COBRO_PLANS;
 
-  // FRONTERA DE SEGURIDAD: monto y concepto solo son válidos si la firma
-  // coincide. Así el pagador no puede cambiar `monto` (pagar menos) ni el
-  // `concepto` en la URL/body.
+  // FRONTERA DE SEGURIDAD: la firma cubre el monto BASE (contado) y el concepto.
+  // Así el pagador no puede cambiar `monto` (pagar menos) ni el `concepto` en la
+  // URL/body. El recargo por cuotas se recomputa server-side a partir del plan,
+  // así que solo puede AUMENTAR el cobro, nunca reducirlo bajo el base firmado.
   if (!verifyCobro(monto, concepto, sig, secret)) {
     return NextResponse.json(
       { error: "El monto del cobro no es válido." },
       { status: 403 },
     );
   }
+
+  const planConfig = COBRO_PLANS[plan];
+  const finalAmount = resolveCobroAmount(monto, plan);
 
   const supabase = createAdminClient();
 
@@ -91,7 +102,8 @@ export async function POST(req: Request) {
     rut,
     email,
     phone,
-    amount_clp: monto,
+    // Monto realmente cobrado (base + recargo de cuotas si aplica).
+    amount_clp: finalAmount,
     // Un cobro genérico no tiene "plan" del diplomado. La columna tiene un CHECK
     // (payments_plan_check) que solo acepta los planes del diplomado, así que va
     // null. El cobro se distingue por el prefijo "CO-" en commerce_order.
@@ -126,9 +138,10 @@ export async function POST(req: Request) {
     rut,
     email,
     phone,
-    plan: "contado",
-    amountOverride: monto,
-    subjectOverride: concepto || DEFAULT_CONCEPT,
+    plan,
+    amountOverride: finalAmount,
+    subjectOverride: `${concepto || DEFAULT_CONCEPT}${planConfig.subjectSuffix}`,
+    paymentMethodOverride: planConfig.paymentMethod,
   });
 
   if ("errorMessage" in flow) {

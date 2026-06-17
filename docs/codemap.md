@@ -29,6 +29,7 @@
 | `lib/flow/` | Cliente Flow: `createFlowCheckout` (acepta `amountOverride`/`subjectOverride`), firma HMAC, status | — | — |
 | `lib/fintoc/` | Cliente Fintoc: checkout session, schema de form, webhook | — | — |
 | `lib/cobro/sign.ts` | Firma/verifica el monto del cobro genérico (HMAC-SHA256) | — | — |
+| `lib/cobro/plans.ts` | Planes de cuotas del cobro (factor de recargo contado/6/12) + `resolveCobroAmount` | — | — |
 | `lib/payments/provider.ts` | Resuelve el provider activo (`PAYMENT_PROVIDER`) | — | — |
 | `scripts/generate-cobro-link.mjs` | Genera enlaces de cobro firmados (hasta tener página admin) | — | — |
 

@@ -6,6 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { checkoutFormSchema } from "@/lib/fintoc/schema";
 import { formatRut } from "@/lib/utils/rut";
+import {
+  COBRO_PLANS,
+  COBRO_PLAN_KEYS,
+  resolveCobroAmount,
+  type CobroPlan,
+} from "@/lib/cobro/plans";
 
 const cobroFormSchema = checkoutFormSchema.pick({
   firstname: true,
@@ -41,6 +47,12 @@ export function CobroCheckoutClient({
 }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [plan, setPlan] = useState<CobroPlan>("contado");
+
+  // amountClp es el monto BASE (contado). El final con recargo se computa acá
+  // para mostrarlo, pero el servidor lo recomputa: es la fuente de verdad.
+  const finalAmount = resolveCobroAmount(amountClp, plan);
+  const surcharge = finalAmount - amountClp;
 
   const {
     register,
@@ -64,7 +76,7 @@ export function CobroCheckoutClient({
       const res = await fetch("/api/pago/cobro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, monto: amountClp, concepto, sig }),
+        body: JSON.stringify({ ...values, monto: amountClp, concepto, sig, plan }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -93,9 +105,73 @@ export function CobroCheckoutClient({
             </p>
           </div>
           <span className="text-3xl font-black tracking-tight text-[var(--color-ca-ink)] sm:text-4xl">
-            {priceFormatter.format(amountClp)}
+            {priceFormatter.format(finalAmount)}
           </span>
         </div>
+        {surcharge > 0 && (
+          <p className="mt-2 text-[11px] text-[var(--color-ca-ink-soft)]">
+            Valor base {priceFormatter.format(amountClp)} + recargo por uso de
+            cuotas{" "}
+            <span className="font-semibold text-[var(--color-ca-ink)]">
+              {priceFormatter.format(surcharge)}
+            </span>
+          </p>
+        )}
+      </section>
+
+      {/* FORMA DE PAGO */}
+      <section className="rounded-3xl border border-[rgba(20,22,58,0.08)] bg-white p-6 shadow-[0_20px_60px_rgba(20,22,58,0.08)] sm:p-8">
+        <header className="mb-4">
+          <h2 className="text-base font-bold leading-tight text-[var(--color-ca-ink)] sm:text-lg">
+            Forma de pago
+          </h2>
+          <p className="text-[11px] text-[var(--color-ca-ink-soft)]">
+            Elige pagar al contado o en cuotas. Las cuotas incluyen un recargo.
+          </p>
+        </header>
+
+        <fieldset>
+          <legend className="sr-only">Forma de pago</legend>
+          <div className="grid grid-cols-1 gap-2">
+            {COBRO_PLAN_KEYS.map((planKey) => {
+              const config = COBRO_PLANS[planKey];
+              const isSelected = plan === planKey;
+              const planAmount = resolveCobroAmount(amountClp, planKey);
+              return (
+                <label
+                  key={planKey}
+                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                    isSelected
+                      ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
+                      : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
+                  }`}
+                >
+                  <span className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="cobro-plan"
+                      value={planKey}
+                      checked={isSelected}
+                      onChange={() => setPlan(planKey)}
+                      className="mt-1 h-4 w-4 accent-[var(--color-ca-violet)]"
+                    />
+                    <span className="block">
+                      <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
+                        {config.label}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-[var(--color-ca-ink-soft)]">
+                        {config.description}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-bold text-[var(--color-ca-ink)]">
+                    {priceFormatter.format(planAmount)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
       </section>
 
       {/* DATOS */}
@@ -189,7 +265,7 @@ export function CobroCheckoutClient({
         >
           {isBusy
             ? "Procesando…"
-            : `Pagar ${priceFormatter.format(amountClp)}`}
+            : `Pagar ${priceFormatter.format(finalAmount)}`}
         </button>
 
         <p className="mt-3 text-center text-[11px] text-[var(--color-ca-ink-soft)]/80">

@@ -22,6 +22,7 @@ const updateSessionSchema = z
     ends_at: z.string().datetime({ offset: true }),
     modality: modalitySchema,
     teacher_id: uuidLike.nullable(),
+    module_id: uuidLike.nullable(),
     meeting_url: z.string().trim().url().max(500).nullable(),
     audience: audienceSchema,
     status: statusSchema,

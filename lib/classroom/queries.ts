@@ -117,6 +117,66 @@ export async function getModulesWithLessons(
 }
 
 /**
+ * Sesiones de un módulo específico dentro de un cohorte.
+ * Mismo patrón que getCohortSchedule pero filtrado por module_id.
+ */
+export async function getModuleSessionsForCohort(
+  cohortId: string,
+  moduleId: string,
+): Promise<ScheduleSession[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("class_sessions")
+    .select("*")
+    .eq("cohort_id", cohortId)
+    .eq("module_id", moduleId)
+    .order("starts_at", { ascending: true });
+
+  const sessions = (data ?? []) as unknown as ClassSession[];
+  if (sessions.length === 0) return [];
+
+  const teacherIds = [
+    ...new Set(
+      sessions
+        .map((s) => s.teacher_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const teacherMap = new Map<string, SessionInstructor>();
+  if (teacherIds.length > 0) {
+    const { data: instructors } = await supabase
+      .from("instructors")
+      .select("id, full_name, photo_url")
+      .in("id", teacherIds);
+    for (const i of (instructors ?? []) as SessionInstructor[]) {
+      teacherMap.set(i.id, i);
+    }
+  }
+
+  const sessionIds = sessions.map((s) => s.id);
+  const resourcesMap = new Map<string, SessionResource[]>();
+  if (sessionIds.length > 0) {
+    const { data: resources } = await supabase
+      .from("session_resources")
+      .select("id, session_id, title, type, url, position")
+      .in("session_id", sessionIds)
+      .order("position", { ascending: true });
+    for (const r of (resources ?? []) as SessionResource[]) {
+      const arr = resourcesMap.get(r.session_id) ?? [];
+      arr.push(r);
+      resourcesMap.set(r.session_id, arr);
+    }
+  }
+
+  return sessions.map((s) => ({
+    ...s,
+    teacher: s.teacher_id ? (teacherMap.get(s.teacher_id) ?? null) : null,
+    resources: resourcesMap.get(s.id) ?? [],
+  }));
+}
+
+/**
  * Calendario de sesiones en vivo de un cohorte, ordenado por fecha.
  *
  * Lee class_sessions (RLS: matrícula activa o staff, ver migración 0023) y

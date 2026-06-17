@@ -31,7 +31,7 @@ export default async function AdminCohortSessionsPage(
 
   const { data: cohort } = await supabase
     .from("cohorts")
-    .select("id, name, code, programs(name)")
+    .select("id, name, code, programs(id, name)")
     .eq("id", cohortId)
     .single();
 
@@ -58,9 +58,19 @@ export default async function AdminCohortSessionsPage(
         .order("position", { ascending: true })
     : { data: [] };
 
+  const programId = (cohort.programs as { id: string; name: string } | null)?.id;
+  const { data: modulesData } = programId
+    ? await supabase
+        .from("program_modules")
+        .select("id, title, position")
+        .eq("program_id", programId)
+        .order("position", { ascending: true })
+    : { data: [] };
+
   const sessions = (sessionsData ?? []) as unknown as ClassSession[];
   const instructors = (instructorsData ?? []) as SessionInstructor[];
   const resources = (resourcesData ?? []) as SessionResource[];
+  const modules = (modulesData ?? []) as { id: string; title: string; position: number }[];
 
   const programName =
     (cohort.programs as { name: string } | null)?.name ?? "Capital Academy";
@@ -73,6 +83,7 @@ export default async function AdminCohortSessionsPage(
         initialSessions={sessions}
         instructors={instructors}
         initialResources={resources}
+        modules={modules}
       />
     </div>
   );

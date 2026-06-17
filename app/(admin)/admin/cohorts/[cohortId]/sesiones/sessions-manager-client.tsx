@@ -31,6 +31,7 @@ type FormState = {
   ends_at: string; // valor datetime-local (hora de Santiago)
   modality: Modality;
   teacher_id: string; // "" = sin docente
+  module_id: string; // "" = sin módulo
   meeting_url: string;
   audience: Audience;
   status: SessionStatus;
@@ -155,6 +156,7 @@ function emptyForm(): FormState {
     ends_at: "",
     modality: "live_online",
     teacher_id: "",
+    module_id: "",
     meeting_url: "",
     audience: "all",
     status: "scheduled",
@@ -168,11 +170,14 @@ function formFromSession(s: ClassSession): FormState {
     ends_at: isoToLocalInput(s.ends_at),
     modality: s.modality as Modality,
     teacher_id: s.teacher_id ?? "",
+    module_id: (s as unknown as { module_id?: string }).module_id ?? "",
     meeting_url: s.meeting_url ?? "",
     audience: (s.audience as Audience) ?? "all",
     status: s.status as SessionStatus,
   };
 }
+
+type ModuleOption = { id: string; title: string; position: number };
 
 export function SessionsManagerClient({
   cohort,
@@ -180,12 +185,14 @@ export function SessionsManagerClient({
   initialSessions,
   instructors,
   initialResources,
+  modules = [],
 }: {
   cohort: CohortInfo;
   programName: string;
   initialSessions: ClassSession[];
   instructors: SessionInstructor[];
   initialResources: SessionResource[];
+  modules?: ModuleOption[];
 }) {
   const router = useRouter();
   const [sessions, setSessions] = useState<ClassSession[]>(initialSessions);
@@ -270,6 +277,7 @@ export function SessionsManagerClient({
       ends_at: localInputToIso(form.ends_at),
       modality: form.modality,
       teacher_id: form.teacher_id || null,
+      module_id: form.module_id || null,
       meeting_url: form.meeting_url.trim() || null,
       audience: form.audience,
       status: form.status,
@@ -423,6 +431,7 @@ export function SessionsManagerClient({
         <SessionForm
           form={form}
           instructors={instructors}
+          modules={modules}
           saving={saving}
           error={error}
           isEditing={editing !== null}
@@ -540,6 +549,7 @@ export function SessionsManagerClient({
 function SessionForm({
   form,
   instructors,
+  modules,
   saving,
   error,
   isEditing,
@@ -549,6 +559,7 @@ function SessionForm({
 }: {
   form: FormState;
   instructors: SessionInstructor[];
+  modules: ModuleOption[];
   saving: boolean;
   error: string | null;
   isEditing: boolean;
@@ -644,6 +655,27 @@ function SessionForm({
             ))}
           </select>
         </div>
+
+        {modules.length > 0 && (
+          <div>
+            <label className={labelCls} htmlFor="session-module">
+              Módulo
+            </label>
+            <select
+              id="session-module"
+              value={form.module_id}
+              onChange={(e) => onChange("module_id", e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Sin módulo</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {String(m.position).padStart(2, "0")} · {m.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className={labelCls} htmlFor="session-audience">

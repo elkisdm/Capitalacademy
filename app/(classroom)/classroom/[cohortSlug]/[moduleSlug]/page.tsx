@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getModulesWithLessons,
   getCohortWithProgram,
+  getModuleSessionsForCohort,
 } from "@/lib/classroom/queries";
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug, resolveModuleSlug } from "@/lib/classroom/resolve-slugs";
@@ -15,7 +16,7 @@ import {
   LessonStatusIcon,
   BrandShapes,
 } from "@/components/classroom/primitives";
-import type { LessonWithProgress } from "@/lib/classroom/types";
+import type { LessonWithProgress, ScheduleSession, SessionResourceType } from "@/lib/classroom/types";
 import { fmtDuration } from "@/lib/classroom/format";
 
 function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
@@ -127,6 +128,104 @@ function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
   );
 }
 
+const TZ = "America/Santiago";
+
+const MODALITY_LABEL: Record<string, string> = {
+  live_in_person: "Presencial",
+  live_online: "Online",
+  recorded: "Grabada",
+};
+
+const RESOURCE_ICON: Record<SessionResourceType | "other", string> = {
+  pdf: "📄",
+  link: "🔗",
+  template: "📋",
+  document: "📝",
+  other: "📎",
+};
+
+function fmtSessionDate(iso: string) {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: TZ,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
+}
+
+function SessionRow({ session, isLast }: { session: ScheduleSession; isLast: boolean }) {
+  const now = new Date();
+  const start = new Date(session.starts_at);
+  const end = new Date(session.ends_at);
+  const isPast = end < now;
+  const isLive = start <= now && now <= end;
+
+  const statusColor = isLive
+    ? "bg-ca-lime text-ca-ink"
+    : isPast
+      ? "bg-ca-bg-soft text-ca-ink-soft"
+      : "bg-ca-violet/10 text-ca-violet";
+  const statusLabel = isLive ? "En curso" : isPast ? "Finalizada" : "Programada";
+
+  return (
+    <div className={`flex flex-col gap-3 px-6 py-5 ${!isLast ? "border-b border-ca-ink/[0.08]" : ""}`}>
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+              {fmtSessionDate(session.starts_at)}
+            </span>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColor}`}>
+              {statusLabel}
+            </span>
+            <span className="rounded-full bg-ca-bg-soft px-2 py-0.5 text-[10px] font-bold text-ca-ink-soft">
+              {MODALITY_LABEL[session.modality] ?? session.modality}
+            </span>
+          </div>
+          <div className="text-[15px] font-extrabold tracking-tight text-ca-ink">
+            {(session as unknown as { title?: string }).title ?? "Sin título"}
+          </div>
+          {session.teacher && (
+            <div className="text-[12px] font-medium text-ca-ink-soft">
+              {session.teacher.full_name}
+            </div>
+          )}
+        </div>
+        {isLive && (session as unknown as { meeting_url?: string }).meeting_url && (
+          <a
+            href={(session as unknown as { meeting_url: string }).meeting_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-ca-lime px-4 py-2 text-[12px] font-bold text-ca-ink transition-transform hover:scale-[1.02]"
+          >
+            Entrar
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+          </a>
+        )}
+      </div>
+      {session.resources.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {session.resources.map((r) => (
+            <a
+              key={r.id}
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] bg-ca-surface px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+            >
+              <span>{RESOURCE_ICON[r.type] ?? RESOURCE_ICON.other}</span>
+              {r.title}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default async function ModulePage(
   props: { params: Promise<{ cohortSlug: string; moduleSlug: string }> },
 ) {
@@ -150,7 +249,10 @@ export default async function ModulePage(
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string };
-  const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
+  const [modules, sessions] = await Promise.all([
+    getModulesWithLessons(program.id, access.enrollment?.id ?? null),
+    getModuleSessionsForCohort(cohortId, moduleId),
+  ]);
   const mod = modules.find((m) => m.id === moduleId);
   if (!mod) notFound();
 
@@ -199,8 +301,12 @@ export default async function ModulePage(
                 <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>
               </span>
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">Lecciones</div>
-                <div className="font-mono text-[20px] font-black tracking-tight text-ca-ink">{mod.lessons.length}</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
+                  {mod.lessons.length === 0 && sessions.length > 0 ? "Clases" : "Lecciones"}
+                </div>
+                <div className="font-mono text-[20px] font-black tracking-tight text-ca-ink">
+                  {mod.lessons.length === 0 && sessions.length > 0 ? sessions.length : mod.lessons.length}
+                </div>
               </div>
             </div>
             <div className="ca-card flex items-center gap-3 p-3">
@@ -245,30 +351,64 @@ export default async function ModulePage(
         </div>
       </section>
 
-      {/* Lessons timeline */}
-      <section className="mt-10">
-        <div className="mb-4 flex items-baseline justify-between">
-          <div>
+      {/* Lessons / Sessions */}
+      {mod.lessons.length > 0 && (
+        <section className="mt-10">
+          <div className="mb-4">
             <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Contenido</div>
             <h2 className="mt-1 text-[22px] font-black tracking-tight text-ca-ink">
               {mod.lessons.length} lecciones
             </h2>
           </div>
-        </div>
+          <div className="ca-card divide-y divide-ca-ink/[0.08]">
+            {mod.lessons.map((l, i) => (
+              <ChapterRow
+                key={l.id}
+                lesson={l}
+                index={i}
+                cohortSlug={cohortSlug}
+                moduleSlug={moduleSlug}
+                isLast={i === mod.lessons.length - 1}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-        <div className="ca-card divide-y divide-ca-ink/[0.08]">
-          {mod.lessons.map((l, i) => (
-            <ChapterRow
-              key={l.id}
-              lesson={l}
-              index={i}
-              cohortSlug={cohortSlug}
-              moduleSlug={moduleSlug}
-              isLast={i === mod.lessons.length - 1}
-            />
-          ))}
-        </div>
-      </section>
+      {sessions.length > 0 && (
+        <section className="mt-10">
+          <div className="mb-4">
+            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+              {mod.lessons.length > 0 ? "Clases en vivo" : "Contenido"}
+            </div>
+            <h2 className="mt-1 text-[22px] font-black tracking-tight text-ca-ink">
+              {sessions.length} {sessions.length === 1 ? "clase" : "clases"}
+            </h2>
+          </div>
+          <div className="ca-card overflow-hidden">
+            {sessions.map((s, i) => (
+              <SessionRow key={s.id} session={s} isLast={i === sessions.length - 1} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {mod.lessons.length === 0 && sessions.length === 0 && (
+        <section className="mt-10">
+          <div className="ca-card grid place-items-center gap-2 p-12 text-center">
+            <div
+              className="mb-2 grid h-14 w-14 place-items-center rounded-2xl"
+              style={{ background: "var(--color-ca-bg-soft)" }}
+            >
+              <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-ca-ink-soft">
+                <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+              </svg>
+            </div>
+            <div className="text-[15px] font-bold text-ca-ink">Este módulo aún no tiene contenido disponible</div>
+            <p className="text-[13px] text-ca-ink-soft">Las clases y materiales aparecerán aquí cuando sean publicados.</p>
+          </div>
+        </section>
+      )}
 
       {/* Pager */}
       <section className="mt-10 grid gap-3 md:grid-cols-2">

@@ -2,9 +2,32 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockFetchFlowPaymentStatus = vi.fn();
 const mockMapFlowStatus = vi.fn();
-const mockUpdate = vi.fn().mockReturnValue({
-  eq: vi.fn().mockResolvedValue({ error: null }),
-});
+const mockEnrollDiplomadoBuyer = vi.fn();
+
+// Supabase admin mock — supports both atomic (.is().select().maybeSingle()) and
+// simple (.eq() resolves) chains depending on which path the route takes.
+function makeUpdateBuilder(result: { data: unknown; error: unknown } | null) {
+  const resolved = result ?? { data: null, error: null };
+  const builder: Record<string, unknown> = {
+    eq: vi.fn(),
+    is: vi.fn(),
+    select: vi.fn(),
+    maybeSingle: vi.fn().mockResolvedValue(resolved),
+    // Thenable for branches that await the builder directly (non-atomic path)
+    then: (resolve: (v: unknown) => unknown) => resolve(resolved),
+  };
+  builder.eq = vi.fn().mockReturnValue(builder);
+  builder.is = vi.fn().mockReturnValue(builder);
+  builder.select = vi.fn().mockReturnValue(builder);
+  return builder;
+}
+
+// Controls what the atomic update returns (claimed row vs duplicate)
+let mockClaimedRow: { data: unknown; error: unknown } | null = {
+  data: { id: "pay-1" },
+  error: null,
+};
+const mockUpdateFn = vi.fn();
 const mockSelectPayment = vi.fn();
 
 vi.mock("@/lib/flow/status", () => ({
@@ -23,7 +46,10 @@ vi.mock("@/lib/supabase/admin", () => ({
               single: mockSelectPayment,
             }),
           }),
-          update: mockUpdate,
+          update: (...args: unknown[]) => {
+            mockUpdateFn(...args);
+            return makeUpdateBuilder(mockClaimedRow);
+          },
         };
       }
       return {};
@@ -34,6 +60,11 @@ vi.mock("@/lib/supabase/admin", () => ({
 vi.mock("@/lib/email/payment-confirmation", () => ({
   sendPaymentConfirmationEmail: vi.fn(async () => ({ ok: true })),
   sendPaymentTeamNotification: vi.fn(async () => ({ ok: true })),
+}));
+
+vi.mock("@/lib/classroom/enroll-from-payment", () => ({
+  enrollDiplomadoBuyer: (...args: unknown[]) =>
+    mockEnrollDiplomadoBuyer(...args),
 }));
 
 const { POST } = await import("@/app/api/flow/webhook/route");
@@ -49,6 +80,9 @@ function makeFormRequest(body: string) {
 describe("POST /api/flow/webhook", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEnrollDiplomadoBuyer.mockResolvedValue({ ok: true });
+    // Default: atomic update claims the row (first success)
+    mockClaimedRow = { data: { id: "pay-1" }, error: null };
   });
 
   it("returns 400 when no token is provided", async () => {
@@ -82,7 +116,7 @@ describe("POST /api/flow/webhook", () => {
     expect(json.ignored).toBe("unknown-token");
   });
 
-  it("updates payment status to succeeded and sends emails", async () => {
+  it("sends emails and enrolls buyer on first succeeded payment", async () => {
     mockFetchFlowPaymentStatus.mockResolvedValue({
       ok: true,
       data: { status: 2, flowOrder: "F-456", amount: 500000 },
@@ -109,15 +143,20 @@ describe("POST /api/flow/webhook", () => {
     const json = await res.json();
     expect(json.ok).toBe(true);
 
-    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockUpdateFn).toHaveBeenCalled();
 
     const { sendPaymentConfirmationEmail, sendPaymentTeamNotification } =
       await import("@/lib/email/payment-confirmation");
     expect(sendPaymentConfirmationEmail).toHaveBeenCalled();
     expect(sendPaymentTeamNotification).toHaveBeenCalled();
+    expect(mockEnrollDiplomadoBuyer).toHaveBeenCalledWith({
+      email: "juan@test.com",
+      firstname: "Juan",
+      lastname: "Pérez",
+    });
   });
 
-  it("does not re-send emails for already-paid transactions", async () => {
+  it("does not re-send emails or re-enroll for duplicate webhooks (atomic guard)", async () => {
     mockFetchFlowPaymentStatus.mockResolvedValue({
       ok: true,
       data: { status: 2, flowOrder: "F-789", amount: 500000 },
@@ -138,6 +177,8 @@ describe("POST /api/flow/webhook", () => {
         discount_clp: null,
       },
     });
+    // Atomic UPDATE WHERE paid_at IS NULL returns null → already paid
+    mockClaimedRow = { data: null, error: null };
 
     const res = await POST(makeFormRequest("token=dup-token"));
     expect(res.status).toBe(200);
@@ -146,6 +187,7 @@ describe("POST /api/flow/webhook", () => {
       "@/lib/email/payment-confirmation"
     );
     expect(sendPaymentConfirmationEmail).not.toHaveBeenCalled();
+    expect(mockEnrollDiplomadoBuyer).not.toHaveBeenCalled();
   });
 
   it("handles DB update error gracefully", async () => {
@@ -169,9 +211,7 @@ describe("POST /api/flow/webhook", () => {
         discount_clp: null,
       },
     });
-    mockUpdate.mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: { message: "DB error" } }),
-    });
+    mockClaimedRow = { data: null, error: { message: "DB error" } };
 
     const res = await POST(makeFormRequest("token=err-token"));
     expect(res.status).toBe(500);
@@ -179,7 +219,7 @@ describe("POST /api/flow/webhook", () => {
     expect(json.error).toBe("db");
   });
 
-  it("logs amount mismatch but still succeeds", async () => {
+  it("logs amount mismatch but still marks success", async () => {
     mockFetchFlowPaymentStatus.mockResolvedValue({
       ok: true,
       data: { status: 2, flowOrder: "F-MM", amount: 400000 },
@@ -199,9 +239,6 @@ describe("POST /api/flow/webhook", () => {
         coupon_code: null,
         discount_clp: null,
       },
-    });
-    mockUpdate.mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
     });
 
     const res = await POST(makeFormRequest("token=mm-token"));
@@ -226,7 +263,34 @@ describe("POST /api/flow/webhook", () => {
     expect(res.status).toBe(401);
   });
 
-  it("handles failed payment status", async () => {
+  it("does not enroll for non-Diplomado plans", async () => {
+    mockFetchFlowPaymentStatus.mockResolvedValue({
+      ok: true,
+      data: { status: 2, flowOrder: "F-LID", amount: 360000 },
+    });
+    mockMapFlowStatus.mockReturnValue("succeeded");
+    mockSelectPayment.mockResolvedValue({
+      data: {
+        id: "pay-lid",
+        firstname: "María",
+        lastname: "González",
+        email: "maria@test.com",
+        rut: "12345678-9",
+        phone: "+56912345678",
+        amount_clp: 360000,
+        paid_at: null,
+        plan: "liderazgo-contado",
+        coupon_code: null,
+        discount_clp: null,
+      },
+    });
+
+    const res = await POST(makeFormRequest("token=liderazgo-token"));
+    expect(res.status).toBe(200);
+    expect(mockEnrollDiplomadoBuyer).not.toHaveBeenCalled();
+  });
+
+  it("handles failed payment status without sending emails", async () => {
     mockFetchFlowPaymentStatus.mockResolvedValue({
       ok: true,
       data: { status: 3, flowOrder: "F-FAIL" },
@@ -247,9 +311,6 @@ describe("POST /api/flow/webhook", () => {
         discount_clp: null,
       },
     });
-    mockUpdate.mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    });
 
     const res = await POST(makeFormRequest("token=fail-token"));
     expect(res.status).toBe(200);
@@ -258,5 +319,6 @@ describe("POST /api/flow/webhook", () => {
       "@/lib/email/payment-confirmation"
     );
     expect(sendPaymentConfirmationEmail).not.toHaveBeenCalled();
+    expect(mockEnrollDiplomadoBuyer).not.toHaveBeenCalled();
   });
 });

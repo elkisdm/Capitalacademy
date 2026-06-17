@@ -1,7 +1,5 @@
-export type PaymentProvider = "flow" | "fintoc";
+export type PaymentProvider = "flow";
 
 export function getActivePaymentProvider(): PaymentProvider {
-  const raw = process.env.PAYMENT_PROVIDER?.toLowerCase().trim();
-  if (raw === "fintoc") return "fintoc";
   return "flow";
 }

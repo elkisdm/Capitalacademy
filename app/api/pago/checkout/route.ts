@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { checkoutFormSchema } from "@/lib/fintoc/schema";
-import { createDiplomadoCheckoutSession } from "@/lib/fintoc/checkout";
 import { PAYMENT_PLANS, createFlowCheckout } from "@/lib/flow/checkout";
 import { getActivePaymentProvider } from "@/lib/payments/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -38,9 +37,7 @@ export async function POST(req: Request) {
   const { firstname, lastname, rut, email, phone, plan, couponCode } =
     parsed.data;
 
-  // Fintoc no soporta cuotas; si llega un plan con recargo en ese provider,
-  // forzamos el monto contado para no cobrar el recargo sin entregar cuotas.
-  const effectivePlan = provider === "fintoc" ? "contado" : plan;
+  const effectivePlan = plan;
   const baseAmount = PAYMENT_PLANS[effectivePlan].amount;
 
   let finalAmount = baseAmount;
@@ -145,43 +142,4 @@ export async function POST(req: Request) {
       amount: flow.amount,
     });
   }
-
-  // provider === "fintoc"
-  const session = await createDiplomadoCheckoutSession({
-    paymentId: payment.id,
-    firstname,
-    lastname,
-    rut,
-    email,
-    phone,
-    amountOverride: appliedCouponId ? finalAmount : undefined,
-  });
-
-  if ("errorMessage" in session) {
-    await supabase
-      .from("payments")
-      .update({
-        status: "failed",
-        failure_reason: session.errorMessage,
-      } satisfies PaymentUpdate)
-      .eq("id", payment.id);
-    return NextResponse.json(
-      { error: session.errorMessage },
-      { status: session.status },
-    );
-  }
-
-  await supabase
-    .from("payments")
-    .update({
-      fintoc_session_id: session.checkoutSessionId,
-    } satisfies PaymentUpdate)
-    .eq("id", payment.id);
-
-  return NextResponse.json({
-    provider: "fintoc" as const,
-    paymentId: payment.id,
-    sessionToken: session.sessionToken,
-    amount: session.amount,
-  });
 }

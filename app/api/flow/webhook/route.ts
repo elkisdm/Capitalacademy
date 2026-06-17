@@ -62,7 +62,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ignored: "unknown-token" });
   }
 
-  const wasAlreadyPaid = Boolean(existing.paid_at);
   const paidAtIso = new Date().toISOString();
 
   // B1: si Flow aprobó un monto distinto al esperado, NO bloqueamos al alumno
@@ -84,29 +83,46 @@ export async function POST(req: Request) {
     });
   }
 
-  const update: PaymentUpdate = {
+  const baseUpdate: PaymentUpdate = {
     status,
     raw_webhook: result.data as unknown as PaymentUpdate["raw_webhook"],
     flow_order: result.data.flowOrder ?? null,
   };
-  if (status === "succeeded" && !wasAlreadyPaid) {
-    update.paid_at = paidAtIso;
-  }
   if (amountMismatch) {
-    update.failure_reason = `amount_mismatch:expected=${expectedAmount}:reported=${reportedAmount}`;
+    baseUpdate.failure_reason = `amount_mismatch:expected=${expectedAmount}:reported=${reportedAmount}`;
   }
 
-  const { error } = await supabase
-    .from("payments")
-    .update(update)
-    .eq("flow_token", token);
+  // Para succeeded: UPDATE atómico con WHERE paid_at IS NULL.
+  // Solo el primer request que gane la carrera establece paid_at y dispara emails.
+  // Para otros estados: UPDATE normal (no hay side-effects que deduplicar).
+  let firstSuccess = false;
+  if (status === "succeeded") {
+    const { data: claimed, error } = await supabase
+      .from("payments")
+      .update({ ...baseUpdate, paid_at: paidAtIso })
+      .eq("flow_token", token)
+      .is("paid_at", null)
+      .select("id")
+      .maybeSingle();
 
-  if (error) {
-    console.error("payments update error (flow)", error);
-    return NextResponse.json({ error: "db" }, { status: 500 });
+    if (error) {
+      console.error("payments update error (flow)", error);
+      return NextResponse.json({ error: "db" }, { status: 500 });
+    }
+    firstSuccess = Boolean(claimed);
+  } else {
+    const { error } = await supabase
+      .from("payments")
+      .update(baseUpdate)
+      .eq("flow_token", token);
+
+    if (error) {
+      console.error("payments update error (flow)", error);
+      return NextResponse.json({ error: "db" }, { status: 500 });
+    }
   }
 
-  if (status === "succeeded" && !wasAlreadyPaid) {
+  if (firstSuccess) {
     const emailInput = {
       paymentId: existing.id,
       firstname: existing.firstname,
@@ -140,7 +156,7 @@ export async function POST(req: Request) {
     }
 
     // Link checkout → matrícula: si el pago es del Diplomado (plan en
-    // PAYMENT_PLAN_KEYS), matricular al comprador en el classroom (G4) y
+    // PAYMENT_PLAN_KEYS), matricular al comprador en el classroom y
     // enviarle el onboarding con link de activación. Idempotente y no rompe el
     // webhook si falla (la plata ya fue tomada; se loguea para reconciliar).
     if (existing.plan && (PAYMENT_PLAN_KEYS as readonly string[]).includes(existing.plan)) {

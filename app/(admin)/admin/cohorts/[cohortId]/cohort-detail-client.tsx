@@ -88,6 +88,9 @@ const TABS: { key: Tab; label: string; icon: React.ComponentType<{ size?: number
   { key: "progreso", label: "Progreso", icon: ChartIcon },
 ];
 
+const TAB_BTN_CLASS =
+  "relative flex items-center gap-2 px-4 py-3 text-[13px] font-bold transition-colors";
+
 const ROLE_COLORS: Record<CohortRole, string> = {
   teacher: "var(--color-ca-violet)",
   assistant: "var(--color-ca-navy, #14163a)",
@@ -162,7 +165,7 @@ export function CohortDetailClient({
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className="relative flex items-center gap-2 px-4 py-3 text-[13px] font-bold transition-colors"
+              className={TAB_BTN_CLASS}
               style={{
                 color: isActive
                   ? "var(--color-ca-violet)"
@@ -180,6 +183,15 @@ export function CohortDetailClient({
             </button>
           );
         })}
+
+        <Link
+          href={`/admin/cohorts/${cohort.id}/sesiones`}
+          className={TAB_BTN_CLASS}
+          style={{ color: "var(--color-ca-ink-soft)" }}
+        >
+          <CalendarIcon />
+          Calendario
+        </Link>
       </div>
 
       {activeTab === "participantes" && (

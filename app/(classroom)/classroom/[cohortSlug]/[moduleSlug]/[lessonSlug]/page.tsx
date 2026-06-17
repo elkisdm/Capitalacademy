@@ -3,12 +3,12 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getEnrollmentForUser,
   getLessonById,
   getLessonProgress,
   getModulesWithLessons,
   getCohortWithProgram,
 } from "@/lib/classroom/queries";
+import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug, resolveModuleSlug, resolveLessonSlug } from "@/lib/classroom/resolve-slugs";
 import { getLessonStatus } from "@/lib/classroom/progress";
 import { LessonVideoSection } from "@/components/classroom/lesson-video-section";
@@ -40,8 +40,9 @@ export default async function LessonPage(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const enrollment = await getEnrollmentForUser(user.id, cohortId);
-  if (!enrollment) notFound();
+  const access = await getClassroomAccess(user.id, cohortId);
+  if (!access) notFound();
+  const enrollmentId = access.enrollment?.id ?? null;
 
   const [lesson, cohort] = await Promise.all([
     getLessonById(lessonId),
@@ -52,8 +53,8 @@ export default async function LessonPage(
 
   const program = cohort.programs as { id: string; name: string };
   const [modules, progress] = await Promise.all([
-    getModulesWithLessons(program.id, enrollment.id),
-    getLessonProgress(enrollment.id, lessonId),
+    getModulesWithLessons(program.id, enrollmentId),
+    getLessonProgress(enrollmentId, lessonId),
   ]);
   const currentModule = modules.find((m) => m.id === moduleId);
   const siblingLessons = currentModule?.lessons ?? [];

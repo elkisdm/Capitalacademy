@@ -43,7 +43,7 @@ export async function getCohortWithProgram(cohortId: string) {
 
 export async function getModulesWithLessons(
   programId: string,
-  enrollmentId: string,
+  enrollmentId: string | null,
 ): Promise<ModuleWithLessons[]> {
   const supabase = await createClient();
 
@@ -71,12 +71,16 @@ export async function getModulesWithLessons(
   const resourcesMap = new Map<string, LessonResource[]>();
 
   if (lessonIds.length > 0) {
+    // Sin matrícula (staff en modo previsualización) no hay progreso personal:
+    // se omite la consulta y los módulos se muestran con progreso vacío.
     const [{ data: progress }, { data: resources }] = await Promise.all([
-      supabase
-        .from("video_progress")
-        .select("*")
-        .eq("enrollment_id", enrollmentId)
-        .in("lesson_id", lessonIds),
+      enrollmentId
+        ? supabase
+            .from("video_progress")
+            .select("*")
+            .eq("enrollment_id", enrollmentId)
+            .in("lesson_id", lessonIds)
+        : Promise.resolve({ data: null }),
       supabase
         .from("lesson_resources")
         .select("*")
@@ -189,9 +193,10 @@ export async function getLessonById(lessonId: string) {
 }
 
 export async function getLessonProgress(
-  enrollmentId: string,
+  enrollmentId: string | null,
   lessonId: string,
 ): Promise<VideoProgress | null> {
+  if (!enrollmentId) return null;
   const supabase = await createClient();
   const { data } = await supabase
     .from("video_progress")

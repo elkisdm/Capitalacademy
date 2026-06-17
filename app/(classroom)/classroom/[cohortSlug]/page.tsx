@@ -2,10 +2,10 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getEnrollmentForUser,
   getCohortWithProgram,
   getModulesWithLessons,
 } from "@/lib/classroom/queries";
+import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import {
@@ -147,14 +147,14 @@ export default async function CohortDashboardPage(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const enrollment = await getEnrollmentForUser(user.id, cohortId);
-  if (!enrollment) notFound();
+  const access = await getClassroomAccess(user.id, cohortId);
+  if (!access) notFound();
 
   const cohort = await getCohortWithProgram(cohortId);
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string; code: string; description: string | null; total_modules: number | null };
-  const modules = await getModulesWithLessons(program.id, enrollment.id);
+  const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
 
   const totalModules = modules.length;
   const completedModules = modules.filter((m) => {

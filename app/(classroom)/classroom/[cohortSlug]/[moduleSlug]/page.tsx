@@ -2,10 +2,10 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getEnrollmentForUser,
   getModulesWithLessons,
   getCohortWithProgram,
 } from "@/lib/classroom/queries";
+import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug, resolveModuleSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import {
@@ -142,15 +142,15 @@ export default async function ModulePage(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [enrollment, cohort] = await Promise.all([
-    getEnrollmentForUser(user.id, cohortId),
+  const [access, cohort] = await Promise.all([
+    getClassroomAccess(user.id, cohortId),
     getCohortWithProgram(cohortId),
   ]);
-  if (!enrollment) notFound();
+  if (!access) notFound();
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string };
-  const modules = await getModulesWithLessons(program.id, enrollment.id);
+  const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
   const mod = modules.find((m) => m.id === moduleId);
   if (!mod) notFound();
 

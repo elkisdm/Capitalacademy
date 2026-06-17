@@ -1,12 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendInvitationEmail } from "@/lib/email/invitation";
+import { sendDiplomadoInvitationEmail } from "@/lib/email/diplomado-invitation";
 
-// Cohorte y programa del Diplomado en curso (IV Generación). Si en el futuro
-// hay una nueva generación, este mapeo debe actualizarse (o derivarse del plan).
+// Cohorte del Diplomado en curso (IV Generación). Si en el futuro hay una nueva
+// generación, este mapeo debe actualizarse (o derivarse del plan).
 const DIPLOMADO_COHORT_ID = "b0000000-0000-0000-0000-000000000002";
-const DIPLOMADO_PROGRAM_NAME =
-  "Diplomado Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria";
-const DIPLOMADO_COHORT_NAME = "IV Generación — Junio 2026";
 
 const INTERNAL_DOMAIN = "@capitalinteligente.cl";
 
@@ -94,13 +91,12 @@ export async function enrollDiplomadoBuyer(input: {
     );
     if (enrollErr) return { ok: false, error: `enrollment: ${enrollErr.message}` };
 
-    // 4. Correo de onboarding con el link de activación.
-    const emailResult = await sendInvitationEmail({
+    // 4. Correo de onboarding del Diplomado (mismo template que los alumnos
+    //    invitados a mano: bienvenida + logística de la 1ª clase) con el link.
+    const emailResult = await sendDiplomadoInvitationEmail({
       email,
       fullName,
       inviteUrl,
-      programName: DIPLOMADO_PROGRAM_NAME,
-      cohortName: DIPLOMADO_COHORT_NAME,
     });
     if (!emailResult.success) {
       // El alumno YA está matriculado; el correo se puede reenviar. No abortamos.

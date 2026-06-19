@@ -9,6 +9,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 - El equipo puede crear, editar y eliminar módulos y lecciones desde el panel (`/admin/lessons`), con título, descripción, tipo y fecha de apertura por calendario; antes la estructura del diplomado solo se cargaba por scripts (`480df55`)
+- En el editor de clases, las lecciones de cada módulo se pueden reordenar con flechas arriba/abajo (`a9709f9`)
 - Los alumnos ya pueden rendir el quiz final desde la plataforma: la pantalla de evaluación (iniciar, responder, resultado y certificado) quedó conectada a la interfaz (`45b9f76`)
 - Los módulos del classroom ahora muestran las clases en vivo agendadas (fecha, modalidad, instructor y materiales descargables), aunque no tengan lecciones grabadas aún; el admin puede vincular cada clase a su módulo desde el editor de calendario (`3794161`)
 - El panel admin de cohortes tiene un acceso directo a la agenda de sesiones desde la vista de detalle (`493c9d8`)

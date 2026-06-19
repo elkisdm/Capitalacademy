@@ -98,7 +98,11 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/api/classroom/quiz/route.ts` · `quiz/submit/route.ts` | Carga y envío del quiz final del alumno (scoring) | — | — |
+| `app/api/classroom/quiz/route.ts` | Estado/gating del quiz del alumno (locked/ready/passed); NO entrega preguntas | `GET /api/classroom/quiz` | — |
+| `app/api/classroom/quiz/start/route.ts` | Inicia/reanuda intento: persiste `questions_presented` server-side (ancla anti-bypass) | `POST /api/classroom/quiz/start` | — |
+| `app/api/classroom/quiz/submit/route.ts` | Cierra el intento y puntúa sobre el set persistido (cierra el bypass de certificación) | `POST /api/classroom/quiz/submit` | — |
+| `lib/classroom/quiz-runtime.ts` | Helpers server del quiz: completitud + selección/rehidratación de preguntas | — | — |
+| `app/(classroom)/classroom/[cohortSlug]/quiz/page.tsx` · `components/classroom/quiz-runner.tsx` | Página del alumno para rendir el quiz + cliente máquina-de-estados | `/classroom/[cohortSlug]/quiz` | — |
 | `app/(classroom)/classroom/[cohortSlug]/certificado/page.tsx` | Certificado del alumno | `/classroom/[cohortSlug]/certificado` | — |
 | `app/api/classroom/certificate/route.ts` · `certificate/retry/route.ts` | Emisión y reintento del certificado | — | — |
 | `app/verificar/[code]/page.tsx` · `app/api/verify/[code]/route.ts` | Verificación pública del certificado (página + API) | `/verificar/[code]` | — |
@@ -110,7 +114,11 @@
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/users/` + `[userId]/` | Gestión de usuarios y roles por cohorte (RBAC) | `/admin/users` | 0004 |
 | `app/(admin)/admin/cohorts/[cohortId]/` | Detalle de cohorte (info, roster, accesos al calendario) | `/admin/cohorts/[cohortId]` | — |
-| `app/(admin)/admin/lessons/` + `[lessonId]/` | Gestión de lecciones (upload Mux, transcripción, capítulos, resumen IA) | `/admin/lessons` | — |
+| `app/(admin)/admin/lessons/` + `[lessonId]/` | Editor de lecciones: crear/editar metadatos (título, descripción, tipo, `unlock_at`)/eliminar + upload Mux, transcripción, capítulos, resumen IA | `/admin/lessons` | — |
+| `app/api/admin/lessons/route.ts` · `[lessonId]/route.ts` | CRUD de lecciones (POST crear, PATCH editar metadatos, DELETE con guard de progreso) | `POST/PATCH/DELETE /api/admin/lessons` | — |
+| `app/api/admin/modules/route.ts` · `[moduleId]/route.ts` | CRUD de módulos (GET por cohorte, POST crear, PATCH editar, DELETE con guard de progreso) | `GET/POST/PATCH/DELETE /api/admin/modules` | — |
+| `components/admin/lesson-edit-form.tsx` · `add-lesson-button.tsx` · `module-edit-form.tsx` · `add-module-button.tsx` | UI del editor de clases (crear/editar/eliminar módulos y lecciones) | — | — |
+| `lib/utils/slug.ts` | `slugify` + `uniqueSlug` para URLs legibles del classroom | — | — |
 | `app/(admin)/admin/{resources,quizzes,progress}/page.tsx` | Recursos, quizzes y reporte de progreso por cohorte | `/admin/…` | — |
 | `app/api/admin/users/` (`route`·`bulk`·`template`·`[userId]`) | CRUD de usuarios + importación CSV masiva | — | — |
 | `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |

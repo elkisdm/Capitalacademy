@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Video, VideoOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { AddLessonButton } from "@/components/admin/add-lesson-button";
+import { LessonReorderList } from "@/components/admin/lesson-reorder-list";
 import { AddModuleButton } from "@/components/admin/add-module-button";
 import { ModuleEditForm } from "@/components/admin/module-edit-form";
 
@@ -80,43 +79,15 @@ export default async function AdminLessonsPage() {
                   Sin lecciones en este módulo.
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {lessons.map((lesson, index) => {
-                    const hasVideo = !!(lesson.mux_playback_id as string | null);
-                    return (
-                      <Link
-                        key={lesson.id as string}
-                        href={`/admin/lessons/${lesson.id as string}`}
-                        className="flex items-center gap-4 rounded-lg border border-ca-ink/[0.08] bg-ca-surface p-4 transition-colors hover:border-ca-violet/30 hover:bg-ca-violet/[0.04]"
-                      >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ca-bg-soft text-xs font-semibold text-ca-ink-soft">
-                          {index + 1}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-ca-ink">
-                            {lesson.title as string}
-                          </p>
-                          <p className="text-xs text-ca-ink-soft">
-                            {lesson.kind as string}
-                            {(lesson.duration_minutes as number | null) &&
-                              ` · ${lesson.duration_minutes as number} min`}
-                          </p>
-                        </div>
-                        {hasVideo ? (
-                          <span className="flex items-center gap-1 rounded-full bg-ca-lime-mist px-2 py-0.5 text-xs font-medium text-ca-lime-deep">
-                            <Video className="h-3 w-3" />
-                            Video
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 rounded-full bg-ca-bg-soft px-2 py-0.5 text-xs text-ca-ink-soft">
-                            <VideoOff className="h-3 w-3" />
-                            Sin video
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
+                <LessonReorderList
+                  moduleId={mod.id as string}
+                  lessons={lessons.map((lesson) => ({
+                    id: lesson.id as string,
+                    title: lesson.title as string,
+                    kind: lesson.kind as string,
+                    hasVideo: !!(lesson.mux_playback_id as string | null),
+                  }))}
+                />
               )}
               <AddLessonButton moduleId={mod.id as string} />
             </section>

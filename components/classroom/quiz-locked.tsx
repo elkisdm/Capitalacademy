@@ -21,7 +21,7 @@ type QuizLockedProps = {
   totalLessons: number;
   remainingLessons: RemainingLesson[];
   cohortSlug: string;
-  moduleSlug: string;
+  moduleSlug?: string;
 };
 
 /* ------------------------------------------------------------------ */
@@ -240,7 +240,7 @@ export function QuizLocked({
 
               <div className="mt-5 flex items-center gap-3">
                 <Link
-                  href={`/classroom/${cohortSlug}/${moduleSlug}`}
+                  href={moduleSlug ? `/classroom/${cohortSlug}/${moduleSlug}` : `/classroom/${cohortSlug}`}
                   className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
                   style={{
                     background: "var(--color-ca-ink)",
@@ -326,6 +326,7 @@ export function QuizLocked({
       </div>
 
       {/* ---- Pending lessons list ---- */}
+      {remainingLessons.length > 0 && (
       <div className="ca-card mt-6 overflow-hidden">
         <div
           className="flex items-center justify-between border-b px-6 py-4"
@@ -444,6 +445,7 @@ export function QuizLocked({
           ))}
         </ul>
       </div>
+      )}
     </div>
   );
 }

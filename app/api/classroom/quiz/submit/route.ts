@@ -9,30 +9,35 @@ export const runtime = "nodejs";
 
 const submitSchema = z.object({
   programId: uuidLike,
-  answers: z
-    .record(uuidLike, z.enum(["A", "B", "C", "D"]))
-    .refine((obj) => Object.keys(obj).length > 0, "Debe contener al menos una respuesta"),
+  attemptId: uuidLike,
+  answers: z.record(uuidLike, z.enum(["A", "B", "C", "D"])),
 });
 
+/**
+ * Cierra un intento de quiz iniciado en /start y, si aprueba, emite el certificado.
+ *
+ * Seguridad (cierra el bypass de certificación de la Megaauditoría v2):
+ *   1. Requiere un intento PERSISTIDO (de /start), de esta matrícula/programa e
+ *      incompleto. Sin él → 404: no se puede puntuar sin haber iniciado.
+ *   2. El set y el TOTAL de preguntas salen de `questions_presented` del intento,
+ *      NO de lo que envía el cliente. El denominador lo fija el servidor.
+ *   3. Las preguntas se acotan por `program_id` (no se mezclan tenants).
+ *   4. El cierre es atómico (`completed_at IS NULL`), anti doble-submit.
+ *   El gate de completitud se aplica en /start (la existencia del intento lo prueba).
+ */
 export async function POST(req: Request) {
-  // --- Auth check ------------------------------------------------------------
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
-  // --- Validate body ---------------------------------------------------------
   let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Body invalido" }, { status: 400 });
   }
-
   const parsed = submitSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -40,10 +45,8 @@ export async function POST(req: Request) {
       { status: 422 },
     );
   }
+  const { programId, attemptId, answers } = parsed.data;
 
-  const { programId, answers } = parsed.data;
-
-  // --- Fetch enrollment ------------------------------------------------------
   const { data: enrollment, error: enrollmentError } = await supabase
     .from("enrollments")
     .select("id, status, cohorts!inner(program_id)")
@@ -52,7 +55,6 @@ export async function POST(req: Request) {
     .eq("status", "active")
     .limit(1)
     .single();
-
   if (enrollmentError || !enrollment) {
     return NextResponse.json(
       { error: "No tienes una inscripcion activa en este programa" },
@@ -61,15 +63,12 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
-
-  // --- Fetch quiz config -----------------------------------------------------
   const { data: config } = await admin
     .from("quiz_configs")
     .select("*")
     .eq("program_id", programId)
     .eq("is_active", true)
     .single();
-
   if (!config) {
     return NextResponse.json(
       { error: "No hay evaluacion configurada para este programa" },
@@ -77,49 +76,37 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Verify student can submit (check attempts) ----------------------------
-  // NOTE: The check-then-act pattern below is vulnerable to race conditions
-  // under concurrent submissions. A database-level advisory lock or unique
-  // partial index on (enrollment_id, program_id) WHERE passed = true
-  // would fully prevent duplicate passing attempts.
-  const { data: existingAttempts } = await admin
+  // (1) El intento debe existir, ser de esta matrícula/programa y estar incompleto.
+  const { data: attempt } = await admin
     .from("quiz_attempts")
-    .select("id, passed, completed_at, questions_presented")
+    .select("id, enrollment_id, program_id, questions_presented, completed_at")
+    .eq("id", attemptId)
+    .single();
+
+  if (!attempt || attempt.enrollment_id !== enrollment.id || attempt.program_id !== programId) {
+    return NextResponse.json({ error: "Intento no encontrado" }, { status: 404 });
+  }
+  if (attempt.completed_at) {
+    return NextResponse.json({ error: "Este intento ya fue enviado" }, { status: 409 });
+  }
+
+  // Guarda de "ya aprobó" en otra rama.
+  const { data: priorPassed } = await admin
+    .from("quiz_attempts")
+    .select("id")
     .eq("enrollment_id", enrollment.id)
     .eq("program_id", programId)
-    .order("created_at", { ascending: false });
-
-  const completedAttempts = (existingAttempts ?? []).filter((a) => a.completed_at);
-  const hasPassedBefore = completedAttempts.some((a) => a.passed);
-
-  if (hasPassedBefore) {
-    return NextResponse.json(
-      { error: "Ya aprobaste esta evaluacion" },
-      { status: 409 },
-    );
+    .eq("passed", true)
+    .maybeSingle();
+  if (priorPassed) {
+    return NextResponse.json({ error: "Ya aprobaste esta evaluacion" }, { status: 409 });
   }
 
-  if (completedAttempts.length >= config.max_attempts) {
-    return NextResponse.json(
-      { error: "Has alcanzado el numero maximo de intentos" },
-      { status: 409 },
-    );
-  }
-
-  // --- Find or create an incomplete attempt ----------------------------------
-  const questionIds = Object.keys(answers);
-  const incompleteAttempt = (existingAttempts ?? []).find((a) => !a.completed_at);
-
-  if (incompleteAttempt) {
-    // Validate submitted question IDs match the questions_presented in the attempt
-    const presented = (incompleteAttempt.questions_presented as string[]) ?? [];
-    const presentedSet = new Set(presented);
-    const submittedSet = new Set(questionIds);
-
-    if (
-      presentedSet.size !== submittedSet.size ||
-      ![...submittedSet].every((id) => presentedSet.has(id))
-    ) {
+  // (2) El set de preguntas lo fija el intento, no el cliente.
+  const presented = (attempt.questions_presented as string[]) ?? [];
+  const presentedSet = new Set(presented);
+  for (const qid of Object.keys(answers)) {
+    if (!presentedSet.has(qid)) {
       return NextResponse.json(
         { error: "Las preguntas no coinciden con tu intento" },
         { status: 409 },
@@ -127,42 +114,32 @@ export async function POST(req: Request) {
     }
   }
 
-  // --- Fetch correct answers for submitted question IDs (admin client) -------
+  // (3) Respuestas correctas solo de las presentadas, acotadas al programa.
   const { data: correctQuestions, error: questionsError } = await admin
     .from("quiz_questions")
     .select("id, correct_option, explanation")
-    .in("id", questionIds);
+    .eq("program_id", programId)
+    .in("id", presented);
 
-  if (questionsError || !correctQuestions) {
-    console.error("Error fetching correct answers:", questionsError);
-    return NextResponse.json(
-      { error: "Error al obtener las respuestas correctas" },
-      { status: 500 },
-    );
+  if (
+    questionsError ||
+    !correctQuestions ||
+    correctQuestions.length !== presented.length
+  ) {
+    console.error("Error obteniendo respuestas correctas:", questionsError);
+    return NextResponse.json({ error: "Error al validar el intento" }, { status: 500 });
   }
 
-  if (correctQuestions.length !== questionIds.length) {
-    return NextResponse.json(
-      { error: "Algunas preguntas enviadas no existen" },
-      { status: 422 },
-    );
-  }
-
-  // --- Score the attempt -----------------------------------------------------
+  // Score sobre el set PRESENTADO; las no respondidas cuentan como incorrectas.
   let correctCount = 0;
   const correctAnswers: Record<
     string,
     { correct_option: string; explanation: string | null; is_correct: boolean }
   > = {};
-
   for (const q of correctQuestions) {
     const studentAnswer = answers[q.id];
     const isCorrect = studentAnswer === q.correct_option;
-
-    if (isCorrect) {
-      correctCount++;
-    }
-
+    if (isCorrect) correctCount++;
     correctAnswers[q.id] = {
       correct_option: q.correct_option,
       explanation: q.explanation,
@@ -170,66 +147,45 @@ export async function POST(req: Request) {
     };
   }
 
-  const totalQuestions = correctQuestions.length;
+  const totalQuestions = presented.length;
   const scorePct = Math.round((correctCount / totalQuestions) * 100);
   const passed = scorePct >= config.passing_grade_pct;
 
-  // --- Update existing incomplete attempt or insert new one ------------------
-  let attemptId: string;
+  // (4) Cierre atómico: solo si el intento sigue incompleto.
+  const { data: updatedRows, error: updateError } = await admin
+    .from("quiz_attempts")
+    .update({
+      answers,
+      score_pct: scorePct,
+      passed,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", attempt.id)
+    .is("completed_at", null)
+    .select("id");
 
-  if (incompleteAttempt) {
-    const { error: updateError } = await admin
-      .from("quiz_attempts")
-      .update({
-        answers,
-        score_pct: scorePct,
-        passed,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", incompleteAttempt.id);
-
-    if (updateError) {
-      console.error("Error updating quiz attempt:", updateError);
-      return NextResponse.json(
-        { error: "Error al guardar el intento" },
-        { status: 500 },
-      );
-    }
-
-    attemptId = incompleteAttempt.id;
-  } else {
-    const { data: newAttempt, error: insertError } = await admin
-      .from("quiz_attempts")
-      .insert({
-        enrollment_id: enrollment.id,
-        program_id: programId,
-        questions_presented: questionIds,
-        answers,
-        score_pct: scorePct,
-        passed,
-        completed_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (insertError || !newAttempt) {
-      console.error("Error inserting quiz attempt:", insertError);
-      return NextResponse.json(
-        { error: "Error al guardar el intento" },
-        { status: 500 },
-      );
-    }
-
-    attemptId = newAttempt.id;
+  if (updateError) {
+    console.error("Error guardando intento de quiz:", updateError);
+    return NextResponse.json({ error: "Error al guardar el intento" }, { status: 500 });
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    return NextResponse.json({ error: "Este intento ya fue enviado" }, { status: 409 });
   }
 
-  // --- Trigger certificate generation if passed ------------------------------
+  const { data: completedAfter } = await admin
+    .from("quiz_attempts")
+    .select("id")
+    .eq("enrollment_id", enrollment.id)
+    .eq("program_id", programId)
+    .not("completed_at", "is", null);
+  const attemptsCompleted = completedAfter?.length ?? 1;
+
   let certificateResult: { verificationCode: string; pdfUrl: string } | null = null;
   let certificateError: string | null = null;
 
   if (passed) {
     try {
-      const cert = await issueCertificate(enrollment.id, attemptId);
+      const cert = await issueCertificate(enrollment.id, attempt.id);
       certificateResult = {
         verificationCode: cert.verificationCode,
         pdfUrl: cert.pdfUrl,
@@ -246,8 +202,8 @@ export async function POST(req: Request) {
     correctCount,
     totalQuestions,
     correctAnswers,
-    attemptId,
-    attemptsRemaining: config.max_attempts - (completedAttempts.length + 1),
+    attemptId: attempt.id,
+    attemptsRemaining: Math.max(0, config.max_attempts - attemptsCompleted),
     certificate: certificateResult,
     certificateError,
   });

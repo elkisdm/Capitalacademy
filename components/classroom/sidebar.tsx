@@ -305,6 +305,9 @@ export function ClassroomSidebar({
     { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" },
     { icon: "book", label: cohortLabel ?? "Mi programa", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" },
     { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" },
+    ...(cohortId ? [
+      { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
+    ] : []),
     ...(showOps ? [
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
       { icon: "upload", label: "Subir videos", href: "/admin/lessons", section: "ops" as const },

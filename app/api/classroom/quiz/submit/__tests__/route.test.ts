@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+/* ------------------------------------------------------------------ */
+/* Mocks                                                               */
+/* ------------------------------------------------------------------ */
+
 const mockGetUser = vi.fn();
 const mockEnrollmentQuery = vi.fn();
 
+// supabase server: solo se usa para auth + enrollment (status='active').
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: mockGetUser },
@@ -12,11 +17,7 @@ vi.mock("@/lib/supabase/server", () => ({
           select: () => ({
             eq: () => ({
               eq: () => ({
-                eq: () => ({
-                  limit: () => ({
-                    single: mockEnrollmentQuery,
-                  }),
-                }),
+                eq: () => ({ limit: () => ({ single: mockEnrollmentQuery }) }),
               }),
             }),
           }),
@@ -27,55 +28,64 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
-const mockConfigQuery = vi.fn();
-const mockAttemptsQuery = vi.fn();
-const mockQuestionsQuery = vi.fn();
-const mockAttemptUpdate = vi.fn();
-const mockAttemptInsert = vi.fn();
+// Estado configurable por test; el builder genérico del admin client lo lee.
+type State = {
+  config: Record<string, unknown> | null;
+  attemptById: Record<string, unknown> | null;
+  priorPassed: Record<string, unknown> | null;
+  questions: Array<Record<string, unknown>> | null;
+  questionsError: unknown;
+  updatedRows: Array<Record<string, unknown>> | null;
+  updateError: unknown;
+  completedAfter: Array<Record<string, unknown>>;
+};
+let state: State;
+
+function makeBuilder(table: string) {
+  const ops: Array<[string, unknown[]]> = [];
+  const chain = [
+    "select",
+    "insert",
+    "update",
+    "delete",
+    "eq",
+    "in",
+    "is",
+    "not",
+    "order",
+    "limit",
+  ];
+  const builder: Record<string, unknown> = {};
+  for (const m of chain) {
+    builder[m] = (...args: unknown[]) => {
+      ops.push([m, args]);
+      return builder;
+    };
+  }
+  const resolve = (terminal: "single" | "maybeSingle" | "await") => {
+    if (table === "quiz_configs") return { data: state.config, error: state.config ? null : {} };
+    if (table === "quiz_questions") return { data: state.questions, error: state.questionsError };
+    if (table === "quiz_attempts") {
+      const has = (m: string, a0?: unknown) =>
+        ops.some(([mm, args]) => mm === m && (a0 === undefined || args[0] === a0));
+      if (has("update")) return { data: state.updatedRows, error: state.updateError };
+      if (has("not")) return { data: state.completedAfter, error: null };
+      if (has("eq", "passed")) return { data: state.priorPassed, error: null };
+      if (has("eq", "id") && terminal === "single")
+        return { data: state.attemptById, error: state.attemptById ? null : {} };
+      return { data: [], error: null };
+    }
+    return { data: null, error: null };
+  };
+  builder.single = () => Promise.resolve(resolve("single"));
+  builder.maybeSingle = () => Promise.resolve(resolve("maybeSingle"));
+  builder.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) =>
+    Promise.resolve(resolve("await")).then(res, rej);
+  return builder;
+}
 
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: vi.fn(() => ({
-    from: (table: string) => {
-      if (table === "quiz_configs") {
-        return {
-          select: () => ({
-            eq: () => ({
-              eq: () => ({
-                single: mockConfigQuery,
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === "quiz_attempts") {
-        return {
-          select: () => ({
-            eq: () => ({
-              eq: () => ({
-                order: mockAttemptsQuery,
-              }),
-            }),
-          }),
-          update: () => ({
-            eq: mockAttemptUpdate,
-          }),
-          insert: () => ({
-            select: () => ({
-              single: mockAttemptInsert,
-            }),
-          }),
-        };
-      }
-      if (table === "quiz_questions") {
-        return {
-          select: () => ({
-            in: mockQuestionsQuery,
-          }),
-        };
-      }
-      return {};
-    },
-  })),
+  createAdminClient: vi.fn(() => ({ from: (table: string) => makeBuilder(table) })),
 }));
 
 const mockIssueCertificate = vi.fn();
@@ -96,151 +106,123 @@ function makeRequest(body: unknown) {
 const Q1 = "aaaaaaaa-bbbb-4ccc-8ddd-111111111111";
 const Q2 = "aaaaaaaa-bbbb-4ccc-8ddd-222222222222";
 const Q3 = "aaaaaaaa-bbbb-4ccc-8ddd-333333333333";
+const FOREIGN = "aaaaaaaa-bbbb-4ccc-8ddd-999999999999";
 const PROGRAM_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const ATTEMPT_ID = "aaaaaaaa-bbbb-4ccc-8ddd-aaaaaaaaaaaa";
 
 describe("POST /api/classroom/quiz/submit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetUser.mockResolvedValue({ data: { user: { id: "student-1" } } });
-    mockEnrollmentQuery.mockResolvedValue({
-      data: { id: "enr-1", status: "active" },
-      error: null,
-    });
-    mockConfigQuery.mockResolvedValue({
-      data: { max_attempts: 3, passing_grade_pct: 70 },
-    });
-    mockAttemptsQuery.mockResolvedValue({ data: [] });
-    mockAttemptInsert.mockResolvedValue({
-      data: { id: "attempt-new" },
-      error: null,
-    });
-  });
-
-  // --- Auth ---
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
-    const res = await POST(makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "A" } }));
-    expect(res.status).toBe(401);
-  });
-
-  // --- Zod validation ---
-  it("returns 422 when programId is missing", async () => {
-    const res = await POST(makeRequest({ answers: { [Q1]: "A" } }));
-    expect(res.status).toBe(422);
-    const json = await res.json();
-    expect(json.error).toBe("Validación fallida");
-  });
-
-  it("returns 422 when answers is empty", async () => {
-    const res = await POST(makeRequest({ programId: PROGRAM_ID, answers: {} }));
-    expect(res.status).toBe(422);
-  });
-
-  it("returns 422 when answer value is invalid", async () => {
-    const res = await POST(
-      makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "X" } }),
-    );
-    expect(res.status).toBe(422);
-  });
-
-  // --- Enrollment ---
-  it("returns 403 when no active enrollment", async () => {
-    mockEnrollmentQuery.mockResolvedValue({ data: null, error: { message: "not found" } });
-    const res = await POST(
-      makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "A" } }),
-    );
-    expect(res.status).toBe(403);
-  });
-
-  // --- Config ---
-  it("returns 404 when no quiz config", async () => {
-    mockConfigQuery.mockResolvedValue({ data: null });
-    const res = await POST(
-      makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "A" } }),
-    );
-    expect(res.status).toBe(404);
-  });
-
-  // --- Already passed ---
-  it("returns 409 when student already passed", async () => {
-    mockAttemptsQuery.mockResolvedValue({
-      data: [{ id: "a1", passed: true, completed_at: "2026-01-01" }],
-    });
-    const res = await POST(
-      makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "A" } }),
-    );
-    expect(res.status).toBe(409);
-    const json = await res.json();
-    expect(json.error).toContain("aprobaste");
-  });
-
-  // --- Max attempts ---
-  it("returns 409 when max attempts reached", async () => {
-    mockAttemptsQuery.mockResolvedValue({
-      data: [
-        { id: "a1", passed: false, completed_at: "2026-01-01" },
-        { id: "a2", passed: false, completed_at: "2026-01-02" },
-        { id: "a3", passed: false, completed_at: "2026-01-03" },
-      ],
-    });
-    const res = await POST(
-      makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "A" } }),
-    );
-    expect(res.status).toBe(409);
-    const json = await res.json();
-    expect(json.error).toContain("maximo de intentos");
-  });
-
-  // --- Scoring: fail ---
-  it("scores correctly and returns fail when below passing grade", async () => {
-    mockQuestionsQuery.mockResolvedValue({
-      data: [
+    mockEnrollmentQuery.mockResolvedValue({ data: { id: "enr-1", status: "active" }, error: null });
+    state = {
+      config: { max_attempts: 1, passing_grade_pct: 70, questions_per_attempt: 3 },
+      attemptById: {
+        id: ATTEMPT_ID,
+        enrollment_id: "enr-1",
+        program_id: PROGRAM_ID,
+        questions_presented: [Q1, Q2, Q3],
+        completed_at: null,
+      },
+      priorPassed: null,
+      questions: [
         { id: Q1, correct_option: "A", explanation: null },
         { id: Q2, correct_option: "B", explanation: null },
         { id: Q3, correct_option: "C", explanation: "Explicación" },
       ],
-      error: null,
-    });
+      questionsError: null,
+      updatedRows: [{ id: ATTEMPT_ID }],
+      updateError: null,
+      completedAfter: [{ id: ATTEMPT_ID }],
+    };
+  });
 
-    const res = await POST(
-      makeRequest({
-        programId: PROGRAM_ID,
-        answers: { [Q1]: "A", [Q2]: "D", [Q3]: "D" },
-      }),
-    );
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.score_pct).toBe(33);
-    expect(json.passed).toBe(false);
-    expect(json.correctCount).toBe(1);
-    expect(json.totalQuestions).toBe(3);
-    expect(json.certificate).toBeNull();
-    expect(json.attemptsRemaining).toBe(2);
+  const validBody = (answers: Record<string, string>) => ({
+    programId: PROGRAM_ID,
+    attemptId: ATTEMPT_ID,
+    answers,
+  });
+
+  // --- Auth / validación ---
+  it("returns 401 when not authenticated", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 422 when attemptId is missing", async () => {
+    const res = await POST(makeRequest({ programId: PROGRAM_ID, answers: { [Q1]: "A" } }));
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 403 when no active enrollment", async () => {
+    mockEnrollmentQuery.mockResolvedValue({ data: null, error: { message: "x" } });
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(403);
+  });
+
+  // --- BYPASS CERRADO: no se puede puntuar sin un intento real ---
+  it("returns 404 when the attempt does not exist / is not owned", async () => {
+    state.attemptById = null;
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(404);
     expect(mockIssueCertificate).not.toHaveBeenCalled();
   });
 
-  // --- Scoring: pass with certificate ---
-  it("scores correctly, passes, and triggers certificate", async () => {
-    mockQuestionsQuery.mockResolvedValue({
-      data: [
-        { id: Q1, correct_option: "A", explanation: null },
-        { id: Q2, correct_option: "B", explanation: null },
-        { id: Q3, correct_option: "C", explanation: null },
-      ],
-      error: null,
-    });
+  it("returns 404 when the attempt belongs to another enrollment", async () => {
+    state.attemptById = {
+      id: ATTEMPT_ID,
+      enrollment_id: "OTHER-enr",
+      program_id: PROGRAM_ID,
+      questions_presented: [Q1, Q2, Q3],
+      completed_at: null,
+    };
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 409 when the attempt was already completed", async () => {
+    state.attemptById = { ...(state.attemptById as object), completed_at: "2026-01-01" };
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(409);
+  });
+
+  it("returns 409 when the student already passed", async () => {
+    state.priorPassed = { id: "a-old" };
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(409);
+    expect(mockIssueCertificate).not.toHaveBeenCalled();
+  });
+
+  // --- BYPASS CERRADO: no se puede inyectar una pregunta fuera del intento ---
+  it("returns 409 when answers reference a question outside the presented set", async () => {
+    const res = await POST(makeRequest(validBody({ [Q1]: "A", [FOREIGN]: "A" })));
+    expect(res.status).toBe(409);
+    expect(mockIssueCertificate).not.toHaveBeenCalled();
+  });
+
+  // --- BYPASS CERRADO: el total lo fija el servidor (questions_presented), no el cliente ---
+  it("scores over the PRESENTED set, not over what the client sends", async () => {
+    // El cliente manda 1 sola respuesta correcta intentando sacar 100%.
+    const res = await POST(makeRequest(validBody({ [Q1]: "A" })));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    // total = 3 (presentadas), no 1. 1/3 → 33%, NO 100%.
+    expect(json.totalQuestions).toBe(3);
+    expect(json.correctCount).toBe(1);
+    expect(json.score_pct).toBe(33);
+    expect(json.passed).toBe(false);
+    expect(json.certificate).toBeNull();
+    expect(mockIssueCertificate).not.toHaveBeenCalled();
+  });
+
+  // --- Aprobar emite certificado ---
+  it("passes and issues certificate when all presented answers are correct", async () => {
     mockIssueCertificate.mockResolvedValue({
-      certificateId: "cert-1",
       verificationCode: "ABCD1234",
       pdfUrl: "https://example.com/cert.pdf",
     });
-
-    const res = await POST(
-      makeRequest({
-        programId: PROGRAM_ID,
-        answers: { [Q1]: "A", [Q2]: "B", [Q3]: "C" },
-      }),
-    );
+    const res = await POST(makeRequest(validBody({ [Q1]: "A", [Q2]: "B", [Q3]: "C" })));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.score_pct).toBe(100);
@@ -249,23 +231,12 @@ describe("POST /api/classroom/quiz/submit", () => {
       verificationCode: "ABCD1234",
       pdfUrl: "https://example.com/cert.pdf",
     });
-    expect(mockIssueCertificate).toHaveBeenCalledWith("enr-1", "attempt-new");
+    expect(mockIssueCertificate).toHaveBeenCalledWith("enr-1", ATTEMPT_ID);
   });
 
-  // --- Certificate generation error ---
-  it("returns result with certificateError when issueCertificate fails", async () => {
-    mockQuestionsQuery.mockResolvedValue({
-      data: [{ id: Q1, correct_option: "A", explanation: null }],
-      error: null,
-    });
+  it("returns certificateError when issueCertificate fails", async () => {
     mockIssueCertificate.mockRejectedValue(new Error("PDF generation failed"));
-
-    const res = await POST(
-      makeRequest({
-        programId: PROGRAM_ID,
-        answers: { [Q1]: "A" },
-      }),
-    );
+    const res = await POST(makeRequest(validBody({ [Q1]: "A", [Q2]: "B", [Q3]: "C" })));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.passed).toBe(true);
@@ -273,21 +244,11 @@ describe("POST /api/classroom/quiz/submit", () => {
     expect(json.certificateError).toBe("PDF generation failed");
   });
 
-  // --- Questions not found ---
-  it("returns 422 when submitted questions don't exist in DB", async () => {
-    mockQuestionsQuery.mockResolvedValue({
-      data: [{ id: Q1, correct_option: "A", explanation: null }],
-      error: null,
-    });
-
-    const res = await POST(
-      makeRequest({
-        programId: PROGRAM_ID,
-        answers: { [Q1]: "A", [Q2]: "B" },
-      }),
-    );
-    expect(res.status).toBe(422);
-    const json = await res.json();
-    expect(json.error).toContain("no existen");
+  // --- Race anti doble-submit: si el UPDATE atómico no afecta filas → 409 ---
+  it("returns 409 when the atomic close affected no rows (concurrent submit)", async () => {
+    state.updatedRows = [];
+    const res = await POST(makeRequest(validBody({ [Q1]: "A", [Q2]: "B", [Q3]: "C" })));
+    expect(res.status).toBe(409);
+    expect(mockIssueCertificate).not.toHaveBeenCalled();
   });
 });

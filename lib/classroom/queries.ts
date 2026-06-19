@@ -19,6 +19,11 @@ export async function getCohortSlugById(cohortId: string): Promise<string | null
   return data?.slug ?? null;
 }
 
+// Acceso al contenido = matrícula no revocada. RN-049/050 + RN-T03: el estado
+// académico ('completed' al cerrar la cohorte) NO corta el acceso técnico; solo
+// 'dropped'/'suspended' lo hacen. Debe espejar las policies RLS de catálogo (0030).
+const CONTENT_ACCESS_STATUSES = ["active", "completed"] as const;
+
 export async function getEnrollmentForUser(userId: string, cohortId: string) {
   const supabase = await createClient();
   const { data } = await supabase
@@ -26,8 +31,8 @@ export async function getEnrollmentForUser(userId: string, cohortId: string) {
     .select("id, status, cohort_id, student_id")
     .eq("student_id", userId)
     .eq("cohort_id", cohortId)
-    .eq("status", "active")
-    .single();
+    .in("status", CONTENT_ACCESS_STATUSES)
+    .maybeSingle();
   return data;
 }
 

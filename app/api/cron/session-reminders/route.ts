@@ -30,6 +30,7 @@ type SessionRow = {
   meeting_url: string | null;
   status: string;
   teacher_id: string | null;
+  audience: string;
 };
 
 function authorize(req: Request): boolean {
@@ -56,9 +57,11 @@ async function processWindow(
   const { data: sessionsData, error: sessErr } = await admin
     .from("class_sessions")
     .select(
-      "id, cohort_id, title, starts_at, ends_at, modality, meeting_url, status, teacher_id",
+      "id, cohort_id, title, starts_at, ends_at, modality, meeting_url, status, teacher_id, audience",
     )
     .eq("status", "scheduled")
+    // Las grabadas no son eventos en vivo: no se recuerdan.
+    .neq("modality", "recorded")
     .gte("starts_at", from)
     .lt("starts_at", to);
 
@@ -123,12 +126,19 @@ async function processWindow(
       continue;
     }
 
-    // Alumnos con matrícula activa del cohorte.
-    const { data: enrollments } = await admin
+    // Alumnos con matrícula activa del cohorte. Si la sesión es exclusiva de
+    // Capital Inteligente (audience='capital_inteligente'), solo se recuerda a
+    // los alumnos marcados con ese segmento — el cron usa service_role y bypassa
+    // la RLS de audiencia (0024), así que el filtro debe ser explícito aquí.
+    let enrollQuery = admin
       .from("enrollments")
       .select("student_id, profiles(email, full_name)")
       .eq("cohort_id", session.cohort_id)
       .eq("status", "active");
+    if (session.audience === "capital_inteligente") {
+      enrollQuery = enrollQuery.eq("segment", "capital_inteligente");
+    }
+    const { data: enrollments } = await enrollQuery;
 
     const recipients = (
       (enrollments ?? []) as Array<{

@@ -12,6 +12,23 @@ const REQUIREMENTS = [
   { label: "Un número", test: (p: string) => /\d/.test(p) },
 ];
 
+function EyeIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a13.2 13.2 0 0 1-2.16 2.93M6.1 6.1A13.3 13.3 0 0 0 2 11s3.5 7 10 7a9.1 9.1 0 0 0 4.27-1.06M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24" />
+    </svg>
+  );
+}
+
 type Step = "exchanging" | "form" | "success" | "error";
 
 export function SetPasswordForm({
@@ -34,6 +51,8 @@ export function SetPasswordForm({
   const [errorMsg, setErrorMsg] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const exchangeCode = useCallback(async () => {
@@ -202,19 +221,30 @@ export function SetPasswordForm({
                 >
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border px-4 py-3 text-sm outline-none transition-shadow focus:ring-2"
-                  style={{
-                    borderColor: "#e5e5ea",
-                    color: "#14163a",
-                  }}
-                  placeholder="Mínimo 8 caracteres"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPwd ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg border px-4 py-3 pr-12 text-sm outline-none transition-shadow focus:ring-2"
+                    style={{
+                      borderColor: "#e5e5ea",
+                      color: "#14163a",
+                    }}
+                    placeholder="Mínimo 8 caracteres"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((s) => !s)}
+                    aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9b9db5] transition-colors hover:text-[#14163a]"
+                  >
+                    {showPwd ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
 
                 {/* Strength bar */}
                 {password.length > 0 && (
@@ -262,19 +292,30 @@ export function SetPasswordForm({
                 >
                   Confirmar contraseña
                 </label>
-                <input
-                  id="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full rounded-lg border px-4 py-3 text-sm outline-none transition-shadow focus:ring-2"
-                  style={{
-                    borderColor: "#e5e5ea",
-                    color: "#14163a",
-                  }}
-                  placeholder="Repite tu contraseña"
-                />
+                <div className="relative">
+                  <input
+                    id="confirm"
+                    type={showConfirm ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    className="w-full rounded-lg border px-4 py-3 pr-12 text-sm outline-none transition-shadow focus:ring-2"
+                    style={{
+                      borderColor: "#e5e5ea",
+                      color: "#14163a",
+                    }}
+                    placeholder="Repite tu contraseña"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((s) => !s)}
+                    aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9b9db5] transition-colors hover:text-[#14163a]"
+                  >
+                    {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
                 {confirm.length > 0 && !passwordsMatch && (
                   <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>
                     Las contraseñas no coinciden

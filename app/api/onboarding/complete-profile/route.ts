@@ -2,21 +2,45 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isValidRut } from "@/lib/utils/rut";
+import { normalizeUrl } from "@/lib/utils/url";
 
 export const runtime = "nodejs";
+
+/**
+ * Campo de texto opcional tolerante: acepta `undefined`, `null` y "" (los tres
+ * se tratan como "no enviado"). Antes usábamos `.optional().or(z.literal(""))`,
+ * que rechazaba `null` con "Invalid input" y rebotaba todo el form.
+ */
+const optionalText = (max: number) =>
+  z.preprocess(
+    (v) => (v == null || v === "" ? undefined : v),
+    z.string().trim().max(max).optional(),
+  );
+
+/**
+ * LinkedIn opcional: normaliza la URL (agrega https:// si falta) ANTES de
+ * validar, para que "linkedin.com/in/foo" no rebote con "Invalid URL".
+ */
+const optionalUrl = z.preprocess(
+  (v) => (v == null || v === "" ? undefined : normalizeUrl(String(v))),
+  z.string().url().max(300).optional(),
+);
 
 const completeProfileSchema = z.object({
   full_name: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(6).max(40),
   rut: z.string().trim().refine(isValidRut, "RUT inválido"),
-  company: z.string().trim().max(160).optional().or(z.literal("")),
-  job_title: z.string().trim().max(120).optional().or(z.literal("")),
-  linkedin_url: z.string().url().max(300).optional().or(z.literal("")),
-  bio: z.string().trim().max(1000).optional().or(z.literal("")),
-  address: z.string().trim().max(300).optional().or(z.literal("")),
-  emergency_contact_name: z.string().trim().max(120).optional().or(z.literal("")),
-  emergency_contact_phone: z.string().trim().max(40).optional().or(z.literal("")),
-  birthday: z.string().optional().or(z.literal("")),
+  company: optionalText(160),
+  job_title: optionalText(120),
+  linkedin_url: optionalUrl,
+  bio: optionalText(1000),
+  address: optionalText(300),
+  emergency_contact_name: optionalText(120),
+  emergency_contact_phone: optionalText(40),
+  birthday: z.preprocess(
+    (v) => (v == null || v === "" ? undefined : v),
+    z.string().optional(),
+  ),
 });
 
 export async function PATCH(req: Request) {

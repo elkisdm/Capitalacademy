@@ -158,6 +158,6 @@
 | `lib/pricing.ts` | Cálculo de precios y planes del Diplomado | — | — |
 | `lib/rate-limit.ts` | Rate limiting de rutas API | — | — |
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
-| `lib/utils/` | Utilidades: `cn`, `rut`, `zod` (UUID no-RFC), `use-focus-trap` | — | — |
+| `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
 | `db/migrations/` | Migraciones SQL versionadas (`0001`–`0029`) | — | — |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

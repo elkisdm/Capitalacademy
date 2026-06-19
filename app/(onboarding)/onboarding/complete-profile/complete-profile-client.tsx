@@ -3,7 +3,20 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatRut, cleanRut, isValidRut } from "@/lib/utils/rut";
+import { formatPhone } from "@/lib/utils/phone";
+import { normalizeUrl } from "@/lib/utils/url";
 import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
+
+/** Etiquetas legibles por campo, para mostrar errores de validación útiles. */
+const FIELD_LABELS: Record<string, string> = {
+  full_name: "Nombre completo",
+  phone: "Teléfono",
+  rut: "RUT",
+  company: "Empresa",
+  job_title: "Cargo",
+  linkedin_url: "LinkedIn",
+  bio: "Bio",
+};
 
 type ProfileData = {
   full_name: string;
@@ -116,14 +129,27 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
           rut: cleanRut(rut),
           company: company.trim() || undefined,
           job_title: jobTitle.trim() || undefined,
-          linkedin_url: linkedinUrl.trim() || undefined,
+          linkedin_url: linkedinUrl.trim() ? normalizeUrl(linkedinUrl) : undefined,
           bio: bio.trim() || undefined,
         }),
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Error al guardar");
+        const data = await res.json().catch(() => ({}));
+        const issues = Array.isArray(data?.issues) ? data.issues : [];
+        if (issues.length > 0) {
+          const fields = Array.from(
+            new Set(
+              issues.map((i: { path?: (string | number)[] }) => {
+                const key = String(i.path?.[0] ?? "");
+                return FIELD_LABELS[key] ?? key;
+              }),
+            ),
+          ).join(", ");
+          setError(`Revisa estos campos: ${fields}`);
+        } else {
+          setError(data.error ?? "Error al guardar");
+        }
         setSubmitting(false);
         return;
       }
@@ -337,6 +363,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  onBlur={() => phone.trim() && setPhone(formatPhone(phone))}
                   placeholder="+56 9 1234 5678"
                   className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
                   style={{
@@ -458,6 +485,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                 type="url"
                 value={linkedinUrl}
                 onChange={(e) => setLinkedinUrl(e.target.value)}
+                onBlur={() => linkedinUrl.trim() && setLinkedinUrl(normalizeUrl(linkedinUrl))}
                 placeholder="https://linkedin.com/in/tu-perfil"
                 className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
                 style={{

@@ -52,6 +52,20 @@ export default async function LessonPage(
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string };
+
+  // Defensa en profundidad sobre la RLS: la lección debe pertenecer al módulo de
+  // la URL, y ese módulo al programa de la cohorte. Sin esto, entrar por un slug
+  // de lección ajeno (otro módulo/programa) cargaría el row con breadcrumb y
+  // prev/next equivocados. El acceso de datos ya lo acota la RLS; esto cierra el
+  // cruce a nivel de aplicación (S-K/S-L de la Megaauditoría v2).
+  const lessonModuleId = (lesson as Record<string, unknown>).module_id as string | null;
+  const lessonProgramId = (
+    (lesson as Record<string, unknown>).program_modules as
+      | { programs?: { id?: string } | null }
+      | null
+  )?.programs?.id;
+  if (lessonModuleId !== moduleId || lessonProgramId !== program.id) notFound();
+
   const [modules, progress] = await Promise.all([
     getModulesWithLessons(program.id, enrollmentId),
     getLessonProgress(enrollmentId, lessonId),

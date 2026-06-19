@@ -128,13 +128,15 @@ function ResourceLinks({ resources }: { resources: ScheduleSession["resources"] 
 function SessionRow({ s, now }: { s: ScheduleSession; now: number | null }) {
   const timing = timingOf(s, now);
   const isOnline = s.modality === "live_online";
+  const isCancelled = s.status === "cancelled";
   const pill = TIMING_PILL[timing];
-  const showJoin = isOnline && timing !== "past" && s.meeting_url;
+  // Una sesión cancelada no se "entra", aunque sea online futura con enlace vivo.
+  const showJoin = isOnline && timing !== "past" && !!s.meeting_url && !isCancelled;
 
   return (
     <div
       className={`ca-card relative flex items-stretch gap-4 overflow-hidden p-4 md:p-5 ${
-        timing === "past" ? "opacity-65" : ""
+        timing === "past" || isCancelled ? "opacity-65" : ""
       }`}
     >
       {timing === "live" && (
@@ -162,12 +164,22 @@ function SessionRow({ s, now }: { s: ScheduleSession; now: number | null }) {
           <span className="font-mono text-[11px] font-bold text-ca-ink-soft">
             {fmtTime(s.starts_at)}–{fmtTime(s.ends_at)}
           </span>
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pill.cls}`}>
-            {pill.label}
-          </span>
+          {isCancelled ? (
+            <span className="rounded-full bg-ca-amber/15 px-2 py-0.5 text-[10px] font-bold text-[#8b6914]">
+              Cancelada
+            </span>
+          ) : (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pill.cls}`}>
+              {pill.label}
+            </span>
+          )}
         </div>
 
-        <h3 className="truncate text-[16px] font-extrabold leading-tight tracking-tight text-ca-ink">
+        <h3
+          className={`truncate text-[16px] font-extrabold leading-tight tracking-tight text-ca-ink ${
+            isCancelled ? "line-through" : ""
+          }`}
+        >
           {s.title ?? "Sesión"}
         </h3>
 

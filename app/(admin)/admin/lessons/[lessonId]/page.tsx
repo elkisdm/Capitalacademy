@@ -4,6 +4,8 @@ import { ChevronLeft, Video, Clock, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { MuxUploader } from "@/components/admin/mux-uploader";
 import { ResourceManager } from "@/components/admin/resource-manager";
+import { LessonEditForm } from "@/components/admin/lesson-edit-form";
+import { Pencil } from "lucide-react";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "—";
@@ -71,6 +73,26 @@ export default async function AdminLessonPage(
           <p className="mt-1 text-ca-ink-soft">{lesson.description}</p>
         )}
       </div>
+
+      {/* Editar metadatos de la lección */}
+      <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
+          <Pencil className="h-5 w-5" />
+          Editar lección
+        </h2>
+        <LessonEditForm
+          lessonId={lessonId}
+          initial={{
+            title: lesson.title,
+            description: lesson.description ?? null,
+            kind: ((lesson as Record<string, unknown>).kind as
+              | "live_in_person"
+              | "live_online"
+              | "recorded") ?? "recorded",
+            unlockAt: ((lesson as Record<string, unknown>).unlock_at as string | null) ?? null,
+          }}
+        />
+      </section>
 
       {/* Video section */}
       <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">

@@ -1,20 +1,28 @@
 import Link from "next/link";
 import { Video, VideoOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { AddLessonButton } from "@/components/admin/add-lesson-button";
+import { AddModuleButton } from "@/components/admin/add-module-button";
+import { ModuleEditForm } from "@/components/admin/module-edit-form";
 
 export default async function AdminLessonsPage() {
   const supabase = await createClient();
 
-  const { data: modules } = await supabase
-    .from("program_modules")
-    .select(
-      `
+  const [{ data: modules }, { data: programs }] = await Promise.all([
+    supabase
+      .from("program_modules")
+      .select(
+        `
       *,
       programs(name, code),
       lessons(*)
     `,
-    )
-    .order("position", { ascending: true });
+      )
+      .order("position", { ascending: true }),
+    supabase.from("programs").select("id, name").order("name", { ascending: true }),
+  ]);
+
+  const programOptions = (programs ?? []) as { id: string; name: string }[];
 
   if (!modules || modules.length === 0) {
     return (
@@ -22,19 +30,20 @@ export default async function AdminLessonsPage() {
         <h1 className="text-2xl font-bold text-ca-ink">
           Gestión de lecciones
         </h1>
-        <p className="mt-4 text-ca-ink-soft">
-          No hay módulos configurados aún. Crea un programa y sus módulos
-          primero.
+        <p className="mb-4 mt-4 text-ca-ink-soft">
+          No hay módulos configurados aún. Crea el primero.
         </p>
+        <AddModuleButton programs={programOptions} />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-      <h1 className="mb-8 text-2xl font-bold text-ca-ink">
-        Gestión de lecciones
-      </h1>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-ca-ink">Gestión de lecciones</h1>
+        <AddModuleButton programs={programOptions} />
+      </div>
 
       <div className="space-y-8">
         {modules.map((mod) => {
@@ -51,9 +60,19 @@ export default async function AdminLessonsPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-ca-ink-soft">
                   {program?.name ?? "Programa"}
                 </p>
-                <h2 className="text-lg font-semibold text-ca-ink">
-                  {mod.code} — {mod.title}
-                </h2>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-ca-ink">
+                    {mod.code} — {mod.title}
+                  </h2>
+                  <ModuleEditForm
+                    module={{
+                      id: mod.id as string,
+                      code: mod.code as string,
+                      title: mod.title as string,
+                      description: (mod.description as string | null) ?? null,
+                    }}
+                  />
+                </div>
               </div>
 
               {lessons.length === 0 ? (
@@ -99,6 +118,7 @@ export default async function AdminLessonsPage() {
                   })}
                 </div>
               )}
+              <AddLessonButton moduleId={mod.id as string} />
             </section>
           );
         })}

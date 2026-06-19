@@ -35,7 +35,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La landing del Diplomado quedó actualizada con los datos de la 4ª generación (`e009abb`)
 
 ### Fixed
-- El onboarding ya no se traba con "Validación fallida": el LinkedIn se acepta aunque se escriba sin `https://`, los campos opcionales vacíos dejan de bloquear, y si algo falla el mensaje indica qué campo revisar. Además el teléfono y el LinkedIn se autoformatean, y las pantallas de crear/recuperar contraseña y de login tienen botón para mostrar/ocultar la contraseña (`d58cb49`)
+- El onboarding ya no se traba con "Validación fallida": el LinkedIn se acepta aunque se escriba sin `https://`, los campos opcionales vacíos dejan de bloquear, y si algo falla el mensaje indica qué campo revisar. Además el teléfono y el LinkedIn se autoformatean, y las pantallas de crear/recuperar contraseña y de login tienen botón para mostrar/ocultar la contraseña (`a260e9f`)
 - Al entrar directamente al classroom de un programa (ej. Workshop), el sidebar ahora muestra el nombre de ese programa en vez del del último programa matriculado (`84a70b6`)
 - Los administradores y staff pueden entrar a cualquier classroom sin estar matriculados; antes recibían un 404 (`b476cdf`)
 - Los enlaces de activación/invitación ahora mantienen al usuario en capitalacademy.cl al confirmar la sesión, en vez de rebotar a una URL interna de Netlify y caer en login (`2f1ef8a`)

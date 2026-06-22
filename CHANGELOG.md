@@ -8,7 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
-- El panel de quizzes ahora gestiona todas las evaluaciones —examen final, por módulo y por lección— desde un mismo lugar (crear, agregar preguntas de los cuatro tipos, activar y borrar), y cada evaluación se puede compartir con los alumnos mediante un enlace y un código QR que los lleva directo a rendirla
+- El panel de quizzes ahora gestiona todas las evaluaciones —examen final, por módulo y por lección— desde un mismo lugar (crear, agregar preguntas de los cuatro tipos, activar y borrar), y cada evaluación se puede compartir con los alumnos mediante un enlace y un código QR que los lleva directo a rendirla (`9a3937b`)
 - El staff tiene en el menú un selector de "Entorno" (programa) y un interruptor "Ver como: Admin / Alumno": el entorno elegido enfoca Usuarios, Progreso y Quizzes al programa activo, y la vista de alumno permite revisar la experiencia del estudiante sin perder el acceso de administrador (`726a5c8`, `86f8111`)
 - Las clases ahora pueden ser de texto/diapositiva, no solo de video: el equipo escribe el contenido con formato (títulos, listas, imágenes intercaladas) desde el editor de la lección, y el alumno lo lee dentro de la clase junto con el material y un botón para marcarla como completada (antes una clase sin video abría a una pantalla vacía) (`4d8516c`)
 - Nuevo "Recursos" en el menú del alumno: una vista que reúne en un solo lugar todo el material del programa —de las clases grabadas y de las clases en vivo— para encontrarlo rápido (`7627ac2`)

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortSlugById } from "@/lib/classroom/queries";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
+import { getActiveEnv, getEnvOptions, getViewMode } from "@/lib/admin/active-env";
 
 export const metadata = {
   title: "Admin",
@@ -50,6 +51,12 @@ export default async function AdminLayout({
     ? (await getCohortSlugById(enrollment.cohort_id)) ?? enrollment.cohort_id
     : undefined;
 
+  const [envOptions, activeEnv, viewMode] = await Promise.all([
+    getEnvOptions(),
+    getActiveEnv(),
+    getViewMode(),
+  ]);
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
       <ClassroomSidebar
@@ -58,6 +65,9 @@ export default async function AdminLayout({
         userRole={profile.system_role ?? profile.role}
         cohortId={cohortSlug}
         showOps={true}
+        viewMode={viewMode}
+        envOptions={envOptions}
+        activeEnv={activeEnv}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="ca-fade-up">{children}</div>

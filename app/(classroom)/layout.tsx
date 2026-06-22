@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
+import { getActiveEnv, getEnvOptions, getViewMode, type EnvOption, type ViewMode } from "@/lib/admin/active-env";
 
 export const metadata = {
   title: "Classroom",
@@ -89,6 +90,19 @@ export default async function ClassroomLayout({
     }
   }
 
+  // Controles de staff (selector de entorno + modo de vista). Solo se cargan
+  // para staff; un alumno puro no los ve.
+  let envOptions: EnvOption[] = [];
+  let activeEnv: string | null = null;
+  let viewMode: ViewMode = "admin";
+  if (isStaff) {
+    [envOptions, activeEnv, viewMode] = await Promise.all([
+      getEnvOptions(),
+      getActiveEnv(),
+      getViewMode(),
+    ]);
+  }
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
       <ClassroomSidebar
@@ -99,6 +113,9 @@ export default async function ClassroomLayout({
         cohortId={cohortSlug}
         cohortLabel={cohortLabel}
         showOps={isStaff}
+        viewMode={viewMode}
+        envOptions={envOptions}
+        activeEnv={activeEnv}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="ca-fade-up">{children}</div>

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { QuizManager } from "@/components/admin/quiz-manager";
+import { getActiveEnv } from "@/lib/admin/active-env";
 
 export default async function QuizzesPage() {
   const supabase = await createClient();
@@ -15,6 +16,8 @@ export default async function QuizzesPage() {
     .select("id, name")
     .order("name");
 
+  const activeEnv = await getActiveEnv();
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-8">
       <div className="mb-7">
@@ -28,7 +31,10 @@ export default async function QuizzesPage() {
           Genera, edita y configura quizzes por programa
         </p>
       </div>
-      <QuizManager programs={(programs ?? []) as { id: string; name: string }[]} />
+      <QuizManager
+        programs={(programs ?? []) as { id: string; name: string }[]}
+        initialProgramId={activeEnv ?? undefined}
+      />
     </div>
   );
 }

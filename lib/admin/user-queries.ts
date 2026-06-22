@@ -50,25 +50,102 @@ export type CohortPickerItem = {
   program_name: string;
 };
 
-export async function getAdminUsersList(): Promise<AdminUserListItem[]> {
+type ProfileRow = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  system_role: "user" | "ops" | "admin";
+  created_at: string;
+  onboarding_completed_at: string | null;
+};
+
+const PROFILE_COLUMNS =
+  "id, email, full_name, phone, system_role, created_at, onboarding_completed_at";
+
+/**
+ * Lista de usuarios para el admin. Si `programId` viene, scopea los DATOS a ese
+ * entorno: solo miembros (student/teacher/assistant) de las cohortes del
+ * programa, MÁS el staff transversal (admin/ops), que por modelo es agnóstico al
+ * entorno. Sin `programId` devuelve todos. Las cohortes mostradas también se
+ * acotan al programa para no filtrar pertenencias de otros entornos.
+ */
+export async function getAdminUsersList(
+  programId?: string | null,
+): Promise<AdminUserListItem[]> {
   const supabase = await createClient();
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, phone, system_role, created_at, onboarding_completed_at")
-    .order("created_at", { ascending: false });
+  // --- Sin scope: todos los usuarios y todos sus roles. ---
+  if (!programId) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select(PROFILE_COLUMNS)
+      .order("created_at", { ascending: false });
 
-  if (!profiles || profiles.length === 0) return [];
+    if (!profiles || profiles.length === 0) return [];
 
-  const userIds = profiles.map((p) => p.id);
+    const userIds = profiles.map((p) => p.id);
+    const { data: roles } = await supabase
+      .from("cohort_roles")
+      .select("user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
+      .in("user_id", userIds);
 
-  const { data: roles } = await supabase
-    .from("cohort_roles")
-    .select("user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
-    .in("user_id", userIds);
+    return assembleUsers(profiles as ProfileRow[], roles ?? []);
+  }
 
+  // --- Scopeado a un entorno (programa). ---
+  // 1) Cohortes del programa.
+  const { data: progCohorts } = await supabase
+    .from("cohorts")
+    .select("id")
+    .eq("program_id", programId);
+  const cohortIds = (progCohorts ?? []).map((c) => c.id);
+
+  // 2) Roles en esas cohortes (solo de este programa).
+  const roles = cohortIds.length
+    ? (
+        await supabase
+          .from("cohort_roles")
+          .select("user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
+          .in("cohort_id", cohortIds)
+      ).data ?? []
+    : [];
+  const memberIds = [...new Set(roles.map((r) => r.user_id))];
+
+  // 3) Perfiles = miembros del programa + staff transversal (admin/ops).
+  const [staffRes, memberRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(PROFILE_COLUMNS)
+      .in("system_role", ["admin", "ops"]),
+    memberIds.length
+      ? supabase.from("profiles").select(PROFILE_COLUMNS).in("id", memberIds)
+      : Promise.resolve({ data: [] as ProfileRow[] }),
+  ]);
+
+  const byId = new Map<string, ProfileRow>();
+  for (const p of [...(staffRes.data ?? []), ...(memberRes.data ?? [])] as ProfileRow[]) {
+    byId.set(p.id, p);
+  }
+  const profiles = [...byId.values()].sort(
+    (a, b) => (a.created_at < b.created_at ? 1 : -1),
+  );
+
+  return assembleUsers(profiles, roles);
+}
+
+/** Une perfiles con sus roles por cohorte en el shape de la lista admin. */
+function assembleUsers(
+  profiles: ProfileRow[],
+  roles: Array<{
+    user_id: string;
+    cohort_id: string;
+    role: "student" | "teacher" | "assistant";
+    cohorts: unknown;
+  }>,
+): AdminUserListItem[] {
   const rolesMap = new Map<string, AdminUserListItem["cohort_roles"]>();
-  for (const r of roles ?? []) {
+  for (const r of roles) {
     const cohort = r.cohorts as {
       name: string;
       code: string;

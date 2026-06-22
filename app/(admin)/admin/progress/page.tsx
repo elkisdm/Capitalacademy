@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortProgressReport } from "@/lib/classroom/admin-queries";
+import { getActiveEnv } from "@/lib/admin/active-env";
 import { ProgressTable } from "@/components/admin/progress-table";
 import { CohortSelector } from "./cohort-selector";
 
@@ -13,22 +14,35 @@ export default async function AdminProgressPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: cohorts } = await supabase
+  const { data: allCohorts } = await supabase
     .from("cohorts")
-    .select("id, name, code, status, programs(name)")
+    .select("id, name, code, status, program_id, programs(name)")
     .order("created_at", { ascending: false });
 
-  if (!cohorts || cohorts.length === 0) {
+  // Scope al entorno activo: solo cohortes del programa seleccionado.
+  const activeEnv = await getActiveEnv();
+  const cohorts = activeEnv
+    ? (allCohorts ?? []).filter((c) => c.program_id === activeEnv)
+    : allCohorts ?? [];
+
+  if (cohorts.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
         <h1 className="text-2xl font-black text-ca-ink">Progreso de la cohorte</h1>
-        <p className="mt-4 text-ca-ink-soft">No hay cohortes registradas.</p>
+        <p className="mt-4 text-ca-ink-soft">
+          {activeEnv
+            ? "Este entorno no tiene cohortes registradas."
+            : "No hay cohortes registradas."}
+        </p>
       </div>
     );
   }
 
   const params = await searchParams;
-  const selectedCohortId = params.cohort ?? cohorts[0].id;
+  // Si el `?cohort` no pertenece al entorno activo, cae a la primera del scope.
+  const selectedCohortId = cohorts.some((c) => c.id === params.cohort)
+    ? (params.cohort as string)
+    : cohorts[0].id;
 
   const cohortOptions = cohorts.map((c) => ({
     id: c.id,

@@ -654,9 +654,21 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
       {/* Mis cohortes */}
       {cohorts.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-4 text-[18px] font-black tracking-tight text-ca-ink">
+          <h2 className="mb-1 text-[18px] font-black tracking-tight text-ca-ink">
             Mis cohortes
           </h2>
+          {(profile.system_role === "admin" || profile.system_role === "ops") && (
+            <p className="mb-4 text-[12px] font-medium text-ca-ink-soft">
+              Tu rol de plataforma es{" "}
+              <span className="font-bold text-ca-ink">
+                {ROLE_LABELS[profile.system_role] ?? profile.system_role}
+              </span>
+              . Estas cohortes son matrículas de preview para revisar la experiencia del alumno.
+            </p>
+          )}
+          {!(profile.system_role === "admin" || profile.system_role === "ops") && (
+            <div className="mb-4" />
+          )}
           <div className="flex flex-col gap-3">
             {cohorts.map((cr) => (
               <div

@@ -8,8 +8,12 @@ import { ConfiguracionTab } from "./configuracion-tab";
 import { IntentosTab } from "./intentos-tab";
 import { CertificadosTab } from "./certificados-tab";
 
-export function QuizManager({ programs }: QuizManagerProps) {
-  const [selectedProgram, setSelectedProgram] = useState(programs[0]?.id ?? "");
+export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
+  const [selectedProgram, setSelectedProgram] = useState(
+    initialProgramId && programs.some((p) => p.id === initialProgramId)
+      ? initialProgramId
+      : programs[0]?.id ?? "",
+  );
   const [tab, setTab] = useState<Tab>("preguntas");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);

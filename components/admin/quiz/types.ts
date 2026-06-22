@@ -77,6 +77,8 @@ export type Tab = "preguntas" | "configuracion" | "intentos" | "certificados";
 
 export type QuizManagerProps = {
   programs: { id: string; name: string }[];
+  /** Entorno activo (program_id) para preseleccionar el programa. */
+  initialProgramId?: string;
 };
 
 export const CONFIG_DEFAULTS = {

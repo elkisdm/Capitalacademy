@@ -31,6 +31,8 @@ type Filter = "all" | "admin" | "ops" | "teacher" | "student";
 type UsersListClientProps = {
   users: AdminUserListItem[];
   cohorts: CohortPickerItem[];
+  /** Entorno activo (program_id) desde la cookie global, o "all". */
+  initialProgramFilter?: string;
 };
 
 type MenuPosition = {
@@ -265,12 +267,14 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
   return pages;
 }
 
-export function UsersListClient({ users, cohorts }: UsersListClientProps) {
+export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }: UsersListClientProps) {
   const router = useRouter();
   const { toast, ToastContainer } = useToast();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
-  const [programFilter, setProgramFilter] = useState<string>("all");
+  // El entorno se fija globalmente (cookie + remount por `key`), no se cambia
+  // dentro de la lista; por eso solo leemos el valor inicial.
+  const [programFilter] = useState<string>(initialProgramFilter);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -313,17 +317,6 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       return name.includes(q) || email.includes(q);
     });
   }, [users, search]);
-
-  // Entornos (programas) presentes en los datos, para el filtro.
-  const programs = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const u of users) {
-      for (const cr of u.cohort_roles) {
-        if (cr.program_id) map.set(cr.program_id, cr.program_name || "Sin nombre");
-      }
-    }
-    return [...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [users]);
 
   // Base para los contadores de los pills de rol: aplica búsqueda + entorno +
   // estado, pero NO el rol — así cada pill muestra su conteo DENTRO del scope
@@ -511,23 +504,9 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
               />
             </div>
 
-            {/* Filtros por entorno y estado */}
+            {/* Filtro por estado. El entorno se controla con el selector global
+                del sidebar (cookie), no aquí, para no duplicar controles. */}
             <div className="flex flex-wrap items-center gap-2">
-              {programs.length > 1 && (
-                <select
-                  value={programFilter}
-                  onChange={(e) => setProgramFilter(e.target.value)}
-                  aria-label="Filtrar por entorno"
-                  className="rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-semibold text-ca-ink outline-none transition-colors focus:border-ca-violet"
-                >
-                  <option value="all">Todos los entornos</option>
-                  {programs.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              )}
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "pending")}

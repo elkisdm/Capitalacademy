@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Video, VideoOff, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
+import { Video, VideoOff, ChevronUp, ChevronDown, AlertTriangle, Pencil } from "lucide-react";
 
 type LessonItem = {
   id: string;
@@ -143,6 +143,15 @@ export function LessonReorderList({
               Sin video
             </span>
           )}
+
+          <Link
+            href={`/admin/lessons/${lesson.id}`}
+            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
+            title="Editar lección"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </Link>
 
           {siblingModules.length > 0 && (
             <select

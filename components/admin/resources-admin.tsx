@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ResourceManager } from "./resource-manager";
 
 type LessonInfo = {
@@ -12,12 +13,21 @@ type LessonInfo = {
   resourceCount: number;
 };
 
+type LiveSessionInfo = {
+  id: string;
+  title: string;
+  cohortId: string;
+  startsAt: string;
+  resourceCount: number;
+};
+
 type ModuleInfo = {
   id: string;
   title: string;
   position: number;
   programName: string;
   lessons: LessonInfo[];
+  liveSessions: LiveSessionInfo[];
 };
 
 type Resource = {
@@ -143,6 +153,21 @@ export function ResourcesAdmin({
             />
           </>
         )}
+
+        {!selectedLesson && (
+          <div className="ca-card p-6 text-center">
+            <p className="text-[14px] font-bold text-ca-ink">
+              {selectedModule?.liveSessions.length
+                ? "Este módulo solo tiene clases en vivo"
+                : "Este módulo aún no tiene lecciones"}
+            </p>
+            <p className="mx-auto mt-1 max-w-md text-[13px] text-ca-ink-soft">
+              {selectedModule?.liveSessions.length
+                ? "Las clases en vivo (calendario) no tienen video. Elige una clase a la derecha para cargar su material en el editor de calendario."
+                : "Crea una lección grabada para subirle recursos, o usa el calendario para las clases en vivo."}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Right: lesson selector */}
@@ -158,7 +183,7 @@ export function ResourcesAdmin({
               <button
                 onClick={() => {
                   setSelectedModuleId(m.id);
-                  if (m.lessons[0]) setSelectedLessonId(m.lessons[0].id);
+                  setSelectedLessonId(m.lessons[0]?.id ?? "");
                 }}
                 className="flex w-full items-center gap-2 border-b border-ca-ink/[0.08] px-4 py-2.5 text-left"
                 style={{
@@ -173,31 +198,63 @@ export function ResourcesAdmin({
                 </span>
                 <span className="flex-1 truncate text-[12px] font-bold text-ca-ink">{m.title}</span>
               </button>
-              {m.id === selectedModuleId &&
-                m.lessons.map((l, i) => {
-                  const active = l.id === selectedLessonId;
-                  return (
-                    <button
-                      key={l.id}
-                      onClick={() => selectLesson(m.id, l.id)}
-                      className="flex w-full items-center gap-2 border-b border-ca-ink/[0.08] py-2 pl-9 pr-4 text-left transition-colors hover:bg-ca-bg-soft"
-                      style={{
-                        background: active ? "rgba(94,23,235,0.06)" : "transparent",
-                      }}
-                    >
-                      <span
-                        className="font-mono text-[10px] font-bold"
-                        style={{ color: active ? "var(--color-ca-violet)" : "var(--color-ca-ink-soft)" }}
+              {m.id === selectedModuleId && (
+                <>
+                  {m.lessons.map((l, i) => {
+                    const active = l.id === selectedLessonId;
+                    return (
+                      <button
+                        key={l.id}
+                        onClick={() => selectLesson(m.id, l.id)}
+                        className="flex w-full items-center gap-2 border-b border-ca-ink/[0.08] py-2 pl-9 pr-4 text-left transition-colors hover:bg-ca-bg-soft"
+                        style={{
+                          background: active ? "rgba(94,23,235,0.06)" : "transparent",
+                        }}
                       >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <span className="flex-1 truncate text-[12px] font-semibold text-ca-ink">{l.title}</span>
-                      <span className="font-mono text-[10px] font-bold text-ca-ink-soft">
-                        {l.resourceCount > 0 ? `${l.resourceCount}` : "—"}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span
+                          className="font-mono text-[10px] font-bold"
+                          style={{ color: active ? "var(--color-ca-violet)" : "var(--color-ca-ink-soft)" }}
+                        >
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="flex-1 truncate text-[12px] font-semibold text-ca-ink">{l.title}</span>
+                        <span className="font-mono text-[10px] font-bold text-ca-ink-soft">
+                          {l.resourceCount > 0 ? `${l.resourceCount}` : "—"}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  {/* Clases EN VIVO (calendario): sus recursos se cargan en el editor
+                      de calendario; aquí se listan con acceso directo. */}
+                  {m.liveSessions.length > 0 && (
+                    <>
+                      <div className="border-b border-ca-ink/[0.08] bg-ca-bg-soft/60 px-9 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                        Clases en vivo
+                      </div>
+                      {m.liveSessions.map((s) => (
+                        <Link
+                          key={s.id}
+                          href={`/admin/cohorts/${s.cohortId}/sesiones`}
+                          className="flex w-full items-center gap-2 border-b border-ca-ink/[0.08] py-2 pl-9 pr-4 text-left transition-colors hover:bg-ca-bg-soft"
+                          title="Cargar material en el editor de calendario"
+                        >
+                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ca-ink-soft">
+                            <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                          </svg>
+                          <span className="flex-1 truncate text-[12px] font-semibold text-ca-ink">{s.title}</span>
+                          <span className="font-mono text-[10px] font-bold text-ca-ink-soft">
+                            {s.resourceCount > 0 ? `${s.resourceCount}` : "—"}
+                          </span>
+                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ca-violet">
+                            <path d="M7 17L17 7M7 7h10v10" />
+                          </svg>
+                        </Link>
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
             </div>
           ))}
         </div>

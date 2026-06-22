@@ -64,6 +64,36 @@ export default async function AdminResourcesPage(props: {
     }
   }
 
+  // Clases EN VIVO (calendario) del programa, agrupadas por módulo. Sus recursos
+  // se gestionan en el editor de calendario; aquí solo se listan con un acceso
+  // directo (las clases en vivo no tienen "lección grabada"/video).
+  const moduleIds = (modules ?? []).map((m) => m.id);
+  const liveByModule: Record<
+    string,
+    Array<{ id: string; title: string; cohortId: string; startsAt: string; resourceCount: number }>
+  > = {};
+  if (moduleIds.length > 0) {
+    const { data: sessions } = await supabase
+      .from("class_sessions")
+      .select("id, title, module_id, cohort_id, starts_at, session_resources(count)")
+      .in("module_id", moduleIds)
+      .order("starts_at", { ascending: true });
+
+    for (const s of sessions ?? []) {
+      if (!s.module_id) continue;
+      const count = (s.session_resources as { count: number }[] | null)?.[0]?.count ?? 0;
+      const list = liveByModule[s.module_id] ?? [];
+      list.push({
+        id: s.id,
+        title: s.title ?? "Clase en vivo",
+        cohortId: s.cohort_id,
+        startsAt: s.starts_at,
+        resourceCount: count,
+      });
+      liveByModule[s.module_id] = list;
+    }
+  }
+
   const modulesData = (modules ?? []).map((m) => ({
     id: m.id,
     title: m.title,
@@ -80,6 +110,7 @@ export default async function AdminResourcesPage(props: {
         durationMin: l.video_duration_seconds ? Math.floor(l.video_duration_seconds / 60) : null,
         resourceCount: (resourcesByLesson[l.id] ?? []).length,
       })),
+    liveSessions: liveByModule[m.id] ?? [],
   }));
 
   return (

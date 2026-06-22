@@ -51,6 +51,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La landing del Diplomado quedó actualizada con los datos de la 4ª generación (`e009abb`)
 
 ### Fixed
+- Pulido visual: las tarjetas de módulo del alumno ya no se desbordan ni quiebran el texto a anchos intermedios; se corrigieron acentos faltantes ("Gestión de Quizzes", "Configuración", "Código"), los títulos del panel quedaron consistentes, y la tabla de Usuarios muestra el nombre completo de la cohorte al pasar el cursor (`0f77439`)
 - "Ayuda" ahora está siempre visible en el menú, tanto en la vista de administrador como en la de alumno (antes desaparecía en el panel admin) (`bf77b4b`)
 - Para el staff, estando en el panel admin la navegación lateral ya no se mezcla con la de alumno: al volver al panel con el modo "Ver como alumno" activado, antes se mostraba contenido de administrador con el menú de estudiante y sin accesos para navegar (`8bae848`)
 - Los módulos del Diplomado ya muestran sus clases: las 24 sesiones del calendario quedaron asociadas a su módulo (Teórico/Práctico) y el inicio del programa cuenta las clases en vivo, no solo las lecciones grabadas; antes los módulos aparecían con "0 lecciones"

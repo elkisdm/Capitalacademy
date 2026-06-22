@@ -24,8 +24,8 @@ export default async function QuizzesPage() {
         <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Operaciones
         </div>
-        <h1 className="mt-1 text-[28px] font-black tracking-tight text-ca-ink">
-          Gestion de Quizzes
+        <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">
+          Gestión de Quizzes
         </h1>
         <p className="mt-1 text-[14px] text-ca-ink-soft">
           Genera, edita y configura quizzes por programa

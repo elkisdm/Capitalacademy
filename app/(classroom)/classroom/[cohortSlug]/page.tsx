@@ -82,7 +82,9 @@ function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons;
                 </p>
               )}
             </div>
-            <StatusPill status={status} />
+            <div className="shrink-0">
+              <StatusPill status={status} />
+            </div>
           </div>
 
           {mod.teacher?.full_name && (
@@ -374,8 +376,11 @@ export default async function CohortDashboardPage(
         </div>
       </div>
 
-      {/* Module cards grid */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      {/* Module cards grid. 2 columnas solo en xl+ (donde cada tarjeta tiene
+          ancho suficiente para la imagen + el texto); por debajo, una sola
+          columna a ancho completo para que el texto no se quiebre palabra a
+          palabra ni se desborde el botón. */}
+      <div className="grid gap-5 xl:grid-cols-2">
         {modules.map((mod) => (
           <ModuleCard
             key={mod.id}

@@ -127,18 +127,19 @@ export function CohortBadgeStack({ cohorts }: { cohorts: CohortBadge[] }) {
       {visible.map((c, i) => (
         <span
           key={i}
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+          title={`${c.name} · ${COHORT_ROLE_LABELS[c.role] ?? c.role}`}
+          className="inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
           style={{
             background: "rgba(20,22,58,0.06)",
             color: "var(--color-ca-ink)",
           }}
         >
           <span
-            className="shape-circle h-1.5 w-1.5"
+            className="shape-circle h-1.5 w-1.5 shrink-0"
             style={{ background: COHORT_ROLE_STYLES[c.role]?.background ?? "var(--color-ca-ink-soft)" }}
           />
           <span className="max-w-[120px] truncate">{c.name}</span>
-          <span className="text-[9px] uppercase tracking-[0.1em] opacity-60">
+          <span className="shrink-0 text-[9px] uppercase tracking-[0.1em] opacity-60">
             {COHORT_ROLE_LABELS[c.role] ?? c.role}
           </span>
         </span>

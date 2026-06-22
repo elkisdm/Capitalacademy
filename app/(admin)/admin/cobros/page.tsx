@@ -50,7 +50,7 @@ export default async function AdminCobrosPage({
         <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-ink-soft)]">
           Operaciones
         </div>
-        <h1 className="mt-1 text-2xl font-black tracking-[-0.02em] text-[var(--color-ca-ink)] sm:text-3xl">
+        <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">
           Generar link de cobro
         </h1>
         <p className="mt-2 text-sm text-[var(--color-ca-ink-soft)]">

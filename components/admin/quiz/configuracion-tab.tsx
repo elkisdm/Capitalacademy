@@ -58,9 +58,9 @@ export function ConfiguracionTab({ programId }: { programId: string }) {
         }),
       });
       if (res.ok) {
-        toast("Configuracion guardada", "success");
+        toast("Configuración guardada", "success");
       } else {
-        toast("Error al guardar configuracion", "error");
+        toast("Error al guardar configuración", "error");
       }
     } catch {
       toast("Error de conexion", "error");

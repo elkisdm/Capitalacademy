@@ -323,7 +323,7 @@ function ValidCertificate({
             <div className="text-[22px] font-black leading-tight tracking-tight text-ca-ink">Certificado valido</div>
           </div>
           <div className="ml-auto hidden text-right sm:block">
-            <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Codigo</div>
+            <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Código</div>
             <code className="font-mono text-[14px] font-black tracking-wide text-ca-ink">{cert.verificationCode}</code>
           </div>
         </div>
@@ -444,7 +444,7 @@ function InvalidCode({ code }: { code: string }) {
             <div className="text-[22px] font-black leading-tight tracking-tight text-ca-ink">No encontrado</div>
           </div>
           <div className="ml-auto hidden text-right sm:block">
-            <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Codigo</div>
+            <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Código</div>
             <code className="font-mono text-[14px] font-black tracking-wide text-ca-ink">{code.toUpperCase()}</code>
           </div>
         </div>

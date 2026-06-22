@@ -4,6 +4,7 @@ import type { Tab } from "./types";
 
 export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   const tabs: { id: Tab; label: string }[] = [
+    { id: "evaluaciones", label: "Evaluaciones" },
     { id: "preguntas", label: "Preguntas" },
     { id: "configuracion", label: "Configuración" },
     { id: "intentos", label: "Intentos" },

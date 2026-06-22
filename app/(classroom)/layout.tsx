@@ -53,7 +53,7 @@ export default async function ClassroomLayout({
   const parts = pathname.split("/").filter(Boolean); // ['classroom', '<slug>', ...]
   // Sub-rutas que NO son slugs de cohorte: el sidebar debe seguir mostrando la
   // cohorte real del alumno (resuelta por su matrícula), no estas palabras.
-  const RESERVED_SUBPATHS = new Set(["profile", "guia"]);
+  const RESERVED_SUBPATHS = new Set(["profile", "guia", "quiz"]);
   const cohortSlugFromPath =
     parts[0] === "classroom" && parts[1] && !RESERVED_SUBPATHS.has(parts[1])
       ? parts[1]

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Tab, QuizQuestion, QuizManagerProps } from "./types";
 import { TabBar } from "./tab-bar";
+import { EvaluacionesTab } from "./evaluaciones-tab";
 import { PreguntasTab } from "./preguntas-tab";
 import { ConfiguracionTab } from "./configuracion-tab";
 import { IntentosTab } from "./intentos-tab";
@@ -14,7 +15,7 @@ export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
       ? initialProgramId
       : programs[0]?.id ?? "",
   );
-  const [tab, setTab] = useState<Tab>("preguntas");
+  const [tab, setTab] = useState<Tab>("evaluaciones");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
 
@@ -70,7 +71,7 @@ export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
             value={selectedProgram}
             onChange={(e) => {
               setSelectedProgram(e.target.value);
-              setTab("preguntas");
+              setTab("evaluaciones");
             }}
             className="rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] font-semibold text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
           >
@@ -95,6 +96,7 @@ export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
       <TabBar active={tab} onChange={setTab} />
 
       {/* Tab content */}
+      {tab === "evaluaciones" && <EvaluacionesTab programId={selectedProgram} />}
       {tab === "preguntas" && (
         <PreguntasTab
           programId={selectedProgram}

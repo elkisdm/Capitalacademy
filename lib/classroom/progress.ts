@@ -30,22 +30,25 @@ export function getLessonStatus(lesson: LessonWithProgress): LessonStatus {
     return "locked";
   }
 
-  if (!lesson.mux_playback_id) {
-    return "no_video";
-  }
-
+  // Completada aplica a clases de video y de texto (estas se marcan manualmente).
   if (lesson.video_progress?.completed) {
     return "completed";
   }
 
-  if (
-    lesson.video_progress &&
-    lesson.video_progress.watch_percentage > 0
-  ) {
-    return "in_progress";
+  if (lesson.mux_playback_id) {
+    if (lesson.video_progress && lesson.video_progress.watch_percentage > 0) {
+      return "in_progress";
+    }
+    return "available";
   }
 
-  return "available";
+  // Sin video: si tiene contenido de texto/diapositiva es una clase abrible.
+  const content = (lesson as { content?: string | null }).content;
+  if (content && content.trim()) {
+    return "available";
+  }
+
+  return "no_video";
 }
 
 export function computeServerProgress(

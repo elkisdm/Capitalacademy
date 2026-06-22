@@ -15,6 +15,8 @@ const patchLessonSchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
     description: z.string().trim().max(2000).nullish(),
+    // Contenido de texto/diapositiva (Markdown). Hasta 50k caracteres.
+    content: z.string().max(50000).nullish(),
     kind: lessonKind.optional(),
     unlockAt: z
       .string()
@@ -53,11 +55,12 @@ export async function PATCH(
       { status: 422 },
     );
   }
-  const { title, description, kind, unlockAt, moduleId } = parsed.data;
+  const { title, description, content, kind, unlockAt, moduleId } = parsed.data;
 
   const patch: {
     title?: string;
     description?: string | null;
+    content?: string | null;
     kind?: "live_in_person" | "live_online" | "recorded";
     unlock_at?: string | null;
     module_id?: string;
@@ -65,6 +68,7 @@ export async function PATCH(
   } = {};
   if (title !== undefined) patch.title = title;
   if (description !== undefined) patch.description = description ?? null;
+  if (content !== undefined) patch.content = content?.trim() ? content : null;
   if (kind !== undefined) patch.kind = kind;
   // unlockAt presente (incluso null/"") = setear/limpiar la apertura por calendario.
   if (unlockAt !== undefined) patch.unlock_at = unlockAt || null;

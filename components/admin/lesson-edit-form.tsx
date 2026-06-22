@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Trash2, Check, AlertTriangle } from "lucide-react";
+import { LessonContentEditor } from "@/components/admin/lesson-content-editor";
 
 type LessonKind = "live_in_person" | "live_online" | "recorded";
 
@@ -17,6 +18,7 @@ type LessonEditFormProps = {
   initial: {
     title: string;
     description: string | null;
+    content: string | null;
     kind: LessonKind;
     unlockAt: string | null;
   };
@@ -35,6 +37,7 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
+  const [content, setContent] = useState(initial.content ?? "");
   const [kind, setKind] = useState<LessonKind>(initial.kind);
   const [unlockAt, setUnlockAt] = useState(isoToLocalInput(initial.unlockAt));
   const [saving, setSaving] = useState(false);
@@ -55,6 +58,7 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || null,
+          content: content.trim() || null,
           kind,
           // datetime-local (hora local) → ISO; vacío = limpiar la apertura.
           unlockAt: unlockAt ? new Date(unlockAt).toISOString() : null,
@@ -114,6 +118,13 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
           className={inputCls}
           placeholder="Breve descripción de la lección (opcional)"
         />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
+          Contenido de la clase (texto / diapositiva)
+        </label>
+        <LessonContentEditor lessonId={lessonId} value={content} onChange={setContent} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

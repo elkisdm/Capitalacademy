@@ -366,3 +366,76 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Markdown / contenido enriquecido de lección (.ca-prose) ──────────────── */
+.ca-prose {
+  color: var(--color-ca-ink);
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+.ca-prose > :first-child { margin-top: 0; }
+.ca-prose > :last-child { margin-bottom: 0; }
+.ca-prose h1, .ca-prose h2, .ca-prose h3, .ca-prose h4 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin: 1.6em 0 0.5em;
+}
+.ca-prose h1 { font-size: 1.7em; }
+.ca-prose h2 { font-size: 1.4em; }
+.ca-prose h3 { font-size: 1.18em; }
+.ca-prose h4 { font-size: 1.02em; }
+.ca-prose p { margin: 0.85em 0; }
+.ca-prose a {
+  color: var(--color-ca-violet);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ca-prose ul, .ca-prose ol { margin: 0.85em 0; padding-left: 1.5em; }
+.ca-prose ul { list-style: disc; }
+.ca-prose ol { list-style: decimal; }
+.ca-prose li { margin: 0.3em 0; }
+.ca-prose li::marker { color: var(--color-ca-violet); }
+.ca-prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+  margin: 1.2em 0;
+  border: 1px solid var(--color-ca-outline);
+}
+.ca-prose blockquote {
+  border-left: 4px solid var(--color-ca-violet);
+  background: var(--color-ca-violet-mist);
+  padding: 0.6em 1em;
+  border-radius: 0 10px 10px 0;
+  margin: 1em 0;
+  color: var(--color-ca-ink);
+}
+.ca-prose code {
+  background: var(--color-ca-bg-soft);
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.ca-prose pre {
+  background: var(--color-ca-ink);
+  color: #fff;
+  padding: 1em 1.2em;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.ca-prose pre code { background: transparent; padding: 0; font-size: 0.85em; }
+.ca-prose hr { border: 0; border-top: 1px solid var(--color-ca-outline); margin: 1.6em 0; }
+.ca-prose table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+.ca-prose th, .ca-prose td {
+  border: 1px solid var(--color-ca-outline);
+  padding: 0.5em 0.7em;
+  text-align: left;
+}
+.ca-prose th { background: var(--color-ca-bg-soft); font-weight: 700; }
+.ca-prose strong { font-weight: 800; }

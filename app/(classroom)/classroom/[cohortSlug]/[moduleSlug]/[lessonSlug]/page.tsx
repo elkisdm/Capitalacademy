@@ -13,6 +13,9 @@ import { resolveResourceUrls } from "@/lib/classroom/resource-urls";
 import { resolveCohortSlug, resolveModuleSlug, resolveLessonSlug } from "@/lib/classroom/resolve-slugs";
 import { getLessonStatus } from "@/lib/classroom/progress";
 import { LessonVideoSection } from "@/components/classroom/lesson-video-section";
+import { ResourceList } from "@/components/classroom/resource-list";
+import { MarkCompleteButton } from "@/components/classroom/mark-complete-button";
+import { Markdown } from "@/components/ui/markdown";
 import {
   StatusPill,
   ProgressBar,
@@ -97,6 +100,7 @@ export default async function LessonPage(
 
   const muxPlaybackId = (lesson as Record<string, unknown>).mux_playback_id as string | null;
   const videoDuration = (lesson as Record<string, unknown>).video_duration_seconds as number | null;
+  const lessonContent = (lesson as Record<string, unknown>).content as string | null;
 
   const [
     { data: resources },
@@ -150,6 +154,11 @@ export default async function LessonPage(
   const transcriptCorrectedVtt = transcript?.corrected_vtt ?? null;
   const watchPct = progress?.watch_percentage ?? 0;
 
+  const resolvedResources = await resolveResourceUrls((resources ?? []) as LessonResource[]);
+  const hasVideo = !!(muxPlaybackId && videoDuration);
+  // Clase de texto/diapositiva: sin video pero con contenido y/o material.
+  const isTextLesson = !hasVideo && (!!lessonContent?.trim() || resolvedResources.length > 0);
+
   const userName = profile?.full_name ?? user.email ?? "Usuario";
   const userInitials = userName
     .split(" ")
@@ -202,16 +211,16 @@ export default async function LessonPage(
       <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
         {/* LEFT: video + meta + resources */}
         <div className="min-w-0">
-          {muxPlaybackId && videoDuration ? (
+          {hasVideo ? (
             <LessonVideoSection
-              playbackId={muxPlaybackId}
+              playbackId={muxPlaybackId!}
               lessonId={lessonId}
               lessonTitle={lesson.title}
-              durationSeconds={videoDuration}
+              durationSeconds={videoDuration!}
               initialPosition={progress?.playback_position_seconds ?? 0}
               initialWatchPercentage={watchPct}
               initialCompleted={progress?.completed ?? false}
-              resources={await resolveResourceUrls((resources ?? []) as LessonResource[])}
+              resources={resolvedResources}
               summary={summary ? {
                 key_points: (summary.key_points ?? []) as string[],
                 summary_text: summary.summary_text ?? "",
@@ -227,6 +236,21 @@ export default async function LessonPage(
               currentUserAvatarUrl={profile?.avatar_url ?? null}
               hasTranscript={!!transcriptVtt}
             />
+          ) : isTextLesson ? (
+            <article className="ca-card p-6 md:p-8">
+              {lessonContent?.trim() && <Markdown content={lessonContent} />}
+              {resolvedResources.length > 0 && (
+                <div className={lessonContent?.trim() ? "mt-8 border-t border-ca-ink/[0.08] pt-6" : ""}>
+                  <h2 className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                    Material de la clase
+                  </h2>
+                  <ResourceList resources={resolvedResources} />
+                </div>
+              )}
+              <div className="mt-8 border-t border-ca-ink/[0.08] pt-5">
+                <MarkCompleteButton lessonId={lessonId} initialCompleted={progress?.completed ?? false} />
+              </div>
+            </article>
           ) : (
             <div className="video-stage flex aspect-video items-center justify-center rounded-[18px]">
               <div className="max-w-xl text-center">
@@ -239,7 +263,7 @@ export default async function LessonPage(
                   {lesson.title}
                 </h2>
                 <p className="mt-3 text-[13px] font-semibold text-white/55">
-                  Video disponible próximamente
+                  Contenido disponible próximamente
                 </p>
                 {currentModule?.teacher?.full_name && (
                   <div className="mt-4 flex items-center justify-center gap-2.5 text-white/70">

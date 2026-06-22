@@ -87,6 +87,7 @@ export default async function AdminLessonPage(
           initial={{
             title: lesson.title,
             description: lesson.description ?? null,
+            content: ((lesson as Record<string, unknown>).content as string | null) ?? null,
             kind: ((lesson as Record<string, unknown>).kind as
               | "live_in_person"
               | "live_online"

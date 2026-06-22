@@ -1159,6 +1159,7 @@ export type Database = {
       }
       lessons: {
         Row: {
+          content: string | null
           description: string | null
           duration_minutes: number | null
           id: string
@@ -1176,6 +1177,7 @@ export type Database = {
           video_duration_seconds: number | null
         }
         Insert: {
+          content?: string | null
           description?: string | null
           duration_minutes?: number | null
           id?: string
@@ -1193,6 +1195,7 @@ export type Database = {
           video_duration_seconds?: number | null
         }
         Update: {
+          content?: string | null
           description?: string | null
           duration_minutes?: number | null
           id?: string

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Video,
   FileSpreadsheet,
+  Eye,
   type LucideIcon,
 } from "lucide-react";
 
@@ -89,6 +90,7 @@ export const ARTICLES: Article[] = [
     tips: [
       "¿Una duda sobre un momento específico? Comenta en ese minuto del video y tu profesor responde ahí.",
       "Si una clase aparece bloqueada, es porque se abre en una fecha programada.",
+      "Algunas clases no son de video sino de texto/diapositiva: al abrirlas ves la explicación con su material y un botón para marcarla como completada.",
     ],
     faqs: [
       {
@@ -121,6 +123,24 @@ export const ARTICLES: Article[] = [
     tips: ["Las clases canceladas se marcan como tal y no muestran el botón de ingreso."],
     route: (ctx) => cohort(ctx, "/calendario"),
     routeLabel: "Ir al calendario",
+  },
+  {
+    slug: "recursos",
+    audience: "student",
+    category: "Aprender",
+    icon: FolderOpen,
+    title: "Centro de recursos",
+    summary: "Todo el material del programa en un solo lugar.",
+    overview:
+      "“Recursos” reúne en una sola pantalla todos los archivos, plantillas y enlaces de tu programa —tanto de las clases grabadas como de las clases en vivo— para que los encuentres rápido sin entrar clase por clase.",
+    steps: [
+      "Abre “Recursos” en el menú lateral.",
+      "Verás el material agrupado: primero las clases grabadas (por módulo) y luego las clases en vivo.",
+      "Haz clic en un recurso para descargarlo o abrir el enlace.",
+    ],
+    tips: ["Si una clase aún no tiene material publicado, no aparecerá aquí todavía."],
+    route: (ctx) => cohort(ctx, "/recursos"),
+    routeLabel: "Ir a Recursos",
   },
   {
     slug: "quizzes-practica",
@@ -300,16 +320,17 @@ export const ARTICLES: Article[] = [
     audience: "team",
     category: "Contenido",
     icon: Video,
-    title: "Subir y reemplazar videos",
-    summary: "Sube el video de una lección grabada.",
+    title: "Video o contenido de la clase",
+    summary: "Una clase puede ser de video o de texto/diapositiva.",
     overview:
-      "Cada lección grabada lleva un video. La subida es directa y soporta archivos grandes; el procesamiento toma unos minutos.",
+      "Una lección no tiene que ser de video. Puede ser una clase de texto: una explicación con formato (títulos, listas, imágenes intercaladas) que el alumno lee. Así una clase puede ser un video, un contenido escrito, o ambos con su material.",
     steps: [
-      "Entra al editor de la lección.",
-      "Arrastra el video o haz clic para seleccionarlo (MP4, MOV o WebM, hasta 12 GB).",
-      "Espera el procesamiento; cuando esté listo, el alumno ya puede verlo.",
-      "Para cambiarlo, sube uno nuevo en la misma sección.",
+      "Entra al editor de la lección con “Editar”.",
+      "Para video: arrastra el archivo (MP4, MOV o WebM, hasta 12 GB) y espera el procesamiento.",
+      "Para una clase de texto: escribe en “Contenido de la clase” usando Markdown; con “Insertar imagen” intercalas diapositivas o capturas. La pestaña “Vista previa” muestra cómo lo verá el alumno.",
+      "Si la lección no tiene video, el alumno ve el contenido escrito y su material, con un botón para marcarla como completada.",
     ],
+    tips: ["Una clase puede combinar video y contenido escrito; ambos son opcionales."],
     route: () => "/admin/lessons",
     routeLabel: "Ir a Lecciones",
   },
@@ -338,17 +359,20 @@ export const ARTICLES: Article[] = [
     category: "Contenido",
     icon: FolderOpen,
     title: "Recursos y materiales",
-    summary: "Sube PDFs, plantillas y enlaces a clases.",
+    summary: "Sube PDFs, plantillas y enlaces, todo desde Lecciones.",
     overview:
-      "Adjunta materiales tanto a las lecciones grabadas como a las clases en vivo. El alumno los descarga con un enlace seguro y temporal.",
+      "La gestión de material se hace en un solo lugar: el editor de Lecciones. Tanto las lecciones grabadas como las clases en vivo del calendario adjuntan ahí su material, y el alumno lo descarga con un enlace seguro y temporal.",
     steps: [
-      "Entra a “Recursos” y elige el programa.",
-      "Selecciona una lección y agrega un archivo (hasta 50 MB) o un enlace.",
-      "Para las clases en vivo, dentro del módulo usa el acceso directo al editor de calendario.",
+      "Entra a “Lecciones” y elige el programa (y la cohorte para las clases en vivo).",
+      "Para una lección grabada: abre su editor con “Editar” y agrega un archivo (hasta 50 MB) o un enlace.",
+      "Para una clase en vivo: abre su panel “Material” (botón en la fila) y sube el archivo o enlace ahí mismo, sin salir a otra pantalla.",
     ],
-    tips: ["Acepta cualquier tipo de archivo. Los enlaces solo admiten http/https por seguridad."],
-    route: () => "/admin/resources",
-    routeLabel: "Ir a Recursos",
+    tips: [
+      "Acepta cualquier tipo de archivo. Los enlaces solo admiten http/https por seguridad.",
+      "La antigua página “Recursos por lección” ahora redirige a Lecciones: todo se gestiona desde un mismo lugar.",
+    ],
+    route: () => "/admin/lessons",
+    routeLabel: "Ir a Lecciones",
   },
   {
     slug: "quizzes-clase",
@@ -449,6 +473,24 @@ export const ARTICLES: Article[] = [
     tips: ["El monto va firmado: el cliente no puede alterarlo desde el enlace."],
     route: () => "/admin/cobros",
     routeLabel: "Ir a Cobros",
+  },
+  {
+    slug: "entornos-vista",
+    audience: "team",
+    category: "Operación",
+    icon: Eye,
+    title: "Entorno activo y “Ver como”",
+    summary: "Enfoca el panel a un programa y revisa la vista del alumno.",
+    overview:
+      "Arriba del menú tienes dos controles de staff. El selector de “Entorno” enfoca el panel a un programa (Diplomado, Workshop, Liderazgo), y el interruptor “Ver como: Admin / Alumno” te deja revisar la experiencia del estudiante sin perder tu acceso de administrador.",
+    steps: [
+      "Elige el “Entorno” para que Usuarios, Progreso y Quizzes muestren solo ese programa.",
+      "Cambia a “Alumno” para recorrer el classroom como lo ve un estudiante; vuelve con “Admin”.",
+      "Es un cambio de VISTA, no de permisos: tu rol y lo que puedes hacer no cambian.",
+    ],
+    tips: [
+      "Estando en el panel (/admin) siempre ves la navegación de administrador, aunque hayas dejado activado “Ver como alumno”.",
+    ],
   },
 ];
 

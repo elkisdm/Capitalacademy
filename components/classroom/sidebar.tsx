@@ -92,6 +92,15 @@ const NAV_SECTIONS: { key: NavSection; label: string }[] = [
   { key: "config", label: "Configuración" },
 ];
 
+// Ayuda es transversal: visible siempre (admin y alumno), por eso se renderiza
+// como item fijo aparte de las secciones, no dentro de "Aprender".
+const HELP_ITEM: NavItem = {
+  icon: "help",
+  label: "Ayuda",
+  href: "/classroom/guia",
+  section: "learn",
+};
+
 function NavItemButton({
   item,
   active,
@@ -228,6 +237,15 @@ function SidebarContent({
             </div>
           );
         })}
+
+        <div className="mt-3 border-t border-ca-ink/[0.06] pt-3">
+          <NavItemButton
+            item={HELP_ITEM}
+            active={isActive(HELP_ITEM.href!)}
+            collapsed={collapsed}
+            onClick={onNavClick}
+          />
+        </div>
       </div>
 
       <div className={`border-t border-ca-ink/[0.08] px-3 py-3 ${collapsed ? "flex flex-col items-center" : ""}`}>
@@ -371,7 +389,6 @@ export function ClassroomSidebar({
         { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },
         { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
       ] : []),
-      { icon: "help", label: "Ayuda", href: "/classroom/guia", section: "learn" as const },
     ] : []),
     ...(showOpsNav ? [
       // General: opciones globales (no atadas a un entorno).
@@ -481,6 +498,15 @@ export function ClassroomSidebar({
                   </div>
                 );
               })}
+
+              <div className="mt-3 border-t border-ca-ink/[0.06] pt-3">
+                <NavItemButton
+                  item={HELP_ITEM}
+                  active={isActive(HELP_ITEM.href!)}
+                  collapsed={false}
+                  onClick={() => setMobileOpen(false)}
+                />
+              </div>
             </div>
 
             <div className="border-t border-ca-ink/[0.08] px-3 py-3">

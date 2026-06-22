@@ -1,16 +1,48 @@
 export type Program = { id: string; name: string };
 
+export type QuestionType =
+  | "single_choice"
+  | "multiple_choice"
+  | "true_false"
+  | "short_answer";
+
+export type EvaluationScope = "final" | "module" | "lesson";
+
 export type QuizQuestion = {
   id: string;
   program_id: string;
+  evaluation_id: string | null;
   lesson_id: string | null;
   question_text: string;
   options: Record<string, string>;
-  correct_option: string;
+  question_type: QuestionType;
+  // Respuesta correcta unificada (jsonb):
+  //   single_choice / true_false → "A"
+  //   multiple_choice            → ["A","C"]
+  //   short_answer               → ["respuesta aceptada", "sinónimo"]
+  correct_answer: string | string[] | null;
+  // Legacy single_choice; se conserva para compat. Usa correct_answer en lo nuevo.
+  correct_option: string | null;
   explanation: string | null;
   is_generated: boolean;
   sort_order: number;
   lessons?: { title: string } | null;
+};
+
+export type Evaluation = {
+  id: string;
+  program_id: string;
+  scope: EvaluationScope;
+  module_id: string | null;
+  lesson_id: string | null;
+  title: string;
+  description: string | null;
+  passing_grade_pct: number;
+  questions_per_attempt: number | null;
+  max_attempts: number;
+  time_limit_minutes: number | null;
+  min_completion_pct: number | null;
+  is_active: boolean;
 };
 
 export type QuizConfig = {

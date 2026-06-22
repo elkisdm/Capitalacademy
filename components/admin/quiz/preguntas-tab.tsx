@@ -49,27 +49,21 @@ export function PreguntasTab({
     }
   };
 
-  const handleSave = async (q: QuizQuestion) => {
+  const handleSave = async (questionId: string, payload: Record<string, unknown>) => {
     const res = await fetch("/api/admin/quiz-questions", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        questionId: q.id,
-        questionText: q.question_text,
-        options: q.options,
-        correctOption: q.correct_option,
-        explanation: q.explanation,
-      }),
+      body: JSON.stringify({ questionId, ...payload }),
     });
     if (res.ok) {
       const { question: updated } = await res.json();
-      setQuestions((prev) =>
-        prev.map((p) => (p.id === q.id ? { ...p, ...updated } : p)),
-      );
+      setQuestions((prev) => prev.map((p) => (p.id === questionId ? { ...p, ...updated } : p)));
       toast("Pregunta actualizada", "success");
-    } else {
-      toast("Error al guardar", "error");
+      return true;
     }
+    const err = await res.json().catch(() => ({ error: "Error al guardar" }));
+    toast(err.error ?? "Error al guardar", "error");
+    return false;
   };
 
   const handleDelete = async (id: string) => {

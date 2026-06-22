@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { MuxUploader } from "@/components/admin/mux-uploader";
 import { ResourceManager } from "@/components/admin/resource-manager";
 import { LessonEditForm } from "@/components/admin/lesson-edit-form";
-import { Pencil } from "lucide-react";
+import { LessonQuizPanel } from "@/components/admin/quiz/lesson-quiz-panel";
+import { Pencil, ListChecks } from "lucide-react";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "—";
@@ -28,7 +29,7 @@ export default async function AdminLessonPage(
 
   const { data: lesson } = await supabase
     .from("lessons")
-    .select("*, program_modules(title, code, programs(name))")
+    .select("*, program_modules(title, code, program_id, programs(name))")
     .eq("id", lessonId)
     .single();
 
@@ -37,6 +38,7 @@ export default async function AdminLessonPage(
   const mod = lesson.program_modules as {
     title: string;
     code: string;
+    program_id: string;
     programs: { name: string } | null;
   } | null;
 
@@ -144,7 +146,7 @@ export default async function AdminLessonPage(
       </section>
 
       {/* Resources section */}
-      <section className="rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
+      <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
           <FileText className="h-5 w-5" />
           Recursos
@@ -154,6 +156,21 @@ export default async function AdminLessonPage(
           initialResources={resources ?? []}
         />
       </section>
+
+      {/* Evaluación de la clase */}
+      {mod?.program_id && (
+        <section className="rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
+            <ListChecks className="h-5 w-5" />
+            Evaluación de la clase
+          </h2>
+          <LessonQuizPanel
+            programId={mod.program_id}
+            lessonId={lessonId}
+            lessonTitle={lesson.title}
+          />
+        </section>
+      )}
     </div>
   );
 }

@@ -64,9 +64,10 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
   const { data: config } = await admin
-    .from("quiz_configs")
+    .from("evaluations")
     .select("*")
     .eq("program_id", programId)
+    .eq("scope", "final")
     .eq("is_active", true)
     .single();
   if (!config) {
@@ -138,10 +139,12 @@ export async function POST(req: Request) {
   > = {};
   for (const q of correctQuestions) {
     const studentAnswer = answers[q.id];
-    const isCorrect = studentAnswer === q.correct_option;
+    // Flujo final: preguntas single_choice legacy, correct_option siempre presente.
+    const correctOption = q.correct_option ?? "";
+    const isCorrect = studentAnswer === correctOption;
     if (isCorrect) correctCount++;
     correctAnswers[q.id] = {
-      correct_option: q.correct_option,
+      correct_option: correctOption,
       explanation: q.explanation,
       is_correct: isCorrect,
     };

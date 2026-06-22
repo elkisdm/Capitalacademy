@@ -30,7 +30,9 @@ export function QuizManager({ programs }: QuizManagerProps) {
   }, []);
 
   useEffect(() => {
+    // Carga inicial de preguntas: sincroniza con un sistema externo (la API).
     if (selectedProgram) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchQuestions(selectedProgram);
     }
   }, [selectedProgram, fetchQuestions]);

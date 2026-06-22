@@ -9,6 +9,7 @@ import {
   getCohortWithProgram,
 } from "@/lib/classroom/queries";
 import { getClassroomAccess } from "@/lib/classroom/access";
+import { resolveResourceUrls } from "@/lib/classroom/resource-urls";
 import { resolveCohortSlug, resolveModuleSlug, resolveLessonSlug } from "@/lib/classroom/resolve-slugs";
 import { getLessonStatus } from "@/lib/classroom/progress";
 import { LessonVideoSection } from "@/components/classroom/lesson-video-section";
@@ -20,6 +21,7 @@ import {
   Avatar,
 } from "@/components/classroom/primitives";
 import { CollapsiblePlaylist } from "@/components/classroom/collapsible-playlist";
+import { EvaluationRunner } from "@/components/classroom/evaluation/evaluation-runner";
 import { VideoSyncProvider } from "@/components/classroom/video-sync-context";
 import type { LessonResource } from "@/lib/classroom/types";
 import { fmtDuration } from "@/lib/classroom/format";
@@ -103,6 +105,7 @@ export default async function LessonPage(
     { data: chapters },
     { count: commentCount },
     { data: profile },
+    { data: lessonEvaluation },
   ] = await Promise.all([
     supabase
       .from("lesson_resources")
@@ -134,6 +137,13 @@ export default async function LessonPage(
       .select("full_name, avatar_url")
       .eq("id", user.id)
       .single(),
+    supabase
+      .from("evaluations")
+      .select("id, title")
+      .eq("lesson_id", lessonId)
+      .eq("scope", "lesson")
+      .eq("is_active", true)
+      .maybeSingle(),
   ]);
 
   const transcriptVtt = transcript?.content_vtt ?? null;
@@ -201,7 +211,7 @@ export default async function LessonPage(
               initialPosition={progress?.playback_position_seconds ?? 0}
               initialWatchPercentage={watchPct}
               initialCompleted={progress?.completed ?? false}
-              resources={(resources ?? []) as LessonResource[]}
+              resources={await resolveResourceUrls((resources ?? []) as LessonResource[])}
               summary={summary ? {
                 key_points: (summary.key_points ?? []) as string[],
                 summary_text: summary.summary_text ?? "",
@@ -266,6 +276,13 @@ export default async function LessonPage(
               </Link>
             ) : <div />}
           </div>
+
+          {/* Evaluación formativa de la clase */}
+          {lessonEvaluation && (
+            <div className="mt-8">
+              <EvaluationRunner evaluationId={lessonEvaluation.id} title={lessonEvaluation.title} />
+            </div>
+          )}
         </div>
 
         {/* RIGHT: playlist sidebar (collapsible) */}

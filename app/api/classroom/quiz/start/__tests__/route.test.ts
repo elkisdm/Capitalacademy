@@ -48,7 +48,7 @@ function makeBuilder(table: string) {
   }
   const has = (m: string) => ops.some(([mm]) => mm === m);
   const resolve = () => {
-    if (table === "quiz_configs") return { data: state.config, error: state.config ? null : {} };
+    if (table === "evaluations") return { data: state.config, error: state.config ? null : {} };
     if (table === "program_modules") return { data: state.modules, error: null };
     if (table === "lessons") return { count: state.totalLessons, error: null };
     if (table === "video_progress") return { count: state.completedLessons, error: null };

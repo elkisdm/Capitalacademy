@@ -43,15 +43,19 @@ export async function GET(req: Request) {
   }
 
   const admin = createAdminClient();
+  // Config del quiz final desde la evaluación scope='final' (unificado en 0033;
+  // mismas columnas que el viejo quiz_configs).
   const { data: config, error: configError } = await admin
-    .from("quiz_configs")
+    .from("evaluations")
     .select("*")
     .eq("program_id", programId)
+    .eq("scope", "final")
     .eq("is_active", true)
     .single();
   if (configError || !config) {
     return NextResponse.json({ status: "unconfigured" });
   }
+  const minCompletion = config.min_completion_pct ?? 0;
 
   const { data: attempts } = await admin
     .from("quiz_attempts")
@@ -77,11 +81,11 @@ export async function GET(req: Request) {
   );
 
   // Un intento en curso siempre puede reanudarse, aunque cambie el gate.
-  if (!hasInProgress && currentPct < config.min_completion_pct) {
+  if (!hasInProgress && currentPct < minCompletion) {
     return NextResponse.json({
       status: "locked_completion",
       currentPct,
-      requiredPct: config.min_completion_pct,
+      requiredPct: minCompletion,
       completedLessons,
       totalLessons,
     });

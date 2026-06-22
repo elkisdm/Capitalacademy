@@ -58,9 +58,10 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
   const { data: config } = await admin
-    .from("quiz_configs")
+    .from("evaluations")
     .select("*")
     .eq("program_id", programId)
+    .eq("scope", "final")
     .eq("is_active", true)
     .single();
   if (!config) {
@@ -69,6 +70,8 @@ export async function POST(req: Request) {
       { status: 404 },
     );
   }
+  const questionsPerAttempt = config.questions_per_attempt ?? 10;
+  const minCompletion = config.min_completion_pct ?? 0;
 
   const { data: attempts } = await admin
     .from("quiz_attempts")
@@ -85,7 +88,7 @@ export async function POST(req: Request) {
   }
 
   const configPublic = {
-    questionsPerAttempt: config.questions_per_attempt,
+    questionsPerAttempt,
     passingGradePct: config.passing_grade_pct,
     maxAttempts: config.max_attempts,
     timeLimitMinutes: config.time_limit_minutes,
@@ -115,19 +118,19 @@ export async function POST(req: Request) {
 
   // Gate de completitud server-side (no confiar en el cliente).
   const { currentPct } = await getCompletion(admin, programId, enrollment.id);
-  if (currentPct < config.min_completion_pct) {
+  if (currentPct < minCompletion) {
     return NextResponse.json(
       {
         error: "Aun no completaste el contenido requerido para rendir",
         currentPct,
-        requiredPct: config.min_completion_pct,
+        requiredPct: minCompletion,
       },
       { status: 403 },
     );
   }
 
   // Selección server-side + persistencia del set presentado.
-  const selected = await selectRandomQuestions(admin, programId, config.questions_per_attempt);
+  const selected = await selectRandomQuestions(admin, programId, questionsPerAttempt);
   if (selected.length === 0) {
     return NextResponse.json(
       { error: "No hay preguntas disponibles para este programa" },

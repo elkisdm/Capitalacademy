@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import { uuidLike } from "@/lib/utils/zod";
+import {
+  questionPayloadSchema,
+  payloadToDbFields,
+} from "@/lib/classroom/quiz-question-schema";
 
 export const runtime = "nodejs";
 
@@ -50,47 +56,80 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body invalido" }, { status: 400 });
   }
 
-  const { programId, questionText, options, correctOption, explanation, lessonId } =
-    body as {
-      programId?: string;
-      questionText?: string;
-      options?: Record<string, string>;
-      correctOption?: string;
-      explanation?: string;
-      lessonId?: string;
-    };
-
-  if (!programId || !questionText || !options || !correctOption) {
+  // Destino de la pregunta: una evaluación (preferido) o, por compat con el
+  // manager del quiz final, un programa → su evaluación final.
+  const targetSchema = z.object({
+    evaluationId: uuidLike.optional(),
+    programId: uuidLike.optional(),
+    lessonId: uuidLike.optional(),
+  });
+  const target = targetSchema.safeParse(body);
+  if (!target.success || (!target.data.evaluationId && !target.data.programId)) {
     return NextResponse.json(
-      { error: "programId, questionText, options y correctOption son requeridos" },
+      { error: "Se requiere evaluationId o programId" },
+      { status: 422 },
+    );
+  }
+
+  // El payload de la pregunta (validado por tipo) es lo que define la respuesta.
+  const payload = questionPayloadSchema.safeParse(body);
+  if (!payload.success) {
+    return NextResponse.json(
+      { error: "Validación fallida", issues: payload.error.issues },
       { status: 422 },
     );
   }
 
   const admin = createAdminClient();
 
-  // Determine next sort_order
+  // Resolver la evaluación dueña y su program_id (anclaje de tenant).
+  let evaluationId = target.data.evaluationId ?? null;
+  let programId: string;
+  if (evaluationId) {
+    const { data: ev } = await admin
+      .from("evaluations")
+      .select("id, program_id")
+      .eq("id", evaluationId)
+      .single();
+    if (!ev) {
+      return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
+    }
+    programId = ev.program_id;
+  } else {
+    programId = target.data.programId!;
+    // Compat: adjunta a la evaluación final del programa (la migrada en 0033).
+    const { data: finalEval } = await admin
+      .from("evaluations")
+      .select("id")
+      .eq("program_id", programId)
+      .eq("scope", "final")
+      .maybeSingle();
+    evaluationId = finalEval?.id ?? null;
+  }
+
+  const dbFields = payloadToDbFields(payload.data);
+
+  // sort_order siguiente dentro de la evaluación (o del programa si aún no hay eval).
   const { data: lastQuestion } = await admin
     .from("quiz_questions")
     .select("sort_order")
-    .eq("program_id", programId)
+    .eq(evaluationId ? "evaluation_id" : "program_id", evaluationId ?? programId)
     .order("sort_order", { ascending: false })
     .limit(1)
-    .single();
-
+    .maybeSingle();
   const nextSortOrder = (lastQuestion?.sort_order ?? 0) + 1;
 
   const { data: created, error } = await admin
     .from("quiz_questions")
     .insert({
       program_id: programId,
-      lesson_id: lessonId ?? null,
-      question_text: questionText,
-      options,
-      correct_option: correctOption,
-      explanation: explanation ?? null,
+      evaluation_id: evaluationId,
+      lesson_id: target.data.lessonId ?? null,
+      question_text: payload.data.questionText,
+      explanation: payload.data.explanation ?? null,
       is_generated: false,
       sort_order: nextSortOrder,
+      ...dbFields,
     })
     .select()
     .single();
@@ -118,25 +157,33 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Body invalido" }, { status: 400 });
   }
 
-  const { questionId, questionText, options, correctOption, explanation, sortOrder } =
-    body as {
-      questionId?: string;
-      questionText?: string;
-      options?: Record<string, string>;
-      correctOption?: string;
-      explanation?: string;
-      sortOrder?: number;
-    };
+  const { questionId, sortOrder } = body as {
+    questionId?: string;
+    sortOrder?: number;
+  };
 
   if (!questionId) {
     return NextResponse.json({ error: "questionId es requerido" }, { status: 422 });
   }
 
   const updates: Record<string, unknown> = {};
-  if (questionText !== undefined) updates.question_text = questionText;
-  if (options !== undefined) updates.options = options;
-  if (correctOption !== undefined) updates.correct_option = correctOption;
-  if (explanation !== undefined) updates.explanation = explanation;
+
+  // Si viene un payload de pregunta completo (con questionType), se revalida por
+  // tipo y se reemplazan tipo/opciones/respuesta de forma coherente.
+  if ((body as { questionType?: string }).questionType !== undefined) {
+    const payload = questionPayloadSchema.safeParse(body);
+    if (!payload.success) {
+      return NextResponse.json(
+        { error: "Validación fallida", issues: payload.error.issues },
+        { status: 422 },
+      );
+    }
+    Object.assign(updates, payloadToDbFields(payload.data), {
+      question_text: payload.data.questionText,
+      explanation: payload.data.explanation ?? null,
+    });
+  }
+
   if (sortOrder !== undefined) updates.sort_order = sortOrder;
 
   if (Object.keys(updates).length === 0) {

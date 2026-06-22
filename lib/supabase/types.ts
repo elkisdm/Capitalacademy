@@ -542,7 +542,7 @@ export type Database = {
           storage_path: string | null
           title: string
           type: Database["public"]["Enums"]["resource_type"]
-          url: string
+          url: string | null
         }
         Insert: {
           created_at?: string
@@ -554,7 +554,7 @@ export type Database = {
           storage_path?: string | null
           title: string
           type?: Database["public"]["Enums"]["resource_type"]
-          url: string
+          url?: string | null
         }
         Update: {
           created_at?: string
@@ -566,7 +566,7 @@ export type Database = {
           storage_path?: string | null
           title?: string
           type?: Database["public"]["Enums"]["resource_type"]
-          url?: string
+          url?: string | null
         }
         Relationships: [
           {
@@ -894,10 +894,13 @@ export type Database = {
         Row: {
           id: string
           program_id: string
+          evaluation_id: string | null
           lesson_id: string | null
           question_text: string
           options: Record<string, string>
-          correct_option: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          correct_option: string | null
+          correct_answer: string | string[] | null
           explanation: string | null
           is_generated: boolean
           sort_order: number
@@ -907,10 +910,13 @@ export type Database = {
         Insert: {
           id?: string
           program_id: string
+          evaluation_id?: string | null
           lesson_id?: string | null
           question_text: string
           options: Record<string, string>
-          correct_option: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+          correct_option?: string | null
+          correct_answer?: string | string[] | null
           explanation?: string | null
           is_generated?: boolean
           sort_order?: number
@@ -920,10 +926,13 @@ export type Database = {
         Update: {
           id?: string
           program_id?: string
+          evaluation_id?: string | null
           lesson_id?: string | null
           question_text?: string
           options?: Record<string, string>
-          correct_option?: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+          correct_option?: string | null
+          correct_answer?: string | string[] | null
           explanation?: string | null
           is_generated?: boolean
           sort_order?: number
@@ -938,6 +947,89 @@ export type Database = {
             referencedRelation: "programs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quiz_questions_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          id: string
+          program_id: string
+          scope: Database["public"]["Enums"]["evaluation_scope"]
+          module_id: string | null
+          lesson_id: string | null
+          title: string
+          description: string | null
+          passing_grade_pct: number
+          questions_per_attempt: number | null
+          max_attempts: number
+          time_limit_minutes: number | null
+          min_completion_pct: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          scope: Database["public"]["Enums"]["evaluation_scope"]
+          module_id?: string | null
+          lesson_id?: string | null
+          title: string
+          description?: string | null
+          passing_grade_pct?: number
+          questions_per_attempt?: number | null
+          max_attempts?: number
+          time_limit_minutes?: number | null
+          min_completion_pct?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          scope?: Database["public"]["Enums"]["evaluation_scope"]
+          module_id?: string | null
+          lesson_id?: string | null
+          title?: string
+          description?: string | null
+          passing_grade_pct?: number
+          questions_per_attempt?: number | null
+          max_attempts?: number
+          time_limit_minutes?: number | null
+          min_completion_pct?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
         ]
       }
       quiz_attempts: {
@@ -945,8 +1037,9 @@ export type Database = {
           id: string
           enrollment_id: string
           program_id: string
+          evaluation_id: string | null
           questions_presented: string[]
-          answers: Record<string, string>
+          answers: Record<string, string | string[]>
           score_pct: number | null
           passed: boolean | null
           started_at: string
@@ -957,8 +1050,9 @@ export type Database = {
           id?: string
           enrollment_id: string
           program_id: string
+          evaluation_id?: string | null
           questions_presented: string[]
-          answers?: Record<string, string>
+          answers?: Record<string, string | string[]>
           score_pct?: number | null
           passed?: boolean | null
           started_at?: string
@@ -969,8 +1063,9 @@ export type Database = {
           id?: string
           enrollment_id?: string
           program_id?: string
+          evaluation_id?: string | null
           questions_presented?: string[]
-          answers?: Record<string, string>
+          answers?: Record<string, string | string[]>
           score_pct?: number | null
           passed?: boolean | null
           started_at?: string
@@ -983,6 +1078,13 @@ export type Database = {
             columns: ["enrollment_id"]
             isOneToOne: false
             referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
             referencedColumns: ["id"]
           },
         ]
@@ -1480,6 +1582,12 @@ export type Database = {
     Enums: {
       cohort_role_kind: "student" | "teacher" | "assistant"
       cohort_status: "planned" | "active" | "closed" | "archived"
+      evaluation_scope: "final" | "module" | "lesson"
+      question_type:
+        | "single_choice"
+        | "multiple_choice"
+        | "true_false"
+        | "short_answer"
       enrollment_status:
         | "invited"
         | "active"

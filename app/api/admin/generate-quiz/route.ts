@@ -304,6 +304,41 @@ export async function POST(req: Request) {
   // --- Shuffle options to eliminate LLM positional bias ----------------------
   const shuffledQuestions = parsed.questions.map(shuffleOptions);
 
+  // La evaluación final del programa (migrada en 0033) es la dueña del pool del
+  // quiz final. La aseguramos ANTES de insertar para adjuntar las preguntas a ella.
+  const { data: existingFinal } = await admin
+    .from("evaluations")
+    .select("id")
+    .eq("program_id", programId)
+    .eq("scope", "final")
+    .maybeSingle();
+
+  let finalEvalId = existingFinal?.id ?? null;
+  if (!finalEvalId) {
+    const { data: createdEval, error: evalError } = await admin
+      .from("evaluations")
+      .insert({
+        program_id: programId,
+        scope: "final",
+        title: "Evaluación final",
+        min_completion_pct: 80,
+        passing_grade_pct: 70,
+        questions_per_attempt: 10,
+        max_attempts: 3,
+        is_active: true,
+      })
+      .select("id")
+      .single();
+    if (evalError) {
+      console.error("Error creating final evaluation:", evalError);
+      return NextResponse.json(
+        { error: "Error al crear la evaluación final" },
+        { status: 500 },
+      );
+    }
+    finalEvalId = createdEval.id;
+  }
+
   // --- Insert new questions, linking to lesson_id where possible -------------
   const questionsToInsert = shuffledQuestions.map((q, idx) => {
     const matchedLessonId =
@@ -311,10 +346,13 @@ export async function POST(req: Request) {
 
     return {
       program_id: programId,
+      evaluation_id: finalEvalId,
       lesson_id: matchedLessonId,
       question_text: q.question_text,
       options: q.options,
+      question_type: "single_choice" as const,
       correct_option: q.correct_option,
+      correct_answer: q.correct_option,
       explanation: q.explanation,
       is_generated: true,
       sort_order: idx + 1,
@@ -333,29 +371,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Upsert quiz_configs with defaults if not exists -----------------------
-  const { data: existingConfig } = await admin
-    .from("quiz_configs")
-    .select("id")
-    .eq("program_id", programId)
-    .single();
-
-  if (!existingConfig) {
-    const { error: configError } = await admin.from("quiz_configs").insert({
-      program_id: programId,
-      min_completion_pct: 80,
-      passing_grade_pct: 70,
-      questions_per_attempt: 10,
-      max_attempts: 3,
-      time_limit_minutes: null,
-      is_active: true,
-    });
-
-    if (configError) {
-      console.error("Error creating quiz_config:", configError);
-      // Non-blocking: questions were already saved
-    }
-  }
+  // La config del quiz final ya quedó garantizada arriba (evaluación scope='final').
 
   return NextResponse.json({
     generated: true,

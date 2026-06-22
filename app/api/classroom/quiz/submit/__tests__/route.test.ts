@@ -63,7 +63,7 @@ function makeBuilder(table: string) {
     };
   }
   const resolve = (terminal: "single" | "maybeSingle" | "await") => {
-    if (table === "quiz_configs") return { data: state.config, error: state.config ? null : {} };
+    if (table === "evaluations") return { data: state.config, error: state.config ? null : {} };
     if (table === "quiz_questions") return { data: state.questions, error: state.questionsError };
     if (table === "quiz_attempts") {
       const has = (m: string, a0?: unknown) =>

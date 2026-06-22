@@ -98,10 +98,19 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
+| `app/api/admin/evaluations/route.ts` · `[evaluationId]/route.ts` | CRUD de evaluaciones por clase (final/módulo/lección): crear con seguridad de tenant, listar por programa, editar config/activar, borrar (guard de intentos) | `GET/POST/PATCH/DELETE /api/admin/evaluations` | — |
+| `lib/classroom/quiz-question-schema.ts` | Validación zod del payload de pregunta por tipo + `payloadToDbFields` (compartido por la API admin) | — | — |
+| `components/admin/quiz/question-draft.ts` · `question-editor.tsx` | Borrador editable de pregunta (4 tipos, N opciones) + editor UI dinámico, reusado por `add-question-form` y `question-card` | — | — |
+| `components/admin/quiz/lesson-quiz-panel.tsx` | Panel embebido en el editor de lección: crea/gestiona la evaluación `scope='lesson'` (preguntas, activar, borrar) | en `/admin/lessons/[lessonId]` | — |
 | `app/api/classroom/quiz/route.ts` | Estado/gating del quiz del alumno (locked/ready/passed); NO entrega preguntas | `GET /api/classroom/quiz` | — |
 | `app/api/classroom/quiz/start/route.ts` | Inicia/reanuda intento: persiste `questions_presented` server-side (ancla anti-bypass) | `POST /api/classroom/quiz/start` | — |
-| `app/api/classroom/quiz/submit/route.ts` | Cierra el intento y puntúa sobre el set persistido (cierra el bypass de certificación) | `POST /api/classroom/quiz/submit` | — |
-| `lib/classroom/quiz-runtime.ts` | Helpers server del quiz: completitud + selección/rehidratación de preguntas | — | — |
+| `app/api/classroom/quiz/submit/route.ts` | Cierra el intento y puntúa sobre el set persistido (cierra el bypass de certificación); el final lee config de `evaluations(scope='final')` | `POST /api/classroom/quiz/submit` | — |
+| `app/api/classroom/evaluation/{route,start,submit}/route.ts` | Flujo del alumno para quizzes FORMATIVOS por clase (estado/iniciar/enviar): anti-bypass por evaluación, puntúa con `scoreAnswer`, sin certificado ni gate de completitud | `GET/POST /api/classroom/evaluation*` | — |
+| `lib/classroom/evaluation-access.ts` | Resuelve acceso del alumno a una evaluación (activa + matrícula activa); compartido por los 3 endpoints formativos | — | — |
+| `components/classroom/evaluation/evaluation-runner.tsx` · `question-input.tsx` | Runner formativo (intro→en curso→resultado) + input por tipo; embebido al final de la lección | en `…/[lessonSlug]` | — |
+| `lib/classroom/quiz-question-schema.ts` | Validación zod del payload de pregunta por tipo + `payloadToDbFields` | — | — |
+| `lib/classroom/quiz-runtime.ts` | Helpers server del quiz: completitud, selección/rehidratación (por programa y por evaluación), y `scoreAnswer` por tipo (single/multiple/true_false/short_answer) | — | — |
+| `db/migrations/0033_evaluations.sql` | Tabla `evaluations` (quiz por alcance final/módulo/lección) + tipos de pregunta en `quiz_questions` (`question_type`/`correct_answer`) + `evaluation_id` en `quiz_attempts`; migra el final a `scope='final'` | — | — |
 | `app/(classroom)/classroom/[cohortSlug]/quiz/page.tsx` · `components/classroom/quiz-runner.tsx` | Página del alumno para rendir el quiz + cliente máquina-de-estados | `/classroom/[cohortSlug]/quiz` | — |
 | `app/(classroom)/classroom/[cohortSlug]/certificado/page.tsx` | Certificado del alumno | `/classroom/[cohortSlug]/certificado` | — |
 | `app/api/classroom/certificate/route.ts` · `certificate/retry/route.ts` | Emisión y reintento del certificado | — | — |
@@ -125,6 +134,7 @@
 | `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |
 | `app/api/admin/send-invitation/route.ts` | Envío/reenvío de invitación por email | — | — |
 | `app/api/admin/mux/upload/route.ts` | Crea upload directo a Mux para una lección | — | — |
+| `app/api/admin/resources/upload-url/route.ts` | Signed upload URL para subir archivo de recurso directo a Storage (bucket privado, ≤50 MB) | `POST /api/admin/resources/upload-url` | — |
 | `app/api/admin/{generate-summary,generate-chapters,generate-quiz,correct-transcript,transcript-segments}/route.ts` | Generación de contenido por IA (resumen, capítulos, quiz, transcripción) | — | — |
 | `app/api/admin/{modules,resources,quiz-config,quiz-questions,quiz-attempts,certificates}/route.ts` | CRUD admin de módulos/recursos/quiz/certificados | — | — |
 | `components/admin/` | UI admin: `user-drawer`, `progress-table`, `quiz-manager`, `mux-uploader`, `resource-manager`, `csv-import-modal`, `transcript-review` | — | — |
@@ -168,5 +178,5 @@
 | `lib/rate-limit.ts` | Rate limiting de rutas API | — | — |
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0029`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0033`) | — | — |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

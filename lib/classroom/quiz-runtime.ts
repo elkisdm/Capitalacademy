@@ -11,9 +11,82 @@ export type QuizQuestionPublic = {
   id: string;
   question_text: string;
   options: Record<string, string>;
+  question_type: QuestionType;
+};
+
+export type QuestionType =
+  | "single_choice"
+  | "multiple_choice"
+  | "true_false"
+  | "short_answer";
+
+/** Respuesta del alumno por tipo: letra/valor único, set de letras, o texto libre. */
+export type StudentAnswer = string | string[] | null | undefined;
+
+/** Pregunta puntuable: solo lo que el servidor necesita para corregir. */
+export type ScorableQuestion = {
+  id: string;
+  question_type: QuestionType;
+  // jsonb persistido en quiz_questions.correct_answer:
+  //   single_choice / true_false → "A"
+  //   multiple_choice            → ["A","C"]
+  //   short_answer               → ["respuesta aceptada", "sinónimo"]
+  correct_answer: unknown;
 };
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
+
+/** Normaliza texto para comparar respuestas cortas: sin espacios extremos,
+ *  minúsculas y sin tildes. "  Él  " → "el". */
+export function normalizeText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v));
+  if (value === null || value === undefined) return [];
+  return [String(value)];
+}
+
+/**
+ * Puntúa la respuesta de un alumno a una pregunta, server-side, según su tipo.
+ * Devuelve `true` solo si es correcta. Una respuesta ausente cuenta como incorrecta.
+ *
+ *  - single_choice / true_false: igualdad exacta del valor único.
+ *  - multiple_choice: el set elegido debe coincidir EXACTO con el set correcto
+ *    (sin puntuación parcial en v0).
+ *  - short_answer: el texto normalizado debe estar entre las respuestas aceptadas.
+ */
+export function scoreAnswer(question: ScorableQuestion, given: StudentAnswer): boolean {
+  switch (question.question_type) {
+    case "single_choice":
+    case "true_false": {
+      if (typeof given !== "string") return false;
+      const correct = asStringArray(question.correct_answer)[0];
+      return correct !== undefined && given === correct;
+    }
+    case "multiple_choice": {
+      const correct = new Set(asStringArray(question.correct_answer));
+      const chosen = new Set(
+        Array.isArray(given) ? given.map((v) => String(v)) : given ? [String(given)] : [],
+      );
+      if (correct.size === 0 || chosen.size !== correct.size) return false;
+      for (const c of correct) if (!chosen.has(c)) return false;
+      return true;
+    }
+    case "short_answer": {
+      if (typeof given !== "string" || given.trim() === "") return false;
+      const accepted = asStringArray(question.correct_answer).map(normalizeText);
+      return accepted.includes(normalizeText(given));
+    }
+    default:
+      return false;
+  }
+}
 
 /** Porcentaje de lecciones del programa completadas por la matrícula. */
 export async function getCompletion(
@@ -57,13 +130,23 @@ export async function selectRandomQuestions(
 
   if (!rpcError && rpcData) {
     return (
-      rpcData as Array<{ id: string; question_text: string; options: Record<string, string> }>
-    ).map((q) => ({ id: q.id, question_text: q.question_text, options: q.options }));
+      rpcData as Array<{
+        id: string;
+        question_text: string;
+        options: Record<string, string>;
+        question_type?: QuestionType;
+      }>
+    ).map((q) => ({
+      id: q.id,
+      question_text: q.question_text,
+      options: q.options,
+      question_type: q.question_type ?? "single_choice",
+    }));
   }
 
   const { data: all } = await admin
     .from("quiz_questions")
-    .select("id, question_text, options")
+    .select("id, question_text, options, question_type")
     .eq("program_id", programId);
 
   const pool = [...(all ?? [])];
@@ -75,6 +158,7 @@ export async function selectRandomQuestions(
     id: q.id as string,
     question_text: q.question_text as string,
     options: q.options as Record<string, string>,
+    question_type: (q.question_type as QuestionType) ?? "single_choice",
   }));
 }
 
@@ -87,7 +171,7 @@ export async function getPresentedQuestions(
   if (questionIds.length === 0) return [];
   const { data } = await admin
     .from("quiz_questions")
-    .select("id, question_text, options")
+    .select("id, question_text, options, question_type")
     .eq("program_id", programId)
     .in("id", questionIds);
 
@@ -99,5 +183,85 @@ export async function getPresentedQuestions(
       id: q.id as string,
       question_text: q.question_text as string,
       options: q.options as Record<string, string>,
+      question_type: (q.question_type as QuestionType) ?? "single_choice",
     }));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Selección por EVALUACIÓN (quizzes por clase — Fase 3).                       */
+/* Misma forma pública (sin respuestas) que el final, pero el pool sale de     */
+/* `evaluation_id`, no del programa completo.                                  */
+/* -------------------------------------------------------------------------- */
+
+/** Selecciona hasta `limit` preguntas aleatorias del pool de una evaluación.
+ *  Si `limit` es null/undefined, devuelve todas (orden aleatorio). */
+export async function selectEvaluationQuestions(
+  admin: AdminClient,
+  evaluationId: string,
+  limit?: number | null,
+): Promise<QuizQuestionPublic[]> {
+  const { data: all } = await admin
+    .from("quiz_questions")
+    .select("id, question_text, options, question_type")
+    .eq("evaluation_id", evaluationId);
+
+  const pool = [...(all ?? [])];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const sliced = limit != null ? pool.slice(0, limit) : pool;
+  return sliced.map((q) => ({
+    id: q.id as string,
+    question_text: q.question_text as string,
+    options: q.options as Record<string, string>,
+    question_type: (q.question_type as QuestionType) ?? "single_choice",
+  }));
+}
+
+/** Rehidrata preguntas presentadas de una evaluación (reanudar), SIN respuestas. */
+export async function getPresentedEvaluationQuestions(
+  admin: AdminClient,
+  evaluationId: string,
+  questionIds: string[],
+): Promise<QuizQuestionPublic[]> {
+  if (questionIds.length === 0) return [];
+  const { data } = await admin
+    .from("quiz_questions")
+    .select("id, question_text, options, question_type")
+    .eq("evaluation_id", evaluationId)
+    .in("id", questionIds);
+
+  const byId = new Map((data ?? []).map((q) => [q.id as string, q]));
+  return questionIds
+    .map((id) => byId.get(id))
+    .filter((q): q is NonNullable<typeof q> => !!q)
+    .map((q) => ({
+      id: q.id as string,
+      question_text: q.question_text as string,
+      options: q.options as Record<string, string>,
+      question_type: (q.question_type as QuestionType) ?? "single_choice",
+    }));
+}
+
+/** Trae las respuestas correctas (server-only) de las preguntas presentadas de
+ *  una evaluación, para puntuar con `scoreAnswer`. NUNCA se envía al cliente. */
+export async function getCorrectAnswers(
+  admin: AdminClient,
+  evaluationId: string,
+  questionIds: string[],
+): Promise<ScorableQuestion[]> {
+  if (questionIds.length === 0) return [];
+  const { data } = await admin
+    .from("quiz_questions")
+    .select("id, question_type, correct_answer, correct_option")
+    .eq("evaluation_id", evaluationId)
+    .in("id", questionIds);
+
+  return (data ?? []).map((q) => ({
+    id: q.id as string,
+    question_type: (q.question_type as QuestionType) ?? "single_choice",
+    // Compat: si correct_answer aún no está poblado, cae a correct_option.
+    correct_answer: q.correct_answer ?? q.correct_option,
+  }));
 }

@@ -28,7 +28,9 @@ export type LessonResource = {
   lesson_id: string;
   title: string;
   type: "pdf" | "link" | "template" | "document" | "other";
-  url: string;
+  // null cuando el recurso es un archivo subido todavía sin firmar; el resolver
+  // (resolveResourceUrls) la reemplaza por una signed URL antes de renderizar.
+  url: string | null;
   storage_path: string | null;
   file_size_bytes: number | null;
   position: number;

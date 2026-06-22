@@ -139,6 +139,7 @@
 | `app/api/admin/{modules,resources,quiz-config,quiz-questions,quiz-attempts,certificates}/route.ts` | CRUD admin de módulos/recursos/quiz/certificados | — | — |
 | `components/admin/` | UI admin: `user-drawer`, `progress-table`, `quiz-manager`, `mux-uploader`, `resource-manager`, `csv-import-modal`, `transcript-review` | — | — |
 | `lib/admin/user-queries.ts` | Lecturas de usuarios/segmento para el admin | — | — |
+| `lib/admin/session-module.ts` | Valida que el módulo de una sesión pertenezca al programa de la cohorte (POST/PATCH de sesiones) | — | — |
 | `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada y modelo de roles | — | 0004 |
 
 ## Landing (público)
@@ -178,5 +179,5 @@
 | `lib/rate-limit.ts` | Rate limiting de rutas API | — | — |
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0033`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0034`) | — | — |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

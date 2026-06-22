@@ -24,7 +24,9 @@ type Resource = {
   lesson_id: string;
   title: string;
   type: string;
-  url: string;
+  url: string | null;
+  storage_path?: string | null;
+  file_size_bytes?: number | null;
   position: number;
 };
 

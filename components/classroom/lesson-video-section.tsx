@@ -175,11 +175,14 @@ export function LessonVideoSection({
                 return (
                   <a
                     key={r.id}
-                    href={r.url}
+                    // url puede ser null si la firma de la signed URL falló; sin
+                    // href el <a> no navega (degradación elegante, no link muerto).
+                    href={r.url ?? undefined}
                     target={isExternal ? "_blank" : undefined}
                     rel={isExternal ? "noopener noreferrer" : undefined}
                     download={!isExternal || undefined}
-                    className="ca-card ca-card-hoverable group flex items-center gap-4 p-4"
+                    aria-disabled={r.url ? undefined : true}
+                    className={`ca-card ca-card-hoverable group flex items-center gap-4 p-4${r.url ? "" : " pointer-events-none opacity-60"}`}
                   >
                     <div
                       className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl"

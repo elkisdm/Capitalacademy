@@ -26,7 +26,8 @@ export default async function AdminResourcesPage() {
   );
 
   let resourcesByLesson: Record<string, Array<{
-    id: string; lesson_id: string; title: string; type: string; url: string; position: number;
+    id: string; lesson_id: string; title: string; type: string; url: string | null;
+    storage_path: string | null; file_size_bytes: number | null; position: number;
   }>> = {};
 
   if (allLessonIds.length > 0) {

@@ -74,13 +74,23 @@ function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
   );
 }
 
+type NavSection = "learn" | "general" | "config";
+
 type NavItem = {
   icon: string;
   label: string;
   href?: string;
   badge?: string;
-  section: "learn" | "ops";
+  section: NavSection;
 };
+
+// Orden y etiquetas de las secciones del menú. El staff ve General + Configuración;
+// el alumno solo Aprender.
+const NAV_SECTIONS: { key: NavSection; label: string }[] = [
+  { key: "learn", label: "Aprender" },
+  { key: "general", label: "General" },
+  { key: "config", label: "Configuración" },
+];
 
 function NavItemButton({
   item,
@@ -183,9 +193,6 @@ function SidebarContent({
   onCollapse?: () => void;
   onNavClick?: () => void;
 }) {
-  const learnItems = items.filter((i) => i.section === "learn");
-  const opsItems = items.filter((i) => i.section === "ops");
-
   return (
     <>
       <div className="flex items-center justify-between px-4 py-5">
@@ -201,39 +208,26 @@ function SidebarContent({
       />
 
       <div className="no-scrollbar flex-1 overflow-y-auto px-3 pb-3">
-        {learnItems.length > 0 && (
-          <>
-            <SectionLabel collapsed={collapsed}>Aprender</SectionLabel>
-            <div className="flex flex-col gap-1">
-              {learnItems.map((item) => (
-                <NavItemButton
-                  key={item.label}
-                  item={item}
-                  active={item.href ? isActive(item.href) : false}
-                  collapsed={collapsed}
-                  onClick={onNavClick}
-                />
-              ))}
+        {NAV_SECTIONS.map(({ key, label }) => {
+          const sectionItems = items.filter((i) => i.section === key);
+          if (sectionItems.length === 0) return null;
+          return (
+            <div key={key}>
+              <SectionLabel collapsed={collapsed}>{label}</SectionLabel>
+              <div className="flex flex-col gap-1">
+                {sectionItems.map((item) => (
+                  <NavItemButton
+                    key={item.label}
+                    item={item}
+                    active={item.href ? isActive(item.href) : false}
+                    collapsed={collapsed}
+                    onClick={onNavClick}
+                  />
+                ))}
+              </div>
             </div>
-          </>
-        )}
-
-        {opsItems.length > 0 && (
-          <>
-            <SectionLabel collapsed={collapsed}>Operaciones</SectionLabel>
-            <div className="flex flex-col gap-1">
-              {opsItems.map((item) => (
-                <NavItemButton
-                  key={item.label}
-                  item={item}
-                  active={item.href ? isActive(item.href) : false}
-                  collapsed={collapsed}
-                  onClick={onNavClick}
-                />
-              ))}
-            </div>
-          </>
-        )}
+          );
+        })}
       </div>
 
       <div className={`border-t border-ca-ink/[0.08] px-3 py-3 ${collapsed ? "flex flex-col items-center" : ""}`}>
@@ -354,7 +348,7 @@ export function ClassroomSidebar({
     return pathname.startsWith(path);
   };
 
-  // El staff alterna entre vista Admin (Operaciones) y vista Alumno (Aprender)
+  // El staff alterna entre vista Admin (General + Configuración) y vista Alumno (Aprender)
   // vía `viewMode`. Un alumno puro (no staff) siempre ve solo "Aprender".
   const staff = showOps;
   const showLearn = !staff || viewMode === "student";
@@ -372,12 +366,14 @@ export function ClassroomSidebar({
       { icon: "help", label: "Ayuda", href: "/classroom/guia", section: "learn" as const },
     ] : []),
     ...(showOpsNav ? [
-      { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
-      { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "ops" as const },
-      { icon: "folder", label: "Recursos", href: "/admin/resources", section: "ops" as const },
-      { icon: "users", label: "Progreso cohorte", href: "/admin/progress", section: "ops" as const },
-      { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "ops" as const },
-      { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "ops" as const },
+      // General: opciones globales (no atadas a un entorno).
+      { icon: "users", label: "Usuarios", href: "/admin/users", section: "general" as const },
+      { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "general" as const },
+      // Configuración: armado del contenido del entorno activo.
+      { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "config" as const },
+      { icon: "folder", label: "Recursos", href: "/admin/resources", section: "config" as const },
+      { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "config" as const },
+      { icon: "chart", label: "Progreso cohorte", href: "/admin/progress", section: "config" as const },
     ] : []),
   ];
 
@@ -457,39 +453,26 @@ export function ClassroomSidebar({
                 activeEnv={activeEnv}
                 collapsed={false}
               />
-              {navItems.some((i) => i.section === "learn") && (
-                <>
-                  <SectionLabel collapsed={false}>Aprender</SectionLabel>
-                  <div className="flex flex-col gap-1">
-                    {navItems.filter((i) => i.section === "learn").map((item) => (
-                      <NavItemButton
-                        key={item.label}
-                        item={item}
-                        active={item.href ? isActive(item.href) : false}
-                        collapsed={false}
-                        onClick={() => setMobileOpen(false)}
-                      />
-                    ))}
+              {NAV_SECTIONS.map(({ key, label }) => {
+                const sectionItems = navItems.filter((i) => i.section === key);
+                if (sectionItems.length === 0) return null;
+                return (
+                  <div key={key}>
+                    <SectionLabel collapsed={false}>{label}</SectionLabel>
+                    <div className="flex flex-col gap-1">
+                      {sectionItems.map((item) => (
+                        <NavItemButton
+                          key={item.label}
+                          item={item}
+                          active={item.href ? isActive(item.href) : false}
+                          collapsed={false}
+                          onClick={() => setMobileOpen(false)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </>
-              )}
-
-              {navItems.some((i) => i.section === "ops") && (
-                <>
-                  <SectionLabel collapsed={false}>Operaciones</SectionLabel>
-                  <div className="flex flex-col gap-1">
-                    {navItems.filter((i) => i.section === "ops").map((item) => (
-                      <NavItemButton
-                        key={item.label}
-                        item={item}
-                        active={item.href ? isActive(item.href) : false}
-                        collapsed={false}
-                        onClick={() => setMobileOpen(false)}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+                );
+              })}
             </div>
 
             <div className="border-t border-ca-ink/[0.08] px-3 py-3">

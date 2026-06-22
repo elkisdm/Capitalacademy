@@ -139,7 +139,9 @@
 | `app/api/admin/{generate-summary,generate-chapters,generate-quiz,correct-transcript,transcript-segments}/route.ts` | Generación de contenido por IA (resumen, capítulos, quiz, transcripción) | — | — |
 | `app/api/admin/{modules,resources,quiz-config,quiz-questions,quiz-attempts,certificates}/route.ts` | CRUD admin de módulos/recursos/quiz/certificados | — | — |
 | `components/admin/` | UI admin: `user-drawer`, `progress-table`, `quiz-manager`, `mux-uploader`, `resource-manager`, `csv-import-modal`, `transcript-review` | — | — |
-| `lib/admin/user-queries.ts` | Lecturas de usuarios/segmento para el admin | — | — |
+| `lib/admin/user-queries.ts` | Lecturas de usuarios/segmento para el admin; `getAdminUsersList(programId?)` scopea por entorno (miembros del programa + staff transversal admin/ops) | — | — |
+| `lib/admin/active-env.ts` · `env-actions.ts` | Entorno activo (program_id) + modo de vista (admin/alumno) del staff, en cookies; `resolveProgramScope` (precedencia `?program` > cookie) y server actions `setActiveEnv`/`setViewMode` | — | — |
+| `components/admin/env-switcher.tsx` | Selector global de entorno + toggle "Ver como Admin/Alumno" (en el sidebar, solo staff) | — | — |
 | `lib/admin/session-module.ts` | Valida que el módulo de una sesión pertenezca al programa de la cohorte (POST/PATCH de sesiones) | — | — |
 | `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada y modelo de roles | — | 0004 |
 

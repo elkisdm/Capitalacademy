@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Logo, Avatar } from "./primitives";
+import { EnvSwitcher, ViewModeToggle } from "@/components/admin/env-switcher";
+import type { EnvOption, ViewMode } from "@/lib/admin/active-env";
 
 function SidebarTooltip({ label, parentRef }: { label: string; parentRef: React.RefObject<HTMLElement | null> }) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -130,6 +132,30 @@ function SectionLabel({ children, collapsed }: { children: React.ReactNode; coll
   return <div className="mb-1 mt-5 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">{children}</div>;
 }
 
+function StaffControls({
+  staff,
+  viewMode,
+  envOptions,
+  activeEnv,
+  collapsed,
+}: {
+  staff: boolean;
+  viewMode: ViewMode;
+  envOptions: EnvOption[];
+  activeEnv: string | null;
+  collapsed: boolean;
+}) {
+  if (!staff) return null;
+  return (
+    <div className={collapsed ? "mb-1 border-b border-ca-ink/[0.08] pb-1" : "mb-1 border-b border-ca-ink/[0.08] pb-2"}>
+      <ViewModeToggle mode={viewMode} collapsed={collapsed} />
+      {viewMode === "admin" && (
+        <EnvSwitcher options={envOptions} activeEnv={activeEnv} collapsed={collapsed} />
+      )}
+    </div>
+  );
+}
+
 function SidebarContent({
   items,
   isActive,
@@ -137,6 +163,10 @@ function SidebarContent({
   userInitials,
   userName,
   userAvatarUrl,
+  staff,
+  viewMode,
+  envOptions,
+  activeEnv,
   onCollapse,
   onNavClick,
 }: {
@@ -146,6 +176,10 @@ function SidebarContent({
   userInitials: string;
   userName: string;
   userAvatarUrl?: string | null;
+  staff: boolean;
+  viewMode: ViewMode;
+  envOptions: EnvOption[];
+  activeEnv: string | null;
   onCollapse?: () => void;
   onNavClick?: () => void;
 }) {
@@ -158,19 +192,31 @@ function SidebarContent({
         <Logo collapsed={collapsed} />
       </div>
 
+      <StaffControls
+        staff={staff}
+        viewMode={viewMode}
+        envOptions={envOptions}
+        activeEnv={activeEnv}
+        collapsed={collapsed}
+      />
+
       <div className="no-scrollbar flex-1 overflow-y-auto px-3 pb-3">
-        <SectionLabel collapsed={collapsed}>Aprender</SectionLabel>
-        <div className="flex flex-col gap-1">
-          {learnItems.map((item) => (
-            <NavItemButton
-              key={item.label}
-              item={item}
-              active={item.href ? isActive(item.href) : false}
-              collapsed={collapsed}
-              onClick={onNavClick}
-            />
-          ))}
-        </div>
+        {learnItems.length > 0 && (
+          <>
+            <SectionLabel collapsed={collapsed}>Aprender</SectionLabel>
+            <div className="flex flex-col gap-1">
+              {learnItems.map((item) => (
+                <NavItemButton
+                  key={item.label}
+                  item={item}
+                  active={item.href ? isActive(item.href) : false}
+                  collapsed={collapsed}
+                  onClick={onNavClick}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {opsItems.length > 0 && (
           <>
@@ -268,6 +314,9 @@ export function ClassroomSidebar({
   cohortId,
   cohortLabel,
   showOps = false,
+  viewMode = "admin",
+  envOptions = [],
+  activeEnv = null,
 }: {
   userInitials: string;
   userName: string;
@@ -276,6 +325,9 @@ export function ClassroomSidebar({
   cohortId?: string;
   cohortLabel?: string;
   showOps?: boolean;
+  viewMode?: ViewMode;
+  envOptions?: EnvOption[];
+  activeEnv?: string | null;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -302,15 +354,24 @@ export function ClassroomSidebar({
     return pathname.startsWith(path);
   };
 
+  // El staff alterna entre vista Admin (Operaciones) y vista Alumno (Aprender)
+  // vía `viewMode`. Un alumno puro (no staff) siempre ve solo "Aprender".
+  const staff = showOps;
+  const showLearn = !staff || viewMode === "student";
+  const showOpsNav = staff && viewMode === "admin";
+
   const navItems: NavItem[] = [
-    { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" },
-    { icon: "book", label: cohortLabel ?? "Mi programa", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" },
-    { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" },
-    ...(cohortId ? [
-      { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
+    ...(showLearn ? [
+      { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" as const },
+      { icon: "book", label: cohortLabel ?? "Mi programa", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" as const },
+      { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" as const },
+      ...(cohortId ? [
+        { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },
+        { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
+      ] : []),
+      { icon: "help", label: "Ayuda", href: "/classroom/guia", section: "learn" as const },
     ] : []),
-    { icon: "help", label: "Ayuda", href: "/classroom/guia", section: "learn" as const },
-    ...(showOps ? [
+    ...(showOpsNav ? [
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
       { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "ops" as const },
       { icon: "folder", label: "Recursos", href: "/admin/resources", section: "ops" as const },
@@ -334,6 +395,10 @@ export function ClassroomSidebar({
           userInitials={userInitials}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
+          staff={staff}
+          viewMode={viewMode}
+          envOptions={envOptions}
+          activeEnv={activeEnv}
           onCollapse={() => setCollapsed(!collapsed)}
         />
       </aside>
@@ -385,18 +450,29 @@ export function ClassroomSidebar({
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 pb-3">
-              <SectionLabel collapsed={false}>Aprender</SectionLabel>
-              <div className="flex flex-col gap-1">
-                {navItems.filter((i) => i.section === "learn").map((item) => (
-                  <NavItemButton
-                    key={item.label}
-                    item={item}
-                    active={item.href ? isActive(item.href) : false}
-                    collapsed={false}
-                    onClick={() => setMobileOpen(false)}
-                  />
-                ))}
-              </div>
+              <StaffControls
+                staff={staff}
+                viewMode={viewMode}
+                envOptions={envOptions}
+                activeEnv={activeEnv}
+                collapsed={false}
+              />
+              {navItems.some((i) => i.section === "learn") && (
+                <>
+                  <SectionLabel collapsed={false}>Aprender</SectionLabel>
+                  <div className="flex flex-col gap-1">
+                    {navItems.filter((i) => i.section === "learn").map((item) => (
+                      <NavItemButton
+                        key={item.label}
+                        item={item}
+                        active={item.href ? isActive(item.href) : false}
+                        collapsed={false}
+                        onClick={() => setMobileOpen(false)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
 
               {navItems.some((i) => i.section === "ops") && (
                 <>

@@ -8,6 +8,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Las clases ahora pueden ser de texto/diapositiva, no solo de video: el equipo escribe el contenido con formato (títulos, listas, imágenes intercaladas) desde el editor de la lección, y el alumno lo lee dentro de la clase junto con el material y un botón para marcarla como completada (antes una clase sin video abría a una pantalla vacía) (`4d8516c`)
+- Nuevo "Recursos" en el menú del alumno: una vista que reúne en un solo lugar todo el material del programa —de las clases grabadas y de las clases en vivo— para encontrarlo rápido (`7627ac2`)
+- En el editor de clases, cada lección grabada tiene ahora un botón explícito "Editar" que lleva a su detalle (`85ae5ce`)
 - Nuevo "Centro de ayuda" en el menú: un índice con buscador y categorías que lleva a una página dedicada por cada tema/pantalla (paso a paso, recomendaciones, preguntas frecuentes y enlace directo a la pantalla). Dividido en vista de alumno y de equipo (esta última solo para staff), e incluye un bloque de soporte donde la persona escribe su mensaje y adjunta capturas de pantalla sin salir de la app —llega por correo al equipo y se responde directo— además de WhatsApp como acceso directo (`5b760f3`, `12346c0`, `28cfc2a`)
 - En "Recursos por lección", bajo cada módulo ahora también se listan las clases en vivo del calendario (antes solo aparecían las lecciones grabadas con video), cada una con su conteo de recursos y un acceso directo al editor de calendario para cargarles material (`b4037d7`)
 - En el material de cada clase del calendario, el equipo ahora puede subir un archivo (hasta 50 MB, cualquier documento o multimedia) además de pegar un enlace; los alumnos lo descargan desde su calendario con un enlace temporal seguro. Esto habilita cargar recursos a programas como el Diplomado, cuyo contenido son las clases en vivo

@@ -57,11 +57,13 @@ export async function GET(req: Request) {
   }
   const minCompletion = config.min_completion_pct ?? 0;
 
+  // Intentos del FINAL: anclados a la evaluación final, no a program_id (los
+  // formativos por clase comparten program_id y contaminarían el gate).
   const { data: attempts } = await admin
     .from("quiz_attempts")
     .select("id, passed, score_pct, completed_at")
     .eq("enrollment_id", enrollment.id)
-    .eq("program_id", programId)
+    .eq("evaluation_id", config.id)
     .order("created_at", { ascending: false });
 
   const all = attempts ?? [];

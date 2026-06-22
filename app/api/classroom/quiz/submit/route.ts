@@ -77,26 +77,32 @@ export async function POST(req: Request) {
     );
   }
 
-  // (1) El intento debe existir, ser de esta matrícula/programa y estar incompleto.
+  // (1) El intento debe existir, ser de esta matrícula y de la EVALUACIÓN FINAL
+  // (no de un quiz formativo que comparte program_id), y estar incompleto.
   const { data: attempt } = await admin
     .from("quiz_attempts")
-    .select("id, enrollment_id, program_id, questions_presented, completed_at")
+    .select("id, enrollment_id, program_id, evaluation_id, questions_presented, completed_at")
     .eq("id", attemptId)
     .single();
 
-  if (!attempt || attempt.enrollment_id !== enrollment.id || attempt.program_id !== programId) {
+  if (
+    !attempt ||
+    attempt.enrollment_id !== enrollment.id ||
+    attempt.program_id !== programId ||
+    attempt.evaluation_id !== config.id
+  ) {
     return NextResponse.json({ error: "Intento no encontrado" }, { status: 404 });
   }
   if (attempt.completed_at) {
     return NextResponse.json({ error: "Este intento ya fue enviado" }, { status: 409 });
   }
 
-  // Guarda de "ya aprobó" en otra rama.
+  // Guarda de "ya aprobó" — acotada a la evaluación final, no al programa.
   const { data: priorPassed } = await admin
     .from("quiz_attempts")
     .select("id")
     .eq("enrollment_id", enrollment.id)
-    .eq("program_id", programId)
+    .eq("evaluation_id", config.id)
     .eq("passed", true)
     .maybeSingle();
   if (priorPassed) {
@@ -115,11 +121,11 @@ export async function POST(req: Request) {
     }
   }
 
-  // (3) Respuestas correctas solo de las presentadas, acotadas al programa.
+  // (3) Respuestas correctas solo de las presentadas, acotadas a la evaluación final.
   const { data: correctQuestions, error: questionsError } = await admin
     .from("quiz_questions")
     .select("id, correct_option, explanation")
-    .eq("program_id", programId)
+    .eq("evaluation_id", config.id)
     .in("id", presented);
 
   if (
@@ -179,7 +185,7 @@ export async function POST(req: Request) {
     .from("quiz_attempts")
     .select("id")
     .eq("enrollment_id", enrollment.id)
-    .eq("program_id", programId)
+    .eq("evaluation_id", config.id)
     .not("completed_at", "is", null);
   const attemptsCompleted = completedAfter?.length ?? 1;
 

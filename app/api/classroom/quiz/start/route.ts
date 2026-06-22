@@ -5,8 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { uuidLike } from "@/lib/utils/zod";
 import {
   getCompletion,
-  selectRandomQuestions,
-  getPresentedQuestions,
+  selectEvaluationQuestions,
+  getPresentedEvaluationQuestions,
 } from "@/lib/classroom/quiz-runtime";
 
 export const runtime = "nodejs";
@@ -73,11 +73,13 @@ export async function POST(req: Request) {
   const questionsPerAttempt = config.questions_per_attempt ?? 10;
   const minCompletion = config.min_completion_pct ?? 0;
 
+  // Intentos del FINAL: anclados a la evaluación final (config.id), NO a program_id
+  // —los intentos formativos por clase comparten program_id y contaminarían el gate.
   const { data: attempts } = await admin
     .from("quiz_attempts")
     .select("id, passed, completed_at, questions_presented, started_at")
     .eq("enrollment_id", enrollment.id)
-    .eq("program_id", programId)
+    .eq("evaluation_id", config.id)
     .order("created_at", { ascending: false });
 
   const all = attempts ?? [];
@@ -98,7 +100,7 @@ export async function POST(req: Request) {
   const incomplete = all.find((a) => !a.completed_at);
   if (incomplete) {
     const presentedIds = (incomplete.questions_presented as string[]) ?? [];
-    const questions = await getPresentedQuestions(admin, programId, presentedIds);
+    const questions = await getPresentedEvaluationQuestions(admin, config.id, presentedIds);
     return NextResponse.json({
       attemptId: incomplete.id,
       questions,
@@ -129,8 +131,8 @@ export async function POST(req: Request) {
     );
   }
 
-  // Selección server-side + persistencia del set presentado.
-  const selected = await selectRandomQuestions(admin, programId, questionsPerAttempt);
+  // Selección server-side + persistencia del set presentado (pool de la evaluación final).
+  const selected = await selectEvaluationQuestions(admin, config.id, questionsPerAttempt);
   if (selected.length === 0) {
     return NextResponse.json(
       { error: "No hay preguntas disponibles para este programa" },
@@ -143,6 +145,7 @@ export async function POST(req: Request) {
     .insert({
       enrollment_id: enrollment.id,
       program_id: programId,
+      evaluation_id: config.id,
       questions_presented: selected.map((q) => q.id),
       answers: {},
     })

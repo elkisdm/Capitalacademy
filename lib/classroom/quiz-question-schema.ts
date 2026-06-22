@@ -14,7 +14,7 @@ import type { QuestionType } from "@/lib/classroom/quiz-runtime";
  */
 
 const optionsSchema = z
-  .record(z.string().regex(/^[A-Z]$/, "Clave de opción inválida (A–Z)"), z.string().trim().min(1))
+  .record(z.string().regex(/^[A-F]$/, "Clave de opción inválida (A–F)"), z.string().trim().min(1))
   .refine((o) => Object.keys(o).length >= 2 && Object.keys(o).length <= 6, {
     message: "Una pregunta de opciones requiere entre 2 y 6 opciones",
   });
@@ -30,7 +30,7 @@ export const questionPayloadSchema = z.discriminatedUnion("questionType", [
     .object({
       questionType: z.literal("single_choice"),
       options: optionsSchema,
-      correctAnswer: z.string().regex(/^[A-Z]$/),
+      correctAnswer: z.string().regex(/^[A-F]$/),
       ...baseFields,
     })
     .superRefine((v, ctx) => {
@@ -43,7 +43,7 @@ export const questionPayloadSchema = z.discriminatedUnion("questionType", [
     .object({
       questionType: z.literal("multiple_choice"),
       options: optionsSchema,
-      correctAnswer: z.array(z.string().regex(/^[A-Z]$/)).min(1, "Marca al menos una respuesta correcta"),
+      correctAnswer: z.array(z.string().regex(/^[A-F]$/)).min(1, "Marca al menos una respuesta correcta"),
       ...baseFields,
     })
     .superRefine((v, ctx) => {

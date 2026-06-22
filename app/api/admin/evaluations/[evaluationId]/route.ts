@@ -88,6 +88,22 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (v.isActive !== undefined) updates.is_active = v.isActive;
 
   const admin = createAdminClient();
+
+  // Invariante "activa ⇒ respondible": no activar una evaluación sin preguntas
+  // (la validación cliente no basta; un PATCH directo la evadiría).
+  if (v.isActive === true) {
+    const { count } = await admin
+      .from("quiz_questions")
+      .select("id", { count: "exact", head: true })
+      .eq("evaluation_id", evaluationId);
+    if ((count ?? 0) === 0) {
+      return NextResponse.json(
+        { error: "No se puede activar una evaluación sin preguntas" },
+        { status: 422 },
+      );
+    }
+  }
+
   const { data: updated, error } = await admin
     .from("evaluations")
     .update(updates as never)

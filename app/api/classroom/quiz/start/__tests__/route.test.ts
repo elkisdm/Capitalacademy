@@ -32,7 +32,9 @@ type State = {
   modules: Array<Record<string, unknown>>;
   totalLessons: number;
   completedLessons: number;
-  rpcQuestions: Array<Record<string, unknown>> | null;
+  // El final ya no usa RPC para seleccionar (filtra por evaluation_id); queda
+  // opcional por compat del mock de rpc.
+  rpcQuestions?: Array<Record<string, unknown>> | null;
 };
 let state: State;
 
@@ -55,7 +57,18 @@ function makeBuilder(table: string) {
     if (table === "quiz_questions") return { data: state.presentedQuestions, error: null };
     if (table === "quiz_attempts") {
       if (has("insert")) return { data: state.inserted, error: state.inserted ? null : {} };
-      return { data: state.attemptsList, error: null };
+      // Respeta el filtro .eq("evaluation_id", ...): los intentos con evaluation_id
+      // distinto (formativos) NO deben contaminar el gate del final. Items sin
+      // evaluation_id pasan (compat con tests previos).
+      const evalEq = ops.find(([m, a]) => m === "eq" && a[0] === "evaluation_id") as
+        | [string, unknown[]]
+        | undefined;
+      let list = (state.attemptsList ?? []) as Array<Record<string, unknown>>;
+      if (evalEq) {
+        const wanted = evalEq[1][1];
+        list = list.filter((a) => a.evaluation_id === undefined || a.evaluation_id === wanted);
+      }
+      return { data: list, error: null };
     }
     return { data: null, error: null };
   };
@@ -97,6 +110,7 @@ describe("POST /api/classroom/quiz/start", () => {
     mockEnrollmentQuery.mockResolvedValue({ data: { id: "enr-1", status: "active" }, error: null });
     state = {
       config: {
+        id: "final-eval-1",
         max_attempts: 1,
         passing_grade_pct: 70,
         questions_per_attempt: 2,
@@ -105,14 +119,14 @@ describe("POST /api/classroom/quiz/start", () => {
       },
       attemptsList: [],
       inserted: { id: "attempt-new", started_at: "2026-06-19T00:00:00Z" },
-      presentedQuestions: [],
+      // El pool de la evaluación final lo sirve la tabla quiz_questions (ya no el RPC).
+      presentedQuestions: [
+        { id: Q1, question_text: "P1", options: { A: "a", B: "b" }, question_type: "single_choice" },
+        { id: Q2, question_text: "P2", options: { A: "a", B: "b" }, question_type: "single_choice" },
+      ],
       modules: [{ id: "m1" }],
       totalLessons: 10,
       completedLessons: 10,
-      rpcQuestions: [
-        { id: Q1, question_text: "P1", options: { A: "a", B: "b" } },
-        { id: Q2, question_text: "P2", options: { A: "a", B: "b" } },
-      ],
     };
   });
 
@@ -141,9 +155,25 @@ describe("POST /api/classroom/quiz/start", () => {
   });
 
   it("returns 409 when max attempts reached (no in-progress attempt)", async () => {
-    state.attemptsList = [{ id: "a1", passed: false, completed_at: "2026-01-01" }];
+    state.attemptsList = [
+      { id: "a1", passed: false, completed_at: "2026-01-01", evaluation_id: "final-eval-1" },
+    ];
     const res = await POST(makeRequest({ programId: PROGRAM_ID }));
     expect(res.status).toBe(409);
+  });
+
+  it("NO cuenta intentos formativos (otra evaluation_id) contra el gate del final", async () => {
+    // Regresión: antes el final filtraba por program_id y un quiz formativo
+    // completado (mismo program, distinta evaluación) agotaba max_attempts=1.
+    state.attemptsList = [
+      { id: "form-1", passed: true, completed_at: "2026-01-01", evaluation_id: "lesson-eval-9" },
+      { id: "form-2", passed: false, completed_at: "2026-01-02", evaluation_id: "lesson-eval-9" },
+    ];
+    const res = await POST(makeRequest({ programId: PROGRAM_ID }));
+    // El final no ve esos intentos: arranca uno nuevo, no 409.
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.attemptId).toBe("attempt-new");
   });
 
   it("returns 403 when completion gate is not met", async () => {
@@ -158,7 +188,8 @@ describe("POST /api/classroom/quiz/start", () => {
     const json = await res.json();
     expect(json.attemptId).toBe("attempt-new");
     expect(json.questions).toHaveLength(2);
-    expect(json.questions.map((q: { id: string }) => q.id)).toEqual([Q1, Q2]);
+    // La selección baraja el pool; comparamos como conjunto, no por orden.
+    expect(json.questions.map((q: { id: string }) => q.id).sort()).toEqual([Q1, Q2].sort());
     // Las preguntas NO deben exponer la respuesta correcta.
     expect(json.questions[0]).not.toHaveProperty("correct_option");
   });

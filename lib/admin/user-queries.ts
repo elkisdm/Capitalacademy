@@ -14,6 +14,8 @@ export type AdminUserListItem = {
     cohort_name: string;
     cohort_code: string;
     role: "student" | "teacher" | "assistant";
+    program_id: string;
+    program_name: string;
   }>;
 };
 
@@ -62,17 +64,24 @@ export async function getAdminUsersList(): Promise<AdminUserListItem[]> {
 
   const { data: roles } = await supabase
     .from("cohort_roles")
-    .select("user_id, cohort_id, role, cohorts(name, code)")
+    .select("user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
     .in("user_id", userIds);
 
   const rolesMap = new Map<string, AdminUserListItem["cohort_roles"]>();
   for (const r of roles ?? []) {
-    const cohort = r.cohorts as { name: string; code: string } | null;
+    const cohort = r.cohorts as {
+      name: string;
+      code: string;
+      program_id: string | null;
+      programs: { name: string } | null;
+    } | null;
     const entry = {
       cohort_id: r.cohort_id,
       cohort_name: cohort?.name ?? "",
       cohort_code: cohort?.code ?? "",
       role: r.role,
+      program_id: cohort?.program_id ?? "",
+      program_name: cohort?.programs?.name ?? "",
     };
     const existing = rolesMap.get(r.user_id) ?? [];
     existing.push(entry);
@@ -107,16 +116,23 @@ export async function getAdminUserProfile(
 
   const { data: roles } = await supabase
     .from("cohort_roles")
-    .select("cohort_id, role, cohorts(name, code)")
+    .select("cohort_id, role, cohorts(name, code, program_id, programs(name))")
     .eq("user_id", userId);
 
   const cohortRoles = (roles ?? []).map((r) => {
-    const cohort = r.cohorts as { name: string; code: string } | null;
+    const cohort = r.cohorts as {
+      name: string;
+      code: string;
+      program_id: string | null;
+      programs: { name: string } | null;
+    } | null;
     return {
       cohort_id: r.cohort_id,
       cohort_name: cohort?.name ?? "",
       cohort_code: cohort?.code ?? "",
       role: r.role,
+      program_id: cohort?.program_id ?? "",
+      program_name: cohort?.programs?.name ?? "",
     };
   });
 

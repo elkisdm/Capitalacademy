@@ -131,6 +131,7 @@ function KebabMenu({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -269,6 +270,8 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
   const { toast, ToastContainer } = useToast();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
+  const [programFilter, setProgramFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
@@ -311,13 +314,34 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     });
   }, [users, search]);
 
+  // Entornos (programas) presentes en los datos, para el filtro.
+  const programs = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of users) {
+      for (const cr of u.cohort_roles) {
+        if (cr.program_id) map.set(cr.program_id, cr.program_name || "Sin nombre");
+      }
+    }
+    return [...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users]);
+
   const filtered = useMemo(() => {
-    return searchFiltered.filter((u) => matchesFilter(u, activeFilter));
-  }, [searchFiltered, activeFilter]);
+    return searchFiltered.filter((u) => {
+      if (!matchesFilter(u, activeFilter)) return false;
+      if (programFilter !== "all" && !u.cohort_roles.some((cr) => cr.program_id === programFilter)) {
+        return false;
+      }
+      if (statusFilter === "active" && u.onboarding_completed_at === null) return false;
+      if (statusFilter === "pending" && u.onboarding_completed_at !== null) return false;
+      return true;
+    });
+  }, [searchFiltered, activeFilter, programFilter, statusFilter]);
 
   useEffect(() => {
+    // Reset de paginación al cambiar cualquier filtro.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
-  }, [search, activeFilter]);
+  }, [search, activeFilter, programFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -325,7 +349,8 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
   const paginatedEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
   const paginated = filtered.slice(paginatedStart, paginatedEnd);
 
-  const hasActiveSearchOrFilter = search.trim() !== "" || activeFilter !== "all";
+  const hasActiveSearchOrFilter =
+    search.trim() !== "" || activeFilter !== "all" || programFilter !== "all" || statusFilter !== "all";
 
   const filters: Array<{ key: Filter; label: string }> = [
     { key: "all", label: "Todos" },
@@ -462,23 +487,55 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       </div>
 
       <div className="ca-card overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-ca-ink/[0.08] px-5 py-4 md:flex-row md:items-center md:justify-between">
-          <div className="relative max-w-sm flex-1">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-50">
-              <SearchIcon />
-            </span>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre o email..."
-              autoComplete="off"
-              name="ca-user-search"
-              data-form-type="other"
-              className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
-            />
+        <div className="flex flex-col gap-3 border-b border-ca-ink/[0.08] px-5 py-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative max-w-sm flex-1">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-50">
+                <SearchIcon />
+              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nombre o email..."
+                autoComplete="off"
+                name="ca-user-search"
+                data-form-type="other"
+                className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
+              />
+            </div>
+
+            {/* Filtros por entorno y estado */}
+            <div className="flex flex-wrap items-center gap-2">
+              {programs.length > 1 && (
+                <select
+                  value={programFilter}
+                  onChange={(e) => setProgramFilter(e.target.value)}
+                  aria-label="Filtrar por entorno"
+                  className="rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-semibold text-ca-ink outline-none transition-colors focus:border-ca-violet"
+                >
+                  <option value="all">Todos los entornos</option>
+                  {programs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "pending")}
+                aria-label="Filtrar por estado"
+                className="rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-semibold text-ca-ink outline-none transition-colors focus:border-ca-violet"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="active">Activos</option>
+                <option value="pending">Pendientes</option>
+              </select>
+            </div>
           </div>
 
+          {/* Filtros por rol */}
           <div className="flex flex-wrap items-center gap-2">
             {filters.map((f) => (
               <FilterPill

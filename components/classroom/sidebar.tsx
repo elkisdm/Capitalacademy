@@ -348,11 +348,19 @@ export function ClassroomSidebar({
     return pathname.startsWith(path);
   };
 
-  // El staff alterna entre vista Admin (General + Configuración) y vista Alumno (Aprender)
-  // vía `viewMode`. Un alumno puro (no staff) siempre ve solo "Aprender".
+  // El staff alterna entre vista Admin (General + Configuración) y vista Alumno (Aprender).
+  // Un alumno puro (no staff) siempre ve solo "Aprender".
+  //
+  // La vista efectiva es CONSCIENTE DE LA RUTA: si el staff está en el panel
+  // (/admin/*) siempre ve la navegación admin, sin importar la cookie "ver como".
+  // Así se evita el estado contradictorio (página admin con navegación de alumno)
+  // que aparecía al volver a /admin con el modo "Alumno" persistido. La cookie
+  // solo decide a dónde navega el toggle (classroom vs panel).
   const staff = showOps;
-  const showLearn = !staff || viewMode === "student";
-  const showOpsNav = staff && viewMode === "admin";
+  const onAdminRoute = pathname.startsWith("/admin");
+  const effectiveViewMode: ViewMode = staff && onAdminRoute ? "admin" : viewMode;
+  const showLearn = !staff || effectiveViewMode === "student";
+  const showOpsNav = staff && effectiveViewMode === "admin";
 
   const navItems: NavItem[] = [
     ...(showLearn ? [
@@ -392,7 +400,7 @@ export function ClassroomSidebar({
           userName={userName}
           userAvatarUrl={userAvatarUrl}
           staff={staff}
-          viewMode={viewMode}
+          viewMode={effectiveViewMode}
           envOptions={envOptions}
           activeEnv={activeEnv}
           onCollapse={() => setCollapsed(!collapsed)}
@@ -448,7 +456,7 @@ export function ClassroomSidebar({
             <div className="flex-1 overflow-y-auto px-3 pb-3">
               <StaffControls
                 staff={staff}
-                viewMode={viewMode}
+                viewMode={effectiveViewMode}
                 envOptions={envOptions}
                 activeEnv={activeEnv}
                 collapsed={false}

@@ -310,7 +310,7 @@ export function ClassroomSidebar({
     ] : []),
     ...(showOps ? [
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
-      { icon: "upload", label: "Subir videos", href: "/admin/lessons", section: "ops" as const },
+      { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "ops" as const },
       { icon: "folder", label: "Recursos", href: "/admin/resources", section: "ops" as const },
       { icon: "users", label: "Progreso cohorte", href: "/admin/progress", section: "ops" as const },
       { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "ops" as const },

@@ -61,6 +61,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   clipboardCheck: <><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" /><path d="M9 14l2 2 4-4" /></>,
   creditCard: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></>,
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>,
+  help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>,
 };
 
 function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -308,6 +309,7 @@ export function ClassroomSidebar({
     ...(cohortId ? [
       { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
     ] : []),
+    { icon: "help", label: "Ayuda", href: "/classroom/guia", section: "learn" as const },
     ...(showOps ? [
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "ops" as const },
       { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "ops" as const },

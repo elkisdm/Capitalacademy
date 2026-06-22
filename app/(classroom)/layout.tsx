@@ -50,7 +50,13 @@ export default async function ClassroomLayout({
   const hdrs = await headers();
   const pathname = hdrs.get("x-pathname") ?? "";
   const parts = pathname.split("/").filter(Boolean); // ['classroom', '<slug>', ...]
-  const cohortSlugFromPath = parts[0] === "classroom" && parts[1] ? parts[1] : undefined;
+  // Sub-rutas que NO son slugs de cohorte: el sidebar debe seguir mostrando la
+  // cohorte real del alumno (resuelta por su matrícula), no estas palabras.
+  const RESERVED_SUBPATHS = new Set(["profile", "guia"]);
+  const cohortSlugFromPath =
+    parts[0] === "classroom" && parts[1] && !RESERVED_SUBPATHS.has(parts[1])
+      ? parts[1]
+      : undefined;
 
   if (cohortSlugFromPath) {
     const { data: cohortRow } = await supabase

@@ -6,6 +6,7 @@ vi.mock("@/lib/auth/authorize-admin", () => ({
 
 type State = {
   mod: Record<string, unknown> | null;
+  lessonRow: Record<string, unknown> | null;
   lastPos: Record<string, unknown> | null;
   slugRows: Array<Record<string, unknown>>;
   inserted: { data: unknown; error: unknown };
@@ -35,7 +36,8 @@ function makeBuilder(table: string) {
       if (has("delete")) return state.deleted;
       if (has("not")) return { data: state.slugRows, error: null };
       if (has("order")) return { data: state.lastPos, error: null };
-      return { data: null, error: null };
+      // select plano (p.ej. lookup de module_id al mover, o fetch no-op).
+      return { data: state.lessonRow, error: null };
     }
     return { data: null, error: null };
   };
@@ -68,7 +70,8 @@ const ctx = { params: Promise.resolve({ lessonId: LESSON_ID }) };
 beforeEach(() => {
   vi.clearAllMocks();
   state = {
-    mod: { id: MODULE_ID },
+    mod: { id: MODULE_ID, program_id: "prog-1" },
+    lessonRow: { module_id: MODULE_ID },
     lastPos: { position: 3 },
     slugRows: [{ slug: "introduccion" }],
     inserted: { data: { id: LESSON_ID, slug: "nueva-leccion", title: "Nueva", position: 4 }, error: null },
@@ -127,6 +130,25 @@ describe("PATCH /api/admin/lessons/[lessonId] (editar)", () => {
       ctx,
     );
     expect(res!.status).toBe(200);
+  });
+
+  const OTHER_MODULE = "aaaaaaaa-bbbb-4ccc-8ddd-333333333333";
+
+  it("200 mueve la lección a otro módulo del mismo programa", async () => {
+    const res = await PATCH(
+      jsonReq("http://x/api/admin/lessons/" + LESSON_ID, "PATCH", { moduleId: OTHER_MODULE }),
+      ctx,
+    );
+    expect(res!.status).toBe(200);
+  });
+
+  it("422 cuando el módulo destino no existe", async () => {
+    state.mod = null; // ambos lookups de program_modules → null ⇒ destino inexistente
+    const res = await PATCH(
+      jsonReq("http://x/api/admin/lessons/" + LESSON_ID, "PATCH", { moduleId: OTHER_MODULE }),
+      ctx,
+    );
+    expect(res!.status).toBe(422);
   });
 });
 

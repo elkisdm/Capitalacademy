@@ -12,17 +12,46 @@ type LessonItem = {
   hasVideo: boolean;
 };
 
+type SiblingModule = { id: string; title: string };
+
 export function LessonReorderList({
   moduleId,
   lessons,
+  siblingModules = [],
 }: {
   moduleId: string;
   lessons: LessonItem[];
+  siblingModules?: SiblingModule[];
 }) {
   const router = useRouter();
   const [items, setItems] = useState(lessons);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const moveToModule = async (lessonId: string, targetModuleId: string) => {
+    if (!targetModuleId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/lessons/${lessonId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId: targetModuleId }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setError(j.error ?? "No se pudo mover la lección");
+        return;
+      }
+      // La lección sale de este módulo; quítala de la lista local y refresca.
+      setItems((prev) => prev.filter((l) => l.id !== lessonId));
+      router.refresh();
+    } catch {
+      setError("Error de red al mover la lección");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const persist = async (ordered: LessonItem[], previous: LessonItem[]) => {
     setSaving(true);
@@ -113,6 +142,23 @@ export function LessonReorderList({
               <VideoOff className="h-3 w-3" />
               Sin video
             </span>
+          )}
+
+          {siblingModules.length > 0 && (
+            <select
+              aria-label="Mover a módulo"
+              defaultValue=""
+              disabled={saving}
+              onChange={(e) => moveToModule(lesson.id, e.target.value)}
+              className="shrink-0 rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Mover a…</option>
+              {siblingModules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </select>
           )}
         </div>
       ))}

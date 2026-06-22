@@ -3,10 +3,20 @@ import { AddLessonButton } from "@/components/admin/add-lesson-button";
 import { LessonReorderList } from "@/components/admin/lesson-reorder-list";
 import { AddModuleButton } from "@/components/admin/add-module-button";
 import { ModuleEditForm } from "@/components/admin/module-edit-form";
-import { ProgramFilter } from "@/components/admin/program-filter";
+import { LessonsScopeFilter } from "@/components/admin/lessons-scope-filter";
+import { ModuleSessionsList } from "@/components/admin/module-sessions-list";
+
+type SessionRow = {
+  id: string;
+  title: string | null;
+  starts_at: string;
+  modality: string;
+  module_id: string | null;
+  teacher: { full_name: string | null } | null;
+};
 
 export default async function AdminLessonsPage(props: {
-  searchParams: Promise<{ program?: string }>;
+  searchParams: Promise<{ program?: string; cohort?: string }>;
 }) {
   const supabase = await createClient();
 
@@ -25,23 +35,55 @@ export default async function AdminLessonsPage(props: {
     );
   }
 
-  // Scope por programa (el tenant): cada programa gestiona sus módulos/lecciones
-  // por separado. Sin el filtro se mezclaban todos los programas en una lista.
-  const { program: programParam } = await props.searchParams;
+  // Scope por programa (el tenant) + cohorte. Las lecciones grabadas son del
+  // programa; las clases en vivo (class_sessions), de la cohorte seleccionada.
+  const { program: programParam, cohort: cohortParam } = await props.searchParams;
   const selectedProgramId =
     programOptions.find((p) => p.id === programParam)?.id ?? programOptions[0].id;
 
-  const { data: modules } = await supabase
-    .from("program_modules")
-    .select(
-      `
-      *,
-      programs(name, code),
-      lessons(*)
-    `,
-    )
-    .eq("program_id", selectedProgramId)
-    .order("position", { ascending: true });
+  const [{ data: cohorts }, { data: modules }] = await Promise.all([
+    supabase
+      .from("cohorts")
+      .select("id, name")
+      .eq("program_id", selectedProgramId)
+      .order("start_date", { ascending: false }),
+    supabase
+      .from("program_modules")
+      .select(`*, programs(name, code), lessons(*)`)
+      .eq("program_id", selectedProgramId)
+      .order("position", { ascending: true }),
+  ]);
+
+  const cohortOptions = (cohorts ?? []) as { id: string; name: string }[];
+  const selectedCohortId =
+    cohortOptions.find((c) => c.id === cohortParam)?.id ?? cohortOptions[0]?.id ?? null;
+
+  // Clases en vivo de la cohorte, agrupadas por módulo.
+  const sessionsByModule = new Map<string, SessionRow[]>();
+  if (selectedCohortId) {
+    const { data: sessionRows } = await supabase
+      .from("class_sessions")
+      .select("id, title, starts_at, modality, module_id, teacher:instructors(full_name)")
+      .eq("cohort_id", selectedCohortId)
+      .not("module_id", "is", null)
+      .neq("status", "cancelled")
+      .order("starts_at", { ascending: true });
+    for (const s of (sessionRows ?? []) as unknown as SessionRow[]) {
+      if (!s.module_id) continue;
+      const arr = sessionsByModule.get(s.module_id) ?? [];
+      arr.push(s);
+      sessionsByModule.set(s.module_id, arr);
+    }
+  }
+
+  const scopeFilter = (
+    <LessonsScopeFilter
+      programs={programOptions}
+      cohorts={cohortOptions}
+      selectedProgramId={selectedProgramId}
+      selectedCohortId={selectedCohortId}
+    />
+  );
 
   if (!modules || modules.length === 0) {
     return (
@@ -50,11 +92,7 @@ export default async function AdminLessonsPage(props: {
           <h1 className="text-2xl font-bold text-ca-ink">Gestión de lecciones</h1>
           <AddModuleButton programs={programOptions} />
         </div>
-        <ProgramFilter
-          programs={programOptions}
-          selectedProgramId={selectedProgramId}
-          basePath="/admin/lessons"
-        />
+        {scopeFilter}
         <p className="mb-4 mt-4 text-ca-ink-soft">
           Este programa no tiene módulos configurados aún. Crea el primero.
         </p>
@@ -62,28 +100,27 @@ export default async function AdminLessonsPage(props: {
     );
   }
 
+  const moduleOptions = modules.map((m) => ({
+    id: m.id as string,
+    title: m.title as string,
+  }));
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
       <div className="mb-5 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-ca-ink">Gestión de lecciones</h1>
         <AddModuleButton programs={programOptions} />
       </div>
-      <div className="mb-8">
-        <ProgramFilter
-          programs={programOptions}
-          selectedProgramId={selectedProgramId}
-          basePath="/admin/lessons"
-        />
-      </div>
+      <div className="mb-8">{scopeFilter}</div>
 
-      <div className="space-y-8">
+      <div className="space-y-10">
         {modules.map((mod) => {
           const program = mod.programs as { name: string; code: string } | null;
-          const lessons = (
-            (mod.lessons ?? []) as Array<Record<string, unknown>>
-          ).sort(
+          const lessons = ((mod.lessons ?? []) as Array<Record<string, unknown>>).sort(
             (a, b) => (a.position as number) - (b.position as number),
           );
+          const siblingModules = moduleOptions.filter((m) => m.id !== mod.id);
+          const moduleSessions = sessionsByModule.get(mod.id as string) ?? [];
 
           return (
             <section key={mod.id}>
@@ -106,13 +143,16 @@ export default async function AdminLessonsPage(props: {
                 </div>
               </div>
 
+              {/* Lecciones grabadas */}
+              <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                Lecciones grabadas
+              </p>
               {lessons.length === 0 ? (
-                <p className="text-sm text-ca-ink-soft">
-                  Sin lecciones en este módulo.
-                </p>
+                <p className="text-sm text-ca-ink-soft">Sin lecciones grabadas en este módulo.</p>
               ) : (
                 <LessonReorderList
                   moduleId={mod.id as string}
+                  siblingModules={siblingModules}
                   lessons={lessons.map((lesson) => ({
                     id: lesson.id as string,
                     title: lesson.title as string,
@@ -122,6 +162,26 @@ export default async function AdminLessonsPage(props: {
                 />
               )}
               <AddLessonButton moduleId={mod.id as string} />
+
+              {/* Clases en vivo (calendario) */}
+              {selectedCohortId && (
+                <div className="mt-5">
+                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                    Clases en vivo (calendario)
+                  </p>
+                  <ModuleSessionsList
+                    cohortId={selectedCohortId}
+                    siblingModules={siblingModules}
+                    sessions={moduleSessions.map((s) => ({
+                      id: s.id,
+                      title: s.title ?? "Clase",
+                      startsAt: s.starts_at,
+                      modality: s.modality,
+                      teacherName: s.teacher?.full_name ?? null,
+                    }))}
+                  />
+                </div>
+              )}
             </section>
           );
         })}

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- El editor de lecciones ahora gestiona todo el contenido de cada módulo en un solo lugar: las lecciones grabadas se pueden mover entre módulos, y debajo se ven las clases en vivo del calendario (por cohorte) que también se pueden reasignar de módulo, con enlace directo al calendario para editar fecha/docente
 - En el panel de Usuarios, el equipo puede filtrar por entorno (Diplomado vs Workshop) y por estado (activos vs pendientes de activar su cuenta), combinables con los filtros de rol y la búsqueda, para encontrar miembros de cada programa rápidamente (`80f7486`)
 - El equipo puede crear quizzes para cada clase (lección o módulo) además del examen final, con cuatro tipos de pregunta —opción única, opción múltiple, verdadero/falso y respuesta corta—; los alumnos los responden al terminar la clase como práctica (no bloquean el avance) y ven su nota y la corrección al instante (`c3d6a62`)
 - En los recursos de cada lección, el equipo ahora puede subir un archivo (hasta 50 MB, cualquier documento o multimedia) además de pegar un link externo; los archivos quedan en almacenamiento privado y el alumno los descarga con un enlace temporal seguro

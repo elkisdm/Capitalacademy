@@ -123,11 +123,12 @@
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/users/` + `[userId]/` | Gestión de usuarios y roles por cohorte (RBAC) | `/admin/users` | 0004 |
 | `app/(admin)/admin/cohorts/[cohortId]/` | Detalle de cohorte (info, roster, accesos al calendario) | `/admin/cohorts/[cohortId]` | — |
-| `app/(admin)/admin/lessons/` + `[lessonId]/` | Editor de lecciones: crear/editar metadatos (título, descripción, tipo, `unlock_at`)/eliminar + upload Mux, transcripción, capítulos, resumen IA | `/admin/lessons` | — |
-| `app/api/admin/lessons/route.ts` · `[lessonId]/route.ts` | CRUD de lecciones (POST crear, PATCH editar metadatos, DELETE con guard de progreso) | `POST/PATCH/DELETE /api/admin/lessons` | — |
+| `app/(admin)/admin/lessons/` + `[lessonId]/` | Editor de módulo unificado (scope programa+cohorte): lecciones grabadas (crear/editar/reordenar/mover de módulo) + clases en vivo del calendario por módulo; detalle con upload Mux, transcripción, capítulos, resumen IA | `/admin/lessons` | — |
+| `app/api/admin/lessons/route.ts` · `[lessonId]/route.ts` | CRUD de lecciones (POST crear, PATCH editar metadatos **y mover de módulo**, DELETE con guard de progreso) | `POST/PATCH/DELETE /api/admin/lessons` | — |
 | `app/api/admin/modules/route.ts` · `[moduleId]/route.ts` | CRUD de módulos (GET por cohorte, POST crear, PATCH editar, DELETE con guard de progreso) | `GET/POST/PATCH/DELETE /api/admin/modules` | — |
 | `app/api/admin/lessons/reorder/route.ts` · `components/admin/lesson-reorder-list.tsx` | Reordenar lecciones de un módulo (RPC atómico `reorder_lessons`, flechas arriba/abajo) | `POST /api/admin/lessons/reorder` | — |
 | `components/admin/lesson-edit-form.tsx` · `add-lesson-button.tsx` · `module-edit-form.tsx` · `add-module-button.tsx` | UI del editor de clases (crear/editar/eliminar módulos y lecciones) | — | — |
+| `components/admin/lessons-scope-filter.tsx` · `module-sessions-list.tsx` | Selector programa+cohorte del editor + lista de clases en vivo por módulo (mover de módulo, enlace al calendario) | — | — |
 | `lib/utils/slug.ts` | `slugify` + `uniqueSlug` para URLs legibles del classroom | — | — |
 | `app/(admin)/admin/{resources,quizzes,progress}/page.tsx` | Recursos, quizzes y reporte de progreso por cohorte | `/admin/…` | — |
 | `app/api/admin/users/` (`route`·`bulk`·`template`·`[userId]`) | CRUD de usuarios + importación CSV masiva | — | — |

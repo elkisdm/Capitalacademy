@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,8 @@ const patchLessonSchema = z
       .trim()
       .nullish()
       .refine((v) => !v || !Number.isNaN(Date.parse(v)), "unlockAt debe ser una fecha válida"),
+    // Mover la lección a otro módulo (del mismo programa).
+    moduleId: uuidLike.optional(),
   })
   .refine(
     (o) => Object.keys(o).length > 0,
@@ -50,19 +53,71 @@ export async function PATCH(
       { status: 422 },
     );
   }
-  const { title, description, kind, unlockAt } = parsed.data;
+  const { title, description, kind, unlockAt, moduleId } = parsed.data;
 
   const patch: {
     title?: string;
     description?: string | null;
     kind?: "live_in_person" | "live_online" | "recorded";
     unlock_at?: string | null;
+    module_id?: string;
+    position?: number;
   } = {};
   if (title !== undefined) patch.title = title;
   if (description !== undefined) patch.description = description ?? null;
   if (kind !== undefined) patch.kind = kind;
   // unlockAt presente (incluso null/"") = setear/limpiar la apertura por calendario.
   if (unlockAt !== undefined) patch.unlock_at = unlockAt || null;
+
+  // Mover a otro módulo: el destino debe ser del MISMO programa (no se cruzan
+  // tenants), y la lección se ubica al final del módulo destino.
+  if (moduleId !== undefined) {
+    const { data: lessonRow } = await supabase
+      .from("lessons")
+      .select("module_id")
+      .eq("id", lessonId)
+      .maybeSingle();
+    if (!lessonRow) {
+      return NextResponse.json({ error: "Lección no encontrada" }, { status: 404 });
+    }
+    const [{ data: curMod }, { data: tgtMod }] = await Promise.all([
+      supabase.from("program_modules").select("program_id").eq("id", lessonRow.module_id).maybeSingle(),
+      supabase.from("program_modules").select("program_id").eq("id", moduleId).maybeSingle(),
+    ]);
+    if (!tgtMod) {
+      return NextResponse.json({ error: "El módulo destino no existe" }, { status: 422 });
+    }
+    if (!curMod || tgtMod.program_id !== curMod.program_id) {
+      return NextResponse.json(
+        { error: "No se puede mover la lección a un módulo de otro programa" },
+        { status: 422 },
+      );
+    }
+    if (moduleId !== lessonRow.module_id) {
+      patch.module_id = moduleId;
+      const { data: maxPos } = await supabase
+        .from("lessons")
+        .select("position")
+        .eq("module_id", moduleId)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      patch.position = (maxPos?.position ?? 0) + 1;
+    }
+  }
+
+  // Caso no-op (p.ej. mover al mismo módulo sin otros cambios): nada que escribir.
+  if (Object.keys(patch).length === 0) {
+    const { data: current } = await supabase
+      .from("lessons")
+      .select("id, title, description, kind, unlock_at, slug, position")
+      .eq("id", lessonId)
+      .maybeSingle();
+    if (!current) {
+      return NextResponse.json({ error: "Lección no encontrada" }, { status: 404 });
+    }
+    return NextResponse.json(current);
+  }
 
   const { data, error } = await supabase
     .from("lessons")

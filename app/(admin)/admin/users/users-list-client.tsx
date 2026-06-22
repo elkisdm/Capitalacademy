@@ -325,9 +325,11 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
     return [...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
 
-  const filtered = useMemo(() => {
+  // Base para los contadores de los pills de rol: aplica búsqueda + entorno +
+  // estado, pero NO el rol — así cada pill muestra su conteo DENTRO del scope
+  // elegido (filtros facetados). El filtro de rol se aplica encima en `filtered`.
+  const scopedForCounts = useMemo(() => {
     return searchFiltered.filter((u) => {
-      if (!matchesFilter(u, activeFilter)) return false;
       if (programFilter !== "all" && !u.cohort_roles.some((cr) => cr.program_id === programFilter)) {
         return false;
       }
@@ -335,7 +337,11 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       if (statusFilter === "pending" && u.onboarding_completed_at !== null) return false;
       return true;
     });
-  }, [searchFiltered, activeFilter, programFilter, statusFilter]);
+  }, [searchFiltered, programFilter, statusFilter]);
+
+  const filtered = useMemo(() => {
+    return scopedForCounts.filter((u) => matchesFilter(u, activeFilter));
+  }, [scopedForCounts, activeFilter]);
 
   useEffect(() => {
     // Reset de paginación al cambiar cualquier filtro.
@@ -362,7 +368,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
 
   const filterCounts = useMemo(() => {
     const counts: Record<Filter, number> = { all: 0, admin: 0, ops: 0, teacher: 0, student: 0 };
-    for (const u of searchFiltered) {
+    for (const u of scopedForCounts) {
       counts.all++;
       if (u.system_role === "admin") counts.admin++;
       if (u.system_role === "ops") counts.ops++;
@@ -370,7 +376,7 @@ export function UsersListClient({ users, cohorts }: UsersListClientProps) {
       if (u.cohort_roles.some((cr) => cr.role === "student")) counts.student++;
     }
     return counts;
-  }, [searchFiltered]);
+  }, [scopedForCounts]);
 
   const closeAll = useCallback(() => {
     setDrawerOpen(false);

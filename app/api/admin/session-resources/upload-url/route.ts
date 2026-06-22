@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth/authorize-admin";
+import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,9 @@ const MAX_SIZE = 50 * 1024 * 1024;
 const BUCKET = "lesson-resources"; // bucket compartido de recursos del classroom
 
 const schema = z.object({
-  sessionId: z.string().trim().uuid("sessionId debe ser un UUID válido"),
+  // uuidLike (no z.uuid()): las sesiones semilla usan UUIDs no-RFC-4122 que
+  // z.string().uuid() rechaza con 422 → rompía la subida de archivos.
+  sessionId: uuidLike,
   filename: z.string().trim().min(1, "filename es requerido").max(255),
   size: z
     .number()

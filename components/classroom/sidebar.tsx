@@ -369,9 +369,9 @@ export function ClassroomSidebar({
       // General: opciones globales (no atadas a un entorno).
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "general" as const },
       { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "general" as const },
-      // Configuración: armado del contenido del entorno activo.
+      // Configuración: armado del contenido del entorno activo. Los recursos se
+      // gestionan dentro de Lecciones (lecciones grabadas y clases en vivo).
       { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "config" as const },
-      { icon: "folder", label: "Recursos", href: "/admin/resources", section: "config" as const },
       { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "config" as const },
       { icon: "chart", label: "Progreso cohorte", href: "/admin/progress", section: "config" as const },
     ] : []),

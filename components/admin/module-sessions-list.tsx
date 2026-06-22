@@ -3,7 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, ExternalLink, AlertTriangle } from "lucide-react";
+import { Calendar, ExternalLink, AlertTriangle, Paperclip, ChevronDown } from "lucide-react";
+import { ResourceManager } from "./resource-manager";
+
+type SessionResource = {
+  id: string;
+  session_id?: string;
+  title: string;
+  type: string;
+  url: string | null;
+  storage_path?: string | null;
+  file_size_bytes?: number | null;
+  position: number;
+};
 
 type SessionItem = {
   id: string;
@@ -11,6 +23,7 @@ type SessionItem = {
   startsAt: string;
   modality: string;
   teacherName: string | null;
+  resources: SessionResource[];
 };
 
 type SiblingModule = { id: string; title: string };
@@ -49,6 +62,7 @@ export function ModuleSessionsList({
   const [items, setItems] = useState(sessions);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const moveToModule = async (sessionId: string, targetModuleId: string) => {
     if (!targetModuleId) return;
@@ -90,50 +104,76 @@ export function ModuleSessionsList({
           {error}
         </p>
       )}
-      {items.map((s) => (
-        <div
-          key={s.id}
-          className="flex items-center gap-3 rounded-lg border border-ca-ink/[0.08] bg-ca-surface p-3"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ca-bg-soft text-ca-ink-soft">
-            <Calendar className="h-4 w-4" />
-          </span>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-ca-ink">{s.title}</p>
-            <p className="truncate text-xs text-ca-ink-soft">
-              {fmt(s.startsAt)} · {MODALITY_LABEL[s.modality] ?? s.modality}
-              {s.teacherName ? ` · ${s.teacherName}` : ""}
-            </p>
-          </div>
-
-          {siblingModules.length > 0 && (
-            <select
-              aria-label="Mover clase a módulo"
-              defaultValue=""
-              disabled={saving}
-              onChange={(e) => moveToModule(s.id, e.target.value)}
-              className="shrink-0 rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
-            >
-              <option value="">Mover a…</option>
-              {siblingModules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <Link
-            href={`/admin/cohorts/${cohortId}/sesiones`}
-            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-ca-ink-soft hover:text-ca-violet"
-            title="Editar en el calendario"
+      {items.map((s) => {
+        const expanded = expandedId === s.id;
+        const count = s.resources.length;
+        return (
+          <div
+            key={s.id}
+            className="rounded-lg border border-ca-ink/[0.08] bg-ca-surface"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Calendario
-          </Link>
-        </div>
-      ))}
+            <div className="flex items-center gap-3 p-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ca-bg-soft text-ca-ink-soft">
+                <Calendar className="h-4 w-4" />
+              </span>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-ca-ink">{s.title}</p>
+                <p className="truncate text-xs text-ca-ink-soft">
+                  {fmt(s.startsAt)} · {MODALITY_LABEL[s.modality] ?? s.modality}
+                  {s.teacherName ? ` · ${s.teacherName}` : ""}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setExpandedId(expanded ? null : s.id)}
+                aria-expanded={expanded}
+                className="flex shrink-0 items-center gap-1.5 rounded-md border border-ca-ink/[0.12] px-2.5 py-1.5 text-xs font-medium text-ca-ink-soft transition-colors hover:border-ca-violet hover:text-ca-violet"
+                title="Material de la clase"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Material{count > 0 ? ` · ${count}` : ""}
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {siblingModules.length > 0 && (
+                <select
+                  aria-label="Mover clase a módulo"
+                  defaultValue=""
+                  disabled={saving}
+                  onChange={(e) => moveToModule(s.id, e.target.value)}
+                  className="shrink-0 rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
+                >
+                  <option value="">Mover a…</option>
+                  {siblingModules.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <Link
+                href={`/admin/cohorts/${cohortId}/sesiones`}
+                className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-ca-ink-soft hover:text-ca-violet"
+                title="Editar fecha, docente y enlace en el calendario"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Calendario
+              </Link>
+            </div>
+
+            {expanded && (
+              <div className="border-t border-ca-ink/[0.08] p-3">
+                <ResourceManager sessionId={s.id} initialResources={s.resources} />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

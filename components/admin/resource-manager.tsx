@@ -15,7 +15,8 @@ import { createClient } from "@/lib/supabase/client";
 
 type Resource = {
   id: string;
-  lesson_id: string;
+  lesson_id?: string;
+  session_id?: string;
   title: string;
   type: string;
   url: string | null;
@@ -49,15 +50,23 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// El gestor sirve para recursos de una lección grabada o de una clase en vivo
+// (sesión de calendario): mismo flujo, distintos endpoints y campo de id.
 type ResourceManagerProps = {
-  lessonId: string;
+  lessonId?: string;
+  sessionId?: string;
   initialResources: Resource[];
 };
 
 export function ResourceManager({
   lessonId,
+  sessionId,
   initialResources,
 }: ResourceManagerProps) {
+  const isSession = !!sessionId;
+  const targetId = (sessionId ?? lessonId)!;
+  const idKey = isSession ? "sessionId" : "lessonId";
+  const apiBase = isSession ? "/api/admin/session-resources" : "/api/admin/resources";
   const [resources, setResources] = useState(initialResources);
   const [isAdding, setIsAdding] = useState(false);
   const [mode, setMode] = useState<"link" | "file">("file");
@@ -106,12 +115,12 @@ export function ResourceManager({
 
     try {
       if (mode === "link") {
-        const res = await fetch("/api/admin/resources", {
+        const res = await fetch(apiBase, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             source: "link",
-            lessonId,
+            [idKey]: targetId,
             title: title.trim(),
             type,
             url: url.trim(),
@@ -132,11 +141,11 @@ export function ResourceManager({
       const target = file as File;
 
       // 1. Pide un signed upload URL al servidor (staff-gated).
-      const urlRes = await fetch("/api/admin/resources/upload-url", {
+      const urlRes = await fetch(`${apiBase}/upload-url`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lessonId,
+          [idKey]: targetId,
           filename: target.name,
           size: target.size,
         }),
@@ -162,12 +171,12 @@ export function ResourceManager({
       }
 
       // 3. Persiste la fila del recurso apuntando al objeto subido.
-      const res = await fetch("/api/admin/resources", {
+      const res = await fetch(apiBase, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           source: "file",
-          lessonId,
+          [idKey]: targetId,
           title: title.trim(),
           type,
           storagePath: path,
@@ -190,7 +199,7 @@ export function ResourceManager({
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/admin/resources?id=${id}`, {
+      const res = await fetch(`${apiBase}?id=${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -208,7 +217,7 @@ export function ResourceManager({
     <div className="space-y-4">
       {resources.length === 0 && !isAdding && (
         <p className="text-sm text-ca-ink-soft">
-          No hay recursos para esta lección.
+          {isSession ? "No hay material para esta clase." : "No hay recursos para esta lección."}
         </p>
       )}
 

@@ -5,6 +5,7 @@ import { AddModuleButton } from "@/components/admin/add-module-button";
 import { ModuleEditForm } from "@/components/admin/module-edit-form";
 import { LessonsScopeFilter } from "@/components/admin/lessons-scope-filter";
 import { ModuleSessionsList } from "@/components/admin/module-sessions-list";
+import { getActiveEnv, resolveProgramScope } from "@/lib/admin/active-env";
 
 type SessionRow = {
   id: string;
@@ -13,6 +14,17 @@ type SessionRow = {
   modality: string;
   module_id: string | null;
   teacher: { full_name: string | null } | null;
+};
+
+type SessionResourceRow = {
+  id: string;
+  session_id: string;
+  title: string;
+  type: string;
+  url: string | null;
+  storage_path: string | null;
+  file_size_bytes: number | null;
+  position: number;
 };
 
 export default async function AdminLessonsPage(props: {
@@ -38,8 +50,9 @@ export default async function AdminLessonsPage(props: {
   // Scope por programa (el tenant) + cohorte. Las lecciones grabadas son del
   // programa; las clases en vivo (class_sessions), de la cohorte seleccionada.
   const { program: programParam, cohort: cohortParam } = await props.searchParams;
-  const selectedProgramId =
-    programOptions.find((p) => p.id === programParam)?.id ?? programOptions[0].id;
+  // Precedencia: `?program` > entorno global (cookie) > primer programa.
+  const activeEnv = await getActiveEnv();
+  const selectedProgramId = resolveProgramScope(programParam, activeEnv, programOptions)!;
 
   const [{ data: cohorts }, { data: modules }] = await Promise.all([
     supabase
@@ -60,6 +73,7 @@ export default async function AdminLessonsPage(props: {
 
   // Clases en vivo de la cohorte, agrupadas por módulo.
   const sessionsByModule = new Map<string, SessionRow[]>();
+  const resourcesBySession = new Map<string, SessionResourceRow[]>();
   if (selectedCohortId) {
     const { data: sessionRows } = await supabase
       .from("class_sessions")
@@ -68,11 +82,27 @@ export default async function AdminLessonsPage(props: {
       .not("module_id", "is", null)
       .neq("status", "cancelled")
       .order("starts_at", { ascending: true });
-    for (const s of (sessionRows ?? []) as unknown as SessionRow[]) {
+    const allSessions = (sessionRows ?? []) as unknown as SessionRow[];
+    for (const s of allSessions) {
       if (!s.module_id) continue;
       const arr = sessionsByModule.get(s.module_id) ?? [];
       arr.push(s);
       sessionsByModule.set(s.module_id, arr);
+    }
+
+    // Material ya cargado por sesión (para editarlo inline, sin ir al calendario).
+    const sessionIds = allSessions.map((s) => s.id);
+    if (sessionIds.length > 0) {
+      const { data: resRows } = await supabase
+        .from("session_resources")
+        .select("id, session_id, title, type, url, storage_path, file_size_bytes, position")
+        .in("session_id", sessionIds)
+        .order("position", { ascending: true });
+      for (const r of (resRows ?? []) as SessionResourceRow[]) {
+        const arr = resourcesBySession.get(r.session_id) ?? [];
+        arr.push(r);
+        resourcesBySession.set(r.session_id, arr);
+      }
     }
   }
 
@@ -178,6 +208,7 @@ export default async function AdminLessonsPage(props: {
                       startsAt: s.starts_at,
                       modality: s.modality,
                       teacherName: s.teacher?.full_name ?? null,
+                      resources: resourcesBySession.get(s.id) ?? [],
                     }))}
                   />
                 </div>

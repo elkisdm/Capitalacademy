@@ -8,7 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
-- Nueva "Ayuda" en el menú: una guía interna paso a paso de todo lo que se puede hacer, con enlaces directos a cada pantalla. Dividida en vista de alumno y de equipo (esta última solo para staff) (`5b760f3`)
+- Nuevo "Centro de ayuda" en el menú: un índice con buscador y categorías que lleva a una página dedicada por cada tema/pantalla (paso a paso, recomendaciones, preguntas frecuentes y enlace directo a la pantalla). Dividido en vista de alumno y de equipo (esta última solo para staff), e incluye un bloque de soporte con correo, WhatsApp, y accesos para reportar un problema o solicitar una nueva función (`5b760f3`, `12346c0`)
 - En "Recursos por lección", bajo cada módulo ahora también se listan las clases en vivo del calendario (antes solo aparecían las lecciones grabadas con video), cada una con su conteo de recursos y un acceso directo al editor de calendario para cargarles material (`b4037d7`)
 - En el material de cada clase del calendario, el equipo ahora puede subir un archivo (hasta 50 MB, cualquier documento o multimedia) además de pegar un enlace; los alumnos lo descargan desde su calendario con un enlace temporal seguro. Esto habilita cargar recursos a programas como el Diplomado, cuyo contenido son las clases en vivo
 - El editor de lecciones ahora gestiona todo el contenido de cada módulo en un solo lugar: las lecciones grabadas se pueden mover entre módulos, y debajo se ven las clases en vivo del calendario (por cohorte) que también se pueden reasignar de módulo, con enlace directo al calendario para editar fecha/docente

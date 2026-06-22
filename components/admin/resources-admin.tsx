@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ResourceManager } from "./resource-manager";
 
 type LessonInfo = {
@@ -30,13 +31,22 @@ type Resource = {
   position: number;
 };
 
+type ProgramOption = { id: string; name: string };
+
 export function ResourcesAdmin({
   modules,
   initialResources,
+  programs,
+  selectedProgramId,
+  selectedProgramName,
 }: {
   modules: ModuleInfo[];
   initialResources: Record<string, Resource[]>;
+  programs: ProgramOption[];
+  selectedProgramId: string;
+  selectedProgramName: string;
 }) {
+  const router = useRouter();
   const [selectedModuleId, setSelectedModuleId] = useState(modules[0]?.id ?? "");
   const [selectedLessonId, setSelectedLessonId] = useState(
     modules[0]?.lessons[0]?.id ?? "",
@@ -52,8 +62,50 @@ export function ResourcesAdmin({
     setSelectedLessonId(lessonId);
   };
 
+  const onProgramChange = (programId: string) => {
+    // Filtrado server-side: navega a ?program=<id> para que la página recargue
+    // solo los módulos/recursos de ESE programa (aislamiento entre tenants).
+    router.push(`/admin/resources?program=${programId}`);
+  };
+
+  const programSelector = (
+    <div className="mb-5">
+      <label
+        htmlFor="program-select"
+        className="mb-1 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
+      >
+        Programa
+      </label>
+      <select
+        id="program-select"
+        value={selectedProgramId}
+        onChange={(e) => onProgramChange(e.target.value)}
+        className="w-full max-w-md rounded-md border border-ca-ink/[0.12] bg-white px-3 py-2 text-sm font-semibold text-ca-ink focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
+      >
+        {programs.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
+  if (modules.length === 0) {
+    return (
+      <>
+        {programSelector}
+        <p className="text-sm text-ca-ink-soft">
+          {selectedProgramName} no tiene módulos configurados todavía.
+        </p>
+      </>
+    );
+  }
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <>
+      {programSelector}
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       {/* Left: current lesson resources */}
       <div>
         {selectedLesson && (
@@ -150,6 +202,7 @@ export function ResourcesAdmin({
           ))}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

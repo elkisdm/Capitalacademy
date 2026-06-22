@@ -2,33 +2,51 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ResourcesAdmin } from "@/components/admin/resources-admin";
 
-export default async function AdminResourcesPage() {
+export default async function AdminResourcesPage(props: {
+  searchParams: Promise<{ program?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: modules } = await supabase
-    .from("program_modules")
-    .select("id, title, position, program_id, programs(name), lessons(*)")
-    .order("position", { ascending: true });
+  // La gestión de recursos se scopa por programa (el tenant): cada programa
+  // tiene sus módulos/lecciones y, por tanto, sus recursos por separado. Sin
+  // este filtro la página mezclaba módulos de Diplomado, Workshop y Liderazgo.
+  const { data: programs } = await supabase
+    .from("programs")
+    .select("id, name")
+    .order("name", { ascending: true });
 
-  if (!modules || modules.length === 0) {
+  const programOptions = (programs ?? []) as { id: string; name: string }[];
+
+  if (programOptions.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-8 py-8">
         <h1 className="text-2xl font-black text-ca-ink">Recursos por lección</h1>
-        <p className="mt-4 text-ca-ink-soft">No hay módulos configurados.</p>
+        <p className="mt-4 text-ca-ink-soft">No hay programas configurados.</p>
       </div>
     );
   }
 
-  const allLessonIds = modules.flatMap((m) =>
-    ((m.lessons ?? []) as Array<{ id: string }>).map((l) => l.id),
-  );
+  const { program: programParam } = await props.searchParams;
+  const selectedProgramId =
+    programOptions.find((p) => p.id === programParam)?.id ?? programOptions[0].id;
+  const selectedProgram = programOptions.find((p) => p.id === selectedProgramId)!;
 
-  let resourcesByLesson: Record<string, Array<{
+  const { data: modules } = await supabase
+    .from("program_modules")
+    .select("id, title, position, program_id, programs(name), lessons(*)")
+    .eq("program_id", selectedProgramId)
+    .order("position", { ascending: true });
+
+  const resourcesByLesson: Record<string, Array<{
     id: string; lesson_id: string; title: string; type: string; url: string | null;
     storage_path: string | null; file_size_bytes: number | null; position: number;
   }>> = {};
+
+  const allLessonIds = (modules ?? []).flatMap((m) =>
+    ((m.lessons ?? []) as Array<{ id: string }>).map((l) => l.id),
+  );
 
   if (allLessonIds.length > 0) {
     const { data: resources } = await supabase
@@ -46,7 +64,7 @@ export default async function AdminResourcesPage() {
     }
   }
 
-  const modulesData = modules.map((m) => ({
+  const modulesData = (modules ?? []).map((m) => ({
     id: m.id,
     title: m.title,
     position: m.position,
@@ -80,7 +98,14 @@ export default async function AdminResourcesPage() {
         </div>
       </div>
 
-      <ResourcesAdmin modules={modulesData} initialResources={resourcesByLesson} />
+      <ResourcesAdmin
+        key={selectedProgramId}
+        modules={modulesData}
+        initialResources={resourcesByLesson}
+        programs={programOptions}
+        selectedProgramId={selectedProgramId}
+        selectedProgramName={selectedProgram.name}
+      />
     </div>
   );
 }

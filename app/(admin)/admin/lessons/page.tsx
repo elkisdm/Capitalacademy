@@ -3,45 +3,77 @@ import { AddLessonButton } from "@/components/admin/add-lesson-button";
 import { LessonReorderList } from "@/components/admin/lesson-reorder-list";
 import { AddModuleButton } from "@/components/admin/add-module-button";
 import { ModuleEditForm } from "@/components/admin/module-edit-form";
+import { ProgramFilter } from "@/components/admin/program-filter";
 
-export default async function AdminLessonsPage() {
+export default async function AdminLessonsPage(props: {
+  searchParams: Promise<{ program?: string }>;
+}) {
   const supabase = await createClient();
 
-  const [{ data: modules }, { data: programs }] = await Promise.all([
-    supabase
-      .from("program_modules")
-      .select(
-        `
+  const { data: programs } = await supabase
+    .from("programs")
+    .select("id, name")
+    .order("name", { ascending: true });
+  const programOptions = (programs ?? []) as { id: string; name: string }[];
+
+  if (programOptions.length === 0) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
+        <h1 className="text-2xl font-bold text-ca-ink">Gestión de lecciones</h1>
+        <p className="mb-4 mt-4 text-ca-ink-soft">No hay programas configurados.</p>
+      </div>
+    );
+  }
+
+  // Scope por programa (el tenant): cada programa gestiona sus módulos/lecciones
+  // por separado. Sin el filtro se mezclaban todos los programas en una lista.
+  const { program: programParam } = await props.searchParams;
+  const selectedProgramId =
+    programOptions.find((p) => p.id === programParam)?.id ?? programOptions[0].id;
+
+  const { data: modules } = await supabase
+    .from("program_modules")
+    .select(
+      `
       *,
       programs(name, code),
       lessons(*)
     `,
-      )
-      .order("position", { ascending: true }),
-    supabase.from("programs").select("id, name").order("name", { ascending: true }),
-  ]);
-
-  const programOptions = (programs ?? []) as { id: string; name: string }[];
+    )
+    .eq("program_id", selectedProgramId)
+    .order("position", { ascending: true });
 
   if (!modules || modules.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-        <h1 className="text-2xl font-bold text-ca-ink">
-          Gestión de lecciones
-        </h1>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold text-ca-ink">Gestión de lecciones</h1>
+          <AddModuleButton programs={programOptions} />
+        </div>
+        <ProgramFilter
+          programs={programOptions}
+          selectedProgramId={selectedProgramId}
+          basePath="/admin/lessons"
+        />
         <p className="mb-4 mt-4 text-ca-ink-soft">
-          No hay módulos configurados aún. Crea el primero.
+          Este programa no tiene módulos configurados aún. Crea el primero.
         </p>
-        <AddModuleButton programs={programOptions} />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-      <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="mb-5 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-ca-ink">Gestión de lecciones</h1>
         <AddModuleButton programs={programOptions} />
+      </div>
+      <div className="mb-8">
+        <ProgramFilter
+          programs={programOptions}
+          selectedProgramId={selectedProgramId}
+          basePath="/admin/lessons"
+        />
       </div>
 
       <div className="space-y-8">

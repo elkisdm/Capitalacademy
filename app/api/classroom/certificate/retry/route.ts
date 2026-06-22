@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
 
 export const runtime = "nodejs";
@@ -65,16 +66,35 @@ export async function POST(req: Request) {
     );
   }
 
+  // El certificado lo emite SOLO el quiz FINAL. Acotamos el intento aprobado a la
+  // evaluación scope='final' del programa: un quiz formativo aprobado (que comparte
+  // program_id) NO debe habilitar el certificado.
+  const admin = createAdminClient();
+  const { data: finalEval } = await admin
+    .from("evaluations")
+    .select("id")
+    .eq("program_id", programId)
+    .eq("scope", "final")
+    .maybeSingle();
+
+  if (!finalEval) {
+    return NextResponse.json(
+      { error: "Este programa no tiene un examen final configurado" },
+      { status: 422 },
+    );
+  }
+
   const { data: passedAttempt } = await supabase
     .from("quiz_attempts")
     .select("id")
     .eq("enrollment_id", enrollment.id)
+    .eq("evaluation_id", finalEval.id)
     .eq("passed", true)
     .maybeSingle();
 
   if (!passedAttempt) {
     return NextResponse.json(
-      { error: "No has aprobado el quiz" },
+      { error: "No has aprobado el examen final" },
       { status: 422 },
     );
   }

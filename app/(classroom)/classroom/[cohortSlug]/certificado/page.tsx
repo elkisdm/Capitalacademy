@@ -45,14 +45,26 @@ export default async function CertificadoPage(
     .eq("enrollment_id", enrollment.id)
     .single();
 
-  // No certificate yet — check if quiz was passed (failed generation)
+  // No certificate yet — ¿aprobó el EXAMEN FINAL? (no un quiz formativo, que
+  // comparte program_id pero no habilita certificado). Acotamos a scope='final'.
   if (!certificate) {
-    const { data: passedAttempt } = await supabase
-      .from("quiz_attempts")
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { data: finalEval } = await createAdminClient()
+      .from("evaluations")
       .select("id")
-      .eq("enrollment_id", enrollment.id)
-      .eq("passed", true)
+      .eq("program_id", program.id)
+      .eq("scope", "final")
       .maybeSingle();
+
+    const { data: passedAttempt } = finalEval
+      ? await supabase
+          .from("quiz_attempts")
+          .select("id")
+          .eq("enrollment_id", enrollment.id)
+          .eq("evaluation_id", finalEval.id)
+          .eq("passed", true)
+          .maybeSingle()
+      : { data: null };
 
     const quizPassed = !!passedAttempt;
 

@@ -21,10 +21,24 @@ export async function GET(req: Request) {
 
   const admin = createAdminClient();
 
+  // La pestaña "Intentos" es del EXAMEN FINAL. Acotamos a la evaluación
+  // scope='final' para no mezclar los intentos de los quizzes formativos por
+  // clase (que comparten program_id).
+  const { data: finalEval } = await admin
+    .from("evaluations")
+    .select("id")
+    .eq("program_id", programId)
+    .eq("scope", "final")
+    .maybeSingle();
+
+  if (!finalEval) {
+    return NextResponse.json({ attempts: [] });
+  }
+
   const { data: attempts, error } = await admin
     .from("quiz_attempts")
     .select("id, score_pct, passed, started_at, completed_at, enrollments(student_id, profiles(full_name))")
-    .eq("program_id", programId)
+    .eq("evaluation_id", finalEval.id)
     .order("created_at", { ascending: false });
 
   if (error) {

@@ -55,6 +55,22 @@ export async function issueCertificate(
 
   const programId = cohort.programs.id;
 
+  // Defensa en profundidad: si se ancla a un intento, debe ser del EXAMEN FINAL
+  // y estar aprobado. Evita que un quiz formativo aprobado emita certificado,
+  // aunque un caller futuro lo pase por error. (La emisión manual del admin no
+  // pasa attemptId — es un override deliberado y se permite.)
+  if (quizAttemptId) {
+    const { data: att } = await supabase
+      .from("quiz_attempts")
+      .select("passed, evaluations(scope)")
+      .eq("id", quizAttemptId)
+      .maybeSingle();
+    const scope = (att?.evaluations as unknown as { scope?: string } | null)?.scope;
+    if (!att?.passed || scope !== "final") {
+      throw new Error("El certificado solo se emite por un examen final aprobado");
+    }
+  }
+
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("full_name")

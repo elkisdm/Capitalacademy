@@ -170,6 +170,18 @@ describe("issueCertificate", () => {
           }),
         };
       }
+      if (table === "quiz_attempts") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { passed: true, evaluations: { scope: "final" } },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
       if (table === "certificates") {
         return {
           insert: () => ({
@@ -201,5 +213,59 @@ describe("issueCertificate", () => {
     expect(result.certificateId).toBe(insertedCertId);
     expect(result.verificationCode).toMatch(/^[A-Z2-9]{8}$/);
     expect(result.pdfUrl).toBe("https://storage.example.com/signed-cert.pdf");
+  });
+
+  it("rechaza emitir certificado si el intento NO es del examen final (formativo)", async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "enrollments") {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: vi.fn().mockResolvedValue({
+                data: {
+                  id: "enr-1",
+                  student_id: "student-1",
+                  cohort_id: "cohort-1",
+                  cohorts: { program_id: "prog-1", programs: { id: "prog-1", name: "Diplomado" } },
+                },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "profiles") {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: "Ana", email: "ana@test.com" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "quiz_attempts") {
+        return {
+          select: () => ({
+            eq: () => ({
+              // Intento aprobado pero de un quiz FORMATIVO (scope='lesson').
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { passed: true, evaluations: { scope: "lesson" } },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({ eq: () => ({ single: vi.fn().mockResolvedValue({ data: null, error: null }) }) }),
+      };
+    });
+
+    await expect(issueCertificate("enr-1", "formative-attempt")).rejects.toThrow(
+      "examen final",
+    );
   });
 });

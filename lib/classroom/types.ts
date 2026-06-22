@@ -85,7 +85,10 @@ export type SessionResource = {
   session_id: string;
   title: string;
   type: SessionResourceType;
-  url: string;
+  // null si es un archivo subido sin firmar; resolveResourceUrls la reemplaza
+  // por una signed URL antes de renderizar.
+  url: string | null;
+  storage_path: string | null;
   position: number;
 };
 

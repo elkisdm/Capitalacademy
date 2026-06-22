@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveResourceUrls } from "./resource-urls";
 import type {
   ModuleWithLessons,
   VideoProgress,
@@ -164,10 +165,11 @@ export async function getModuleSessionsForCohort(
   if (sessionIds.length > 0) {
     const { data: resources } = await supabase
       .from("session_resources")
-      .select("id, session_id, title, type, url, position")
+      .select("id, session_id, title, type, url, storage_path, position")
       .in("session_id", sessionIds)
       .order("position", { ascending: true });
-    for (const r of (resources ?? []) as SessionResource[]) {
+    const resolved = await resolveResourceUrls((resources ?? []) as SessionResource[]);
+    for (const r of resolved) {
       const arr = resourcesMap.get(r.session_id) ?? [];
       arr.push(r);
       resourcesMap.set(r.session_id, arr);
@@ -229,11 +231,12 @@ export async function getCohortSchedule(
   if (sessionIds.length > 0) {
     const { data: resources } = await supabase
       .from("session_resources")
-      .select("id, session_id, title, type, url, position")
+      .select("id, session_id, title, type, url, storage_path, position")
       .in("session_id", sessionIds)
       .order("position", { ascending: true });
 
-    for (const r of (resources ?? []) as SessionResource[]) {
+    const resolved = await resolveResourceUrls((resources ?? []) as SessionResource[]);
+    for (const r of resolved) {
       const arr = resourcesMap.get(r.session_id) ?? [];
       arr.push(r);
       resourcesMap.set(r.session_id, arr);

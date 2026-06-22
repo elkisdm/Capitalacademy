@@ -53,7 +53,7 @@ export default async function AdminCohortSessionsPage(
   const { data: resourcesData } = sessionIds.length
     ? await supabase
         .from("session_resources")
-        .select("id, session_id, title, type, url, position")
+        .select("id, session_id, title, type, url, storage_path, position")
         .in("session_id", sessionIds)
         .order("position", { ascending: true })
     : { data: [] };

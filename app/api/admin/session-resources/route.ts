@@ -1,34 +1,52 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
+const RESOURCE_BUCKET = "lesson-resources";
+const MAX_SIZE = 50 * 1024 * 1024;
+
 const typeSchema = z.enum(["pdf", "link", "template", "document", "other"]);
 
-const createResourceSchema = z.object({
-  sessionId: z.string().trim().min(1, "sessionId es requerido"),
-  title: z.string().trim().min(1, "title es requerido"),
-  type: typeSchema,
-  url: z
-    .string()
-    .trim()
-    .url("url debe ser una URL válida")
-    // Solo http(s): evita esquemas peligrosos (javascript:, data:) que el
-    // alumno abriría como enlace (XSS almacenado).
-    .refine(
-      (value) => {
-        try {
-          const protocol = new URL(value).protocol;
-          return protocol === "http:" || protocol === "https:";
-        } catch {
-          return false;
-        }
-      },
-      { message: "url debe usar protocolo http o https" },
-    ),
-});
+const httpUrlSchema = z
+  .string()
+  .trim()
+  .url("url debe ser una URL válida")
+  // Solo http(s): evita esquemas peligrosos (javascript:, data:) que el
+  // alumno abriría como enlace (XSS almacenado).
+  .refine(
+    (value) => {
+      try {
+        const protocol = new URL(value).protocol;
+        return protocol === "http:" || protocol === "https:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "url debe usar protocolo http o https" },
+  );
+
+// Link externo (url) O archivo subido (storagePath); `source` discrimina.
+const createResourceSchema = z.discriminatedUnion("source", [
+  z.object({
+    source: z.literal("link"),
+    sessionId: z.string().trim().min(1, "sessionId es requerido"),
+    title: z.string().trim().min(1, "title es requerido"),
+    type: typeSchema,
+    url: httpUrlSchema,
+  }),
+  z.object({
+    source: z.literal("file"),
+    sessionId: z.string().trim().min(1, "sessionId es requerido"),
+    title: z.string().trim().min(1, "title es requerido"),
+    type: typeSchema,
+    storagePath: z.string().trim().min(1, "storagePath es requerido"),
+    fileSizeBytes: z.number().int().positive().max(MAX_SIZE).optional(),
+  }),
+]);
 
 export async function POST(req: Request) {
   const staff = await requireStaff();
@@ -52,7 +70,39 @@ export async function POST(req: Request) {
     );
   }
 
-  const { sessionId, title, type, url } = parsed.data;
+  const input = parsed.data;
+  const { sessionId, title, type } = input;
+
+  // Para archivos subidos: el path debe pertenecer a esta sesión y el objeto
+  // debe existir en Storage (evita filas huérfanas o referenciar otro archivo).
+  let storagePath: string | null = null;
+  let fileSizeBytes: number | null = null;
+  if (input.source === "file") {
+    if (!input.storagePath.startsWith(`s/${sessionId}/`)) {
+      return NextResponse.json(
+        { error: "storagePath no corresponde a la sesión" },
+        { status: 422 },
+      );
+    }
+    const admin = createAdminClient();
+    const slash = input.storagePath.lastIndexOf("/");
+    const dir = input.storagePath.slice(0, slash);
+    const name = input.storagePath.slice(slash + 1);
+    const { data: listed } = await admin.storage
+      .from(RESOURCE_BUCKET)
+      .list(dir, { search: name });
+    const obj = listed?.find((f) => f.name === name);
+    if (!obj) {
+      return NextResponse.json(
+        { error: "El archivo no se encontró en Storage" },
+        { status: 422 },
+      );
+    }
+    storagePath = input.storagePath;
+    fileSizeBytes =
+      input.fileSizeBytes ??
+      (typeof obj.metadata?.size === "number" ? obj.metadata.size : null);
+  }
 
   const { data: maxPos } = await supabase
     .from("session_resources")
@@ -70,11 +120,13 @@ export async function POST(req: Request) {
       session_id: sessionId,
       title,
       type,
-      url,
+      url: input.source === "link" ? input.url : null,
+      storage_path: storagePath,
+      file_size_bytes: fileSizeBytes,
       position: nextPosition,
       created_by: user.id,
     })
-    .select("id, session_id, title, type, url, position")
+    .select("id, session_id, title, type, url, storage_path, file_size_bytes, position")
     .single();
 
   if (error) {
@@ -109,7 +161,7 @@ export async function DELETE(req: Request) {
     .from("session_resources")
     .delete()
     .eq("id", id)
-    .select("id");
+    .select("id, storage_path");
 
   if (error) {
     console.error("session resource delete error", error);
@@ -119,6 +171,17 @@ export async function DELETE(req: Request) {
   // Si no se borró nada (id inexistente u oculto por RLS), el array viene vacío.
   if (!data || data.length === 0) {
     return NextResponse.json({ error: "Recurso no encontrado" }, { status: 404 });
+  }
+
+  // Si era un archivo subido, elimina el objeto de Storage (no dejar huérfanos).
+  const storagePath = data[0]?.storage_path;
+  if (storagePath) {
+    const { error: removeError } = await createAdminClient()
+      .storage.from(RESOURCE_BUCKET)
+      .remove([storagePath]);
+    if (removeError) {
+      console.error("session resource storage remove error", removeError);
+    }
   }
 
   return NextResponse.json({ deleted: true });

@@ -64,7 +64,7 @@
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/cohorts/[cohortId]/sesiones/` | Editor admin del calendario de la cohorte (crear/editar/eliminar sesiones, lista o calendario) | `/admin/cohorts/[cohortId]/sesiones` | 0008 |
 | `app/api/admin/sessions/route.ts` · `[sessionId]/route.ts` | CRUD de sesiones de clase de una cohorte | `POST/PATCH/DELETE /api/admin/sessions` | 0008 |
-| `app/api/admin/session-resources/route.ts` | Recursos asociados a una sesión (material de clase) | `/api/admin/session-resources` | 0008 |
+| `app/api/admin/session-resources/route.ts` · `upload-url/route.ts` | Recursos de una sesión: link o **archivo subido** (≤50MB, bucket privado `lesson-resources`); DELETE limpia el objeto | `/api/admin/session-resources` | 0008 |
 | `app/api/admin/enrollment-segment/route.ts` | Asignación manual del segmento "Capital Inteligente" a una matrícula | `/api/admin/enrollment-segment` | 0008 |
 | `components/admin/segment-toggle.tsx` | Toggle admin del segmento de un alumno | — | 0008 |
 | `app/(classroom)/classroom/[cohortSlug]/calendario/` | Calendario de clases del alumno (vista lista + mes, recursos por sesión) | `/classroom/[cohortSlug]/calendario` | 0008 |

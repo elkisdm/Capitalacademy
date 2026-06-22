@@ -389,32 +389,38 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          file_size_bytes: number | null
           id: string
           position: number
           session_id: string
+          storage_path: string | null
           title: string
           type: string
-          url: string
+          url: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          file_size_bytes?: number | null
           id?: string
           position?: number
           session_id: string
+          storage_path?: string | null
           title: string
           type: string
-          url: string
+          url?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          file_size_bytes?: number | null
           id?: string
           position?: number
           session_id?: string
+          storage_path?: string | null
           title?: string
           type?: string
-          url?: string
+          url?: string | null
         }
         Relationships: [
           {

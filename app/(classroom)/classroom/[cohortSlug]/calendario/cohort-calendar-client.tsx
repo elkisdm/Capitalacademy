@@ -111,10 +111,11 @@ function ResourceLinks({ resources }: { resources: ScheduleSession["resources"] 
         {resources.map((r) => (
           <a
             key={r.id}
-            href={r.url}
+            href={r.url ?? undefined}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-ca-bg-soft px-2.5 py-1 text-[11px] font-bold text-ca-ink transition-colors hover:bg-ca-violet/10 hover:text-ca-violet"
+            aria-disabled={r.url ? undefined : true}
+            className={`inline-flex items-center gap-1.5 rounded-lg bg-ca-bg-soft px-2.5 py-1 text-[11px] font-bold text-ca-ink transition-colors hover:bg-ca-violet/10 hover:text-ca-violet${r.url ? "" : " pointer-events-none opacity-60"}`}
           >
             <ResourceIcon type={r.type} />
             <span className="max-w-[180px] truncate">{r.title}</span>

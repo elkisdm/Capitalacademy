@@ -211,10 +211,11 @@ function SessionRow({ session, isLast }: { session: ScheduleSession; isLast: boo
           {session.resources.map((r) => (
             <a
               key={r.id}
-              href={r.url}
+              href={r.url ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] bg-ca-surface px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+              aria-disabled={r.url ? undefined : true}
+              className={`inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] bg-ca-surface px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet${r.url ? "" : " pointer-events-none opacity-60"}`}
             >
               <span>{RESOURCE_ICON[r.type] ?? RESOURCE_ICON.other}</span>
               {r.title}

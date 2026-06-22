@@ -45,12 +45,15 @@ export async function resolveEvaluationAccess(
     return { ok: false, status: 404, error: "Evaluación no disponible" };
   }
 
+  // Acceso permanente al contenido (RN-049/050): un alumni con matrícula
+  // 'completed' conserva acceso a sus evaluaciones formativas (práctica sin
+  // certificado). Coincide con la policy RLS evaluations_student_select.
   const { data: enrollment } = await supabase
     .from("enrollments")
     .select("id, status, cohorts!inner(program_id)")
     .eq("student_id", userId)
     .eq("cohorts.program_id", evaluation.program_id)
-    .eq("status", "active")
+    .in("status", ["active", "completed"])
     .limit(1)
     .single();
 

@@ -224,6 +224,27 @@ export async function DELETE(req: Request) {
 
   const admin = createAdminClient();
 
+  // Guard: no borrar una pregunta cuya evaluación tiene intentos EN CURSO —
+  // rompería el `questions_presented` de ese intento (submit fallaría con 500).
+  const { data: q } = await admin
+    .from("quiz_questions")
+    .select("evaluation_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (q?.evaluation_id) {
+    const { count } = await admin
+      .from("quiz_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("evaluation_id", q.evaluation_id)
+      .is("completed_at", null);
+    if ((count ?? 0) > 0) {
+      return NextResponse.json(
+        { error: "No se puede eliminar: hay intentos en curso de esta evaluación" },
+        { status: 409 },
+      );
+    }
+  }
+
   const { error } = await admin
     .from("quiz_questions")
     .delete()

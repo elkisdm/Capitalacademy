@@ -262,50 +262,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Check for incomplete quiz attempts before replacing questions ----------
-  const { count: incompleteCount, error: incompleteError } = await admin
-    .from("quiz_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("program_id", programId)
-    .is("completed_at", null);
-
-  if (incompleteError) {
-    console.error("Error checking incomplete attempts:", incompleteError);
-    return NextResponse.json(
-      { error: "Error al verificar intentos en curso" },
-      { status: 500 },
-    );
-  }
-
-  if (incompleteCount && incompleteCount > 0) {
-    return NextResponse.json(
-      {
-        error: `Hay ${incompleteCount} intento(s) de quiz en curso. Espera a que terminen antes de regenerar las preguntas.`,
-      },
-      { status: 409 },
-    );
-  }
-
-  // --- Delete existing generated questions for this program ------------------
-  const { error: deleteError } = await admin
-    .from("quiz_questions")
-    .delete()
-    .eq("program_id", programId)
-    .eq("is_generated", true);
-
-  if (deleteError) {
-    console.error("Error deleting old questions:", deleteError);
-    return NextResponse.json(
-      { error: "Error al eliminar preguntas anteriores" },
-      { status: 500 },
-    );
-  }
-
-  // --- Shuffle options to eliminate LLM positional bias ----------------------
-  const shuffledQuestions = parsed.questions.map(shuffleOptions);
-
   // La evaluación final del programa (migrada en 0033) es la dueña del pool del
-  // quiz final. La aseguramos ANTES de insertar para adjuntar las preguntas a ella.
+  // quiz final. La aseguramos ANTES de chequear/borrar/insertar; el scoping por
+  // evaluation_id evita tocar intentos/preguntas de los quizzes formativos por
+  // clase (que comparten program_id).
   const { data: existingFinal } = await admin
     .from("evaluations")
     .select("id")
@@ -338,6 +298,48 @@ export async function POST(req: Request) {
     }
     finalEvalId = createdEval.id;
   }
+
+  // --- Check for incomplete attempts OF THE FINAL evaluation ------------------
+  const { count: incompleteCount, error: incompleteError } = await admin
+    .from("quiz_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("evaluation_id", finalEvalId)
+    .is("completed_at", null);
+
+  if (incompleteError) {
+    console.error("Error checking incomplete attempts:", incompleteError);
+    return NextResponse.json(
+      { error: "Error al verificar intentos en curso" },
+      { status: 500 },
+    );
+  }
+
+  if (incompleteCount && incompleteCount > 0) {
+    return NextResponse.json(
+      {
+        error: `Hay ${incompleteCount} intento(s) de quiz en curso. Espera a que terminen antes de regenerar las preguntas.`,
+      },
+      { status: 409 },
+    );
+  }
+
+  // --- Delete existing AI questions OF THE FINAL evaluation -------------------
+  const { error: deleteError } = await admin
+    .from("quiz_questions")
+    .delete()
+    .eq("evaluation_id", finalEvalId)
+    .eq("is_generated", true);
+
+  if (deleteError) {
+    console.error("Error deleting old questions:", deleteError);
+    return NextResponse.json(
+      { error: "Error al eliminar preguntas anteriores" },
+      { status: 500 },
+    );
+  }
+
+  // --- Shuffle options to eliminate LLM positional bias ----------------------
+  const shuffledQuestions = parsed.questions.map(shuffleOptions);
 
   // --- Insert new questions, linking to lesson_id where possible -------------
   const questionsToInsert = shuffledQuestions.map((q, idx) => {

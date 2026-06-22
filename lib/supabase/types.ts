@@ -843,53 +843,6 @@ export type Database = {
           },
         ]
       }
-      quiz_configs: {
-        Row: {
-          id: string
-          program_id: string
-          min_completion_pct: number
-          passing_grade_pct: number
-          questions_per_attempt: number
-          max_attempts: number
-          time_limit_minutes: number | null
-          is_active: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          program_id: string
-          min_completion_pct?: number
-          passing_grade_pct?: number
-          questions_per_attempt?: number
-          max_attempts?: number
-          time_limit_minutes?: number | null
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          program_id?: string
-          min_completion_pct?: number
-          passing_grade_pct?: number
-          questions_per_attempt?: number
-          max_attempts?: number
-          time_limit_minutes?: number | null
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_configs_program_id_fkey"
-            columns: ["program_id"]
-            isOneToOne: true
-            referencedRelation: "programs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       quiz_questions: {
         Row: {
           id: string

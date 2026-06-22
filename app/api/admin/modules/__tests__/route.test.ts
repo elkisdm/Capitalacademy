@@ -16,6 +16,7 @@ type State = {
   updated: Res;
   moduleLessons: Array<Record<string, unknown>>;
   progressCount: number;
+  sessionCount: number;
   deleted: Res;
 };
 let state: State;
@@ -36,6 +37,7 @@ function makeBuilder(table: string) {
     if (table === "programs") return { data: state.program, error: null };
     if (table === "lessons") return { data: state.moduleLessons, error: null };
     if (table === "video_progress") return { count: state.progressCount, error: null };
+    if (table === "class_sessions") return { count: state.sessionCount, error: null };
     if (table === "program_modules") {
       if (has("insert")) return state.inserted;
       if (has("update")) return state.updated;
@@ -87,6 +89,7 @@ beforeEach(() => {
     updated: { data: { id: MODULE_ID, code: "M2", title: "Editado" }, error: null },
     moduleLessons: [],
     progressCount: 0,
+    sessionCount: 0,
     deleted: { data: [{ id: MODULE_ID }], error: null },
   };
 });
@@ -143,7 +146,15 @@ describe("DELETE /api/admin/modules/[moduleId] (con guard)", () => {
     expect(res!.status).toBe(409);
   });
 
-  it("200 elimina cuando no hay progreso", async () => {
+  it("409 cuando hay sesiones de calendario vinculadas al módulo", async () => {
+    state.sessionCount = 2;
+    const res = await DELETE(new Request("http://x", { method: "DELETE" }), ctx);
+    expect(res!.status).toBe(409);
+    const json = await res!.json();
+    expect(json.error).toContain("sesión");
+  });
+
+  it("200 elimina cuando no hay progreso ni sesiones vinculadas", async () => {
     const res = await DELETE(new Request("http://x", { method: "DELETE" }), ctx);
     expect(res!.status).toBe(200);
     const json = await res!.json();

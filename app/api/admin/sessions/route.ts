@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
+import { moduleInProgramError } from "@/lib/admin/session-module";
 
 export const runtime = "nodejs";
 
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
 
   const { data: cohort } = await admin
     .from("cohorts")
-    .select("id")
+    .select("id, program_id")
     .eq("id", cohort_id)
     .single();
 
@@ -122,6 +123,16 @@ export async function POST(req: Request) {
       { error: "Cohorte no encontrada" },
       { status: 404 },
     );
+  }
+
+  // El módulo (si se asigna) debe pertenecer al programa de la cohorte.
+  const moduleError = await moduleInProgramError(
+    admin,
+    cohort.program_id,
+    module_id,
+  );
+  if (moduleError) {
+    return NextResponse.json({ error: moduleError }, { status: 422 });
   }
 
   const insertRow = {

@@ -126,6 +126,22 @@ export async function DELETE(
     }
   }
 
+  // Guarda de integridad: no borrar si hay sesiones de calendario vinculadas.
+  // La FK es ON DELETE SET NULL, así que borrar dejaría las sesiones huérfanas
+  // (module_id = NULL) en silencio, desapareciéndolas del módulo en el aula.
+  const { count: sessionCount } = await supabase
+    .from("class_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("module_id", moduleId);
+  if ((sessionCount ?? 0) > 0) {
+    return NextResponse.json(
+      {
+        error: `No se puede eliminar: hay ${sessionCount} sesión(es) de calendario vinculada(s) a este módulo. Desvincúlalas o reasígnalas primero.`,
+      },
+      { status: 409 },
+    );
+  }
+
   const { data, error } = await supabase
     .from("program_modules")
     .delete()

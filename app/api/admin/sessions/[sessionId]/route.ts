@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
+import { moduleInProgramError } from "@/lib/admin/session-module";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,7 @@ const updateSessionSchema = z
 
 type SessionRow = {
   id: string;
+  cohort_id: string;
   starts_at: string;
   ends_at: string;
 };
@@ -80,7 +82,7 @@ export async function PATCH(
 
   const { data: current } = await admin
     .from("class_sessions")
-    .select("id, starts_at, ends_at")
+    .select("id, cohort_id, starts_at, ends_at")
     .eq("id", parsedId.data)
     .single<SessionRow>();
 
@@ -89,6 +91,24 @@ export async function PATCH(
       { error: "Sesión no encontrada" },
       { status: 404 },
     );
+  }
+
+  // Si se reasigna el módulo, debe pertenecer al programa de la cohorte de la
+  // sesión (la cohorte no cambia en un PATCH).
+  if (fields.module_id) {
+    const { data: cohort } = await admin
+      .from("cohorts")
+      .select("program_id")
+      .eq("id", current.cohort_id)
+      .single();
+    const moduleError = await moduleInProgramError(
+      admin,
+      cohort?.program_id ?? "",
+      fields.module_id,
+    );
+    if (moduleError) {
+      return NextResponse.json({ error: moduleError }, { status: 422 });
+    }
   }
 
   const nextStartsAt = fields.starts_at ?? current.starts_at;

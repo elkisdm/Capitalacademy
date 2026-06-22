@@ -40,6 +40,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La landing del Diplomado quedó actualizada con los datos de la 4ª generación (`e009abb`)
 
 ### Fixed
+- El calendario y los módulos quedan consistentes: una clase en vivo solo puede vincularse a un módulo de su propio programa, y eliminar un módulo con clases agendadas se bloquea con un aviso claro en vez de dejarlas sin módulo en silencio (`c9c4ec6`)
 - El acceso al contenido del programa ya no se pierde al cerrar la cohorte: un alumno con matrícula finalizada conserva sus clases y materiales (`45b9f76`)
 - Los recordatorios de clases exclusivas de Capital Inteligente ahora llegan solo a esos alumnos, no a toda la generación; las clases grabadas dejan de generar recordatorio (`495722d`)
 - Una clase cancelada en el calendario del alumno se marca como tal y ya no ofrece el botón "Entrar" a una sesión que no ocurrirá (`af96727`)

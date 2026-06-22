@@ -14,7 +14,7 @@ import {
   ProgressBar,
   Avatar,
 } from "@/components/classroom/primitives";
-import type { ModuleWithLessons, LessonWithProgress } from "@/lib/classroom/types";
+import type { ModuleWithLessons } from "@/lib/classroom/types";
 
 function fmtUnlock(iso: string) {
   const d = new Date(iso);
@@ -22,8 +22,10 @@ function fmtUnlock(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-function ModuleCard({ mod, cohortSlug }: { mod: ModuleWithLessons; cohortSlug: string }) {
+function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons; cohortSlug: string; liveSessions: number }) {
   const progress = calculateModuleProgress(mod.lessons);
+  // El contenido del módulo combina lecciones grabadas y clases en vivo.
+  const contentCount = mod.lessons.length + liveSessions;
   const isLocked = mod.lessons.length > 0 && mod.lessons.every((l) => l.unlock_at && new Date(l.unlock_at) > new Date());
   const hasProgress = progress.percentage > 0;
   const isCompleted = progress.percentage === 100 && progress.total_with_video > 0;
@@ -69,7 +71,7 @@ function ModuleCard({ mod, cohortSlug }: { mod: ModuleWithLessons; cohortSlug: s
               <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 <span>Módulo {String(mod.position).padStart(2, "0")}</span>
                 <span className="opacity-40">·</span>
-                <span>{mod.lessons.length} lecciones</span>
+                <span>{contentCount} {contentCount === 1 ? "clase" : "clases"}</span>
               </div>
               <h3 className="text-[20px] font-extrabold leading-tight tracking-tight text-ca-ink">
                 {mod.title}
@@ -107,7 +109,7 @@ function ModuleCard({ mod, cohortSlug }: { mod: ModuleWithLessons; cohortSlug: s
             ) : (
               <div>
                 <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-ca-ink-soft">
-                  <span>{progress.completed_lessons} de {progress.total_lessons} lecciones</span>
+                  <span>{progress.completed_lessons} de {contentCount} clases</span>
                   <span className={`font-mono font-bold ${isCompleted ? "text-[#3f5a05]" : "text-ca-ink"}`}>
                     {progress.percentage}%
                   </span>
@@ -156,6 +158,26 @@ export default async function CohortDashboardPage(
   const program = cohort.programs as { id: string; name: string; code: string; description: string | null; total_modules: number | null };
   const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
 
+  // Clases en vivo (class_sessions) por módulo de ESTA cohorte. Para programas
+  // híbridos/presenciales el contenido del módulo son sus sesiones del
+  // calendario, no lecciones grabadas; sin esto el módulo mostraba "0 lecciones".
+  const liveSessionsByModule = new Map<string, number>();
+  const moduleIds = modules.map((m) => m.id);
+  if (moduleIds.length > 0) {
+    const { data: sessionRows } = await supabase
+      .from("class_sessions")
+      .select("module_id")
+      .eq("cohort_id", cohortId)
+      .in("module_id", moduleIds)
+      .neq("status", "cancelled");
+    for (const r of sessionRows ?? []) {
+      if (r.module_id) {
+        liveSessionsByModule.set(r.module_id, (liveSessionsByModule.get(r.module_id) ?? 0) + 1);
+      }
+    }
+  }
+  const totalSessions = Array.from(liveSessionsByModule.values()).reduce((s, n) => s + n, 0);
+
   const totalModules = modules.length;
   const completedModules = modules.filter((m) => {
     const p = calculateModuleProgress(m.lessons);
@@ -166,6 +188,8 @@ export default async function CohortDashboardPage(
     : 0;
 
   const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0);
+  // "Contenido" del programa = lecciones grabadas + clases en vivo agendadas.
+  const totalContent = totalLessons + totalSessions;
   const completedLessons = modules.reduce((s, m) => s + calculateModuleProgress(m.lessons).completed_lessons, 0);
 
   const currentModule = modules.find((m) => {
@@ -218,7 +242,7 @@ export default async function CohortDashboardPage(
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z" /><path d="M4 17a3 3 0 013-3h12" /></svg>
-                {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalLessons} lecciones
+                {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} clases
               </span>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -261,9 +285,9 @@ export default async function CohortDashboardPage(
               </div>
               <div className="min-w-0">
                 <div className="text-[22px] font-black leading-tight">
-                  {completedLessons} <span className="text-[16px] opacity-50">/ {totalLessons}</span>
+                  {completedLessons} <span className="text-[16px] opacity-50">/ {totalContent}</span>
                 </div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">lecciones completadas</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">clases completadas</div>
                 <div className="mt-2 text-[11px] font-semibold text-white/50">
                   {completedModules} de {totalModules} {totalModules === 1 ? "módulo" : "módulos"}
                 </div>
@@ -353,7 +377,12 @@ export default async function CohortDashboardPage(
       {/* Module cards grid */}
       <div className="grid gap-5 lg:grid-cols-2">
         {modules.map((mod) => (
-          <ModuleCard key={mod.id} mod={mod} cohortSlug={cohortSlug} />
+          <ModuleCard
+            key={mod.id}
+            mod={mod}
+            cohortSlug={cohortSlug}
+            liveSessions={liveSessionsByModule.get(mod.id) ?? 0}
+          />
         ))}
       </div>
 
@@ -373,17 +402,17 @@ export default async function CohortDashboardPage(
               Certificado ejecutivo Capital Academy
             </h3>
             <p className="mt-2 text-[13px] leading-relaxed text-white/60">
-              Completa las {totalLessons} lecciones para obtener tu certificado.
+              Completa las {totalContent} clases para obtener tu certificado.
             </p>
             <div className="mt-4">
               <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold">
-                <span className="text-white/60">{completedLessons} de {totalLessons} lecciones</span>
-                <span className="font-mono font-bold text-ca-lime">{totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0}%</span>
+                <span className="text-white/60">{completedLessons} de {totalContent} clases</span>
+                <span className="font-mono font-bold text-ca-lime">{totalContent > 0 ? Math.round((completedLessons / totalContent) * 100) : 0}%</span>
               </div>
               <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-white/10">
                 <div
                   className="h-full rounded-full bg-ca-lime"
-                  style={{ width: `${totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0}%`, transition: "width 320ms ease" }}
+                  style={{ width: `${totalContent > 0 ? (completedLessons / totalContent) * 100 : 0}%`, transition: "width 320ms ease" }}
                 />
               </div>
             </div>

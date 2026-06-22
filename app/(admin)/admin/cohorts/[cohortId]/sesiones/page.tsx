@@ -8,9 +8,13 @@ import type {
 import { SessionsManagerClient } from "./sessions-manager-client";
 
 export default async function AdminCohortSessionsPage(
-  props: { params: Promise<{ cohortId: string }> },
+  props: {
+    params: Promise<{ cohortId: string }>;
+    searchParams: Promise<{ session?: string }>;
+  },
 ) {
   const { cohortId } = await props.params;
+  const { session: focusSessionId } = await props.searchParams;
 
   const supabase = await createClient();
   const {
@@ -84,6 +88,7 @@ export default async function AdminCohortSessionsPage(
         instructors={instructors}
         initialResources={resources}
         modules={modules}
+        focusSessionId={focusSessionId ?? null}
       />
     </div>
   );

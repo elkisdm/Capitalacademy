@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, ExternalLink, AlertTriangle, Paperclip, ChevronDown } from "lucide-react";
+import { Calendar, AlertTriangle, Paperclip, ChevronDown, Pencil } from "lucide-react";
 import { ResourceManager } from "./resource-manager";
 
 type SessionResource = {
@@ -157,12 +157,12 @@ export function ModuleSessionsList({
               )}
 
               <Link
-                href={`/admin/cohorts/${cohortId}/sesiones`}
-                className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-ca-ink-soft hover:text-ca-violet"
-                title="Editar fecha, docente y enlace en el calendario"
+                href={`/admin/cohorts/${cohortId}/sesiones?session=${s.id}`}
+                className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
+                title="Editar esta clase (fecha, docente, enlace)"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Calendario
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
               </Link>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -187,6 +187,7 @@ export function SessionsManagerClient({
   instructors,
   initialResources,
   modules = [],
+  focusSessionId = null,
 }: {
   cohort: CohortInfo;
   programName: string;
@@ -194,6 +195,7 @@ export function SessionsManagerClient({
   instructors: SessionInstructor[];
   initialResources: SessionResource[];
   modules?: ModuleOption[];
+  focusSessionId?: string | null;
 }) {
   const router = useRouter();
   const [sessions, setSessions] = useState<ClassSession[]>(initialSessions);
@@ -221,6 +223,19 @@ export function SessionsManagerClient({
     setCreating(false);
     setEditing(s);
   }
+
+  // Deep-link desde el editor de Lecciones (?session=<id>): abre directamente el
+  // formulario de edición de esa clase. Solo una vez al montar.
+  const focusHandled = useRef(false);
+  useEffect(() => {
+    if (focusHandled.current || !focusSessionId) return;
+    const target = initialSessions.find((s) => s.id === focusSessionId);
+    if (target) {
+      focusHandled.current = true;
+      openEdit(target);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusSessionId]);
 
   // Crear desde la grilla: prefija el día clickeado (09:00–11:00 hora Chile).
   function openCreateForDay(dayKey: string) {

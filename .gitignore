@@ -76,3 +76,7 @@ reunion_capital_academy.*
 /4ta generacion diplomado/
 /docs/marketing/
 *Notas de Gemini*.md
+
+# Archivos sueltos / artefactos generados (NO versionar)
+/*.dc.html
+/deno.lock

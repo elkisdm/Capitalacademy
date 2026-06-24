@@ -28,7 +28,7 @@ export function LoginScreen({
         <div className="shape-circle absolute bottom-20 left-20 h-6 w-6 opacity-20" style={{ background: "var(--color-ca-lime)" }} />
       </div>
 
-      <div className="relative w-full max-w-sm">
+      <div className="ca-fade-up relative w-full max-w-sm">
         {/* Logo + identidad del entorno */}
         <div className="mb-8 flex flex-col items-center">
           <Image

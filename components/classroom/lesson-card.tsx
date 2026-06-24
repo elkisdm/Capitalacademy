@@ -91,9 +91,9 @@ export function LessonCard({
 
   const content = (
     <div
-      className={`group flex items-center gap-4 rounded-lg border p-4 transition-colors ${
+      className={`group flex items-center gap-4 rounded-lg border p-4 ${
         isClickable
-          ? "cursor-pointer border-ca-ink/[0.08] hover:border-ca-violet/30 hover:bg-ca-violet/[0.04]"
+          ? "cursor-pointer border-ca-ink/[0.08] transition-[transform,box-shadow,border-color,background] duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-0.5 hover:border-ca-violet/30 hover:bg-ca-violet/[0.04] hover:shadow-[0_8px_24px_rgba(20,22,58,0.08)] active:translate-y-0 active:shadow-none active:duration-[60ms]"
           : "cursor-not-allowed border-ca-ink/[0.06] bg-ca-bg-soft/50 opacity-60"
       }`}
     >
@@ -115,7 +115,7 @@ export function LessonCard({
         {status === "in_progress" && progress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-ca-ink/[0.08]">
             <div
-              className="h-full bg-ca-violet"
+              className="h-full bg-ca-violet transition-[width] duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>

@@ -173,7 +173,7 @@ export function EvaluationRunner({
           <button
             onClick={start}
             disabled={busy}
-            className="ca-btn-lime mt-4 inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:opacity-50"
+            className="ca-btn-interactive ca-btn-lime mt-4 inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:opacity-50"
           >
             {state.hasInProgress ? "Continuar evaluación" : state.attemptsUsed > 0 ? "Volver a intentar" : "Comenzar evaluación"}
           </button>
@@ -192,7 +192,11 @@ export function EvaluationRunner({
       <Shell title={title}>
         <div className="flex flex-col gap-5">
           {phase.questions.map((q, i) => (
-            <div key={q.id}>
+            <div
+              key={q.id}
+              className="ca-fade-up ca-stagger"
+              style={{ "--i": i } as React.CSSProperties}
+            >
               <p className="mb-2 text-[14px] font-bold text-ca-ink">
                 <span className="mr-2 font-mono text-[12px] text-ca-ink-soft">{i + 1}.</span>
                 {q.question_text}
@@ -209,7 +213,7 @@ export function EvaluationRunner({
           <button
             onClick={submit}
             disabled={busy}
-            className="ca-btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:opacity-50"
+            className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:opacity-50"
           >
             {busy ? "Enviando..." : "Enviar respuestas"}
           </button>
@@ -270,7 +274,7 @@ export function EvaluationRunner({
       </div>
 
       {result.attemptsRemaining > 0 && (
-        <button onClick={start} disabled={busy} className="mt-5 text-[13px] font-bold text-ca-violet hover:underline disabled:opacity-50">
+        <button onClick={start} disabled={busy} className="ca-btn-interactive mt-5 inline-flex rounded-full px-4 py-2 text-[13px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/[0.06] disabled:pointer-events-none disabled:opacity-50">
           Volver a intentar ({result.attemptsRemaining} {result.attemptsRemaining === 1 ? "intento" : "intentos"} restantes)
         </button>
       )}
@@ -280,7 +284,7 @@ export function EvaluationRunner({
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="ca-card p-5 md:p-6">
+    <div className="ca-fade-up ca-card p-5 md:p-6">
       <h3 className="mb-3 text-[15px] font-black tracking-tight text-ca-ink">{title}</h3>
       {children}
     </div>

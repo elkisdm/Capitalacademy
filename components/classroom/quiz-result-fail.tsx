@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Check,
   Clock,
@@ -49,13 +50,19 @@ function ScoreBar({
   threshold?: number;
   height?: number;
 }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setWidth(value));
+    return () => cancelAnimationFrame(t);
+  }, [value]);
+
   return (
     <div className="relative w-full" style={{ height }}>
       <div className="shape-circle absolute inset-0 overflow-hidden bg-ca-bg-soft">
         <div
-          className="shape-circle h-full"
+          className="shape-circle h-full transition-[width] duration-700 ease-out"
           style={{
-            width: `${value}%`,
+            width: `${width}%`,
             background: "linear-gradient(90deg, #c97099, #d14a6b)",
           }}
         />
@@ -143,7 +150,7 @@ export default function QuizResultFail({
   const noAttemptsLeft = attemptsRemaining <= 0;
 
   return (
-    <div className="relative flex w-full flex-col overflow-y-auto bg-ca-bg">
+    <div className="ca-fade-up relative flex w-full flex-col overflow-y-auto bg-ca-bg">
       {/* ── Hero band — soft violet mist (empathetic, NOT red) ── */}
       <section className="relative overflow-hidden bg-ca-violet-mist">
         <div
@@ -245,7 +252,7 @@ export default function QuizResultFail({
       {/* ── Body ── */}
       <section className="relative px-8 py-10 md:px-12">
         {/* Score bar card */}
-        <div className="ca-card p-7">
+        <div className="ca-fade-up ca-stagger ca-card p-7" style={{ "--i": 1 } as React.CSSProperties}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
@@ -292,7 +299,7 @@ export default function QuizResultFail({
         {/* Wrong answers + actions */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           {/* Wrong answers review */}
-          <div className="ca-card overflow-hidden">
+          <div className="ca-fade-up ca-stagger ca-card overflow-hidden" style={{ "--i": 2 } as React.CSSProperties}>
             <div
               className="border-b px-6 py-4"
               style={{ borderColor: "var(--color-ca-outline)" }}
@@ -374,7 +381,7 @@ export default function QuizResultFail({
           </div>
 
           {/* Right: actions */}
-          <div className="flex flex-col gap-4">
+          <div className="ca-fade-up ca-stagger flex flex-col gap-4" style={{ "--i": 2 } as React.CSSProperties}>
             {/* Review lessons card */}
             <div className="ca-card p-6">
               <div className="shape-circle grid h-10 w-10 place-items-center bg-ca-violet-mist text-ca-violet">
@@ -389,7 +396,7 @@ export default function QuizResultFail({
               </p>
               <button
                 onClick={onReviewLessons}
-                className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-ca-ink px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-white"
+                className="ca-btn-interactive mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-ca-ink px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-white"
               >
                 <Play size={15} strokeWidth={2} />
                 Repasar lecciones
@@ -422,7 +429,7 @@ export default function QuizResultFail({
                 <button
                   onClick={onRetry}
                   disabled={noAttemptsLeft}
-                  className="ca-btn-lime mt-4 inline-flex h-11 items-center gap-2 px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="ca-btn-interactive ca-btn-lime mt-4 inline-flex h-11 items-center gap-2 px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
                 >
                   Reintentar quiz
                   <ArrowRight size={15} strokeWidth={2} />

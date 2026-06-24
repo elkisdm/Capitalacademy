@@ -192,7 +192,7 @@ export function CertView({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
+    <div className="ca-fade-up mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -212,7 +212,7 @@ export function CertView({
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         {/* PDF preview frame */}
-        <div className="relative">
+        <div className="ca-fade-up ca-stagger relative" style={{ "--i": 1 } as React.CSSProperties}>
           <div className="ca-card relative overflow-hidden p-6">
             {/* Top bar */}
             <div className="relative mb-3 flex items-center justify-between">
@@ -318,7 +318,7 @@ export function CertView({
         </div>
 
         {/* Side: metadata + actions */}
-        <div className="flex flex-col gap-4">
+        <div className="ca-fade-up ca-stagger flex flex-col gap-4" style={{ "--i": 2 } as React.CSSProperties}>
           {/* Meta card */}
           <div className="ca-card p-6">
             <div className="flex items-center justify-between">
@@ -376,7 +376,7 @@ export function CertView({
               <a
                 href={pdfUrl}
                 download
-                className="ca-btn-lime inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
+                className="ca-btn-interactive ca-btn-lime inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
               >
                 <Icon name="download" size={15} stroke={2} />
                 <span>Descargar PDF</span>
@@ -385,7 +385,7 @@ export function CertView({
                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://${verifyUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-white"
+                className="ca-btn-interactive inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-white"
                 style={{ background: "var(--color-ca-ink)", border: "1px solid var(--color-ca-ink)" }}
               >
                 <Icon name="linkedin" size={15} stroke={2} />
@@ -395,7 +395,7 @@ export function CertView({
                 href={`/verificar/${verificationCode}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+                className="ca-btn-interactive inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
                 style={{ background: "transparent", borderColor: "var(--color-ca-outline-strong)" }}
               >
                 <Icon name="shield" size={15} stroke={2} />

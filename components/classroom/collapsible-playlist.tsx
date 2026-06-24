@@ -83,7 +83,7 @@ export function CollapsiblePlaylist({
         className="hidden lg:block lg:self-start lg:sticky lg:top-4 lg:overflow-hidden"
         style={{
           width: hydrated ? (collapsed ? 48 : 360) : 360,
-          transition: hydrated ? "width 220ms ease" : "none",
+          transition: hydrated ? "width 240ms cubic-bezier(0.4,0,0.2,1)" : "none",
         }}
       >
         {/* Expanded */}
@@ -134,13 +134,15 @@ export function CollapsiblePlaylist({
                 <button
                   type="button"
                   onClick={toggle}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-ca-ink-soft transition-[background,color,transform] duration-[150ms] hover:bg-ca-bg-soft hover:text-ca-ink hover:scale-110 active:scale-95"
                   aria-label="Minimizar panel"
                   title="Minimizar panel"
                 >
-                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M13 17l5-5-5-5" /><path d="M6 17l5-5-5-5" />
-                  </svg>
+                  <span className="block transition-transform duration-[240ms] ease-[cubic-bezier(0.4,0,0.2,1)]">
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13 17l5-5-5-5" /><path d="M6 17l5-5-5-5" />
+                    </svg>
+                  </span>
                 </button>
               </div>
             </div>
@@ -268,7 +270,7 @@ export function CollapsiblePlaylist({
               onClick={() => setMobileOpen(false)}
             />
             {/* Drawer from right */}
-            <aside ref={trapRef} className="ca-fade-up absolute bottom-0 right-0 top-0 flex w-[320px] max-w-[85vw] flex-col bg-ca-surface shadow-2xl">
+            <aside ref={trapRef} className="ca-slide-in-right absolute bottom-0 right-0 top-0 flex w-[320px] max-w-[85vw] flex-col bg-ca-surface shadow-2xl">
               {/* Drawer header */}
               <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-5 py-4">
                 <div>

@@ -441,63 +441,69 @@ export function QuizInProgress({
         </div>
 
         <div className="relative mx-auto flex h-full max-w-[820px] flex-col px-4 py-6 md:px-8 md:py-10">
-          {/* Question header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="font-mono font-black leading-none tracking-tight"
-                style={{ fontSize: 44, color: "var(--color-ca-ink)" }}
-              >
-                {pad2(currentIdx + 1)}
-                <span
-                  className="text-[20px]"
-                  style={{ color: "var(--color-ca-ink-soft)" }}
+          {/* Question header + question text + options — re-mount on index change to animate */}
+          <div
+            key={currentIdx}
+            className="ca-fade-up flex flex-col"
+            style={{ animationDuration: "var(--dur-base)" }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="font-mono font-black leading-none tracking-tight"
+                  style={{ fontSize: 44, color: "var(--color-ca-ink)" }}
                 >
-                  /{pad2(total)}
+                  {pad2(currentIdx + 1)}
+                  <span
+                    className="text-[20px]"
+                    style={{ color: "var(--color-ca-ink-soft)" }}
+                  >
+                    /{pad2(total)}
+                  </span>
+                </div>
+                <div
+                  className="h-10 w-px"
+                  style={{ background: "var(--color-ca-outline)" }}
+                />
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
+                  style={{
+                    background: "var(--color-ca-violet-mist)",
+                    color: "var(--color-ca-violet-deep)",
+                  }}
+                >
+                  <Icon name="bookmark" size={11} stroke={2.5} />
+                  Pregunta {currentIdx + 1}
                 </span>
               </div>
-              <div
-                className="h-10 w-px"
-                style={{ background: "var(--color-ca-outline)" }}
-              />
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{
-                  background: "var(--color-ca-violet-mist)",
-                  color: "var(--color-ca-violet-deep)",
-                }}
+              <button
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em]"
+                style={{ color: "var(--color-ca-ink-soft)" }}
               >
-                <Icon name="bookmark" size={11} stroke={2.5} />
-                Pregunta {currentIdx + 1}
-              </span>
+                <Icon name="flag" size={12} stroke={2} /> Reportar
+              </button>
             </div>
-            <button
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em]"
-              style={{ color: "var(--color-ca-ink-soft)" }}
+
+            {/* Question text */}
+            <h2
+              className="mt-6 text-[22px] font-extrabold leading-snug tracking-tight"
+              style={{ color: "var(--color-ca-ink)" }}
             >
-              <Icon name="flag" size={12} stroke={2} /> Reportar
-            </button>
-          </div>
+              {currentQ.question_text}
+            </h2>
 
-          {/* Question text */}
-          <h2
-            className="mt-6 text-[22px] font-extrabold leading-snug tracking-tight"
-            style={{ color: "var(--color-ca-ink)" }}
-          >
-            {currentQ.question_text}
-          </h2>
-
-          {/* Options */}
-          <div className="mt-6 flex flex-col gap-2.5">
-            {optionEntries.map(([letter, text]) => (
-              <QuizOption
-                key={letter}
-                letter={letter}
-                text={text}
-                isSelected={selectedLetter === letter}
-                onSelect={() => selectOption(letter)}
-              />
-            ))}
+            {/* Options */}
+            <div className="mt-6 flex flex-col gap-2.5">
+              {optionEntries.map(([letter, text]) => (
+                <QuizOption
+                  key={letter}
+                  letter={letter}
+                  text={text}
+                  isSelected={selectedLetter === letter}
+                  onSelect={() => selectOption(letter)}
+                />
+              ))}
+            </div>
           </div>
 
           <div className="flex-1" />
@@ -510,12 +516,11 @@ export function QuizInProgress({
             <button
               onClick={goPrev}
               disabled={isFirst}
-              className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
+              className="ca-btn-interactive inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40"
               style={{
                 background: "transparent",
                 color: "var(--color-ca-ink)",
                 border: "1px solid var(--color-ca-outline-strong)",
-                transition: "transform 160ms ease, box-shadow 160ms ease",
               }}
             >
               <Icon name="arrowLeft" size={15} stroke={2} />
@@ -532,13 +537,7 @@ export function QuizInProgress({
             <button
               onClick={goNext}
               disabled={!selectedLetter}
-              className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
-              style={{
-                background: "var(--color-ca-lime)",
-                color: "var(--color-ca-ink)",
-                border: "1px solid var(--color-ca-lime-deep)",
-                transition: "transform 160ms ease, box-shadow 160ms ease",
-              }}
+              className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isLast ? "Enviar respuestas" : "Siguiente"}
               <Icon name="arrowRight" size={15} stroke={2} />

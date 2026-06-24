@@ -108,7 +108,11 @@
 | `components/admin/quiz/question-draft.ts` · `question-editor.tsx` | Borrador editable de pregunta (4 tipos, N opciones) + editor UI dinámico, reusado por `add-question-form` y `question-card` | — | — |
 | `components/admin/quiz/lesson-quiz-panel.tsx` | Panel embebido en el editor de lección: crea (si no existe) la evaluación `scope='lesson'` y delega su gestión en `evaluation-panel` | en `/admin/lessons/[lessonId]` | — |
 | `components/admin/quiz/evaluaciones-tab.tsx` | Pestaña central del admin de quizes: lista evaluaciones por scope (final/módulo/lección), crea eligiendo target y gestiona inline | en `/admin/quizzes` | — |
-| `components/admin/quiz/evaluation-panel.tsx` | Gestor genérico de UNA evaluación (cualquier scope): preguntas, activar/desactivar, compartir, borrado seguro; reusado por `lesson-quiz-panel` y `evaluaciones-tab` | — | — |
+| `components/admin/quiz/evaluation-panel.tsx` | Gestor genérico de UNA evaluación (cualquier scope) en 3 pestañas (Preguntas colapsables · Ajustes · Respuestas); activar/desactivar, compartir, borrado seguro; reusado por `lesson-quiz-panel`, `session-quiz-panel` y `evaluaciones-tab` | — | — |
+| `components/admin/quiz/evaluation-settings.tsx` | Pestaña "Ajustes": edita config (intentos, % aprobación, preguntas por intento, tiempo) vía PATCH de la evaluación | — | — |
+| `components/admin/quiz/evaluation-attempts.tsx` | Pestaña "Respuestas": intentos de la evaluación + drill-down pregunta a pregunta (respuesta del alumno vs correcta) | — | — |
+| `components/admin/quiz/session-quiz-panel.tsx` | Panel embebido en el editor de sesiones: crea (si no existe) la evaluación `scope='session'` ligada a la clase en vivo y delega en `evaluation-panel` | en `/admin/cohorts/[id]/sesiones` | — |
+| `app/api/admin/evaluations/[evaluationId]/attempts/route.ts` | Intentos de UNA evaluación + desglose server-side (reusa `scoreAnswer`) para la pestaña Respuestas | `GET /api/admin/evaluations/[id]/attempts` | — |
 | `components/admin/quiz/share-quiz-dialog.tsx` | Diálogo de compartir: enlace deep-link + QR (`qrcode`) hacia `/classroom/quiz/[evaluationId]` | — | — |
 | `app/api/admin/evaluations/targets/route.ts` | Módulos + lecciones del programa para los selectores de creación de evaluaciones | `GET /api/admin/evaluations/targets` | — |
 | `app/api/classroom/quiz/route.ts` | Estado/gating del quiz del alumno (locked/ready/passed); NO entrega preguntas | `GET /api/classroom/quiz` | — |
@@ -119,7 +123,7 @@
 | `components/classroom/evaluation/evaluation-runner.tsx` · `question-input.tsx` | Runner formativo (intro→en curso→resultado) + input por tipo; embebido al final de la lección | en `…/[lessonSlug]` | — |
 | `lib/classroom/quiz-question-schema.ts` | Validación zod del payload de pregunta por tipo + `payloadToDbFields` | — | — |
 | `lib/classroom/quiz-runtime.ts` | Helpers server del quiz: completitud, selección/rehidratación (por programa y por evaluación), y `scoreAnswer` por tipo (single/multiple/true_false/short_answer) | — | — |
-| `db/migrations/0033_evaluations.sql` | Tabla `evaluations` (quiz por alcance final/módulo/lección) + tipos de pregunta en `quiz_questions` (`question_type`/`correct_answer`) + `evaluation_id` en `quiz_attempts`; migra el final a `scope='final'` | — | — |
+| `db/migrations/0033_evaluations.sql` · `0040_evaluations_session_scope.sql` | Tabla `evaluations` (quiz por alcance final/módulo/lección) + tipos de pregunta en `quiz_questions` (`question_type`/`correct_answer`) + `evaluation_id` en `quiz_attempts`; 0040 agrega `scope='session'` + `session_id`→`class_sessions` | — | — |
 | `app/(classroom)/classroom/[cohortSlug]/quiz/page.tsx` · `components/classroom/quiz-runner.tsx` | Página del alumno para rendir el quiz + cliente máquina-de-estados | `/classroom/[cohortSlug]/quiz` | — |
 | `app/(classroom)/classroom/quiz/[evaluationId]/page.tsx` | Página standalone de una evaluación por enlace/QR compartible (deep-link autenticado): resuelve acceso y monta `evaluation-runner` | `/classroom/quiz/[evaluationId]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/certificado/page.tsx` | Certificado del alumno | `/classroom/[cohortSlug]/certificado` | — |

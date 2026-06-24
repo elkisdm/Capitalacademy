@@ -97,7 +97,7 @@ function fmtElapsed(ms: number): string {
 function Centered({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="flex h-full min-h-[60vh] w-full flex-col items-center justify-center gap-4 px-6 py-16 text-center"
+      className="ca-fade-up flex h-full min-h-[60vh] w-full flex-col items-center justify-center gap-4 px-6 py-16 text-center"
       style={{ background: "var(--color-ca-bg)" }}
     >
       {children}
@@ -227,13 +227,13 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         <div className="mt-2 flex gap-3">
           <button
             onClick={loadGate}
-            className="ca-btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
+            className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
           >
             Reintentar
           </button>
           <button
             onClick={goWorkshop}
-            className="inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+            className="ca-btn-interactive inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
           >
             Volver al programa
           </button>
@@ -244,6 +244,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
 
   if (phase.name === "in_progress") {
     return (
+      <div key="in_progress" className="ca-fade-up">
       <QuizInProgress
         programTitle={programTitle}
         questions={phase.questions}
@@ -253,6 +254,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         onSubmit={submitAttempt}
         onExit={goWorkshop}
       />
+      </div>
     );
   }
 
@@ -268,6 +270,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         correct: result.correctAnswers[q.id]?.is_correct ?? false,
       }));
       return (
+        <div key="result-pass" className="ca-fade-up">
         <QuizResultPass
           studentName={studentName}
           scorePct={result.score_pct}
@@ -296,6 +299,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
           onReviewAnswers={() => {}}
           correctAnswers={review}
         />
+        </div>
       );
     }
 
@@ -314,6 +318,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
       });
 
     return (
+      <div key="result-fail" className="ca-fade-up">
       <QuizResultFail
         studentName={studentName}
         scorePct={result.score_pct}
@@ -328,6 +333,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         onRetry={startAttempt}
         onReviewLessons={goWorkshop}
       />
+      </div>
     );
   }
 
@@ -345,7 +351,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         </p>
         <button
           onClick={goWorkshop}
-          className="mt-2 inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+          className="ca-btn-interactive mt-2 inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
         >
           Volver al programa
         </button>
@@ -377,7 +383,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         </p>
         <button
           onClick={goWorkshop}
-          className="mt-2 inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+          className="ca-btn-interactive mt-2 inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
         >
           Volver al programa
         </button>

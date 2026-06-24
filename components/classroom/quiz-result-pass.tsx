@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   Clock,
@@ -106,15 +106,21 @@ function ScoreBar({
   threshold?: number;
   height?: number;
 }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setWidth(value));
+    return () => cancelAnimationFrame(t);
+  }, [value]);
+
   return (
     <div className="relative w-full" style={{ height }}>
       <div
         className="shape-circle absolute inset-0 overflow-hidden bg-ca-bg-soft"
       >
         <div
-          className="shape-circle h-full"
+          className="shape-circle h-full transition-[width] duration-700 ease-out"
           style={{
-            width: `${value}%`,
+            width: `${width}%`,
             background:
               "linear-gradient(90deg, var(--color-ca-lime-deep), var(--color-ca-lime))",
           }}
@@ -206,7 +212,7 @@ export default function QuizResultPass({
   const wrongCount = correctAnswers.filter((a) => !a.correct).length;
 
   return (
-    <div className="relative flex w-full flex-col overflow-y-auto bg-ca-bg">
+    <div className="ca-fade-up relative flex w-full flex-col overflow-y-auto bg-ca-bg">
       {/* ── Hero band ── */}
       <section className="relative overflow-hidden bg-ca-lime">
         {/* Decorative shapes */}
@@ -305,7 +311,7 @@ export default function QuizResultPass({
           {/* Left column — score detail + certificate */}
           <div className="flex flex-col gap-6">
             {/* Score bar card */}
-            <div className="ca-card p-7">
+            <div className="ca-fade-up ca-stagger ca-card p-7" style={{ "--i": 1 } as React.CSSProperties}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
@@ -346,7 +352,7 @@ export default function QuizResultPass({
             </div>
 
             {/* Certificate card */}
-            <div className="ca-card relative overflow-hidden p-7">
+            <div className="ca-fade-up ca-stagger ca-card relative overflow-hidden p-7" style={{ "--i": 2 } as React.CSSProperties}>
               <div className="shape-circle absolute -right-10 -top-10 h-32 w-32 bg-ca-lime opacity-35" />
               <div className="shape-circle absolute right-12 top-6 h-3 w-3 bg-ca-violet" />
 
@@ -433,21 +439,21 @@ export default function QuizResultPass({
                     <button
                       onClick={onDownloadCert}
                       disabled={!certificateReady}
-                      className="ca-btn-lime inline-flex h-11 items-center gap-2 px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="ca-btn-interactive ca-btn-lime inline-flex h-11 items-center gap-2 px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <Download size={15} strokeWidth={2} />
                       Descargar PDF
                     </button>
                     <button
                       onClick={onViewCert}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-ca-outline-strong px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+                      className="ca-btn-interactive inline-flex h-11 items-center gap-2 rounded-full border border-ca-outline-strong px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
                     >
                       <Eye size={15} strokeWidth={2} />
                       Ver en el classroom
                     </button>
                     <button
                       onClick={onShareLinkedIn}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-ca-outline-strong px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+                      className="ca-btn-interactive inline-flex h-11 items-center gap-2 rounded-full border border-ca-outline-strong px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
                     >
                       <Share2 size={15} strokeWidth={2} />
                       Compartir
@@ -459,7 +465,7 @@ export default function QuizResultPass({
           </div>
 
           {/* Right column — review answers + next step */}
-          <div className="flex flex-col gap-4">
+          <div className="ca-fade-up ca-stagger flex flex-col gap-4" style={{ "--i": 2 } as React.CSSProperties}>
             {/* Review card */}
             <div className="ca-card p-6">
               <div className="flex items-center gap-2">

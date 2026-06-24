@@ -35,8 +35,8 @@ export function MarkCompleteButton({
 
   if (completed) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-2xl bg-ca-lime/15 px-5 py-3 text-[13.5px] font-bold text-ca-ink">
-        <Check className="h-4 w-4 text-ca-lime-deep" />
+      <div className="ca-scale-in inline-flex items-center gap-2 rounded-2xl bg-ca-lime/15 px-5 py-3 text-[13.5px] font-bold text-ca-ink">
+        <Check className="ca-check-pop h-4 w-4 text-ca-lime-deep" />
         Clase completada
       </div>
     );
@@ -47,7 +47,7 @@ export function MarkCompleteButton({
       type="button"
       onClick={markDone}
       disabled={loading}
-      className="inline-flex items-center gap-2 rounded-2xl bg-ca-ink px-5 py-3 text-[13.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+      className="ca-btn-interactive inline-flex items-center gap-2 rounded-2xl bg-ca-ink px-5 py-3 text-[13.5px] font-bold text-white disabled:opacity-60 disabled:pointer-events-none"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
       Marcar como completada

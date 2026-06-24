@@ -117,8 +117,8 @@ function NavItemButton({
   const content = (
     <span
       ref={navRef}
-      className={`relative flex w-full min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
-        active ? "bg-ca-violet text-white" : "text-ca-ink hover:bg-ca-bg-soft"
+      className={`relative flex w-full min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-[background,color,transform,box-shadow] duration-[150ms] ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-[0.97] ${
+        active ? "bg-ca-violet text-white" : "text-ca-ink hover:bg-ca-bg-soft hover:scale-[1.01]"
       }`}
     >
       <span className="grid h-7 w-7 shrink-0 place-items-center">
@@ -126,9 +126,9 @@ function NavItemButton({
       </span>
       {!collapsed && (
         <>
-          <span className="flex-1 truncate text-[13px] font-semibold tracking-tight" title={item.label}>{item.label}</span>
+          <span className="flex-1 truncate text-[13px] font-semibold tracking-tight transition-opacity duration-[160ms]" title={item.label}>{item.label}</span>
           {item.badge && (
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-ca-lime text-ca-ink" : "bg-ca-violet text-white"}`}>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-opacity duration-[160ms] ${active ? "bg-ca-lime text-ca-ink" : "bg-ca-violet text-white"}`}>
               {item.badge}
             </span>
           )}
@@ -253,11 +253,13 @@ function SidebarContent({
           <div className={`mb-2 flex ${collapsed ? "justify-center" : "justify-end"}`}>
             <button
               onClick={onCollapse}
-              className="shape-circle grid h-8 w-8 place-items-center text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+              className="shape-circle grid h-8 w-8 place-items-center text-ca-ink-soft transition-[background,transform] duration-[150ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-ca-bg-soft hover:scale-110 active:scale-95"
               aria-label={collapsed ? "Expandir menú" : "Minimizar menú"}
               title={collapsed ? "Expandir menú" : "Minimizar menú"}
             >
-              <SvgIcon name={collapsed ? "chevronsRight" : "chevronsLeft"} size={16} />
+              <span className={`block transition-transform duration-[240ms] cubic-bezier(0.4,0,0.2,1) ${collapsed ? "rotate-180" : ""}`}>
+                <SvgIcon name="chevronsLeft" size={16} />
+              </span>
             </button>
           </div>
         )}
@@ -407,7 +409,7 @@ export function ClassroomSidebar({
       {/* Desktop sidebar */}
       <aside
         className="relative hidden shrink-0 flex-col border-r border-ca-ink/[0.08] bg-ca-surface md:flex"
-        style={{ width: collapsed ? 76 : 256, transition: "width 220ms ease" }}
+        style={{ width: collapsed ? 76 : 256, transition: "width 240ms cubic-bezier(0.4,0,0.2,1)" }}
       >
         <SidebarContent
           items={navItems}
@@ -457,7 +459,7 @@ export function ClassroomSidebar({
           {/* Drawer */}
           <aside
             ref={trapRef}
-            className="ca-fade-up absolute bottom-0 left-0 top-0 flex w-[280px] flex-col bg-ca-surface shadow-2xl"
+            className="ca-slide-in-left absolute bottom-0 left-0 top-0 flex w-[280px] flex-col bg-ca-surface shadow-2xl"
           >
             <div className="flex items-center justify-between px-4 py-3">
               <Logo />

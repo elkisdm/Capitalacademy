@@ -155,7 +155,7 @@ export function QuizStart({
         />
       </div>
 
-      <div className="relative mx-auto max-w-[820px] px-10 py-14">
+      <div className="ca-fade-up relative mx-auto max-w-[820px] px-10 py-14">
         {/* Eyebrow pill */}
         <span
           className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
@@ -192,11 +192,11 @@ export function QuizStart({
           />
 
           <div className="relative grid gap-4 sm:grid-cols-3">
-            {rules.map((r) => (
+            {rules.map((r, i) => (
               <div
                 key={r.label}
-                className="rounded-2xl p-4"
-                style={{ background: "var(--color-ca-bg)" }}
+                className="ca-fade-up ca-stagger rounded-2xl p-4"
+                style={{ background: "var(--color-ca-bg)", "--i": i + 1 } as React.CSSProperties}
               >
                 <div
                   className="shape-circle grid h-9 w-9 place-items-center"
@@ -287,13 +287,12 @@ export function QuizStart({
         <div className="mt-8 flex items-center justify-between gap-4">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-full px-6 text-[13px] font-bold uppercase tracking-[0.08em]"
+            className="ca-btn-interactive inline-flex items-center gap-2 rounded-full px-6 text-[13px] font-bold uppercase tracking-[0.08em]"
             style={{
               height: 52,
               background: "transparent",
               color: "var(--color-ca-ink)",
               border: "1px solid var(--color-ca-outline-strong)",
-              transition: "transform 160ms ease, box-shadow 160ms ease",
             }}
           >
             <Icon name="arrowLeft" size={18} stroke={2} />
@@ -301,14 +300,8 @@ export function QuizStart({
           </button>
           <button
             onClick={onStart}
-            className="inline-flex items-center gap-2 rounded-full px-7 text-[14px] font-bold uppercase tracking-[0.08em]"
-            style={{
-              height: 56,
-              background: "var(--color-ca-lime)",
-              color: "var(--color-ca-ink)",
-              border: "1px solid var(--color-ca-lime-deep)",
-              transition: "transform 160ms ease, box-shadow 160ms ease",
-            }}
+            className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 rounded-full px-7 text-[14px] font-bold uppercase tracking-[0.08em]"
+            style={{ height: 56 }}
           >
             Comenzar quiz
             <Icon name="arrowRight" size={18} stroke={2} />

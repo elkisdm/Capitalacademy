@@ -381,13 +381,14 @@ export default async function CohortDashboardPage(
           columna a ancho completo para que el texto no se quiebre palabra a
           palabra ni se desborde el botón. */}
       <div className="grid gap-5 xl:grid-cols-2">
-        {modules.map((mod) => (
-          <ModuleCard
-            key={mod.id}
-            mod={mod}
-            cohortSlug={cohortSlug}
-            liveSessions={liveSessionsByModule.get(mod.id) ?? 0}
-          />
+        {modules.map((mod, i) => (
+          <div key={mod.id} className="ca-fade-up ca-stagger" style={{ "--i": i } as React.CSSProperties}>
+            <ModuleCard
+              mod={mod}
+              cohortSlug={cohortSlug}
+              liveSessions={liveSessionsByModule.get(mod.id) ?? 0}
+            />
+          </div>
         ))}
       </div>
 

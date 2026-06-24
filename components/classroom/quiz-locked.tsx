@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 /* ------------------------------------------------------------------ */
@@ -103,6 +104,12 @@ export function QuizLocked({
   cohortSlug,
   moduleSlug,
 }: QuizLockedProps) {
+  const [barWidth, setBarWidth] = useState(0);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setBarWidth(currentPct));
+    return () => cancelAnimationFrame(t);
+  }, [currentPct]);
+
   const pendingLessons = remainingLessons.filter((l) => !l.done);
   const pendingCount = pendingLessons.length;
   const estimatedMinutes = pendingLessons.reduce((acc, l) => {
@@ -112,7 +119,7 @@ export function QuizLocked({
   const estimatedLabel = Math.round(estimatedMinutes);
 
   return (
-    <div className="px-8 py-10 md:px-12" style={{ background: "var(--color-ca-bg)" }}>
+    <div className="ca-fade-up px-8 py-10 md:px-12" style={{ background: "var(--color-ca-bg)" }}>
       {/* Hero card + side info */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         {/* ---- Locked hero card ---- */}
@@ -195,9 +202,9 @@ export function QuizLocked({
                   style={{ background: "var(--color-ca-bg-soft)", height: 14 }}
                 >
                   <div
-                    className="shape-circle h-full"
+                    className="shape-circle h-full transition-[width] duration-700 ease-out"
                     style={{
-                      width: `${currentPct}%`,
+                      width: `${barWidth}%`,
                       background:
                         "linear-gradient(90deg, var(--color-ca-violet-deep), var(--color-ca-violet))",
                     }}
@@ -241,19 +248,14 @@ export function QuizLocked({
               <div className="mt-5 flex items-center gap-3">
                 <Link
                   href={moduleSlug ? `/classroom/${cohortSlug}/${moduleSlug}` : `/classroom/${cohortSlug}`}
-                  className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
-                  style={{
-                    background: "var(--color-ca-ink)",
-                    color: "#fff",
-                    border: "1px solid var(--color-ca-ink)",
-                  }}
+                  className="ca-btn-interactive ca-btn-primary inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
                 >
                   <Icon name="play" size={15} stroke={2} />
                   Continuar viendo
                 </Link>
                 <Link
                   href={`/classroom/${cohortSlug}`}
-                  className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
+                  className="ca-btn-interactive inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em]"
                   style={{
                     background: "transparent",
                     color: "var(--color-ca-ink)",
@@ -363,11 +365,12 @@ export function QuizLocked({
           {remainingLessons.map((l, i) => (
             <li
               key={i}
-              className="flex items-center gap-4 border-b px-6 py-3.5 last:border-b-0"
+              className="ca-fade-up ca-stagger flex items-center gap-4 border-b px-6 py-3.5 last:border-b-0"
               style={{
+                "--i": i,
                 borderColor: "var(--color-ca-outline)",
                 background: l.current ? "var(--color-ca-violet-mist)" : "transparent",
-              }}
+              } as React.CSSProperties}
             >
               {/* Status dot */}
               <div

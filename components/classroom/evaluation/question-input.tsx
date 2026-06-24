@@ -96,7 +96,7 @@ export function QuestionInput({
             type="button"
             onClick={() => toggle(key)}
             disabled={disabled}
-            className="flex items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left transition-colors"
+            className={`flex items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left transition-[border-color,background,transform,box-shadow] duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] disabled:cursor-not-allowed ${!disabled ? "hover:-translate-y-px hover:shadow-[0_0_0_3px_rgba(94,23,235,0.08)] active:scale-[0.98] active:[transition-duration:60ms]" : ""}`}
             style={{ borderColor: border, background: bg }}
           >
             <span

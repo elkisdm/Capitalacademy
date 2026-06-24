@@ -363,14 +363,15 @@ export default async function ModulePage(
           </div>
           <div className="ca-card divide-y divide-ca-ink/[0.08]">
             {mod.lessons.map((l, i) => (
-              <ChapterRow
-                key={l.id}
-                lesson={l}
-                index={i}
-                cohortSlug={cohortSlug}
-                moduleSlug={moduleSlug}
-                isLast={i === mod.lessons.length - 1}
-              />
+              <div key={l.id} className="ca-fade-up ca-stagger" style={{ "--i": i } as React.CSSProperties}>
+                <ChapterRow
+                  lesson={l}
+                  index={i}
+                  cohortSlug={cohortSlug}
+                  moduleSlug={moduleSlug}
+                  isLast={i === mod.lessons.length - 1}
+                />
+              </div>
             ))}
           </div>
         </section>

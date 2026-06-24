@@ -56,7 +56,7 @@ export function GuideIndexClient({
           <div className="inline-flex rounded-2xl border border-ca-ink/[0.08] bg-white p-1">
             <button
               onClick={() => setTab("student")}
-              className="rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
+              className="ca-btn-interactive rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
               style={{
                 background: tab === "student" ? "var(--color-ca-violet)" : "transparent",
                 color: tab === "student" ? "#fff" : "var(--color-ca-ink-soft)",
@@ -66,7 +66,7 @@ export function GuideIndexClient({
             </button>
             <button
               onClick={() => setTab("team")}
-              className="rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
+              className="ca-btn-interactive rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
               style={{
                 background: tab === "team" ? "var(--color-ca-violet)" : "transparent",
                 color: tab === "team" ? "#fff" : "var(--color-ca-ink-soft)",
@@ -107,13 +107,14 @@ export function GuideIndexClient({
                   {cat}
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {items.map((a) => {
+                  {items.map((a, i) => {
                     const Icon = a.icon;
                     return (
                       <Link
                         key={a.slug}
                         href={`/classroom/guia/${a.slug}`}
-                        className="ca-card group flex flex-col p-5 transition-colors hover:border-ca-violet/30"
+                        className="ca-fade-up ca-stagger ca-card group flex flex-col p-5 transition-[border-color,transform,box-shadow] duration-[200ms] hover:-translate-y-0.5 hover:border-ca-violet/30 hover:shadow-[0_8px_24px_rgba(20,22,58,0.07)] active:translate-y-0 active:shadow-none active:duration-[60ms]"
+                        style={{ "--i": i } as React.CSSProperties}
                       >
                         <div className="mb-3 grid h-10 w-10 place-items-center rounded-2xl bg-ca-violet/[0.08] text-ca-violet">
                           <Icon className="h-5 w-5" />

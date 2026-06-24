@@ -46,26 +46,6 @@ export type Evaluation = {
   is_active: boolean;
 };
 
-export type QuizConfig = {
-  id: string;
-  program_id: string;
-  min_completion_pct: number;
-  passing_grade_pct: number;
-  questions_per_attempt: number;
-  max_attempts: number;
-  time_limit_minutes: number | null;
-  is_active: boolean;
-};
-
-export type QuizAttempt = {
-  id: string;
-  studentName: string;
-  scorePct: number | null;
-  passed: boolean | null;
-  startedAt: string;
-  completedAt: string | null;
-};
-
 /** Desglose pregunta-a-pregunta de un intento (vista admin "Respuestas"). */
 export type AttemptBreakdownItem = {
   questionId: string;
@@ -98,21 +78,12 @@ export type Certificate = {
   pdfUrl: string | null;
 };
 
-export type Tab = "evaluaciones" | "preguntas" | "configuracion" | "intentos" | "certificados";
+export type Tab = "evaluaciones" | "certificados";
 
 export type QuizManagerProps = {
   programs: { id: string; name: string }[];
   /** Entorno activo (program_id) para preseleccionar el programa. */
   initialProgramId?: string;
-};
-
-export const CONFIG_DEFAULTS = {
-  min_completion_pct: 80,
-  passing_grade_pct: 70,
-  questions_per_attempt: 10,
-  max_attempts: 3,
-  time_limit_minutes: null as number | null,
-  is_active: false,
 };
 
 export function formatDate(iso: string | null) {

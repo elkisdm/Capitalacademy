@@ -8,7 +8,7 @@ import { QuestionCard } from "./question-card";
 import { ShareQuizDialog } from "./share-quiz-dialog";
 import { EvaluationSettings } from "./evaluation-settings";
 import { EvaluationAttempts } from "./evaluation-attempts";
-import { LoaderIcon, TrashIcon } from "./icons";
+import { LoaderIcon, TrashIcon, SparklesIcon } from "./icons";
 
 type PanelTab = "preguntas" | "ajustes" | "respuestas";
 
@@ -35,7 +35,31 @@ export function EvaluationPanel({
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const { toast, ToastContainer } = useToast();
+
+  // Generación con IA: solo el quiz final arma su pool desde las transcripciones
+  // de TODO el programa (la herramienta es específica del final). Reemplaza las
+  // preguntas IA existentes y recarga.
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/admin/generate-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ programId: evaluation.program_id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast(`${data.questionCount} preguntas generadas con IA`, "success");
+        await load();
+      } else {
+        toast(data.error ?? "Error al generar con IA", "error");
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,7 +75,6 @@ export function EvaluationPanel({
   }, [evaluation.id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -223,13 +246,27 @@ export function EvaluationPanel({
                 />
               </div>
             ) : (
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors"
-                style={{ background: "var(--color-ca-lime)" }}
-              >
-                + Agregar pregunta
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors"
+                  style={{ background: "var(--color-ca-lime)" }}
+                >
+                  + Agregar pregunta
+                </button>
+                {evaluation.scope === "final" && (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    title="Regenera el pool del final desde las transcripciones del programa (reemplaza las preguntas IA existentes)"
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white transition-colors disabled:opacity-60"
+                    style={{ background: "var(--color-ca-violet)" }}
+                  >
+                    {generating ? <LoaderIcon /> : <SparklesIcon />}
+                    {generating ? "Generando…" : "Generar con IA"}
+                  </button>
+                )}
+              </div>
             )}
 
             {questions.length > 0 ? (

@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import type { Tab, QuizQuestion, QuizManagerProps } from "./types";
+import { useState } from "react";
+import type { Tab, QuizManagerProps } from "./types";
 import { TabBar } from "./tab-bar";
 import { EvaluacionesTab } from "./evaluaciones-tab";
-import { PreguntasTab } from "./preguntas-tab";
-import { ConfiguracionTab } from "./configuracion-tab";
-import { IntentosTab } from "./intentos-tab";
 import { CertificadosTab } from "./certificados-tab";
 
 export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
@@ -16,31 +13,6 @@ export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
       : programs[0]?.id ?? "",
   );
   const [tab, setTab] = useState<Tab>("evaluaciones");
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [loadingQuestions, setLoadingQuestions] = useState(false);
-
-  // Load questions when program changes
-  const fetchQuestions = useCallback(async (programId: string) => {
-    if (!programId) return;
-    setLoadingQuestions(true);
-    try {
-      const res = await fetch(`/api/admin/quiz-questions?programId=${programId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setQuestions(data.questions ?? []);
-      }
-    } finally {
-      setLoadingQuestions(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Carga inicial de preguntas: sincroniza con un sistema externo (la API).
-    if (selectedProgram) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchQuestions(selectedProgram);
-    }
-  }, [selectedProgram, fetchQuestions]);
 
   if (programs.length === 0) {
     return (
@@ -97,16 +69,6 @@ export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
 
       {/* Tab content */}
       {tab === "evaluaciones" && <EvaluacionesTab programId={selectedProgram} />}
-      {tab === "preguntas" && (
-        <PreguntasTab
-          programId={selectedProgram}
-          questions={questions}
-          setQuestions={setQuestions}
-          loading={loadingQuestions}
-        />
-      )}
-      {tab === "configuracion" && <ConfiguracionTab programId={selectedProgram} />}
-      {tab === "intentos" && <IntentosTab programId={selectedProgram} />}
       {tab === "certificados" && <CertificadosTab programId={selectedProgram} />}
     </div>
   );

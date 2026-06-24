@@ -6,7 +6,7 @@ export type QuestionType =
   | "true_false"
   | "short_answer";
 
-export type EvaluationScope = "final" | "module" | "lesson";
+export type EvaluationScope = "final" | "module" | "lesson" | "session";
 
 export type QuizQuestion = {
   id: string;
@@ -35,6 +35,7 @@ export type Evaluation = {
   scope: EvaluationScope;
   module_id: string | null;
   lesson_id: string | null;
+  session_id: string | null;
   title: string;
   description: string | null;
   passing_grade_pct: number;
@@ -63,6 +64,30 @@ export type QuizAttempt = {
   passed: boolean | null;
   startedAt: string;
   completedAt: string | null;
+};
+
+/** Desglose pregunta-a-pregunta de un intento (vista admin "Respuestas"). */
+export type AttemptBreakdownItem = {
+  questionId: string;
+  questionText: string;
+  questionType: QuestionType;
+  givenDisplay: string;
+  correctDisplay: string;
+  isCorrect: boolean;
+};
+
+/** Intento de una evaluación con su desglose, servido por
+ *  GET /api/admin/evaluations/[id]/attempts. */
+export type EvaluationAttempt = {
+  id: string;
+  studentName: string;
+  scorePct: number | null;
+  passed: boolean | null;
+  startedAt: string;
+  completedAt: string | null;
+  totalPresented: number;
+  correctCount: number;
+  breakdown: AttemptBreakdownItem[];
 };
 
 export type Certificate = {

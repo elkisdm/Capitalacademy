@@ -83,6 +83,7 @@ export default async function AdminCohortSessionsPage(
     <div className="ca-fade-up mx-auto w-full max-w-[1100px] px-4 py-6 md:px-8 md:py-8">
       <SessionsManagerClient
         cohort={{ id: cohort.id, name: cohort.name, code: cohort.code }}
+        programId={programId ?? null}
         programName={programName}
         initialSessions={sessions}
         instructors={instructors}

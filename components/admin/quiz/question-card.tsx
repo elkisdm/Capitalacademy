@@ -31,6 +31,7 @@ export function QuestionCard({
   onSave: (questionId: string, payload: Record<string, unknown>) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => draftFromQuestion(question));
   const [showExplanation, setShowExplanation] = useState(false);
@@ -41,6 +42,7 @@ export function QuestionCard({
 
   const startEdit = () => {
     setDraft(draftFromQuestion(question));
+    setExpanded(true);
     setEditing(true);
   };
 
@@ -61,17 +63,48 @@ export function QuestionCard({
   const correct = correctKeys(question);
 
   return (
-    <div className="ca-card overflow-hidden">
-      <div className="p-5">
-        {/* Header */}
+    <div className="overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white">
+      {/* Fila compacta (siempre): clic para expandir */}
+      <div className="flex items-center gap-2.5 px-4 py-3">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          aria-expanded={expanded}
+        >
+          <span className="font-mono text-[12px] font-bold text-ca-ink-soft">
+            #{String(index + 1).padStart(2, "0")}
+          </span>
+          <span className="shrink-0 rounded-full bg-ca-bg-soft px-2 py-0.5 text-[10px] font-bold text-ca-ink-soft">
+            {QUESTION_TYPE_LABELS[question.question_type] ?? question.question_type}
+          </span>
+          <span className="truncate text-[13px] font-semibold text-ca-ink">
+            {question.question_text}
+          </span>
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {question.is_generated && (
+            <span
+              className="hidden rounded-full px-2 py-0.5 text-[10px] font-bold sm:inline"
+              style={{ background: "rgba(94,23,235,0.10)", color: "var(--color-ca-violet)" }}
+            >
+              IA
+            </span>
+          )}
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={expanded ? "Colapsar" : "Expandir"}
+            className="text-ca-ink-soft"
+          >
+            <ChevronIcon open={expanded} />
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-ca-ink/[0.06] px-5 py-4">
+        {/* Sub-header: badges + editar */}
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[12px] font-bold text-ca-ink-soft">
-              #{String(index + 1).padStart(2, "0")}
-            </span>
-            <span className="rounded-full bg-ca-bg-soft px-2 py-0.5 text-[10px] font-bold text-ca-ink-soft">
-              {QUESTION_TYPE_LABELS[question.question_type] ?? question.question_type}
-            </span>
             <span
               className="rounded-full px-2 py-0.5 text-[10px] font-bold"
               style={{
@@ -193,7 +226,8 @@ export function QuestionCard({
             </button>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

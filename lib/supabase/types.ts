@@ -922,6 +922,7 @@ export type Database = {
           scope: Database["public"]["Enums"]["evaluation_scope"]
           module_id: string | null
           lesson_id: string | null
+          session_id: string | null
           title: string
           description: string | null
           passing_grade_pct: number
@@ -939,6 +940,7 @@ export type Database = {
           scope: Database["public"]["Enums"]["evaluation_scope"]
           module_id?: string | null
           lesson_id?: string | null
+          session_id?: string | null
           title: string
           description?: string | null
           passing_grade_pct?: number
@@ -956,6 +958,7 @@ export type Database = {
           scope?: Database["public"]["Enums"]["evaluation_scope"]
           module_id?: string | null
           lesson_id?: string | null
+          session_id?: string | null
           title?: string
           description?: string | null
           passing_grade_pct?: number
@@ -987,6 +990,13 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1544,7 +1554,7 @@ export type Database = {
     Enums: {
       cohort_role_kind: "student" | "teacher" | "assistant"
       cohort_status: "planned" | "active" | "closed" | "archived"
-      evaluation_scope: "final" | "module" | "lesson"
+      evaluation_scope: "final" | "module" | "lesson" | "session"
       question_type:
         | "single_choice"
         | "multiple_choice"

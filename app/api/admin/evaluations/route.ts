@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     .order("scope", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (scope) query = query.eq("scope", scope as "final" | "module" | "lesson");
+  if (scope) query = query.eq("scope", scope as "final" | "module" | "lesson" | "session");
   if (lessonId) query = query.eq("lesson_id", lessonId);
   if (moduleId) query = query.eq("module_id", moduleId);
 
@@ -63,9 +63,10 @@ export async function GET(req: Request) {
 const createSchema = z
   .object({
     programId: uuidLike,
-    scope: z.enum(["final", "module", "lesson"]),
+    scope: z.enum(["final", "module", "lesson", "session"]),
     moduleId: uuidLike.optional(),
     lessonId: uuidLike.optional(),
+    sessionId: uuidLike.optional(),
     title: z.string().trim().min(1, "El título es requerido").max(200),
     description: z.string().trim().max(2000).optional(),
     passingGradePct: z.number().int().min(1).max(100).optional(),
@@ -76,21 +77,28 @@ const createSchema = z
     isActive: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
-    // Coherencia de alcance ↔ target (espeja el CHECK de la migración 0033).
+    // Coherencia de alcance ↔ target (espeja el CHECK evaluations_scope_target,
+    // ampliado en 0040 con la rama session).
     if (val.scope === "module" && !val.moduleId) {
       ctx.addIssue({ code: "custom", message: "moduleId es requerido para scope=module", path: ["moduleId"] });
     }
     if (val.scope === "lesson" && !val.lessonId) {
       ctx.addIssue({ code: "custom", message: "lessonId es requerido para scope=lesson", path: ["lessonId"] });
     }
-    if (val.scope === "final" && (val.moduleId || val.lessonId)) {
-      ctx.addIssue({ code: "custom", message: "scope=final no lleva módulo ni lección", path: ["scope"] });
+    if (val.scope === "session" && !val.sessionId) {
+      ctx.addIssue({ code: "custom", message: "sessionId es requerido para scope=session", path: ["sessionId"] });
     }
-    if (val.scope === "lesson" && val.moduleId) {
-      ctx.addIssue({ code: "custom", message: "scope=lesson no lleva moduleId", path: ["moduleId"] });
+    if (val.scope === "final" && (val.moduleId || val.lessonId || val.sessionId)) {
+      ctx.addIssue({ code: "custom", message: "scope=final no lleva módulo, lección ni sesión", path: ["scope"] });
     }
-    if (val.scope === "module" && val.lessonId) {
-      ctx.addIssue({ code: "custom", message: "scope=module no lleva lessonId", path: ["lessonId"] });
+    if (val.scope === "lesson" && (val.moduleId || val.sessionId)) {
+      ctx.addIssue({ code: "custom", message: "scope=lesson no lleva moduleId ni sessionId", path: ["scope"] });
+    }
+    if (val.scope === "module" && (val.lessonId || val.sessionId)) {
+      ctx.addIssue({ code: "custom", message: "scope=module no lleva lessonId ni sessionId", path: ["scope"] });
+    }
+    if (val.scope === "session" && (val.moduleId || val.lessonId)) {
+      ctx.addIssue({ code: "custom", message: "scope=session no lleva moduleId ni lessonId", path: ["scope"] });
     }
   });
 
@@ -137,6 +145,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "La lección no pertenece a este programa" }, { status: 422 });
     }
   }
+  if (v.scope === "session") {
+    // Una sesión pertenece a una cohorte; el programa se valida vía cohort.
+    const { data: session } = await admin
+      .from("class_sessions")
+      .select("id, cohorts!inner(program_id)")
+      .eq("id", v.sessionId!)
+      .single();
+    const sessionProgramId = (session as { cohorts?: { program_id: string } } | null)
+      ?.cohorts?.program_id;
+    if (!session || sessionProgramId !== v.programId) {
+      return NextResponse.json({ error: "La sesión no pertenece a este programa" }, { status: 422 });
+    }
+  }
 
   const { data: created, error } = await admin
     .from("evaluations")
@@ -145,6 +166,7 @@ export async function POST(req: Request) {
       scope: v.scope,
       module_id: v.scope === "module" ? v.moduleId! : null,
       lesson_id: v.scope === "lesson" ? v.lessonId! : null,
+      session_id: v.scope === "session" ? v.sessionId! : null,
       title: v.title,
       description: v.description ?? null,
       passing_grade_pct: v.passingGradePct ?? 70,

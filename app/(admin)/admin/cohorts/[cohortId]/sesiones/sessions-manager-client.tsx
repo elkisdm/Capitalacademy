@@ -10,6 +10,7 @@ import type {
   SessionResourceType,
 } from "@/lib/classroom/types";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
+import { SessionQuizPanel } from "@/components/admin/quiz/session-quiz-panel";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -182,6 +183,7 @@ type ModuleOption = { id: string; title: string; position: number };
 
 export function SessionsManagerClient({
   cohort,
+  programId,
   programName,
   initialSessions,
   instructors,
@@ -190,6 +192,7 @@ export function SessionsManagerClient({
   focusSessionId = null,
 }: {
   cohort: CohortInfo;
+  programId: string | null;
   programName: string;
   initialSessions: ClassSession[];
   instructors: SessionInstructor[];
@@ -470,6 +473,21 @@ export function SessionsManagerClient({
           onAdd={addResource}
           onRemove={removeResource}
         />
+      )}
+
+      {editing && programId && (
+        <div className="ca-card mb-6 p-6">
+          <h2 className="mb-1 text-[18px] font-black text-ca-ink">Quiz de la clase</h2>
+          <p className="mb-4 text-[12px] text-ca-ink-soft">
+            Evaluación formativa de esta clase en vivo. Compártela por enlace o QR para que el
+            alumno la responda durante o después de la sesión.
+          </p>
+          <SessionQuizPanel
+            programId={programId}
+            sessionId={editing.id}
+            sessionLabel={editing.title ?? "Clase en vivo"}
+          />
+        </div>
       )}
 
       {view === "month" ? (

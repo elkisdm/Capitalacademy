@@ -1,0 +1,254 @@
+"use client";
+
+import { useState } from "react";
+import { useToast } from "@/components/admin/toast";
+import type { Evaluation } from "./types";
+import { LoaderIcon, CheckCircleIcon } from "./icons";
+
+/** Estado local del form: los numéricos opcionales se manejan como string para
+ *  permitir el campo vacío (= "todas" / "sin límite"). */
+type FormState = {
+  title: string;
+  description: string;
+  passingGradePct: string;
+  maxAttempts: string;
+  questionsPerAttempt: string;
+  timeLimitMinutes: string;
+  minCompletionPct: string;
+};
+
+function fromEvaluation(ev: Evaluation): FormState {
+  return {
+    title: ev.title,
+    description: ev.description ?? "",
+    passingGradePct: String(ev.passing_grade_pct),
+    maxAttempts: String(ev.max_attempts),
+    questionsPerAttempt: ev.questions_per_attempt != null ? String(ev.questions_per_attempt) : "",
+    timeLimitMinutes: ev.time_limit_minutes != null ? String(ev.time_limit_minutes) : "",
+    minCompletionPct: ev.min_completion_pct != null ? String(ev.min_completion_pct) : "",
+  };
+}
+
+/**
+ * Pestaña "Ajustes": edita la configuración de la evaluación (intentos, % para
+ * aprobar, preguntas por intento, límite de tiempo, título/descripción).
+ * Cablea al PATCH /api/admin/evaluations/[id] existente — solo envía los campos
+ * que el endpoint valida.
+ */
+export function EvaluationSettings({
+  evaluation,
+  onEvaluationChange,
+}: {
+  evaluation: Evaluation;
+  onEvaluationChange: (ev: Evaluation) => void;
+}) {
+  const [form, setForm] = useState<FormState>(() => fromEvaluation(evaluation));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast, ToastContainer } = useToast();
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const isFinal = evaluation.scope === "final";
+
+  function buildPayload(): Record<string, unknown> | string {
+    const title = form.title.trim();
+    if (!title) return "El título es obligatorio.";
+
+    const passing = Number(form.passingGradePct);
+    if (!Number.isInteger(passing) || passing < 1 || passing > 100) {
+      return "El % para aprobar debe estar entre 1 y 100.";
+    }
+    const attempts = Number(form.maxAttempts);
+    if (!Number.isInteger(attempts) || attempts < 1 || attempts > 50) {
+      return "El n.º de intentos debe estar entre 1 y 50.";
+    }
+
+    const payload: Record<string, unknown> = {
+      title,
+      description: form.description.trim() || null,
+      passingGradePct: passing,
+      maxAttempts: attempts,
+    };
+
+    // Opcionales: vacío = null (todas / sin límite).
+    if (form.questionsPerAttempt.trim() === "") {
+      payload.questionsPerAttempt = null;
+    } else {
+      const n = Number(form.questionsPerAttempt);
+      if (!Number.isInteger(n) || n < 1 || n > 200) return "Preguntas por intento: entre 1 y 200, o vacío para todas.";
+      payload.questionsPerAttempt = n;
+    }
+
+    if (form.timeLimitMinutes.trim() === "") {
+      payload.timeLimitMinutes = null;
+    } else {
+      const n = Number(form.timeLimitMinutes);
+      if (!Number.isInteger(n) || n < 1 || n > 600) return "Límite de tiempo: entre 1 y 600 minutos, o vacío para sin límite.";
+      payload.timeLimitMinutes = n;
+    }
+
+    if (isFinal && form.minCompletionPct.trim() !== "") {
+      const n = Number(form.minCompletionPct);
+      if (!Number.isInteger(n) || n < 1 || n > 100) return "El % de avance mínimo debe estar entre 1 y 100.";
+      payload.minCompletionPct = n;
+    }
+
+    return payload;
+  }
+
+  async function handleSave() {
+    setError(null);
+    const payload = buildPayload();
+    if (typeof payload === "string") {
+      setError(payload);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/evaluations/${evaluation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        onEvaluationChange(data.evaluation);
+        toast("Ajustes guardados", "success");
+      } else {
+        const msg = data.error ?? "No se pudieron guardar los ajustes.";
+        setError(msg);
+        toast(msg, "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls =
+    "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
+  const labelCls = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft";
+  const hintCls = "mt-1 text-[11px] text-ca-ink-soft";
+
+  return (
+    <>
+      <ToastContainer />
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <label className={labelCls} htmlFor="eval-title">Título</label>
+          <input
+            id="eval-title"
+            type="text"
+            value={form.title}
+            onChange={(e) => set("title", e.target.value)}
+            className={inputCls}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={labelCls} htmlFor="eval-desc">Descripción (opcional)</label>
+          <textarea
+            id="eval-desc"
+            value={form.description}
+            onChange={(e) => set("description", e.target.value)}
+            rows={2}
+            className={inputCls}
+          />
+        </div>
+
+        <div>
+          <label className={labelCls} htmlFor="eval-attempts">N.º de intentos</label>
+          <input
+            id="eval-attempts"
+            type="number"
+            min={1}
+            max={50}
+            value={form.maxAttempts}
+            onChange={(e) => set("maxAttempts", e.target.value)}
+            className={inputCls}
+          />
+          <p className={hintCls}>Cuántas veces puede rendir el alumno.</p>
+        </div>
+
+        <div>
+          <label className={labelCls} htmlFor="eval-passing">% para aprobar</label>
+          <input
+            id="eval-passing"
+            type="number"
+            min={1}
+            max={100}
+            value={form.passingGradePct}
+            onChange={(e) => set("passingGradePct", e.target.value)}
+            className={inputCls}
+          />
+          <p className={hintCls}>Nota mínima para aprobar la evaluación.</p>
+        </div>
+
+        <div>
+          <label className={labelCls} htmlFor="eval-perattempt">Preguntas por intento</label>
+          <input
+            id="eval-perattempt"
+            type="number"
+            min={1}
+            max={200}
+            value={form.questionsPerAttempt}
+            onChange={(e) => set("questionsPerAttempt", e.target.value)}
+            placeholder="Todas"
+            className={inputCls}
+          />
+          <p className={hintCls}>Vacío = todas las preguntas del pool.</p>
+        </div>
+
+        <div>
+          <label className={labelCls} htmlFor="eval-time">Límite de tiempo (min)</label>
+          <input
+            id="eval-time"
+            type="number"
+            min={1}
+            max={600}
+            value={form.timeLimitMinutes}
+            onChange={(e) => set("timeLimitMinutes", e.target.value)}
+            placeholder="Sin límite"
+            className={inputCls}
+          />
+          <p className={hintCls}>Vacío = sin límite de tiempo.</p>
+        </div>
+
+        {isFinal && (
+          <div>
+            <label className={labelCls} htmlFor="eval-completion">% de avance mínimo</label>
+            <input
+              id="eval-completion"
+              type="number"
+              min={1}
+              max={100}
+              value={form.minCompletionPct}
+              onChange={(e) => set("minCompletionPct", e.target.value)}
+              className={inputCls}
+            />
+            <p className={hintCls}>Avance del programa requerido para habilitar el final.</p>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[13px] font-semibold text-[#8b6914]">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors disabled:opacity-40"
+          style={{ background: "var(--color-ca-lime)" }}
+        >
+          {saving ? <LoaderIcon /> : <CheckCircleIcon />}
+          Guardar ajustes
+        </button>
+      </div>
+    </>
+  );
+}

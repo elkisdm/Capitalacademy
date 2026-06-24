@@ -7,7 +7,7 @@ type AdminClient = ReturnType<typeof createAdminClient>;
 export type EvaluationForStudent = {
   id: string;
   program_id: string;
-  scope: "final" | "module" | "lesson";
+  scope: "final" | "module" | "lesson" | "session";
   title: string;
   passing_grade_pct: number;
   questions_per_attempt: number | null;

@@ -6,12 +6,18 @@ import type { Evaluation, QuizQuestion } from "./types";
 import { AddQuestionForm } from "./add-question-form";
 import { QuestionCard } from "./question-card";
 import { ShareQuizDialog } from "./share-quiz-dialog";
+import { EvaluationSettings } from "./evaluation-settings";
+import { EvaluationAttempts } from "./evaluation-attempts";
 import { LoaderIcon, TrashIcon } from "./icons";
 
+type PanelTab = "preguntas" | "ajustes" | "respuestas";
+
 /**
- * Gestor genérico de UNA evaluación (cualquier scope): preguntas (4 tipos),
- * activar/desactivar, compartir (enlace + QR) y borrado seguro opcional.
- * Reusado por el panel de lección y por la pestaña central de evaluaciones.
+ * Gestor genérico de UNA evaluación (cualquier scope). Organizado en pestañas:
+ *   · Preguntas  — alta + lista colapsable de preguntas (4 tipos)
+ *   · Ajustes    — config (intentos, % aprobación, tiempo, …) + borrado
+ *   · Respuestas — intentos de los alumnos con desglose pregunta a pregunta
+ * Reusado por el panel de lección, el de sesión y la pestaña central.
  */
 export function EvaluationPanel({
   evaluation,
@@ -20,13 +26,15 @@ export function EvaluationPanel({
 }: {
   evaluation: Evaluation;
   onEvaluationChange: (ev: Evaluation) => void;
-  /** Si se provee, habilita el botón de borrar la evaluación. */
+  /** Si se provee, habilita el botón de borrar la evaluación (en Ajustes). */
   onDeleted?: () => void;
 }) {
+  const [tab, setTab] = useState<PanelTab>("preguntas");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const { toast, ToastContainer } = useToast();
 
   const load = useCallback(async () => {
@@ -135,7 +143,7 @@ export function EvaluationPanel({
       />
 
       <div className="space-y-4">
-        {/* Estado + acciones */}
+        {/* Estado + acciones (fijo, sobre las pestañas) */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ca-bg-soft px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -151,6 +159,7 @@ export function EvaluationPanel({
               {questions.length} {questions.length === 1 ? "pregunta" : "preguntas"}
             </span>
             <span className="text-[12px] text-ca-ink-soft">· aprueba con {evaluation.passing_grade_pct}%</span>
+            <span className="text-[12px] text-ca-ink-soft">· {evaluation.max_attempts} intentos</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -181,28 +190,85 @@ export function EvaluationPanel({
           </div>
         </div>
 
-        <AddQuestionForm evaluationId={evaluation.id} onAdded={(q) => setQuestions((p) => [...p, q])} />
-
-        {questions.length > 0 && (
-          <div className="flex flex-col gap-3">
-            {questions.map((q, idx) => (
-              <QuestionCard key={q.id} question={q} index={idx} onSave={handleSave} onDelete={handleDelete} />
-            ))}
-          </div>
-        )}
-
-        {onDeleted && (
-          <div className="flex justify-end border-t pt-3" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+        {/* Pestañas internas */}
+        <div className="flex items-center gap-1 rounded-2xl bg-ca-bg-soft p-1">
+          {([
+            ["preguntas", `Preguntas${questions.length ? ` (${questions.length})` : ""}`],
+            ["ajustes", "Ajustes"],
+            ["respuestas", "Respuestas"],
+          ] as [PanelTab, string][]).map(([key, label]) => (
             <button
-              onClick={handleDeleteEvaluation}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 text-[12px] font-bold text-red-600 transition-colors hover:text-red-700 disabled:opacity-40"
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex-1 rounded-xl px-4 py-2 text-[12.5px] font-bold transition-colors ${
+                tab === key ? "bg-white text-ca-ink shadow-sm" : "text-ca-ink-soft hover:text-ca-ink"
+              }`}
             >
-              <TrashIcon />
-              Eliminar evaluación
+              {label}
             </button>
+          ))}
+        </div>
+
+        {/* --- Preguntas --- */}
+        {tab === "preguntas" && (
+          <div className="space-y-3">
+            {showAddForm ? (
+              <div className="rounded-xl border border-ca-ink/[0.08] bg-white p-1">
+                <AddQuestionForm
+                  evaluationId={evaluation.id}
+                  onAdded={(q) => {
+                    setQuestions((p) => [...p, q]);
+                    setShowAddForm(false);
+                  }}
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors"
+                style={{ background: "var(--color-ca-lime)" }}
+              >
+                + Agregar pregunta
+              </button>
+            )}
+
+            {questions.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {questions.map((q, idx) => (
+                  <QuestionCard key={q.id} question={q} index={idx} onSave={handleSave} onDelete={handleDelete} />
+                ))}
+              </div>
+            ) : (
+              !showAddForm && (
+                <div className="rounded-xl border-2 border-dashed border-ca-ink/[0.10] px-4 py-8 text-center text-[13px] text-ca-ink-soft">
+                  Aún no hay preguntas. Agrega la primera para poder activar la evaluación.
+                </div>
+              )
+            )}
           </div>
         )}
+
+        {/* --- Ajustes --- */}
+        {tab === "ajustes" && (
+          <div className="space-y-5">
+            <EvaluationSettings evaluation={evaluation} onEvaluationChange={onEvaluationChange} />
+            {onDeleted && (
+              <div className="flex justify-end border-t pt-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+                <button
+                  onClick={handleDeleteEvaluation}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-bold text-red-600 transition-colors hover:text-red-700 disabled:opacity-40"
+                >
+                  <TrashIcon />
+                  Eliminar evaluación
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- Respuestas --- */}
+        {tab === "respuestas" && <EvaluationAttempts evaluationId={evaluation.id} />}
       </div>
     </>
   );

@@ -44,6 +44,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Certificados se envían por email al generarse, con QR funcional de verificación y botón de reintentar si la generación falla (`8a9b3e3`)
 
 ### Changed
+- El panel de quizzes se simplificó: la configuración (intentos, % para aprobar, tiempo), los intentos de los alumnos y las preguntas ahora se gestionan dentro de cada evaluación —no en pestañas globales separadas—, eliminando que un mismo dato se editara desde dos lugares; la generación de preguntas con IA quedó en el examen final (`679a046`)
 - La gestión de material se consolidó en el editor de Lecciones: ahora el material de las clases en vivo se sube ahí mismo (panel "Material" desplegable en cada clase) sin tener que ir al calendario, y la página separada "Recursos por lección" redirige al editor de Lecciones (`834f492`)
 - El menú del panel admin se reorganizó en dos grupos más claros: "General" (Usuarios, Cobros) y "Configuración" (Lecciones, Quizzes, Progreso de cohorte), en vez de una sola lista "Operaciones" (`39e0e2f`)
 - Avatares en comentarios, mejoras responsive en sidebar, selector de calidad en video player, y campo de cumpleaños en perfil (`45b7d4f`)

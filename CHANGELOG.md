@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- La subida de videos ahora es más robusta: sube por partes y reintenta sola ante cortes de red, así que las grabaciones grandes ya no fallan a medio camino. Al subir la repetición de una clase, el equipo ve el avance y un aviso automático cuando queda lista o si Mux no pudo procesarla, con opción de reintentar (`4c4b2da`)
 - Los alumnos ahora pueden abrir el quiz de una clase en vivo directamente desde el calendario y la lista de clases del módulo, sin depender del enlace o código QR que enviaba el equipo (`f89761d`)
 - Cada clase en vivo tiene su propia pantalla con la repetición grabada del encuentro, su material y su quiz; el equipo sube la grabación desde el editor de sesiones (`341ec05`)
 - Las pantallas del classroom (lecciones, quiz, sidebar, playlists) y el login ahora tienen animaciones de entrada y microinteracciones: fade-up al cargar, transiciones de foco en formularios y respuesta visual inmediata en botones e inputs (`dfa19f0`)

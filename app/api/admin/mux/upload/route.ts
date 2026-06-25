@@ -41,29 +41,40 @@ export async function POST(req: Request) {
 
   const mux = getMuxClient();
 
-  const upload = await mux.video.uploads.create({
-    new_asset_settings: {
-      playback_policy: [
-        process.env.MUX_SIGNING_KEY_ID ? "signed" : "public",
-      ],
-      encoding_tier: "baseline",
-      input: [
-        {
-          generated_subtitles: [
-            {
-              language_code: "es",
-              name: "Español CC",
-            },
-          ],
-        },
-      ],
-    },
-    cors_origin: req.headers.get("origin") ?? "*",
-  });
+  let upload;
+  try {
+    upload = await mux.video.uploads.create({
+      new_asset_settings: {
+        playback_policy: [
+          process.env.MUX_SIGNING_KEY_ID ? "signed" : "public",
+        ],
+        // `encoding_tier: "baseline"` quedó deprecado en @mux/mux-node v14.
+        video_quality: "basic",
+        input: [
+          {
+            generated_subtitles: [
+              {
+                language_code: "es",
+                name: "Español CC",
+              },
+            ],
+          },
+        ],
+      },
+      cors_origin: req.headers.get("origin") ?? "*",
+    });
+  } catch (err) {
+    console.error("Mux uploads.create failed", err);
+    return NextResponse.json(
+      { error: "No se pudo iniciar la subida a Mux. Intenta de nuevo." },
+      { status: 502 },
+    );
+  }
 
+  // Limpia cualquier error previo: esta es una subida nueva para la lección.
   await supabase
     .from("lessons")
-    .update({ mux_upload_id: upload.id })
+    .update({ mux_upload_id: upload.id, mux_error: null } as never)
     .eq("id", lessonId);
 
   return NextResponse.json({

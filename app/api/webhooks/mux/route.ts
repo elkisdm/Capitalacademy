@@ -22,6 +22,8 @@ type MuxWebhookEvent = {
     text_source?: string;
     language_code?: string;
     name?: string;
+    // errored fields
+    errors?: { type?: string; messages?: string[] };
   };
 };
 
@@ -118,7 +120,9 @@ export async function POST(req: Request) {
         mux_playback_id: playbackId,
         video_duration_seconds: durationSeconds,
         thumbnail_url: thumbnailUrl,
-      })
+        // El asset quedó listo: limpia cualquier error de procesamiento previo.
+        mux_error: null,
+      } as never)
       .eq("mux_upload_id", upload_id);
 
     if (error) {
@@ -127,6 +131,39 @@ export async function POST(req: Request) {
         { error: "DB update failed" },
         { status: 500 },
       );
+    }
+  }
+
+  // Mux falló al subir o procesar el video: registra el motivo en la lección
+  // para que la UI lo muestre (en vez de quedar esperando un asset que no vendrá).
+  if (
+    event.type === "video.upload.errored" ||
+    event.type === "video.asset.errored"
+  ) {
+    const supabase = createAdminClient();
+    const reason =
+      event.data.errors?.messages?.join(" · ") ??
+      (event.type === "video.upload.errored"
+        ? "La subida del video falló en Mux."
+        : "Mux no pudo procesar el video.");
+
+    // upload.errored: data.id ES el upload id. asset.errored: trae upload_id
+    // (y, si no, el asset id ya persistido como mux_asset_id).
+    const uploadId =
+      event.type === "video.upload.errored"
+        ? event.data.id
+        : event.data.upload_id;
+
+    if (uploadId) {
+      await supabase
+        .from("lessons")
+        .update({ mux_error: reason } as never)
+        .eq("mux_upload_id", uploadId);
+    } else {
+      await supabase
+        .from("lessons")
+        .update({ mux_error: reason } as never)
+        .eq("mux_asset_id", event.data.id);
     }
   }
 

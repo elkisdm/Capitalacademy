@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { createUpload } from "@mux/upchunk";
 
 type MuxUploaderProps = {
   lessonId: string;
@@ -39,20 +40,25 @@ export function MuxUploader({ lessonId, onUploadComplete }: MuxUploaderProps) {
         const { uploadUrl } = await res.json();
         setState("uploading");
 
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", file.type);
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
-          };
-          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
-          xhr.onerror = () => reject(new Error("Network error during upload"));
-          xhr.send(file);
-        });
+        // Subida chunked y reanudable: UpChunk reintenta cada chunk ante cortes
+        // de red (antes era un PUT único que fallaba entero con archivos grandes).
+        const upload = createUpload({ endpoint: uploadUrl, file });
 
-        setState("processing");
-        onUploadComplete?.();
+        upload.on("progress", (e) => {
+          const pct =
+            typeof e.detail === "number" ? e.detail : (e.detail?.progress ?? 0);
+          setProgress(Math.round(pct));
+        });
+        upload.on("error", (e) => {
+          setState("error");
+          setErrorMessage(
+            e.detail?.message ?? "Error de red durante la subida",
+          );
+        });
+        upload.on("success", () => {
+          setState("processing");
+          onUploadComplete?.();
+        });
       } catch (err) {
         setState("error");
         setErrorMessage(err instanceof Error ? err.message : "Error desconocido");

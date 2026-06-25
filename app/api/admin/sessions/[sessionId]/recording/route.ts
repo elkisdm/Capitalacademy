@@ -19,6 +19,7 @@ type RecordingLesson = {
   slug: string | null;
   mux_upload_id: string | null;
   mux_playback_id: string | null;
+  mux_error: string | null;
   video_duration_seconds: number | null;
   thumbnail_url: string | null;
 };
@@ -72,7 +73,7 @@ export async function GET(
   const { data: lesson } = await admin
     .from("lessons")
     .select(
-      "id, slug, mux_upload_id, mux_playback_id, video_duration_seconds, thumbnail_url",
+      "id, slug, mux_upload_id, mux_playback_id, mux_error, video_duration_seconds, thumbnail_url",
     )
     .eq("id", session.lesson_id)
     .single<RecordingLesson>();

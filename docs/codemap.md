@@ -149,7 +149,7 @@
 | `app/api/admin/users/` (`route`·`bulk`·`template`·`[userId]`) | CRUD de usuarios + importación CSV masiva | — | — |
 | `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |
 | `app/api/admin/send-invitation/route.ts` | Envío/reenvío de invitación por email | — | — |
-| `app/api/admin/mux/upload/route.ts` | Crea upload directo a Mux para una lección | — | — |
+| `app/api/admin/mux/upload/route.ts` | Crea upload directo a Mux para una lección (`video_quality:basic`); limpia `mux_error`; el cliente sube con UpChunk (chunked + reintentos) vía `mux-uploader` | — | — |
 | `app/api/admin/sessions/[sessionId]/recording/route.ts` · `components/admin/session-recording-panel.tsx` | Repetición (grabación Mux) de una clase EN VIVO: crea-si-no-existe una lección `kind='recorded'` bajo el módulo de la sesión y la enlaza vía `class_sessions.lesson_id`; reusa `MuxUploader` + webhook Mux. Panel embebido en el editor de sesiones | `GET/POST/DELETE /api/admin/sessions/[id]/recording` | 0041 |
 | `app/api/admin/resources/upload-url/route.ts` | Signed upload URL para subir archivo de recurso directo a Storage (bucket privado, ≤50 MB) | `POST /api/admin/resources/upload-url` | — |
 | `app/api/admin/session-resources/upload-url/route.ts` | Signed upload URL para archivos de recursos de clases en vivo (calendario) | `POST /api/admin/session-resources/upload-url` | — |
@@ -177,7 +177,7 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/api/webhooks/mux/route.ts` | Webhook de Mux (asset ready) con firma HMAC verificada | `POST /api/webhooks/mux` | — |
+| `app/api/webhooks/mux/route.ts` | Webhook de Mux con firma HMAC: `asset.ready`/`deleted`/`track.ready` + `upload.errored`/`asset.errored` (guarda `lessons.mux_error` para que la UI muestre el fallo en vez de polling infinito) | `POST /api/webhooks/mux` | 0042 |
 | `app/api/video-proxy/route.ts` | Proxy de video con validación de enrollment | — | — |
 | `lib/mux/client.ts` | Cliente Mux (gestión de assets/uploads) | — | — |
 | `components/classroom/video-player.tsx` | Player premium (controles custom, CC, capítulos, velocidad, PiP, atajos) | — | — |

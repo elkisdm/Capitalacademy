@@ -8,6 +8,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Los alumnos ahora pueden abrir el quiz de una clase en vivo directamente desde el calendario y la lista de clases del módulo, sin depender del enlace o código QR que enviaba el equipo (`f89761d`)
+- Cada clase en vivo tiene su propia pantalla con la repetición grabada del encuentro, su material y su quiz; el equipo sube la grabación desde el editor de sesiones (`341ec05`)
+- Las pantallas del classroom (lecciones, quiz, sidebar, playlists) y el login ahora tienen animaciones de entrada y microinteracciones: fade-up al cargar, transiciones de foco en formularios y respuesta visual inmediata en botones e inputs (`dfa19f0`)
 - El equipo puede crear un quiz para una clase en vivo específica (además del examen final, por módulo y por lección) desde el editor de sesiones de la cohorte, y compartirlo por enlace o código QR durante la clase; los alumnos lo responden como práctica sin que afecte su avance (`8aad28b`)
 - El panel de cada evaluación se reorganizó en pestañas: las preguntas se ven en una lista colapsable (antes se mostraban todas abiertas a la vez), una pestaña "Ajustes" permite configurar n.º de intentos, % para aprobar, preguntas por intento y tiempo límite, y una pestaña "Respuestas" muestra los intentos de los alumnos con el detalle de cada respuesta frente a la correcta (`8aad28b`)
 - El panel de quizzes ahora gestiona todas las evaluaciones —examen final, por módulo y por lección— desde un mismo lugar (crear, agregar preguntas de los cuatro tipos, activar y borrar), y cada evaluación se puede compartir con los alumnos mediante un enlace y un código QR que los lleva directo a rendirla (`9a3937b`)

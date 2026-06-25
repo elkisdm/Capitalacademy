@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { BrandShapes, Avatar } from "@/components/classroom/primitives";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import type { ScheduleSession, SessionTiming } from "@/lib/classroom/types";
@@ -198,6 +199,19 @@ function SessionRow({ s, now }: { s: ScheduleSession; now: number | null }) {
         )}
 
         <ResourceLinks resources={s.resources} />
+
+        {s.evaluation && !isCancelled && (
+          <Link
+            href={`/classroom/quiz/${s.evaluation.id}`}
+            className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-ca-violet/10 px-3 py-1.5 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet hover:text-white"
+          >
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            Responder quiz
+          </Link>
+        )}
       </div>
 
       {showJoin && (

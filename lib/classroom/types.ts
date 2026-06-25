@@ -92,9 +92,13 @@ export type SessionResource = {
   position: number;
 };
 
+/** Referencia mínima al quiz activo de una clase en vivo (scope='session'). */
+export type SessionEvaluationRef = { id: string; title: string };
+
 export type ScheduleSession = ClassSession & {
   teacher: SessionInstructor | null;
   resources: SessionResource[];
+  evaluation: SessionEvaluationRef | null;
 };
 
 export type SessionTiming = "past" | "live" | "upcoming";

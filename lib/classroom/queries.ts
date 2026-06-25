@@ -8,7 +8,32 @@ import type {
   ScheduleSession,
   SessionInstructor,
   SessionResource,
+  SessionEvaluationRef,
 } from "./types";
+
+/**
+ * Mapa sessionId → quiz activo de la clase en vivo (evaluación scope='session').
+ * Solo incluye las activas: una evaluación inactiva no se ofrece al alumno, igual
+ * que el gate de `resolveEvaluationAccess`. El acceso real lo sigue protegiendo
+ * ese guard; este map solo decide si se pinta el CTA "Responder quiz".
+ */
+async function getActiveSessionEvaluations(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sessionIds: string[],
+): Promise<Map<string, SessionEvaluationRef>> {
+  const map = new Map<string, SessionEvaluationRef>();
+  if (sessionIds.length === 0) return map;
+  const { data } = await supabase
+    .from("evaluations")
+    .select("id, title, session_id")
+    .in("session_id", sessionIds)
+    .eq("scope", "session")
+    .eq("is_active", true);
+  for (const e of (data ?? []) as { id: string; title: string; session_id: string }[]) {
+    map.set(e.session_id, { id: e.id, title: e.title });
+  }
+  return map;
+}
 
 export async function getCohortSlugById(cohortId: string): Promise<string | null> {
   const supabase = await createClient();
@@ -75,24 +100,33 @@ export async function getModulesWithLessons(
 
   let progressMap = new Map<string, VideoProgress>();
   const resourcesMap = new Map<string, LessonResource[]>();
+  // Lecciones que son la repetición de una clase EN VIVO: se excluyen del
+  // playlist normal del módulo (se ven en la pantalla de la clase, no como
+  // lección suelta). Ver migración 0041.
+  let recordingLessonIds = new Set<string>();
 
   if (lessonIds.length > 0) {
     // Sin matrícula (staff en modo previsualización) no hay progreso personal:
     // se omite la consulta y los módulos se muestran con progreso vacío.
-    const [{ data: progress }, { data: resources }] = await Promise.all([
-      enrollmentId
-        ? supabase
-            .from("video_progress")
-            .select("*")
-            .eq("enrollment_id", enrollmentId)
-            .in("lesson_id", lessonIds)
-        : Promise.resolve({ data: null }),
-      supabase
-        .from("lesson_resources")
-        .select("*")
-        .in("lesson_id", lessonIds)
-        .order("position", { ascending: true }),
-    ]);
+    const [{ data: progress }, { data: resources }, { data: recLinks }] =
+      await Promise.all([
+        enrollmentId
+          ? supabase
+              .from("video_progress")
+              .select("*")
+              .eq("enrollment_id", enrollmentId)
+              .in("lesson_id", lessonIds)
+          : Promise.resolve({ data: null }),
+        supabase
+          .from("lesson_resources")
+          .select("*")
+          .in("lesson_id", lessonIds)
+          .order("position", { ascending: true }),
+        supabase
+          .from("class_sessions")
+          .select("lesson_id")
+          .in("lesson_id", lessonIds),
+      ]);
 
     if (progress) {
       progressMap = new Map(progress.map((p) => [p.lesson_id, p as VideoProgress]));
@@ -104,12 +138,18 @@ export async function getModulesWithLessons(
         resourcesMap.set(r.lesson_id, existing);
       }
     }
+    recordingLessonIds = new Set(
+      ((recLinks ?? []) as Array<{ lesson_id: string | null }>)
+        .map((r) => r.lesson_id)
+        .filter((id): id is string => Boolean(id)),
+    );
   }
 
   return modules.map((mod) => ({
     ...mod,
     teacher: mod.teacher as { full_name: string | null } | null,
     lessons: ((mod.lessons ?? []) as Array<Record<string, unknown>>)
+      .filter((lesson) => !recordingLessonIds.has(lesson.id as string))
       .sort(
         (a: Record<string, unknown>, b: Record<string, unknown>) =>
           (a.position as number) - (b.position as number),
@@ -176,10 +216,13 @@ export async function getModuleSessionsForCohort(
     }
   }
 
+  const evalMap = await getActiveSessionEvaluations(supabase, sessionIds);
+
   return sessions.map((s) => ({
     ...s,
     teacher: s.teacher_id ? (teacherMap.get(s.teacher_id) ?? null) : null,
     resources: resourcesMap.get(s.id) ?? [],
+    evaluation: evalMap.get(s.id) ?? null,
   }));
 }
 
@@ -243,10 +286,13 @@ export async function getCohortSchedule(
     }
   }
 
+  const evalMap = await getActiveSessionEvaluations(supabase, sessionIds);
+
   return sessions.map((s) => ({
     ...s,
     teacher: s.teacher_id ? (teacherMap.get(s.teacher_id) ?? null) : null,
     resources: resourcesMap.get(s.id) ?? [],
+    evaluation: evalMap.get(s.id) ?? null,
   }));
 }
 
@@ -258,6 +304,79 @@ export async function getLessonById(lessonId: string) {
     .eq("id", lessonId)
     .single();
   return data;
+}
+
+export type SessionRecordingLesson = {
+  id: string;
+  title: string;
+  slug: string | null;
+  mux_playback_id: string | null;
+  video_duration_seconds: number | null;
+};
+
+export type StudentSession = ClassSession & {
+  teacher: SessionInstructor | null;
+  resources: SessionResource[];
+  recording: SessionRecordingLesson | null;
+  evaluation: SessionEvaluationRef | null;
+};
+
+/**
+ * Una clase EN VIVO para la pantalla de clase del alumno: la sesión + su docente,
+ * recursos (URLs resueltas), la repetición (lección `recorded` enlazada vía
+ * class_sessions.lesson_id, si existe) y su quiz activo. RLS de class_sessions
+ * (0023) y lessons (0028) ya gatean el acceso por matrícula. Ver migración 0041.
+ */
+export async function getSessionForStudent(
+  sessionId: string,
+): Promise<StudentSession | null> {
+  const supabase = await createClient();
+
+  const { data: session } = await supabase
+    .from("class_sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (!session) return null;
+  const s = session as unknown as ClassSession;
+
+  const [teacherRes, resourcesRes, evalMap] = await Promise.all([
+    s.teacher_id
+      ? supabase
+          .from("instructors")
+          .select("id, full_name, photo_url")
+          .eq("id", s.teacher_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("session_resources")
+      .select("id, session_id, title, type, url, storage_path, position")
+      .eq("session_id", sessionId)
+      .order("position", { ascending: true }),
+    getActiveSessionEvaluations(supabase, [sessionId]),
+  ]);
+
+  const resources = await resolveResourceUrls(
+    (resourcesRes.data ?? []) as SessionResource[],
+  );
+
+  let recording: SessionRecordingLesson | null = null;
+  if (s.lesson_id) {
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("id, title, slug, mux_playback_id, video_duration_seconds")
+      .eq("id", s.lesson_id)
+      .maybeSingle();
+    recording = (lesson as SessionRecordingLesson | null) ?? null;
+  }
+
+  return {
+    ...s,
+    teacher: (teacherRes.data as SessionInstructor | null) ?? null,
+    resources,
+    recording,
+    evaluation: evalMap.get(sessionId) ?? null,
+  };
 }
 
 export async function getLessonProgress(

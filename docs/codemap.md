@@ -67,7 +67,7 @@
 | `app/api/admin/session-resources/route.ts` · `upload-url/route.ts` | Recursos de una sesión: link o **archivo subido** (≤50MB, bucket privado `lesson-resources`); DELETE limpia el objeto | `/api/admin/session-resources` | 0008 |
 | `app/api/admin/enrollment-segment/route.ts` | Asignación manual del segmento "Capital Inteligente" a una matrícula | `/api/admin/enrollment-segment` | 0008 |
 | `components/admin/segment-toggle.tsx` | Toggle admin del segmento de un alumno | — | 0008 |
-| `app/(classroom)/classroom/[cohortSlug]/calendario/` | Calendario de clases del alumno (vista lista + mes, recursos por sesión) | `/classroom/[cohortSlug]/calendario` | 0008 |
+| `app/(classroom)/classroom/[cohortSlug]/calendario/` | Calendario de clases del alumno (vista lista + mes, recursos por sesión, CTA "Responder quiz" si la sesión tiene evaluación `scope='session'` activa) | `/classroom/[cohortSlug]/calendario` | 0008 |
 | `components/classroom/month-calendar.tsx` | Vista de mes del calendario del alumno (a11y, chips por sesión) | — | 0008 |
 
 ## Recordatorios / Cron
@@ -86,6 +86,7 @@
 | `app/(classroom)/classroom/[cohortSlug]/page.tsx` | Home del programa: módulos + timeline de lecciones | `/classroom/[cohortSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/page.tsx` | Lista de lecciones del módulo | `/classroom/[cohortSlug]/[moduleSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/[lessonSlug]/page.tsx` | Reproductor de lección: video Mux, transcripción, resumen, comentarios y progreso | `…/[lessonSlug]` | — |
+| `app/(classroom)/classroom/[cohortSlug]/clase/[sessionId]/page.tsx` | Pantalla de una clase EN VIVO: cabecera (fecha/docente/modalidad), **repetición** (reusa `LessonVideoSection` con la lección `recorded` enlazada), material y quiz de la sesión. Entrada desde la lista de clases del módulo | `/classroom/[cohortSlug]/clase/[sessionId]` | 0041 |
 | `app/(classroom)/classroom/profile/page.tsx` | Perfil editable del alumno (foto, RUT, cumpleaños) | `/classroom/profile` | — |
 | `app/(classroom)/classroom/[cohortSlug]/recursos/page.tsx` | Centro de recursos del programa: reúne el material de clases grabadas y en vivo | `/classroom/[cohortSlug]/recursos` | — |
 | `app/(classroom)/classroom/guia/page.tsx` · `guia/[slug]/page.tsx` | Centro de ayuda: índice con buscador + página por tema; `lib/guide/content.tsx` es la fuente del contenido | `/classroom/guia`, `/classroom/guia/[slug]` | — |
@@ -93,7 +94,7 @@
 | `app/api/support/route.ts` · `lib/email/support-request.ts` | Soporte in-app: recibe mensaje + adjuntos y los envía por correo al equipo | `POST /api/support` | — |
 | `components/classroom/mark-complete-button.tsx` · `resource-list.tsx` | Botón "marcar completada" y lista de materiales de la lección (descarga con URL firmada) | — | — |
 | `components/classroom/` | UI del classroom: `video-player`, `sidebar`, `comment-section`, `transcript-panel`, `summary-card`, `quiz-*`, `collapsible-playlist` | — | — |
-| `lib/classroom/queries.ts` · `admin-queries.ts` | Lecturas de módulos/lecciones/progreso (alumno y admin) | — | — |
+| `lib/classroom/queries.ts` · `admin-queries.ts` | Lecturas de módulos/lecciones/progreso (alumno y admin); `getModulesWithLessons` excluye del playlist las lecciones-repetición de clases en vivo; `getSessionForStudent` arma la pantalla de clase | — | — |
 | `lib/classroom/progress.ts` · `use-video-progress.ts` | Tracking granular de progreso de video | — | — |
 | `lib/classroom/resolve-slugs.ts` | Resuelve slugs legibles ↔ UUIDs (compat retroactiva) | — | — |
 | `lib/classroom/verify-enrollment.ts` | Verifica matrícula activa para gating de contenido | — | 0004 |
@@ -149,6 +150,7 @@
 | `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |
 | `app/api/admin/send-invitation/route.ts` | Envío/reenvío de invitación por email | — | — |
 | `app/api/admin/mux/upload/route.ts` | Crea upload directo a Mux para una lección | — | — |
+| `app/api/admin/sessions/[sessionId]/recording/route.ts` · `components/admin/session-recording-panel.tsx` | Repetición (grabación Mux) de una clase EN VIVO: crea-si-no-existe una lección `kind='recorded'` bajo el módulo de la sesión y la enlaza vía `class_sessions.lesson_id`; reusa `MuxUploader` + webhook Mux. Panel embebido en el editor de sesiones | `GET/POST/DELETE /api/admin/sessions/[id]/recording` | 0041 |
 | `app/api/admin/resources/upload-url/route.ts` | Signed upload URL para subir archivo de recurso directo a Storage (bucket privado, ≤50 MB) | `POST /api/admin/resources/upload-url` | — |
 | `app/api/admin/session-resources/upload-url/route.ts` | Signed upload URL para archivos de recursos de clases en vivo (calendario) | `POST /api/admin/session-resources/upload-url` | — |
 | `components/admin/lesson-content-editor.tsx` · `app/api/admin/lesson-content/upload-url/route.ts` | Editor de clases de texto/diapositiva (markdown + imágenes intercaladas) y su signed upload URL | `POST /api/admin/lesson-content/upload-url` | — |

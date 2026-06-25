@@ -156,12 +156,16 @@ function fmtSessionDate(iso: string) {
   }).format(new Date(iso));
 }
 
-function SessionRow({ session, isLast }: { session: ScheduleSession; isLast: boolean }) {
+function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession; isLast: boolean; cohortSlug: string }) {
   const now = new Date();
   const start = new Date(session.starts_at);
   const end = new Date(session.ends_at);
   const isPast = end < now;
   const isLive = start <= now && now <= end;
+  const classHref = `/classroom/${cohortSlug}/clase/${session.id}`;
+  const hasRecording = Boolean(
+    (session as unknown as { lesson_id?: string | null }).lesson_id,
+  );
 
   const statusColor = isLive
     ? "bg-ca-lime text-ca-ink"
@@ -185,9 +189,12 @@ function SessionRow({ session, isLast }: { session: ScheduleSession; isLast: boo
               {MODALITY_LABEL[session.modality] ?? session.modality}
             </span>
           </div>
-          <div className="text-[15px] font-extrabold tracking-tight text-ca-ink">
+          <Link
+            href={classHref}
+            className="text-[15px] font-extrabold tracking-tight text-ca-ink transition-colors hover:text-ca-violet"
+          >
             {(session as unknown as { title?: string }).title ?? "Sin título"}
-          </div>
+          </Link>
           {session.teacher && (
             <div className="text-[12px] font-medium text-ca-ink-soft">
               {session.teacher.full_name}
@@ -222,6 +229,27 @@ function SessionRow({ session, isLast }: { session: ScheduleSession; isLast: boo
             </a>
           ))}
         </div>
+      )}
+      <Link
+        href={classHref}
+        className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-ca-ink/[0.06] px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:bg-ca-ink hover:text-white"
+      >
+        <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M10 9l5 3-5 3z" />
+        </svg>
+        {hasRecording ? "Ver repetición" : "Ver clase"}
+      </Link>
+      {session.evaluation && session.status !== "cancelled" && (
+        <Link
+          href={`/classroom/quiz/${session.evaluation.id}`}
+          className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-ca-violet/10 px-3 py-1.5 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet hover:text-white"
+        >
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+          Responder quiz
+        </Link>
       )}
     </div>
   );
@@ -389,7 +417,7 @@ export default async function ModulePage(
           </div>
           <div className="ca-card overflow-hidden">
             {sessions.map((s, i) => (
-              <SessionRow key={s.id} session={s} isLast={i === sessions.length - 1} />
+              <SessionRow key={s.id} session={s} isLast={i === sessions.length - 1} cohortSlug={cohortSlug} />
             ))}
           </div>
         </section>

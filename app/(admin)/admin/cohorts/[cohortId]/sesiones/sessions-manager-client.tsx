@@ -11,6 +11,7 @@ import type {
 } from "@/lib/classroom/types";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import { SessionQuizPanel } from "@/components/admin/quiz/session-quiz-panel";
+import { SessionRecordingPanel } from "@/components/admin/session-recording-panel";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -487,6 +488,17 @@ export function SessionsManagerClient({
             sessionId={editing.id}
             sessionLabel={editing.title ?? "Clase en vivo"}
           />
+        </div>
+      )}
+
+      {editing && (
+        <div className="ca-card mb-6 p-6">
+          <h2 className="mb-1 text-[18px] font-black text-ca-ink">Repetición de la clase</h2>
+          <p className="mb-4 text-[12px] text-ca-ink-soft">
+            Sube la grabación de esta clase en vivo. El alumno la verá como repetición con el
+            reproductor completo (progreso, transcripción, resumen IA) desde la pantalla de la clase.
+          </p>
+          <SessionRecordingPanel sessionId={editing.id} />
         </div>
       )}
 

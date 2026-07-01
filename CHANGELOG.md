@@ -59,6 +59,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La landing del Diplomado quedó actualizada con los datos de la 4ª generación (`e009abb`)
 
 ### Fixed
+- En el editor de sesiones, el "Quiz de la clase" ahora corresponde a la sesión abierta: antes se mostraba el quiz de otra clase en todas las sesiones que no tenían uno propio, lo que además permitía editar o desactivar por error la evaluación de una clase ajena (`ba667e4`)
 - Los quizzes por clase (formativos) ya no se confunden con el examen final: la certificación y el reintento de certificado solo consideran el examen final, y cada intento aprobado queda acotado a su propia evaluación (`77f971f`, `342d880`, `56491e8`, `5c66afb`, `5fe5d9e`)
 - Pulido visual: las tarjetas de módulo del alumno ya no se desbordan ni quiebran el texto a anchos intermedios; se corrigieron acentos faltantes ("Gestión de Quizzes", "Configuración", "Código"), los títulos del panel quedaron consistentes, y la tabla de Usuarios muestra el nombre completo de la cohorte al pasar el cursor (`0f77439`)
 - "Ayuda" ahora está siempre visible en el menú, tanto en la vista de administrador como en la de alumno (antes desaparecía en el panel admin) (`bf77b4b`)

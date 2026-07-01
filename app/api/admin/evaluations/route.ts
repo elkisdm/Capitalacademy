@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 // ---------------------------------------------------------------------------
 // GET  /api/admin/evaluations?programId=xxx[&scope=lesson&lessonId=yyy]
 //   Lista las evaluaciones de un programa (opcionalmente filtradas por scope o
-//   por lección/módulo). Incluye el conteo de preguntas de cada una.
+//   por lección/módulo/sesión). Incluye el conteo de preguntas de cada una.
 // ---------------------------------------------------------------------------
 
 export async function GET(req: Request) {
@@ -21,6 +21,7 @@ export async function GET(req: Request) {
   const scope = searchParams.get("scope");
   const lessonId = searchParams.get("lessonId");
   const moduleId = searchParams.get("moduleId");
+  const sessionId = searchParams.get("sessionId");
 
   if (!programId) {
     return NextResponse.json({ error: "programId es requerido" }, { status: 422 });
@@ -37,6 +38,7 @@ export async function GET(req: Request) {
   if (scope) query = query.eq("scope", scope as "final" | "module" | "lesson" | "session");
   if (lessonId) query = query.eq("lesson_id", lessonId);
   if (moduleId) query = query.eq("module_id", moduleId);
+  if (sessionId) query = query.eq("session_id", sessionId);
 
   const { data, error } = await query;
   if (error) {

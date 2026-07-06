@@ -410,58 +410,58 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
           ) : (
             <div className="flex flex-col gap-3">
               {user.cohort_roles.map((cr) => (
-                <Link
+                <div
                   key={`${cr.cohort_id}-${cr.role}`}
-                  href={`/admin/cohorts/${cr.cohort_id}`}
-                  className="ca-card ca-card-hoverable group relative cursor-pointer overflow-hidden px-5 py-4 transition-all"
+                  className="ca-card ca-card-hoverable group relative overflow-hidden transition-all"
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-                      style={{
-                        background:
-                          cr.role === "teacher"
-                            ? "rgba(94,23,235,0.10)"
-                            : cr.role === "assistant"
-                              ? "rgba(20,22,58,0.08)"
-                              : "rgba(168,211,16,0.15)",
-                        color:
-                          cr.role === "teacher"
-                            ? "var(--color-ca-violet)"
-                            : cr.role === "assistant"
-                              ? "var(--color-ca-navy, #14163a)"
-                              : "#3f5a05",
-                      }}
-                    >
-                      {cr.role === "teacher" || cr.role === "assistant" ? (
-                        <TeacherIcon />
-                      ) : (
-                        <BookIcon />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-bold text-ca-ink">
-                          {cr.cohort_name}
-                        </span>
-                        <span className="font-mono text-[11px] text-ca-ink-soft">
-                          {cr.cohort_code}
-                        </span>
+                  <Link
+                    href={`/admin/cohorts/${cr.cohort_id}`}
+                    className="block cursor-pointer px-5 py-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                        style={{
+                          background:
+                            cr.role === "teacher"
+                              ? "rgba(94,23,235,0.10)"
+                              : cr.role === "assistant"
+                                ? "rgba(20,22,58,0.08)"
+                                : "rgba(168,211,16,0.15)",
+                          color:
+                            cr.role === "teacher"
+                              ? "var(--color-ca-violet)"
+                              : cr.role === "assistant"
+                                ? "var(--color-ca-navy, #14163a)"
+                                : "#3f5a05",
+                        }}
+                      >
+                        {cr.role === "teacher" || cr.role === "assistant" ? (
+                          <TeacherIcon />
+                        ) : (
+                          <BookIcon />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px] font-bold text-ca-ink">
+                            {cr.cohort_name}
+                          </span>
+                          <span className="font-mono text-[11px] text-ca-ink-soft">
+                            {cr.cohort_code}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <CohortRoleBadge role={cr.role} />
+                        <StateBadge state="active" />
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <CohortRoleBadge role={cr.role} />
-                      <StateBadge state="active" />
-                    </div>
-                  </div>
+                  </Link>
 
                   <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleRemoveRole(cr.cohort_id, cr.role);
-                      }}
+                      onClick={() => handleRemoveRole(cr.cohort_id, cr.role)}
                       aria-label={`Remover rol en ${cr.cohort_name}`}
                       className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-red-50 hover:text-red-600"
                       title="Remover"
@@ -469,7 +469,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                       <TrashIcon />
                     </button>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

@@ -132,43 +132,45 @@ export function LessonReorderList({
             <p className="text-xs text-ca-ink-soft">{lesson.kind}</p>
           </Link>
 
-          {lesson.hasVideo ? (
-            <span className="flex items-center gap-1 rounded-full bg-ca-lime-mist px-2 py-0.5 text-xs font-medium text-ca-lime-deep">
-              <Video className="h-3 w-3" />
-              Video
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 rounded-full bg-ca-bg-soft px-2 py-0.5 text-xs text-ca-ink-soft">
-              <VideoOff className="h-3 w-3" />
-              Sin video
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-2 pl-1">
+            {lesson.hasVideo ? (
+              <span className="flex items-center gap-1 rounded-full bg-ca-lime-mist px-2 py-0.5 text-xs font-medium text-ca-lime-deep">
+                <Video className="h-3 w-3" />
+                Video
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 rounded-full bg-ca-bg-soft px-2 py-0.5 text-xs text-ca-ink-soft">
+                <VideoOff className="h-3 w-3" />
+                Sin video
+              </span>
+            )}
 
-          <Link
-            href={`/admin/lessons/${lesson.id}`}
-            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
-            title="Editar lección"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            Editar
-          </Link>
-
-          {siblingModules.length > 0 && (
-            <select
-              aria-label="Mover a módulo"
-              defaultValue=""
-              disabled={saving}
-              onChange={(e) => moveToModule(lesson.id, e.target.value)}
-              className="shrink-0 rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
+            <Link
+              href={`/admin/lessons/${lesson.id}`}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
+              title="Editar lección"
             >
-              <option value="">Mover a…</option>
-              {siblingModules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
-            </select>
-          )}
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Link>
+
+            {siblingModules.length > 0 && (
+              <select
+                aria-label="Mover a módulo"
+                defaultValue=""
+                disabled={saving}
+                onChange={(e) => moveToModule(lesson.id, e.target.value)}
+                className="rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
+              >
+                <option value="">Mover a…</option>
+                {siblingModules.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       ))}
     </div>

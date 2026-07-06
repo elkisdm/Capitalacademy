@@ -178,7 +178,9 @@ export default async function AdminLessonsPage(props: {
                 Lecciones grabadas
               </p>
               {lessons.length === 0 ? (
-                <p className="text-sm text-ca-ink-soft">Sin lecciones grabadas en este módulo.</p>
+                <p className="rounded-lg border border-dashed border-ca-ink/[0.10] px-4 py-3 text-sm text-ca-ink-soft">
+                  Sin lecciones grabadas en este módulo.
+                </p>
               ) : (
                 <LessonReorderList
                   moduleId={mod.id as string}

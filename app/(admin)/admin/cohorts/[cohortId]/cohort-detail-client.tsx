@@ -22,7 +22,6 @@ import {
   UploadIcon,
   DownloadIcon,
   MailIcon,
-  MoreIcon,
   CalendarIcon,
 } from "@/components/admin/icons";
 
@@ -385,13 +384,6 @@ function RoleSection({
             <div className="hidden text-[11px] font-medium text-ca-ink-soft sm:block">
               {formatDate(m.granted_at)}
             </div>
-            <button
-              type="button"
-              aria-label="Más acciones"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-ink/[0.06]"
-            >
-              <MoreIcon />
-            </button>
           </div>
         ))}
       </div>

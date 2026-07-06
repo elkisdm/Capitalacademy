@@ -76,7 +76,20 @@
 |------|-----------------|---------------------------|-----|
 | `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) | `POST /api/cron/session-reminders` | 0008 |
 | `netlify/functions/session-reminders-cron.mjs` | Netlify Scheduled Function (`*/30`) que invoca el endpoint de recordatorios | — | 0008 |
-| `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate` | — | — |
+| `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI) | — | — |
+
+## Asistencia (QR)
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `app/asistencia/[sessionId]/` | Página **pública** de check-in por QR: valida matrícula, redirige a login branded, registra asistencia (page + Server Action `checkin-action` + client) | `/asistencia/[sessionId]` | — |
+| `lib/asistencia/checkin.ts` | Lógica **pura** de decisión del check-in (`evaluateCheckin`: sesión→matrícula→ventana→registro); la Server Action la envuelve | — | — |
+| `lib/asistencia/window.ts` | Ventana temporal válida (20 min antes / 30 después) | — | — |
+| `lib/asistencia/queries.ts` | Reportería de asistencia + marcado/desmarcado manual (service_role) | — | — |
+| `app/api/admin/sessions/[sessionId]/attendance/route.ts` | GET reporte · POST marcar · DELETE desmarcar (con `requireStaff`) | `/api/admin/sessions/[sessionId]/attendance` | — |
+| `components/admin/session-qr.tsx` | QR imprimible por sesión para el PPT del docente (admin) | — | — |
+| `components/admin/session-attendance-panel.tsx` | Reportería + toggle de marcado manual en el editor de sesión | — | — |
+| `scripts/test-asistencia-e2e.mjs` | E2E autolimpiante del check-in (datos de prueba efímeros contra la BD real) | — | — |
 
 ## Classroom (alumno)
 

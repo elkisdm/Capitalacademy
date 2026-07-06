@@ -129,13 +129,13 @@ const BRANDS: ProgramBrand[] = [
     redirectTo: "/classroom",
   },
   {
-    // Liderazgo: hoy es solo checkout (sin cohorte/classroom). Queda listo en
-    // el registro para cuando se active su entorno. programId: null → no se
-    // resuelve por matrícula todavía, pero la ruta /login/liderazgo ya brandea.
+    // Liderazgo: entorno activo (programa + cohorte G1 + classroom) desde el
+    // seed 0043. programId/code enlazan el brand con public.programs, de modo
+    // que el flujo genérico se brandea desde la matrícula del alumno.
     ...DEFAULT_BRAND,
     slug: "liderazgo",
-    programId: null,
-    code: null,
+    programId: "a0000000-0000-0000-0000-000000000003",
+    code: "LID-COMERCIAL",
     displayName: "Programa de Liderazgo y Gestión de Equipos Comerciales",
     shortName: "Programa de Liderazgo",
     eyebrow: "Liderazgo · Capital Academy",

@@ -202,5 +202,6 @@
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
 | `components/ui/markdown.tsx` | Renderer markdown compartido (contenido de clases de texto, ayuda) | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0039`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0043`) | — | — |
+| `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

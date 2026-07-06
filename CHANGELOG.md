@@ -14,6 +14,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La pantalla de la lección se siente más fluida mientras el video reproduce: dejó de repintarse varias veces por segundo, evitando micro-tirones al hacer scroll o interactuar (`110a23e`)
 
 ### Security
+- Se cerró un agujero por el que un alumno podía elevar su propia cuenta a administrador y así acceder a los datos personales de todos los usuarios; ahora solo un administrador o los procesos internos pueden cambiar el rol de una cuenta (`312267c`)
 - La página de registro de asistencia por QR solo muestra los datos de una clase (título y cohorte) a alumnos matriculados en ella; un usuario de otro programa ya no puede leer esa información abriendo el enlace de una sesión ajena (`0e82e7f`)
 - Los datos personales sensibles de un alumno (RUT, dirección, contacto de emergencia, fecha de nacimiento) ya no son visibles para sus compañeros de programa; en el foro y los comentarios solo se comparte nombre y avatar. Además, los egresados vuelven a tener acceso a las grabaciones de sus clases en vivo (`4925e11`)
 

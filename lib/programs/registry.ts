@@ -154,6 +154,33 @@ const BRANDS: ProgramBrand[] = [
     },
     redirectTo: "/classroom",
   },
+  {
+    // Capacitación Comercial CI: ciclo de capacitación comercial interno y GRATUITO
+    // (fuerza de ventas de Capital Inteligente). Entorno real (programa + cohorte G1
+    // + 5 sesiones) desde el seed 0049. Sin checkout (gratuito). Acento ca-rose para
+    // diferenciarlo de los otros 3 entornos (violet/navy/amber).
+    ...DEFAULT_BRAND,
+    slug: "capacitaciones",
+    programId: "a0000000-0000-0000-0000-000000000004",
+    code: "CAP-CI",
+    displayName: "Ciclo de Capacitación Comercial CI",
+    shortName: "Capacitación Comercial CI",
+    eyebrow: "Capacitación Comercial · Capital Inteligente",
+    accent: "#d14a6b", // ca-rose
+    accentSoft: "#f7dde4",
+    login: {
+      title: "Capacitación Comercial CI",
+      subtitle: "Accede a tu ciclo de capacitación comercial",
+    },
+    onboarding: {
+      setPasswordTitle: "Crea tu contraseña",
+      setPasswordSubtitle:
+        "Elige una contraseña segura para acceder a las capacitaciones.",
+      welcomeTitle: "Bienvenido al Ciclo de Capacitación Comercial CI",
+      welcomeSubtitle: "Completa tu perfil para comenzar.",
+    },
+    redirectTo: "/classroom",
+  },
 ];
 
 const BY_SLUG = new Map(BRANDS.map((b) => [b.slug, b]));

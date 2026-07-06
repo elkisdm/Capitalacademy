@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -523,15 +523,18 @@ export function ThreadDetail({
 
   // ── Comentarios: árbol root/replies ─────────────────────────
 
-  const rootComments = comments.filter((c) => !c.parent_id);
-  const repliesMap = new Map<string, ConversationComment[]>();
-  for (const c of comments) {
-    if (c.parent_id) {
-      const existing = repliesMap.get(c.parent_id) ?? [];
-      existing.push(c);
-      repliesMap.set(c.parent_id, existing);
+  const { rootComments, repliesMap } = useMemo(() => {
+    const rootComments = comments.filter((c) => !c.parent_id);
+    const repliesMap = new Map<string, ConversationComment[]>();
+    for (const c of comments) {
+      if (c.parent_id) {
+        const existing = repliesMap.get(c.parent_id) ?? [];
+        existing.push(c);
+        repliesMap.set(c.parent_id, existing);
+      }
     }
-  }
+    return { rootComments, repliesMap };
+  }, [comments]);
 
   const commentsRef = useRef(comments);
   useEffect(() => {

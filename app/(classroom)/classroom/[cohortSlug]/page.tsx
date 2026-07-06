@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import {
   getCohortWithProgram,
   getModulesWithLessons,
@@ -148,13 +149,14 @@ export default async function CohortDashboardPage(
   if (!cohortId) notFound();
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuthUser();
   if (!user) redirect("/login");
 
-  const access = await getClassroomAccess(user.id, cohortId);
+  const [access, cohort] = await Promise.all([
+    getClassroomAccess(user.id, cohortId),
+    getCohortWithProgram(cohortId),
+  ]);
   if (!access) notFound();
-
-  const cohort = await getCohortWithProgram(cohortId);
   if (!cohort) notFound();
 
   const program = cohort.programs as { id: string; name: string; code: string; description: string | null; total_modules: number | null };

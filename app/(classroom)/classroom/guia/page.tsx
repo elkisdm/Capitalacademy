@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { GuideIndexClient } from "@/components/classroom/guide/guide-index-client";
 import { SupportCard } from "@/components/classroom/guide/support-card";
 
@@ -12,7 +13,7 @@ export default async function GuiaPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase

@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import {
   getSessionForStudent,
   getLessonProgress,
@@ -52,7 +53,7 @@ export default async function ClassSessionPage(
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
   if (!user) redirect("/login");
 
   const access = await getClassroomAccess(user.id, cohortId);

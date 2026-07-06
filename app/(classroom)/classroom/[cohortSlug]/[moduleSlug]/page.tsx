@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import Image from "next/image";
+import { getAuthUser } from "@/lib/supabase/auth";
 import {
   getModulesWithLessons,
   getCohortWithProgram,
@@ -54,10 +55,13 @@ function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
           style={{ filter: isLocked ? "grayscale(0.7) brightness(0.7)" : "none" }}
         >
           {lesson.mux_playback_id ? (
-            <img
+            <Image
               src={`https://image.mux.com/${lesson.mux_playback_id}/thumbnail.webp?time=30&width=224&height=128&fit_mode=smartcrop`}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="112px"
+              className="object-cover"
+              loading="lazy"
             />
           ) : (
             <>
@@ -266,8 +270,7 @@ export default async function ModulePage(
   ]);
   if (!cohortId || !moduleId) notFound();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuthUser();
   if (!user) redirect("/login");
 
   const [access, cohort] = await Promise.all([

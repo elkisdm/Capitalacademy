@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { FolderOpen, FileVideo, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { getClassroomAccess } from "@/lib/classroom/access";
 import {
   getCohortWithProgram,
@@ -31,15 +32,16 @@ export default async function RecursosPage(
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
   if (!user) redirect("/login");
 
-  const access = await getClassroomAccess(user.id, cohortId);
+  const [access, cohort] = await Promise.all([
+    getClassroomAccess(user.id, cohortId),
+    getCohortWithProgram(cohortId),
+  ]);
   if (!access) notFound();
-  const enrollmentId = access.enrollment?.id ?? null;
-
-  const cohort = await getCohortWithProgram(cohortId);
   if (!cohort) notFound();
+  const enrollmentId = access.enrollment?.id ?? null;
   const program = cohort.programs as { id: string; name: string };
 
   // 1. Recursos de lecciones grabadas, agrupados por módulo → lección.

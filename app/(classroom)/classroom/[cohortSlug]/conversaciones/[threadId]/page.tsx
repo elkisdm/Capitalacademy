@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { getCohortWithProgram } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
@@ -18,13 +19,14 @@ export default async function ConversacionDetallePage(
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
   if (!user) redirect("/login");
 
-  const access = await getClassroomAccess(user.id, cohortId);
+  const [access, cohort] = await Promise.all([
+    getClassroomAccess(user.id, cohortId),
+    getCohortWithProgram(cohortId),
+  ]);
   if (!access) notFound();
-
-  const cohort = await getCohortWithProgram(cohortId);
   if (!cohort) notFound();
   const program = cohort.programs as { id: string; name: string };
 

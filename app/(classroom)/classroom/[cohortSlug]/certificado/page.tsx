@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { getEnrollmentForUser, getCohortWithProgram } from "@/lib/classroom/queries";
 import { getCertificateSignedUrl } from "@/lib/certificates/get-certificate-url";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
@@ -21,7 +22,7 @@ export default async function CertificadoPage(
   if (!cohortId) notFound();
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuthUser();
   if (!user) redirect("/login");
 
   const enrollment = await getEnrollmentForUser(user.id, cohortId);

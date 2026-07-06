@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveEvaluationAccess } from "@/lib/classroom/evaluation-access";
 import { EvaluationRunner } from "@/components/classroom/evaluation/evaluation-runner";
@@ -28,7 +29,7 @@ export default async function SharedQuizPage(
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
   if (!user) redirect(`/login?next=/classroom/quiz/${evaluationId}`);
 
   const admin = createAdminClient();

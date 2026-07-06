@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -543,23 +543,25 @@ export function CommentSection({
 
   // ── Build thread tree ──────────────────────────────────────
 
-  const rootComments = comments.filter((c) => !c.parent_id);
-  const repliesMap = new Map<string, Comment[]>();
-
-  for (const c of comments) {
-    if (c.parent_id) {
-      const existing = repliesMap.get(c.parent_id) ?? [];
-      existing.push(c);
-      repliesMap.set(c.parent_id, existing);
+  // Árbol root/replies + orden, memoizado: solo se recomputa si cambian los
+  // comentarios o el orden (no en cada render ajeno, p.ej. abrir el dropdown).
+  const { repliesMap, sortedRoots } = useMemo(() => {
+    const rootComments = comments.filter((c) => !c.parent_id);
+    const repliesMap = new Map<string, Comment[]>();
+    for (const c of comments) {
+      if (c.parent_id) {
+        const existing = repliesMap.get(c.parent_id) ?? [];
+        existing.push(c);
+        repliesMap.set(c.parent_id, existing);
+      }
     }
-  }
-
-  // Sort root comments
-  const sortedRoots = [...rootComments].sort((a, b) => {
-    const timeA = new Date(a.created_at).getTime();
-    const timeB = new Date(b.created_at).getTime();
-    return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
-  });
+    const sortedRoots = [...rootComments].sort((a, b) => {
+      const timeA = new Date(a.created_at).getTime();
+      const timeB = new Date(b.created_at).getTime();
+      return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
+    });
+    return { repliesMap, sortedRoots };
+  }, [comments, sortOrder]);
 
   const totalCount = comments.length;
 

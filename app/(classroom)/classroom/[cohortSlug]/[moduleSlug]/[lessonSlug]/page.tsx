@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import {
   getLessonById,
   getLessonProgress,
@@ -43,21 +44,23 @@ export default async function LessonPage(
   if (!cohortId || !moduleId || !lessonId) notFound();
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuthUser();
   if (!user) redirect("/login");
 
-  const access = await getClassroomAccess(user.id, cohortId);
+  // access y recordingRedirect son independientes → en paralelo.
+  const [access, recordingRedirect] = await Promise.all([
+    getClassroomAccess(user.id, cohortId),
+    getSessionRecordingRedirect(lessonId),
+  ]);
   if (!access) notFound();
-  const enrollmentId = access.enrollment?.id ?? null;
-
   // Si esta lección es la repetición de una clase EN VIVO, todo el acceso pasa
   // por la pantalla de la clase (no por la lección suelta). Ver migración 0041.
-  const recordingRedirect = await getSessionRecordingRedirect(lessonId);
   if (recordingRedirect) {
     redirect(
       `/classroom/${recordingRedirect.cohortSlug}/clase/${recordingRedirect.sessionId}`,
     );
   }
+  const enrollmentId = access.enrollment?.id ?? null;
 
   const [lesson, cohort] = await Promise.all([
     getLessonById(lessonId),

@@ -293,14 +293,11 @@ function ParticipantesTab({
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por nombre o email..."
+            placeholder="Buscar por nombre o email…"
+            aria-label="Buscar participante por nombre o email"
             className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
           />
         </div>
-        <button className="ca-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold">
-          <PlusIcon />
-          Agregar participante
-        </button>
       </div>
 
       <div className="ca-card divide-y divide-ca-ink/[0.08] overflow-hidden">

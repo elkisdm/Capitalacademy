@@ -95,10 +95,11 @@ export function QuestionEditor({
           Pregunta
         </label>
         <textarea
+          aria-label="Pregunta"
           value={draft.questionText}
           onChange={(e) => set({ questionText: e.target.value })}
           rows={2}
-          placeholder="Escribe la pregunta..."
+          placeholder="Escribe la pregunta…"
           className="w-full rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
         />
       </div>
@@ -260,10 +261,11 @@ export function QuestionEditor({
           Explicación (opcional)
         </label>
         <textarea
+          aria-label="Explicación (opcional)"
           value={draft.explanation}
           onChange={(e) => set({ explanation: e.target.value })}
           rows={2}
-          placeholder="Por qué esta es la respuesta correcta..."
+          placeholder="Por qué esta es la respuesta correcta…"
           className="w-full rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[13px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
         />
       </div>

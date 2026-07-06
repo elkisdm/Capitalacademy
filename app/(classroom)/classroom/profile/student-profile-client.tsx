@@ -99,15 +99,6 @@ function ShieldIcon() {
   );
 }
 
-function LockIcon() {
-  return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
-
 function LogoutIcon() {
   return (
     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -257,7 +248,7 @@ function DateField({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             maxLength={10}
-            className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 font-mono text-[14px] font-medium text-ca-ink outline-none focus:border-ca-violet"
+            className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 font-mono text-[14px] font-medium tabular-nums text-ca-ink outline-none focus:border-ca-violet"
             style={{ borderColor: "rgba(20,22,58,0.12)" }}
           />
           <button
@@ -718,20 +709,13 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
       <div className="mt-8 border-t pt-6" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
         <div className="flex flex-wrap gap-3">
           <button
-            className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors hover:bg-ca-bg-soft"
-            style={{ borderColor: "rgba(20,22,58,0.14)", color: "var(--color-ca-ink)" }}
-          >
-            <LockIcon />
-            Cambiar contraseña
-          </button>
-          <button
             onClick={handleSignOut}
             disabled={signingOut}
             className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors hover:bg-red-50 disabled:opacity-50"
             style={{ borderColor: "rgba(225,29,72,0.3)", color: "#e11d48" }}
           >
             <LogoutIcon />
-            {signingOut ? "Cerrando..." : "Cerrar sesión"}
+            {signingOut ? "Cerrando…" : "Cerrar sesión"}
           </button>
         </div>
       </div>

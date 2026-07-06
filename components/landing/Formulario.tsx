@@ -75,9 +75,9 @@ export function Formulario() {
 
   if (estado.tag === "ok") {
     return (
-      <div className="rounded-3xl border border-[var(--color-ca-violet)]/20 bg-white p-10 text-center shadow-[0_18px_40px_rgba(94,23,235,0.1)]">
+      <div role="status" aria-live="polite" className="rounded-3xl border border-[var(--color-ca-violet)]/20 bg-white p-10 text-center shadow-[0_18px_40px_rgba(94,23,235,0.1)]">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-ca-lime)]">
-          <svg viewBox="0 0 24 24" className="h-7 w-7 text-[var(--color-ca-ink)]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-7 w-7 text-[var(--color-ca-ink)]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
@@ -115,7 +115,16 @@ export function Formulario() {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Nombre y apellido" name="full_name" required autoComplete="name" />
-        <Field label="Correo electrónico" name="email" type="email" required autoComplete="email" />
+        <Field
+          label="Correo electrónico"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          inputMode="email"
+          spellCheck={false}
+          autoCapitalize="none"
+        />
         <Field
           label="Teléfono / WhatsApp"
           name="phone"
@@ -123,6 +132,7 @@ export function Formulario() {
           required
           placeholder="+56 9 ..."
           autoComplete="tel"
+          inputMode="tel"
         />
         <Field label="Cargo o actividad actual" name="role" />
         <Field label="Empresa" name="company" />
@@ -144,7 +154,7 @@ export function Formulario() {
       </div>
 
       {estado.tag === "error" && (
-        <p className="mt-5 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p role="alert" className="mt-5 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {estado.msg}
         </p>
       )}
@@ -154,7 +164,7 @@ export function Formulario() {
         disabled={pending}
         className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-8 text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {pending ? "Enviando..." : "Solicitar información"}
+        {pending ? "Enviando…" : "Solicitar información"}
       </button>
     </form>
   );
@@ -168,6 +178,9 @@ function Field({
   placeholder,
   textarea,
   autoComplete,
+  inputMode,
+  spellCheck,
+  autoCapitalize,
 }: {
   label: string;
   name: string;
@@ -176,6 +189,9 @@ function Field({
   placeholder?: string;
   textarea?: boolean;
   autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  spellCheck?: boolean;
+  autoCapitalize?: string;
 }) {
   const base =
     "w-full rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-4 py-3 text-sm text-[var(--color-ca-ink)] placeholder:text-[var(--color-ca-ink-soft)]/60 transition-colors focus:border-[var(--color-ca-violet)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-ca-violet)]/20";
@@ -201,6 +217,9 @@ function Field({
           required={required}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          inputMode={inputMode}
+          spellCheck={spellCheck}
+          autoCapitalize={autoCapitalize}
           className={base}
         />
       )}

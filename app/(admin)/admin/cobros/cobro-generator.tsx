@@ -64,6 +64,7 @@ export function CobroGenerator({
           <input
             type="text"
             inputMode="numeric"
+            aria-label="Monto a cobrar en pesos chilenos"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -87,6 +88,7 @@ export function CobroGenerator({
         </label>
         <input
           type="text"
+          aria-label="Concepto del cobro"
           value={conceptoInput}
           maxLength={maxConceptoLen}
           onChange={(e) => setConceptoInput(e.target.value)}
@@ -123,6 +125,7 @@ export function CobroGenerator({
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               readOnly
+              aria-label="Link de cobro generado"
               value={generatedLink}
               onFocus={(e) => e.currentTarget.select()}
               className="h-11 flex-1 rounded-xl border border-[rgba(20,22,58,0.12)] bg-white px-3 text-sm text-[var(--color-ca-ink)] outline-none"

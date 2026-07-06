@@ -14,7 +14,7 @@ const REQUIREMENTS = [
 
 function EyeIcon() {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -23,7 +23,7 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a13.2 13.2 0 0 1-2.16 2.93M6.1 6.1A13.3 13.3 0 0 0 2 11s3.5 7 10 7a9.1 9.1 0 0 0 4.27-1.06M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24" />
     </svg>
   );
@@ -239,7 +239,6 @@ export function SetPasswordForm({
                     type="button"
                     onClick={() => setShowPwd((s) => !s)}
                     aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9b9db5] transition-colors hover:text-[#14163a]"
                   >
                     {showPwd ? <EyeOffIcon /> : <EyeIcon />}
@@ -266,7 +265,7 @@ export function SetPasswordForm({
 
                 {/* Requirements checklist */}
                 {password.length > 0 && (
-                  <ul className="mt-3 space-y-1">
+                  <ul className="mt-3 space-y-1" aria-live="polite">
                     {REQUIREMENTS.map((req) => {
                       const passed = req.test(password);
                       return (
@@ -310,21 +309,20 @@ export function SetPasswordForm({
                     type="button"
                     onClick={() => setShowConfirm((s) => !s)}
                     aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9b9db5] transition-colors hover:text-[#14163a]"
                   >
                     {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
                 </div>
                 {confirm.length > 0 && !passwordsMatch && (
-                  <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>
+                  <p className="mt-1.5 text-xs" aria-live="polite" style={{ color: "#ef4444" }}>
                     Las contraseñas no coinciden
                   </p>
                 )}
               </div>
 
               {errorMsg && step === "form" && (
-                <p className="text-xs" style={{ color: "#ef4444" }}>
+                <p role="alert" className="text-xs" style={{ color: "#ef4444" }}>
                   {errorMsg}
                 </p>
               )}

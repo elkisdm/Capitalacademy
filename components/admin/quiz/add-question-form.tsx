@@ -51,7 +51,7 @@ export function AddQuestionForm({
         toast(err.error ?? "Error al agregar", "error");
       }
     } catch {
-      toast("Error de conexion", "error");
+      toast("Error de conexión", "error");
     } finally {
       setSaving(false);
     }
@@ -91,7 +91,7 @@ export function AddQuestionForm({
               style={{ background: "var(--color-ca-lime)" }}
             >
               {saving ? <LoaderIcon /> : <PlusIcon />}
-              {saving ? "Guardando..." : "Agregar pregunta"}
+              {saving ? "Guardando…" : "Agregar pregunta"}
             </button>
             <button
               onClick={() => {

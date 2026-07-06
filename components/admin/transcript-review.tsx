@@ -28,6 +28,7 @@ type FilterMode = "needs_review" | "all";
 function SaveIcon({ size = 14 }: { size?: number }) {
   return (
     <svg
+      aria-hidden="true"
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -45,6 +46,7 @@ function SaveIcon({ size = 14 }: { size?: number }) {
 function FilterIcon({ size = 14 }: { size?: number }) {
   return (
     <svg
+      aria-hidden="true"
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -128,6 +130,7 @@ function SegmentCard({
       {/* Editable corrected text */}
       <div className="flex gap-2">
         <textarea
+          aria-label="Texto corregido del segmento"
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={2}
@@ -147,7 +150,7 @@ function SegmentCard({
           }}
         >
           {saving ? (
-            "..."
+            "…"
           ) : saved ? (
             <>
               <SaveIcon size={12} />
@@ -225,7 +228,7 @@ export function TranscriptReview({ lessonId, lessonTitle }: TranscriptReviewProp
       <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-5 py-4">
         <div>
           <h3 className="text-[16px] font-black tracking-tight text-ca-ink">
-            Revision de transcripcion
+            Revisión de transcripción
           </h3>
           <div className="mt-0.5 text-[12px] font-semibold text-ca-ink-soft">
             {lessonTitle}
@@ -236,7 +239,7 @@ export function TranscriptReview({ lessonId, lessonTitle }: TranscriptReviewProp
           {/* Pending count */}
           <span className="font-mono text-[12px] font-bold tabular-nums text-ca-ink-soft">
             {pendingCount} segmento{pendingCount !== 1 ? "s" : ""} pendiente
-            {pendingCount !== 1 ? "s" : ""} de revision
+            {pendingCount !== 1 ? "s" : ""} de revisión
           </span>
 
           {/* Filter toggle */}
@@ -274,7 +277,7 @@ export function TranscriptReview({ lessonId, lessonTitle }: TranscriptReviewProp
       {loading ? (
         <div className="grid place-items-center py-16">
           <div className="text-[13px] font-semibold text-ca-ink-soft">
-            Cargando segmentos...
+            Cargando segmentos…
           </div>
         </div>
       ) : error ? (
@@ -306,7 +309,7 @@ export function TranscriptReview({ lessonId, lessonTitle }: TranscriptReviewProp
             <div className="text-[12px] text-ca-ink-soft">
               {filter === "needs_review"
                 ? "Todos los segmentos han sido revisados."
-                : "Esta leccion no tiene transcripcion segmentada."}
+                : "Esta lección no tiene transcripción segmentada."}
             </div>
           </div>
         </div>

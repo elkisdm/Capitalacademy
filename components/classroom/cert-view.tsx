@@ -150,9 +150,11 @@ function Pill({
 /*  Date formatting                                                   */
 /* ------------------------------------------------------------------ */
 function fmtDate(iso: string) {
-  const d = new Date(iso);
-  const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(iso));
 }
 
 function fmtDateShort(iso: string) {

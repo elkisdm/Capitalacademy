@@ -94,7 +94,7 @@ export function ShareQuizDialog({
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
               aria-label="Cerrar"
             >
-              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
@@ -136,6 +136,7 @@ export function ShareQuizDialog({
               <div className="flex items-stretch gap-2">
                 <input
                   readOnly
+                  aria-label="Enlace para alumnos"
                   value={url}
                   onFocus={(e) => e.currentTarget.select()}
                   className="min-w-0 flex-1 rounded-xl border border-ca-ink/[0.08] bg-ca-bg-soft px-3 py-2.5 text-[12.5px] text-ca-ink outline-none"

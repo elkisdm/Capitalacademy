@@ -81,6 +81,7 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Título"
+        aria-label="Título de la conversación"
         maxLength={200}
         autoFocus
         className="w-full rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[15px] font-bold text-ca-ink placeholder:font-normal placeholder:text-ca-ink-soft/60 focus:border-ca-violet focus:outline-none"
@@ -89,6 +90,7 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Comparte algo con la comunidad…"
+        aria-label="Mensaje de la conversación"
         rows={4}
         maxLength={10000}
         className="w-full resize-none rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13.5px] leading-relaxed text-ca-ink placeholder:text-ca-ink-soft/60 focus:border-ca-violet focus:outline-none"

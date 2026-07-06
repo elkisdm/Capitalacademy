@@ -215,7 +215,7 @@ export function EvaluationRunner({
             disabled={busy}
             className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:opacity-50"
           >
-            {busy ? "Enviando..." : "Enviar respuestas"}
+            {busy ? "Enviando…" : "Enviar respuestas"}
           </button>
           {!allAnswered && (
             <span className="text-[12px] font-medium text-ca-ink-soft">

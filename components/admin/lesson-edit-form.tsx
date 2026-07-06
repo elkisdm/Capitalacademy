@@ -169,7 +169,7 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
           className="inline-flex items-center gap-2 rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
         >
           {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-          {saving ? "Guardando..." : saved ? "Guardado" : "Guardar cambios"}
+          {saving ? "Guardando…" : saved ? "Guardado" : "Guardar cambios"}
         </button>
 
         <div className="ml-auto">
@@ -182,7 +182,7 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
                 disabled={deleting}
                 className="rounded-md bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
               >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
+                {deleting ? "Eliminando…" : "Sí, eliminar"}
               </button>
               <button
                 type="button"

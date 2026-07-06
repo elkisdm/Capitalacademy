@@ -244,6 +244,7 @@ export function ResourceManager({
             </span>
             <button
               type="button"
+              aria-label={`Eliminar ${resource.title}`}
               onClick={() => handleDelete(resource.id)}
               disabled={deletingId === resource.id}
               className="shrink-0 rounded p-1 text-ca-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
@@ -366,8 +367,8 @@ export function ResourceManager({
             >
               {saving
                 ? mode === "file"
-                  ? "Subiendo..."
-                  : "Guardando..."
+                  ? "Subiendo…"
+                  : "Guardando…"
                 : "Agregar"}
             </button>
             <button

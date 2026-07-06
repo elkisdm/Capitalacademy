@@ -77,7 +77,7 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
           >
             <AlertIcon />
           </div>
-          <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
+          <button onClick={onClose} aria-label="Cerrar" className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
             <CloseIcon />
           </button>
         </div>
@@ -157,7 +157,7 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
               boxShadow: "0 4px 12px rgba(225,29,72,0.25)",
             }}
           >
-            {confirming ? "Desactivando..." : "Desactivar"}
+            {confirming ? "Desactivando…" : "Desactivar"}
           </button>
         </div>
       </div>

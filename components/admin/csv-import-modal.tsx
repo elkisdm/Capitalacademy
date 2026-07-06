@@ -432,6 +432,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
             </div>
             <button
               onClick={handleClose}
+              aria-label="Cerrar"
               className="grid h-9 w-9 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
             >
               <CloseIcon />
@@ -451,6 +452,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                   <select
                     value={selectedCohortId}
                     onChange={(e) => setSelectedCohortId(e.target.value)}
+                    aria-label="Cohorte destino"
                     className="w-full rounded-xl border bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-[var(--color-ca-violet)]"
                     style={{ borderColor: "rgba(20,22,58,0.12)" }}
                   >
@@ -578,6 +580,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                             type="checkbox"
                             checked={allValidSelected}
                             onChange={toggleSelectAll}
+                            aria-label="Seleccionar todas las filas válidas"
                             className="h-4 w-4 rounded accent-[var(--color-ca-violet)]"
                           />
                         </th>
@@ -603,6 +606,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                               checked={row.selected}
                               disabled={row.estado !== "valid"}
                               onChange={() => toggleRow(i)}
+                              aria-label={`Seleccionar ${row.email || row.nombre || `fila ${i + 1}`}`}
                               className="h-4 w-4 rounded accent-[var(--color-ca-violet)] disabled:opacity-40"
                             />
                           </td>
@@ -743,7 +747,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                   disabled={selectedCount === 0 || importing}
                   className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {importing ? "Importando..." : `Importar ${selectedCount} usuarios`}
+                  {importing ? "Importando…" : `Importar ${selectedCount} usuarios`}
                 </button>
               )}
               {step === 2 && (

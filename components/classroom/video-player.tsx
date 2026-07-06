@@ -1064,6 +1064,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     togglePlay();
                   }}
+                  aria-label={playing ? "Pausar" : "Reproducir"}
                   className="grid h-11 w-11 place-items-center rounded-full transition-transform hover:scale-105"
                   style={{
                     background: CA.lime,
@@ -1086,6 +1087,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     skipBack();
                   }}
+                  aria-label="Retroceder 10 segundos"
                   className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon name="skip-back" size={14} color="#ffffff" />
@@ -1095,6 +1097,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     skipForward();
                   }}
+                  aria-label="Avanzar 10 segundos"
                   className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon name="skip-fwd" size={14} color="#ffffff" />
@@ -1112,6 +1115,7 @@ export function VideoPlayer({
                       const video = videoRef.current;
                       if (video) video.muted = !video.muted;
                     }}
+                    aria-label={muted ? "Activar sonido" : "Silenciar"}
                     className="grid h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12]"
                   >
                     <VPIcon name={volIcon} size={18} color="#ffffff" />
@@ -1163,6 +1167,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     setCcEnabled((v) => !v);
                   }}
+                  aria-label={ccEnabled ? "Desactivar subtítulos" : "Activar subtítulos"}
                   className="relative grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon name="cc" size={18} color="#ffffff" />
@@ -1180,6 +1185,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     cycleSpeed();
                   }}
+                  aria-label="Velocidad de reproducción"
                   className="rounded-full px-2 py-1.5 font-mono text-[11px] font-bold tabular-nums transition-colors hover:bg-white/[0.12] md:px-2.5 md:py-1"
                   style={{ border: "1px solid rgba(255,255,255,0.10)", minHeight: 44, minWidth: 44, display: "grid", placeItems: "center" }}
                 >
@@ -1193,6 +1199,7 @@ export function VideoPlayer({
                       e.stopPropagation();
                       setQualityOpen((v) => !v);
                     }}
+                    aria-label="Calidad de video"
                     className="flex h-9 items-center gap-1 rounded-full px-3 transition-colors hover:bg-white/[0.12]"
                     style={
                       qualityOpen
@@ -1276,6 +1283,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     togglePip();
                   }}
+                  aria-label={pipActive ? "Salir de imagen en imagen" : "Imagen en imagen"}
                   className="hidden h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:grid"
                 >
                   <VPIcon
@@ -1291,6 +1299,7 @@ export function VideoPlayer({
                     e.stopPropagation();
                     toggleFullscreen();
                   }}
+                  aria-label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
                   className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
                 >
                   <VPIcon

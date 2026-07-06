@@ -37,7 +37,8 @@ export function QuestionInput({
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange?.(e.target.value)}
           disabled={disabled}
-          placeholder="Tu respuesta..."
+          placeholder="Tu respuesta…"
+          aria-label="Tu respuesta"
           className="w-full rounded-xl border border-ca-ink/[0.10] bg-white px-4 py-2.5 text-[14px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40 disabled:opacity-70"
         />
         {review && (

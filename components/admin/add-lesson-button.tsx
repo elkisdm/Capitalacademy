@@ -67,6 +67,7 @@ export function AddLessonButton({ moduleId }: { moduleId: string }) {
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <input
           autoFocus
+          aria-label="Título de la lección"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
@@ -75,7 +76,7 @@ export function AddLessonButton({ moduleId }: { moduleId: string }) {
           placeholder="Título de la lección"
           className={inputCls}
         />
-        <select value={kind} onChange={(e) => setKind(e.target.value as LessonKind)} className={inputCls}>
+        <select aria-label="Tipo de lección" value={kind} onChange={(e) => setKind(e.target.value as LessonKind)} className={inputCls}>
           {KIND_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -96,7 +97,7 @@ export function AddLessonButton({ moduleId }: { moduleId: string }) {
           disabled={saving || !title.trim()}
           className="rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
         >
-          {saving ? "Creando..." : "Crear lección"}
+          {saving ? "Creando…" : "Crear lección"}
         </button>
         <button
           type="button"

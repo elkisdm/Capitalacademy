@@ -41,7 +41,7 @@ export function RetryButton({ programId }: { programId: string }) {
         {loading ? (
           <>
             <span className="ca-spin-slow inline-block h-4 w-4 rounded-full border-2 border-white border-r-transparent" />
-            Generando...
+            Generando…
           </>
         ) : (
           <>

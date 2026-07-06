@@ -195,6 +195,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="grid h-10 w-10 place-items-center rounded-full transition-colors hover:bg-ca-bg-soft"
           >
             <CloseIcon />
@@ -333,7 +334,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
             className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:opacity-50"
           >
             {saving
-              ? "Guardando..."
+              ? "Guardando…"
               : mode === "create"
                 ? "Crear usuario"
                 : "Guardar cambios"}

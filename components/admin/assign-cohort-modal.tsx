@@ -181,7 +181,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
               {user?.full_name}
             </p>
           </div>
-          <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
+          <button onClick={onClose} aria-label="Cerrar" className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
             <CloseIcon />
           </button>
         </div>
@@ -218,9 +218,10 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
                         <input
                           autoFocus
                           type="text"
+                          aria-label="Buscar cohorte"
                           value={cohortSearch}
                           onChange={(e) => setCohortSearch(e.target.value)}
-                          placeholder="Buscar cohorte..."
+                          placeholder="Buscar cohorte…"
                           className="flex-1 bg-transparent text-[12px] font-medium text-ca-ink outline-none"
                         />
                       </div>
@@ -312,7 +313,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
                 </label>
                 {loadingModules ? (
                   <div className="flex items-center gap-2 rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] text-ca-ink-soft">
-                    Cargando módulos...
+                    Cargando módulos…
                   </div>
                 ) : localModules.length > 0 ? (
                   <select
@@ -380,7 +381,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
             disabled={saving || !selectedCohortId || !!hasSameRole}
             className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:opacity-50"
           >
-            {saving ? "Asignando..." : "Asignar"}
+            {saving ? "Asignando…" : "Asignar"}
           </button>
         </div>
       </div>

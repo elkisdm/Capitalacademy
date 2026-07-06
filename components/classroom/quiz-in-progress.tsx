@@ -450,7 +450,7 @@ export function QuizInProgress({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className="font-mono font-black leading-none tracking-tight"
+                  className="font-mono font-black leading-none tracking-tight tabular-nums"
                   style={{ fontSize: 44, color: "var(--color-ca-ink)" }}
                 >
                   {pad2(currentIdx + 1)}
@@ -476,12 +476,6 @@ export function QuizInProgress({
                   Pregunta {currentIdx + 1}
                 </span>
               </div>
-              <button
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em]"
-                style={{ color: "var(--color-ca-ink-soft)" }}
-              >
-                <Icon name="flag" size={12} stroke={2} /> Reportar
-              </button>
             </div>
 
             {/* Question text */}

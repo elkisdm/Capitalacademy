@@ -50,7 +50,7 @@ export function LoginScreen({
         {/* Card */}
         <div className="ca-card overflow-hidden p-7">
           {error && (
-            <div className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
+            <div role="alert" className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
               {error === "invalid" ? "Email o contraseña incorrectos." : "Ocurrió un error. Intenta de nuevo."}
             </div>
           )}

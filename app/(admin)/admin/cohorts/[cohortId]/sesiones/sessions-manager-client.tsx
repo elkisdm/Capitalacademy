@@ -775,7 +775,7 @@ function SessionForm({
             type="url"
             value={form.meeting_url}
             onChange={(e) => onChange("meeting_url", e.target.value)}
-            placeholder="https://meet.google.com/..."
+            placeholder="https://meet.google.com/…"
             className={inputCls}
           />
         </div>
@@ -793,7 +793,7 @@ function SessionForm({
           disabled={saving}
           className="ca-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold disabled:opacity-60"
         >
-          {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear sesión"}
+          {saving ? "Guardando…" : isEditing ? "Guardar cambios" : "Crear sesión"}
         </button>
         <button
           onClick={onCancel}

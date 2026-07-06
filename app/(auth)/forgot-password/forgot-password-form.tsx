@@ -38,12 +38,12 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="text-center">
+      <div className="text-center" role="status" aria-live="polite">
         <div
           className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
           style={{ background: "rgba(168,211,16,0.15)" }}
         >
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#3f5a05" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg aria-hidden="true" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#3f5a05" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
           </svg>
         </div>
@@ -66,7 +66,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
+        <div role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
           {error}
         </div>
       )}
@@ -80,9 +80,13 @@ export function ForgotPasswordForm() {
         </label>
         <input
           id="email"
+          name="email"
           type="email"
           required
           autoComplete="email"
+          inputMode="email"
+          spellCheck={false}
+          autoCapitalize="none"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
@@ -98,7 +102,7 @@ export function ForgotPasswordForm() {
         {loading ? (
           <>
             <span className="ca-spin-slow inline-block h-4 w-4 rounded-full border-2 border-white border-r-transparent" />
-            Enviando...
+            Enviando…
           </>
         ) : (
           "Enviar enlace de recuperación"

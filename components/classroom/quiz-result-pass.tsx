@@ -424,7 +424,7 @@ export default function QuizResultPass({
                     <Check size={10} strokeWidth={3} />
                     {certificateReady
                       ? "Certificado generado"
-                      : "Generando certificado..."}
+                      : "Generando certificado…"}
                   </div>
                   <h4 className="mt-2 text-[17px] font-extrabold leading-tight tracking-tight text-ca-ink">
                     {programTitle}

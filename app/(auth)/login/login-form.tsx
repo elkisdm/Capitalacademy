@@ -7,7 +7,7 @@ import { createBrowserClient } from "@supabase/ssr";
 
 function EyeIcon() {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -16,7 +16,7 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a13.2 13.2 0 0 1-2.16 2.93M6.1 6.1A13.3 13.3 0 0 0 2 11s3.5 7 10 7a9.1 9.1 0 0 0 4.27-1.06M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24" />
     </svg>
   );
@@ -65,7 +65,7 @@ export function LoginForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
+        <div role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
           {error}
         </div>
       )}
@@ -79,9 +79,13 @@ export function LoginForm({
         </label>
         <input
           id="email"
+          name="email"
           type="email"
           required
           autoComplete="email"
+          inputMode="email"
+          spellCheck={false}
+          autoCapitalize="none"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
@@ -111,7 +115,6 @@ export function LoginForm({
             type="button"
             onClick={() => setShowPwd((s) => !s)}
             aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
-            tabIndex={-1}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ca-ink-soft transition-colors hover:text-ca-ink"
           >
             {showPwd ? <EyeOffIcon /> : <EyeIcon />}
@@ -137,7 +140,7 @@ export function LoginForm({
         {loading ? (
           <>
             <span className="ca-spin-slow inline-block h-4 w-4 rounded-full border-2 border-white border-r-transparent" />
-            Entrando...
+            Entrando…
           </>
         ) : (
           "Iniciar sesión"

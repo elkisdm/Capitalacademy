@@ -104,7 +104,7 @@ export function AddModuleButton({ programs }: { programs: ProgramOption[] }) {
           disabled={saving || !programId || !code.trim() || !title.trim()}
           className="rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
         >
-          {saving ? "Creando..." : "Crear módulo"}
+          {saving ? "Creando…" : "Crear módulo"}
         </button>
         <button
           type="button"

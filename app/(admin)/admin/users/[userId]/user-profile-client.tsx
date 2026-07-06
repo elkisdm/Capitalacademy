@@ -24,7 +24,6 @@ import {
   TeacherIcon,
   PlayIcon,
   CheckCircleIcon,
-  SwapIcon,
   TrashIcon,
   UsersIcon,
 } from "@/components/admin/icons";
@@ -252,7 +251,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                 className="inline-flex items-center gap-2 rounded-full border border-ca-ink/[0.14] px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-ca-bg-soft disabled:opacity-50"
               >
                 <MailIcon />
-                {sendingInvitation ? "Enviando..." : "Reenviar invitación"}
+                {sendingInvitation ? "Enviando…" : "Reenviar invitación"}
               </button>
             )}
             <button
@@ -265,6 +264,9 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
             <div className="relative">
               <button
                 ref={actionsBtnRef}
+                aria-label="Más acciones"
+                aria-haspopup="menu"
+                aria-expanded={actionsOpen}
                 onClick={() => setActionsOpen(!actionsOpen)}
                 className="grid h-10 w-10 place-items-center rounded-full border border-ca-ink/[0.14] transition-colors hover:bg-ca-bg-soft"
               >
@@ -295,18 +297,6 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                     >
                       <MailIcon />
                       Enviar invitación
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActionsOpen(false);
-                      }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[13px] font-semibold text-ca-ink transition-colors hover:bg-ca-bg-soft"
-                    >
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" />
-                        <path d="M7 11V7a5 5 0 0110 0v4" />
-                      </svg>
-                      Resetear contraseña
                     </button>
                     <div className="border-t border-ca-ink/[0.08]" />
                     <button
@@ -466,17 +456,9 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                      }}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
-                      title="Cambiar rol"
-                    >
-                      <SwapIcon />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
                         handleRemoveRole(cr.cohort_id, cr.role);
                       }}
+                      aria-label={`Remover rol en ${cr.cohort_name}`}
                       className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-red-50 hover:text-red-600"
                       title="Remover"
                     >
@@ -540,11 +522,6 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                     </div>
                   ))}
                 </div>
-              </div>
-              <div className="mt-5 border-t border-ca-ink/[0.08] pt-4 text-center">
-                <button className="text-[12px] font-bold text-ca-violet transition-colors hover:text-ca-violet-deep">
-                  Ver historial completo
-                </button>
               </div>
             </div>
           )}

@@ -190,7 +190,7 @@ export function EvaluationPanel({
               className="inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-[12px] font-bold text-ca-ink transition-colors"
               style={{ borderColor: "rgba(20,22,58,0.14)" }}
             >
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <svg aria-hidden="true" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3" />
                 <circle cx="6" cy="12" r="3" />
                 <circle cx="18" cy="19" r="3" />

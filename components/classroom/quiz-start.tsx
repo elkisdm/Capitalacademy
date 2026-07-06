@@ -242,7 +242,7 @@ export function QuizStart({
               </div>
               <div className="min-w-0 flex-1">
                 <div
-                  className="text-[12.5px] font-extrabold tracking-tight"
+                  className="text-[12.5px] font-extrabold tracking-tight tabular-nums"
                   style={{ color: "var(--color-ca-ink)" }}
                 >
                   Intento {currentAttempt} de {maxAttempts} · sacaste {lastScore}% la
@@ -255,17 +255,6 @@ export function QuizStart({
                   Revisa las lecciones antes de empezar.
                 </div>
               </div>
-              <button
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11.5px] font-bold uppercase tracking-[0.08em]"
-                style={{
-                  background: "transparent",
-                  color: "var(--color-ca-ink)",
-                  border: "1px solid var(--color-ca-outline-strong)",
-                }}
-              >
-                <Icon name="book" size={15} stroke={2} />
-                Repasar
-              </button>
             </div>
           )}
 

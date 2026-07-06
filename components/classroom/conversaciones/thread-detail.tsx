@@ -172,6 +172,7 @@ function CommentInput({
           onFocus={() => setFocused(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          aria-label={placeholder}
           rows={focused ? 3 : 1}
           className={`w-full resize-none rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13px] text-ca-ink placeholder:text-ca-ink-soft/60 transition-all focus:border-ca-violet focus:outline-none ${
             focused ? "min-h-[72px]" : "min-h-[38px]"

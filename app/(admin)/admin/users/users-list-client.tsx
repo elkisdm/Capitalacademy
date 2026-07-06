@@ -168,6 +168,9 @@ function KebabMenu({
     <>
       <button
         ref={btnRef}
+        aria-label="Más acciones"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
@@ -496,7 +499,8 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nombre o email..."
+                placeholder="Buscar por nombre o email…"
+                aria-label="Buscar por nombre o email"
                 autoComplete="off"
                 name="ca-user-search"
                 data-form-type="other"
@@ -553,7 +557,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                       Cohortes activas
                     </th>
                     <th className="px-5 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-                      Ultimo acceso
+                      Último acceso
                     </th>
                     <th className="w-12 px-3 py-3" />
                   </tr>
@@ -702,7 +706,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                     </div>
 
                     <div className="mt-2 pl-[48px] text-[11px] font-semibold text-ca-ink-soft">
-                      Ultimo acceso: {formatLastAccess(u.last_sign_in_at)}
+                      Último acceso: {formatLastAccess(u.last_sign_in_at)}
                     </div>
                   </div>
                 );
@@ -720,6 +724,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage <= 1}
+                    aria-label="Página anterior"
                     className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <ChevronLeftIcon />
@@ -748,6 +753,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage >= totalPages}
+                    aria-label="Página siguiente"
                     className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <ChevronRightIcon />

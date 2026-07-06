@@ -98,9 +98,10 @@ export function CertificadosTab({ programId }: { programId: string }) {
                 ID de enrollment
               </label>
               <input
+                aria-label="ID de enrollment"
                 value={enrollmentId}
                 onChange={(e) => setEnrollmentId(e.target.value)}
-                placeholder="ej: abc123-def456..."
+                placeholder="ej: abc123-def456…"
                 className="w-full rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] font-mono text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
               />
             </div>
@@ -111,7 +112,7 @@ export function CertificadosTab({ programId }: { programId: string }) {
               style={{ background: "var(--color-ca-lime)" }}
             >
               {issuing ? <LoaderIcon /> : <CheckCircleIcon />}
-              {issuing ? "Emitiendo..." : "Emitir"}
+              {issuing ? "Emitiendo…" : "Emitir"}
             </button>
             <button
               onClick={() => {

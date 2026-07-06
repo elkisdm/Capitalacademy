@@ -55,6 +55,16 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Nombre de canal ÚNICO por instancia montada. La campana se renderiza en
+  // más de un lugar a la vez (sidebar desktop + header móvil, ambos montados
+  // aunque uno esté oculto por CSS); si compartieran nombre de canal, el segundo
+  // `.on()` correría sobre un canal ya suscrito y lanzaría "cannot add
+  // postgres_changes callbacks after subscribe()", crasheando la página.
+  const instanceIdRef = useRef<string | null>(null);
+  if (instanceIdRef.current === null) {
+    instanceIdRef.current = Math.random().toString(36).slice(2);
+  }
+
   const refetch = useCallback(async () => {
     try {
       const res = await fetch(ENDPOINT);
@@ -79,7 +89,7 @@ export function NotificationBell({
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel(`conversation-notifications-${viewerId}`)
+      .channel(`conversation-notifications-${viewerId}-${instanceIdRef.current}`)
       .on(
         "postgres_changes",
         {

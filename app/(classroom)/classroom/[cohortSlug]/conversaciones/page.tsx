@@ -8,7 +8,6 @@ import { getCohortWithProgram } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { getProgramThreads } from "@/lib/conversaciones/queries";
 import { ThreadList } from "@/components/classroom/conversaciones/thread-list";
-import { NotificationBell } from "@/components/classroom/conversaciones/notification-bell";
 
 export const metadata: Metadata = {
   title: "Conversaciones · Capital Academy",
@@ -65,9 +64,6 @@ export default async function ConversacionesPage(
           <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ca-ink-soft">
             Comparte dudas, avances y aprendizajes con el resto de tus compañeros del programa.
           </p>
-        </div>
-        <div className="shrink-0 pt-1">
-          <NotificationBell viewerId={user.id} cohortSlug={cohortSlug} />
         </div>
       </div>
 

@@ -1655,6 +1655,7 @@ export type Database = {
           user_id: string
           thread_id: string | null
           comment_id: string | null
+          emoji: string
           created_at: string
         }
         Insert: {
@@ -1662,6 +1663,7 @@ export type Database = {
           user_id: string
           thread_id?: string | null
           comment_id?: string | null
+          emoji?: string
           created_at?: string
         }
         Update: {
@@ -1669,6 +1671,7 @@ export type Database = {
           user_id?: string
           thread_id?: string | null
           comment_id?: string | null
+          emoji?: string
           created_at?: string
         }
         Relationships: [

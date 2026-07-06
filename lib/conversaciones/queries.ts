@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
+import { REACTION_EMOJIS } from "@/lib/conversaciones/reactions";
+
+export type ReactionCount = { emoji: string; count: number };
 
 export type ThreadAuthor = {
   id: string;
@@ -20,7 +23,8 @@ export type ThreadListItem = {
   created_at: string;
   author: ThreadAuthor;
   reaction_count: number;
-  viewer_reacted: boolean;
+  reactions: ReactionCount[];
+  viewer_reaction: string | null;
   viewer_bookmarked: boolean;
 };
 
@@ -31,7 +35,8 @@ export type ConversationComment = {
   created_at: string;
   author: ThreadAuthor;
   reaction_count: number;
-  viewer_reacted: boolean;
+  reactions: ReactionCount[];
+  viewer_reaction: string | null;
 };
 
 export type ThreadDetail = {
@@ -47,7 +52,8 @@ export type ThreadDetail = {
   created_at: string;
   author: ThreadAuthor;
   reaction_count: number;
-  viewer_reacted: boolean;
+  reactions: ReactionCount[];
+  viewer_reaction: string | null;
   viewer_bookmarked: boolean;
 };
 
@@ -60,14 +66,26 @@ const FALLBACK_AUTHOR: ThreadAuthor = {
   is_staff: false,
 };
 
-type ReactionStats = { count: number; viewerReacted: boolean };
+type ReactionStats = {
+  counts: ReactionCount[];
+  total: number;
+  viewerReaction: string | null;
+};
+
+const EMPTY_REACTION_STATS: ReactionStats = {
+  counts: [],
+  total: 0,
+  viewerReaction: null,
+};
 
 /**
- * Cuenta reacciones ❤️ por target (thread o comentario) con una sola query a
- * `conversation_reactions` y agregación en JS — evita el embedded-count de
- * PostgREST (menos robusto ante RLS y ordenamientos). `column` decide si el
- * `.in()` filtra por `thread_id` o `comment_id`; la otra columna queda null
- * en cada fila y no matchea el IN, así que no hace falta filtrarla aparte.
+ * Agrupa reacciones por emoji para cada target (thread o comentario) con una
+ * sola query a `conversation_reactions` y agregación en JS — evita el
+ * embedded-count de PostgREST (menos robusto ante RLS y ordenamientos).
+ * `column` decide si el `.in()` filtra por `thread_id` o `comment_id`; la otra
+ * columna queda null en cada fila y no matchea el IN, así que no hace falta
+ * filtrarla aparte. `counts` sale ordenado según REACTION_EMOJIS; `total` sigue
+ * sirviendo para el orden "Populares"; `viewerReaction` es el emoji del viewer.
  */
 async function getReactionStatsMap(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -80,20 +98,36 @@ async function getReactionStatsMap(
 
   const { data } = await supabase
     .from("conversation_reactions")
-    .select("thread_id, comment_id, user_id")
+    .select("thread_id, comment_id, user_id, emoji")
     .in(column, ids);
+
+  const acc = new Map<
+    string,
+    { counts: Map<string, number>; total: number; viewerReaction: string | null }
+  >();
 
   for (const row of (data ?? []) as Array<{
     thread_id: string | null;
     comment_id: string | null;
     user_id: string;
+    emoji: string;
   }>) {
     const targetId = column === "thread_id" ? row.thread_id : row.comment_id;
     if (!targetId) continue;
-    const stats = map.get(targetId) ?? { count: 0, viewerReacted: false };
-    stats.count += 1;
-    if (row.user_id === viewerId) stats.viewerReacted = true;
-    map.set(targetId, stats);
+    const entry =
+      acc.get(targetId) ?? { counts: new Map<string, number>(), total: 0, viewerReaction: null };
+    entry.counts.set(row.emoji, (entry.counts.get(row.emoji) ?? 0) + 1);
+    entry.total += 1;
+    if (row.user_id === viewerId) entry.viewerReaction = row.emoji;
+    acc.set(targetId, entry);
+  }
+
+  for (const [targetId, entry] of acc) {
+    const counts = REACTION_EMOJIS.filter((e) => (entry.counts.get(e) ?? 0) > 0).map((e) => ({
+      emoji: e,
+      count: entry.counts.get(e) as number,
+    }));
+    map.set(targetId, { counts, total: entry.total, viewerReaction: entry.viewerReaction });
   }
 
   return map;
@@ -194,7 +228,7 @@ export async function getProgramThreads(
   ]);
 
   const items: ThreadListItem[] = threads.map((t) => {
-    const stats = reactionMap.get(t.id) ?? { count: 0, viewerReacted: false };
+    const stats = reactionMap.get(t.id) ?? EMPTY_REACTION_STATS;
     return {
       id: t.id,
       title: t.title,
@@ -206,8 +240,9 @@ export async function getProgramThreads(
       last_activity_at: t.last_activity_at,
       created_at: t.created_at,
       author: authorsMap.get(t.author_id) ?? FALLBACK_AUTHOR,
-      reaction_count: stats.count,
-      viewer_reacted: stats.viewerReacted,
+      reaction_count: stats.total,
+      reactions: stats.counts,
+      viewer_reaction: stats.viewerReaction,
       viewer_bookmarked: bookmarkedSet.has(t.id),
     };
   });
@@ -260,7 +295,7 @@ export async function getThreadWithComments(
       getBookmarkedSet(supabase, [threadId], viewerId),
     ]);
 
-  const threadStats = threadReactions.get(threadId) ?? { count: 0, viewerReacted: false };
+  const threadStats = threadReactions.get(threadId) ?? EMPTY_REACTION_STATS;
 
   const thread: ThreadDetail = {
     id: threadRow.id,
@@ -274,21 +309,23 @@ export async function getThreadWithComments(
     last_activity_at: threadRow.last_activity_at,
     created_at: threadRow.created_at,
     author: authorsMap.get(threadRow.author_id) ?? FALLBACK_AUTHOR,
-    reaction_count: threadStats.count,
-    viewer_reacted: threadStats.viewerReacted,
+    reaction_count: threadStats.total,
+    reactions: threadStats.counts,
+    viewer_reaction: threadStats.viewerReaction,
     viewer_bookmarked: bookmarkedSet.has(threadId),
   };
 
   const comments: ConversationComment[] = commentRows.map((c) => {
-    const stats = commentReactions.get(c.id) ?? { count: 0, viewerReacted: false };
+    const stats = commentReactions.get(c.id) ?? EMPTY_REACTION_STATS;
     return {
       id: c.id,
       body: c.body,
       parent_id: c.parent_id,
       created_at: c.created_at,
       author: authorsMap.get(c.author_id) ?? FALLBACK_AUTHOR,
-      reaction_count: stats.count,
-      viewer_reacted: stats.viewerReacted,
+      reaction_count: stats.total,
+      reactions: stats.counts,
+      viewer_reaction: stats.viewerReaction,
     };
   });
 

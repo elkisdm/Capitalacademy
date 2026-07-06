@@ -411,8 +411,8 @@ function ReplyItem({
           <ReactionButton
             targetType="comment"
             targetId={reply.id}
-            initialCount={reply.reaction_count}
-            initialReacted={reply.viewer_reacted}
+            reactions={reply.reactions}
+            viewerReaction={reply.viewer_reaction}
           />
         </div>
       </div>
@@ -516,8 +516,8 @@ function CommentItem({
             <ReactionButton
               targetType="comment"
               targetId={comment.id}
-              initialCount={comment.reaction_count}
-              initialReacted={comment.viewer_reacted}
+              reactions={comment.reactions}
+              viewerReaction={comment.viewer_reaction}
             />
             {!locked && (
               <button
@@ -837,7 +837,8 @@ export function ThreadDetail({
         created_at: new Date().toISOString(),
         author: { id: viewerId, full_name: viewerName, avatar_url: viewerAvatarUrl },
         reaction_count: 0,
-        viewer_reacted: false,
+        reactions: [],
+        viewer_reaction: null,
       };
       setComments((prev) => [...prev, optimistic]);
 
@@ -849,7 +850,13 @@ export function ThreadDetail({
         });
         if (!res.ok) throw new Error("Error al crear comentario");
         const data = await res.json();
-        setComments((prev) => prev.map((c) => (c.id === optimistic.id ? data.comment : c)));
+        const created: ConversationComment = {
+          ...data.comment,
+          reaction_count: 0,
+          reactions: [],
+          viewer_reaction: null,
+        };
+        setComments((prev) => prev.map((c) => (c.id === optimistic.id ? created : c)));
       } catch {
         setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       }
@@ -866,7 +873,8 @@ export function ThreadDetail({
         created_at: new Date().toISOString(),
         author: { id: viewerId, full_name: viewerName, avatar_url: viewerAvatarUrl },
         reaction_count: 0,
-        viewer_reacted: false,
+        reactions: [],
+        viewer_reaction: null,
       };
       setComments((prev) => [...prev, optimistic]);
 
@@ -878,7 +886,13 @@ export function ThreadDetail({
         });
         if (!res.ok) throw new Error("Error al crear respuesta");
         const data = await res.json();
-        setComments((prev) => prev.map((c) => (c.id === optimistic.id ? data.comment : c)));
+        const created: ConversationComment = {
+          ...data.comment,
+          reaction_count: 0,
+          reactions: [],
+          viewer_reaction: null,
+        };
+        setComments((prev) => prev.map((c) => (c.id === optimistic.id ? created : c)));
       } catch {
         setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       }
@@ -1016,8 +1030,8 @@ export function ThreadDetail({
           <ReactionButton
             targetType="thread"
             targetId={thread.id}
-            initialCount={thread.reaction_count}
-            initialReacted={thread.viewer_reacted}
+            reactions={thread.reactions}
+            viewerReaction={thread.viewer_reaction}
           />
         </div>
       </div>

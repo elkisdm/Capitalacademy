@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Logo, Avatar } from "./primitives";
+import { NotificationBell } from "./conversaciones/notification-bell";
 import { EnvSwitcher, ViewModeToggle } from "@/components/admin/env-switcher";
 import type { EnvOption, ViewMode } from "@/lib/admin/active-env";
 
@@ -190,6 +191,8 @@ function SidebarContent({
   viewMode,
   envOptions,
   activeEnv,
+  viewerId,
+  cohortId,
   onCollapse,
   onNavClick,
 }: {
@@ -203,6 +206,8 @@ function SidebarContent({
   viewMode: ViewMode;
   envOptions: EnvOption[];
   activeEnv: string | null;
+  viewerId?: string;
+  cohortId?: string;
   onCollapse?: () => void;
   onNavClick?: () => void;
 }) {
@@ -210,6 +215,9 @@ function SidebarContent({
     <>
       <div className="flex items-center justify-between px-4 py-5">
         <Logo collapsed={collapsed} />
+        {!collapsed && viewerId && cohortId && (
+          <NotificationBell viewerId={viewerId} cohortSlug={cohortId} />
+        )}
       </div>
 
       <StaffControls
@@ -335,6 +343,7 @@ export function ClassroomSidebar({
   viewMode = "admin",
   envOptions = [],
   activeEnv = null,
+  viewerId,
 }: {
   userInitials: string;
   userName: string;
@@ -346,6 +355,7 @@ export function ClassroomSidebar({
   viewMode?: ViewMode;
   envOptions?: EnvOption[];
   activeEnv?: string | null;
+  viewerId?: string;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -427,6 +437,8 @@ export function ClassroomSidebar({
           viewMode={effectiveViewMode}
           envOptions={envOptions}
           activeEnv={activeEnv}
+          viewerId={viewerId}
+          cohortId={cohortId}
           onCollapse={() => setCollapsed(!collapsed)}
         />
       </aside>
@@ -442,6 +454,9 @@ export function ClassroomSidebar({
         </button>
         <Logo />
         <div className="flex items-center gap-1">
+          {viewerId && cohortId && (
+            <NotificationBell viewerId={viewerId} cohortSlug={cohortId} />
+          )}
           <Link href="/classroom/profile" prefetch={false} className="grid h-11 w-11 place-items-center">
             <Avatar initials={userInitials} avatarUrl={userAvatarUrl} size={34} accent="bg-ca-lime" />
           </Link>

@@ -125,6 +125,7 @@ export default async function ClassroomLayout({
         viewMode={viewMode}
         envOptions={envOptions}
         activeEnv={activeEnv}
+        viewerId={user.id}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="ca-fade-up">{children}</div>

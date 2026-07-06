@@ -227,7 +227,8 @@ export function ThreadList({
         is_staff: isStaff,
       },
       reaction_count: 0,
-      viewer_reacted: false,
+      reactions: [],
+      viewer_reaction: null,
       viewer_bookmarked: false,
     };
     setThreads((prev) => [full, ...prev]);
@@ -468,14 +469,24 @@ export function ThreadList({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-[12px] text-ca-ink-soft">
+              <div className="flex flex-wrap items-center gap-2 text-[12px] text-ca-ink-soft">
                 <span>{timeAgo(t.last_activity_at)}</span>
                 <span>·</span>
                 <span>
                   {t.comment_count} {t.comment_count === 1 ? "comentario" : "comentarios"}
                 </span>
                 <span>·</span>
-                <span>❤️ {t.reaction_count}</span>
+                {t.reactions.length > 0 ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    {t.reactions.map((r) => (
+                      <span key={r.emoji}>
+                        {r.emoji} {r.count}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <span>❤️ {t.reaction_count}</span>
+                )}
               </div>
             </Link>
           ))}

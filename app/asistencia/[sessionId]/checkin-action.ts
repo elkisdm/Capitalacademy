@@ -22,10 +22,10 @@ async function clientIp(): Promise<string> {
 
 /**
  * Construye los `deps` de la lógica de check-in contra Supabase (service_role).
- * Exportado para que el script E2E ejercite EXACTAMENTE el mismo camino que
- * corre en producción, sin duplicar las queries.
+ * NO se exporta: en Next 16 un archivo `"use server"` solo puede exportar
+ * funciones async. El script E2E reproduce estas queries inline, no las importa.
  */
-export function buildCheckinDeps(
+function buildCheckinDeps(
   admin: ReturnType<typeof createAdminClient>,
 ): CheckinDeps {
   return {

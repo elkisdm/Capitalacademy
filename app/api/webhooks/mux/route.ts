@@ -200,6 +200,16 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+  } else if (process.env.NODE_ENV === "production") {
+    // Fail-closed: en producción NUNCA se procesa un webhook sin firma. Sin el
+    // secret, un POST no autenticado podría mutar lecciones y disparar correos.
+    console.error(
+      "MUX_WEBHOOK_SECRET ausente en producción — webhook rechazado (fail-closed)",
+    );
+    return NextResponse.json(
+      { error: "Webhook not configured" },
+      { status: 500 },
+    );
   } else {
     console.warn(
       "MUX_WEBHOOK_SECRET is not set — skipping signature verification (development only)",

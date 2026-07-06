@@ -385,6 +385,91 @@ export type Database = {
           },
         ]
       }
+      capacitacion_followup_log: {
+        Row: {
+          recipients_count: number
+          sent_at: string
+          session_id: string
+        }
+        Insert: {
+          recipients_count?: number
+          sent_at?: string
+          session_id: string
+        }
+        Update: {
+          recipients_count?: number
+          sent_at?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capacitacion_followup_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_attendance: {
+        Row: {
+          cohort_id: string
+          id: string
+          marked_at: string
+          marked_by: string | null
+          method: string
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          cohort_id: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          method?: string
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          cohort_id?: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          method?: string
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attendance_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_resources: {
         Row: {
           created_at: string

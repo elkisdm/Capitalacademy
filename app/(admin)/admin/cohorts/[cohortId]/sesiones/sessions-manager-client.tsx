@@ -12,6 +12,7 @@ import type {
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import { SessionQuizPanel } from "@/components/admin/quiz/session-quiz-panel";
 import { SessionRecordingPanel } from "@/components/admin/session-recording-panel";
+import { SessionQrButton } from "@/components/admin/session-qr";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -572,6 +573,10 @@ export function SessionsManagerClient({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
+                  <SessionQrButton
+                    sessionId={s.id}
+                    sessionTitle={s.title ?? "Clase en vivo"}
+                  />
                   <button
                     onClick={() => openEdit(s)}
                     aria-label="Editar sesión"

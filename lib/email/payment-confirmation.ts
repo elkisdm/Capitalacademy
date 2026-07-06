@@ -11,8 +11,9 @@ const DIPLOMADO_PROGRAM_NAME =
   "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria";
 const DIPLOMADO_PROGRAM_SHORT = "Diplomado";
 
-// Resuelve el programa a partir de la clave de plan. Default: Diplomado
-// (cubre pagos legacy sin plan y los planes del Diplomado).
+// Resuelve el programa a partir de la clave de plan. Cada programa matchea sus
+// propios planes; el fallback (pagos legacy sin plan o planes desconocidos) es
+// neutro — NO se asume Diplomado, para que un programa futuro no herede su marca.
 function resolveProgram(plan: string | null): {
   name: string;
   short: string;
@@ -20,7 +21,10 @@ function resolveProgram(plan: string | null): {
   if (plan && isLiderazgoPlan(plan)) {
     return { name: LIDERAZGO_PROGRAM_NAME, short: LIDERAZGO_PROGRAM_SHORT };
   }
-  return { name: DIPLOMADO_PROGRAM_NAME, short: DIPLOMADO_PROGRAM_SHORT };
+  if (plan && isPaymentPlan(plan)) {
+    return { name: DIPLOMADO_PROGRAM_NAME, short: DIPLOMADO_PROGRAM_SHORT };
+  }
+  return { name: "Capital Academy", short: "Capital Academy" };
 }
 
 interface PaymentConfirmationInput {

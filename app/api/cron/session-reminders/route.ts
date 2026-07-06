@@ -151,7 +151,7 @@ async function processWindow(
           Boolean(p?.email),
       );
 
-    const title = session.title ?? "Clase del Diplomado";
+    const title = session.title ?? "Tu próxima clase";
     const teacherName = session.teacher_id
       ? (teacherMap.get(session.teacher_id) ?? null)
       : null;

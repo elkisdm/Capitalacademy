@@ -64,6 +64,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   creditCard: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></>,
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>,
   help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>,
+  chat: <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></>,
 };
 
 function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -168,9 +169,12 @@ function StaffControls({
   return (
     <div className={collapsed ? "mb-1 border-b border-ca-ink/[0.08] pb-1" : "mb-1 border-b border-ca-ink/[0.08] pb-2"}>
       <ViewModeToggle mode={viewMode} collapsed={collapsed} />
-      {viewMode === "admin" && (
-        <EnvSwitcher options={envOptions} activeEnv={activeEnv} collapsed={collapsed} />
-      )}
+      <EnvSwitcher
+        options={envOptions}
+        activeEnv={activeEnv}
+        collapsed={collapsed}
+        studentPreview={viewMode === "student"}
+      />
     </div>
   );
 }
@@ -389,6 +393,7 @@ export function ClassroomSidebar({
       { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" as const },
       ...(cohortId ? [
         { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },
+        { icon: "chat", label: "Conversaciones", href: `/classroom/${cohortId}/conversaciones`, section: "learn" as const },
         { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
       ] : []),
     ] : []),

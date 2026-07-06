@@ -14,10 +14,17 @@ export function EnvSwitcher({
   options,
   activeEnv,
   collapsed = false,
+  studentPreview = false,
 }: {
   options: EnvOption[];
   activeEnv: string | null;
   collapsed?: boolean;
+  /**
+   * En la vista de alumno del staff, cambiar de entorno debe re-resolver el
+   * cohorte que se previsualiza: navega a `/classroom` (que redirige al cohorte
+   * del entorno activo). En el panel admin basta con refrescar en el sitio.
+   */
+  studentPreview?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -27,6 +34,9 @@ export function EnvSwitcher({
   function handleChange(value: string) {
     startTransition(async () => {
       await setActiveEnv(value);
+      if (studentPreview) {
+        router.push("/classroom");
+      }
       router.refresh();
     });
   }

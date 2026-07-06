@@ -6,6 +6,7 @@ import {
   useRef,
   useEffect,
   type MouseEvent as ReactMouseEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MutableRefObject,
 } from "react";
 import type Hls from "hls.js";
@@ -522,6 +523,15 @@ export function VideoPlayer({
       )
         return;
 
+      // Cuando el foco está en un slider (barra de progreso o volumen), este
+      // maneja su propio teclado — no dispares también el atajo global (evita
+      // el doble seek).
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.getAttribute("role") === "slider"
+      )
+        return;
+
       const video = videoRef.current;
       if (!video || error) return;
 
@@ -709,6 +719,44 @@ export function VideoPlayer({
     [seekFromEvent],
   );
 
+  const onTrackKeyDown = useCallback(
+    (e: ReactKeyboardEvent) => {
+      const video = videoRef.current;
+      if (!video || durationSeconds <= 0) return;
+      const t = video.currentTime;
+      let handled = true;
+      switch (e.key) {
+        case "ArrowRight":
+        case "ArrowUp":
+          video.currentTime = Math.min(durationSeconds, t + 5);
+          break;
+        case "ArrowLeft":
+        case "ArrowDown":
+          video.currentTime = Math.max(0, t - 5);
+          break;
+        case "Home":
+          video.currentTime = 0;
+          break;
+        case "End":
+          video.currentTime = durationSeconds;
+          break;
+        case "PageUp":
+          video.currentTime = Math.min(durationSeconds, t + 30);
+          break;
+        case "PageDown":
+          video.currentTime = Math.max(0, t - 30);
+          break;
+        default:
+          handled = false;
+      }
+      if (handled) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    [durationSeconds],
+  );
+
   const onTrackMove = useCallback((e: ReactMouseEvent) => {
     if (isDragging.current) return;
     const track = trackRef.current;
@@ -735,6 +783,41 @@ export function VideoPlayer({
       if (video) {
         video.volume = val;
         video.muted = val === 0;
+      }
+    },
+    [],
+  );
+
+  const onVolumeKeyDown = useCallback(
+    (e: ReactKeyboardEvent) => {
+      const video = videoRef.current;
+      if (!video) return;
+      const cur = video.muted ? 0 : video.volume;
+      let next = cur;
+      let handled = true;
+      switch (e.key) {
+        case "ArrowUp":
+        case "ArrowRight":
+          next = Math.min(1, cur + 0.1);
+          break;
+        case "ArrowDown":
+        case "ArrowLeft":
+          next = Math.max(0, cur - 0.1);
+          break;
+        case "Home":
+          next = 0;
+          break;
+        case "End":
+          next = 1;
+          break;
+        default:
+          handled = false;
+      }
+      if (handled) {
+        e.preventDefault();
+        e.stopPropagation();
+        video.volume = next;
+        video.muted = next === 0;
       }
     },
     [],
@@ -942,7 +1025,15 @@ export function VideoPlayer({
             {/* Progress bar */}
             <div
               ref={trackRef}
-              className="mb-2 cursor-pointer px-1"
+              role="slider"
+              tabIndex={0}
+              aria-label="Barra de progreso del video"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(durationSeconds)}
+              aria-valuenow={Math.round(currentTime)}
+              aria-valuetext={`${fmtTimestamp(currentTime)} de ${fmtTimestamp(durationSeconds)}`}
+              onKeyDown={onTrackKeyDown}
+              className="mb-2 cursor-pointer rounded-full px-1 outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               style={{ height: 16 }}
               onMouseEnter={() => setHoverBar(true)}
               onMouseLeave={() => {
@@ -1108,6 +1199,11 @@ export function VideoPlayer({
                   className="hidden items-center md:flex"
                   onMouseEnter={() => setVolumeOpen(true)}
                   onMouseLeave={() => setVolumeOpen(false)}
+                  onFocus={() => setVolumeOpen(true)}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node))
+                      setVolumeOpen(false);
+                  }}
                 >
                   <button
                     onClick={(e) => {
@@ -1126,7 +1222,15 @@ export function VideoPlayer({
                   >
                     <div className="pl-1 pr-2">
                       <div
-                        className="relative h-1 w-20 cursor-pointer rounded-full"
+                        role="slider"
+                        tabIndex={0}
+                        aria-label="Volumen"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round((muted ? 0 : volume) * 100)}
+                        aria-valuetext={`${Math.round((muted ? 0 : volume) * 100)}%`}
+                        onKeyDown={onVolumeKeyDown}
+                        className="relative h-1 w-20 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                         style={{ background: "rgba(255,255,255,0.22)" }}
                         onClick={onVolumeSliderClick}
                       >

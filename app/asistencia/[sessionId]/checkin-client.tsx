@@ -111,6 +111,8 @@ export function CheckinClient({
 
           {result && (
             <div
+              role="status"
+              aria-live="polite"
               className="mt-5 rounded-xl px-4 py-3 text-[13px] font-semibold"
               style={{
                 background: TONE_STYLE[statusTone(result.status)].bg,

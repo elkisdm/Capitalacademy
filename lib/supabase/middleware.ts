@@ -27,7 +27,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/verificar") ||
     // check-in de asistencia por QR: página pública; el alumno inicia sesión
     // dentro del flujo (redirect a login branded con ?next=/asistencia/...).
-    pathname.startsWith("/asistencia") ||
+    pathname === "/asistencia" ||
+    pathname.startsWith("/asistencia/") ||
     pathname === "/sitemap.xml" ||
     pathname === "/robots.txt";
 

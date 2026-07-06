@@ -61,7 +61,18 @@ async function dispatchCapacitacionFollowup(
     const { error: reserveErr } = await supabase
       .from("capacitacion_followup_log")
       .insert({ session_id: sessionRow.id, recipients_count: 0 });
-    if (reserveErr) return;
+    if (reserveErr) {
+      // 23505 = fila ya existe → otro evento ya envió: salir en silencio.
+      // Cualquier otro error (red, timeout) SÍ se loguea para dejar traza.
+      if (!String(reserveErr.code).includes("23505")) {
+        console.error(
+          "Mux webhook: reserva del follow-up CAP-CI falló para sesión",
+          sessionRow.id,
+          reserveErr,
+        );
+      }
+      return;
+    }
 
     // Inscritos activos de la cohorte (mismo patrón que el cron de recordatorios).
     const { data: enrollments } = await supabase

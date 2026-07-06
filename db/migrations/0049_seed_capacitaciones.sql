@@ -25,7 +25,7 @@
 -- e=sesión usan el rango de entorno 04xx; d=instructor sigue la secuencia global
 -- (016–020, tras Diego = 015 en 0043).
 --
--- NO se aplica a prod hasta revisión (mismo criterio que 0022/0043).
+-- Aplicada a prod el 2026-07-06 (migración 20260706204014), tras revisión.
 -- =============================================================================
 
 -- ----------------------------------------------------------------------------

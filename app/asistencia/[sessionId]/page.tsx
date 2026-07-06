@@ -36,6 +36,20 @@ export default async function AsistenciaPage(props: {
     redirect(`${loginPath(brand)}?next=/asistencia/${sessionId}`);
   }
 
+  // Gate de matrícula: solo un alumno con matrícula ACTIVA en la cohorte de la
+  // sesión puede ver la tarjeta (título + cohorte). Sin esto, cualquier usuario
+  // logueado de otro programa podría leer la metadata de una sesión ajena. El
+  // check-in en sí ya lo valida; aquí evitamos también la fuga de lectura.
+  const { data: enrollment } = await admin
+    .from("enrollments")
+    .select("id")
+    .eq("student_id", user.id)
+    .eq("cohort_id", session.cohort_id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!enrollment) notFound();
+
   // ¿Ya registró asistencia? (para mostrar el estado inicial "ya registrada")
   const { data: existing } = await admin
     .from("session_attendance")

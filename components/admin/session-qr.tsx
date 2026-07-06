@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 
-const CHECKIN_BASE = "https://capitalacademy.cl/asistencia";
+// Origen resuelto en cliente: en prod es capitalacademy.cl, en preview/dev el
+// deploy correspondiente. Fallback a prod para el render SSR (el modal solo se
+// monta tras el click, ya en cliente, así que window siempre existe al usarse).
+function checkinBase(): string {
+  return typeof window !== "undefined"
+    ? window.location.origin
+    : "https://capitalacademy.cl";
+}
 
 /**
  * Botón + modal con el QR de asistencia de una sesión. El QR apunta a
@@ -49,9 +56,21 @@ function QrModal({
   sessionTitle: string;
   onClose: () => void;
 }) {
-  const url = `${CHECKIN_BASE}/${sessionId}`;
+  const url = `${checkinBase()}/asistencia/${sessionId}`;
   const [svg, setSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // A11y: cerrar con Escape y mover el foco al abrir (patrón de los otros
+  // modales del repo, p.ej. deactivate-modal).
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   useEffect(() => {
     let alive = true;
@@ -118,6 +137,9 @@ function QrModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="session-qr-title"
         className="ca-card w-full max-w-[380px] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -126,11 +148,15 @@ function QrModal({
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ca-ink-soft">
               QR de asistencia
             </div>
-            <h3 className="mt-0.5 truncate text-[15px] font-extrabold text-ca-ink">
+            <h3
+              id="session-qr-title"
+              className="mt-0.5 truncate text-[15px] font-extrabold text-ca-ink"
+            >
               {sessionTitle}
             </h3>
           </div>
           <button
+            ref={closeRef}
             onClick={onClose}
             aria-label="Cerrar"
             className="shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-ca-ink-soft hover:text-ca-ink"

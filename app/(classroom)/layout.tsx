@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
 import { getActiveEnv, getEnvOptions, getViewMode, type EnvOption, type ViewMode } from "@/lib/admin/active-env";
+import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
 
 export const metadata = {
   title: "Classroom",
@@ -43,8 +44,12 @@ export default async function ClassroomLayout({
     .slice(0, 2)
     .toUpperCase();
 
+  // Entorno activo del switcher (solo staff). Se resuelve antes que el cohorte
+  // para que la vista de alumno del staff siga el entorno elegido, no su matrícula.
+  const activeEnv: string | null = isStaff ? await getActiveEnv() : null;
+
   // Resolve cohort slug + program name for the sidebar.
-  // Priority: URL path > user's most recent enrollment (fallback for /classroom root).
+  // Prioridad: ruta URL > (staff) entorno activo > matrícula más reciente.
   let cohortSlug: string | undefined;
   let cohortLabel: string | undefined;
 
@@ -69,22 +74,27 @@ export default async function ClassroomLayout({
     cohortLabel =
       (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
   } else {
-    // Fallback: most recent enrollment (for /classroom dashboard)
-    const { data: enrollment } = await supabase
-      .from("enrollments")
-      .select("cohort_id")
-      .eq("student_id", user.id)
-      .eq("status", "active")
-      .order("enrolled_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (enrollment?.cohort_id) {
+    // Sin slug en la ruta (dashboard /classroom): staff sigue el entorno activo;
+    // el alumno (o staff sin entorno) cae a su matrícula más reciente.
+    const previewSlug = await getActiveEnvCohortSlug(activeEnv);
+    const { data: enrollment } = previewSlug
+      ? { data: null }
+      : await supabase
+          .from("enrollments")
+          .select("cohort_id")
+          .eq("student_id", user.id)
+          .eq("status", "active")
+          .order("enrolled_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+    const target = previewSlug ?? enrollment?.cohort_id;
+    if (target) {
       const { data: cohortRow } = await supabase
         .from("cohorts")
         .select("slug, programs(name)")
-        .eq("id", enrollment.cohort_id)
-        .single();
-      cohortSlug = cohortRow?.slug ?? enrollment.cohort_id;
+        .or(`slug.eq.${target},id.eq.${target}`)
+        .maybeSingle();
+      cohortSlug = cohortRow?.slug ?? target;
       cohortLabel =
         (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
     }
@@ -93,12 +103,10 @@ export default async function ClassroomLayout({
   // Controles de staff (selector de entorno + modo de vista). Solo se cargan
   // para staff; un alumno puro no los ve.
   let envOptions: EnvOption[] = [];
-  let activeEnv: string | null = null;
   let viewMode: ViewMode = "admin";
   if (isStaff) {
-    [envOptions, activeEnv, viewMode] = await Promise.all([
+    [envOptions, viewMode] = await Promise.all([
       getEnvOptions(),
-      getActiveEnv(),
       getViewMode(),
     ]);
   }

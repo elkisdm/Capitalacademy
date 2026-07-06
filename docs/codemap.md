@@ -98,7 +98,18 @@
 | `lib/classroom/progress.ts` · `use-video-progress.ts` | Tracking granular de progreso de video | — | — |
 | `lib/classroom/resolve-slugs.ts` | Resuelve slugs legibles ↔ UUIDs (compat retroactiva) | — | — |
 | `lib/classroom/verify-enrollment.ts` | Verifica matrícula activa para gating de contenido | — | 0004 |
+| `lib/classroom/staff-preview.ts` | Resuelve el cohorte que el staff previsualiza en "Ver como Alumno": el del entorno activo del switcher, no su matrícula (usado por `/classroom` y el layout) | — | — |
 | `app/api/classroom/{progress,comments,transcript,summary,avatar}/route.ts` | Endpoints del alumno: progreso, comentarios, transcripción, resumen, avatar | — | — |
+
+## Conversaciones
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `db/migrations/0044_conversaciones.sql` | Tablas threads/comments/reactions + helpers has_program_access/is_program_staff + RLS por programa | — | 0010 |
+| `lib/conversaciones/queries.ts` · `access.ts` | Lecturas del feed por programa + gate | — | 0010 |
+| `app/api/classroom/conversaciones/{route,[threadId],comments,reactions}/route.ts` | CRUD threads/comentarios/reacciones | — | 0010 |
+| `app/(classroom)/classroom/[cohortSlug]/conversaciones/{page,[threadId]/page}.tsx` | Feed + detalle del hilo | `/classroom/[cohortSlug]/conversaciones`, `/classroom/[cohortSlug]/conversaciones/[threadId]` | 0010 |
+| `components/classroom/conversaciones/` | thread-list, thread-composer, thread-detail, reaction-button | — | 0010 |
 
 ## Quiz & Certificación
 

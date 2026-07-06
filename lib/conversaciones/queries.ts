@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 
 export type ThreadAuthor = {
   id: string;
@@ -104,7 +105,7 @@ type ThreadRow = {
   comment_count: number;
   last_activity_at: string;
   created_at: string;
-  author: ThreadAuthor | null;
+  author_id: string;
 };
 
 type ThreadDetailRow = ThreadRow & { program_id: string };
@@ -114,18 +115,19 @@ type CommentRow = {
   body: string;
   parent_id: string | null;
   created_at: string;
-  author: ThreadAuthor | null;
+  author_id: string;
 };
 
+// El autor NO se embebe vía RLS (la policy de `profiles` está cerrada a
+// dueño+staff, 0045). Se trae solo author_id y se resuelve el autor público
+// (id/nombre/avatar) por service-role con getPublicAuthorsMap.
 const THREAD_SELECT = `
   id, title, body, category, is_pinned, is_locked, comment_count,
-  last_activity_at, created_at,
-  author:profiles!conversation_threads_author_id_fkey(id, full_name, avatar_url)
+  last_activity_at, created_at, author_id
 `;
 
 const COMMENT_SELECT = `
-  id, body, parent_id, created_at,
-  author:profiles!conversation_comments_author_id_fkey(id, full_name, avatar_url)
+  id, body, parent_id, created_at, author_id
 `;
 
 /**
@@ -154,7 +156,10 @@ export async function getProgramThreads(
 
   const threads = data as unknown as ThreadRow[];
   const threadIds = threads.map((t) => t.id);
-  const reactionMap = await getReactionStatsMap(supabase, "thread_id", threadIds, viewerId);
+  const [reactionMap, authorsMap] = await Promise.all([
+    getReactionStatsMap(supabase, "thread_id", threadIds, viewerId),
+    getPublicAuthorsMap(threads.map((t) => t.author_id)),
+  ]);
 
   const items: ThreadListItem[] = threads.map((t) => {
     const stats = reactionMap.get(t.id) ?? { count: 0, viewerReacted: false };
@@ -168,7 +173,7 @@ export async function getProgramThreads(
       comment_count: t.comment_count,
       last_activity_at: t.last_activity_at,
       created_at: t.created_at,
-      author: t.author ?? FALLBACK_AUTHOR,
+      author: authorsMap.get(t.author_id) ?? FALLBACK_AUTHOR,
       reaction_count: stats.count,
       viewer_reacted: stats.viewerReacted,
     };
@@ -211,9 +216,13 @@ export async function getThreadWithComments(
   const commentRows = (commentData ?? []) as unknown as CommentRow[];
   const commentIds = commentRows.map((c) => c.id);
 
-  const [threadReactions, commentReactions] = await Promise.all([
+  const [threadReactions, commentReactions, authorsMap] = await Promise.all([
     getReactionStatsMap(supabase, "thread_id", [threadId], viewerId),
     getReactionStatsMap(supabase, "comment_id", commentIds, viewerId),
+    getPublicAuthorsMap([
+      threadRow.author_id,
+      ...commentRows.map((c) => c.author_id),
+    ]),
   ]);
 
   const threadStats = threadReactions.get(threadId) ?? { count: 0, viewerReacted: false };
@@ -229,7 +238,7 @@ export async function getThreadWithComments(
     comment_count: threadRow.comment_count,
     last_activity_at: threadRow.last_activity_at,
     created_at: threadRow.created_at,
-    author: threadRow.author ?? FALLBACK_AUTHOR,
+    author: authorsMap.get(threadRow.author_id) ?? FALLBACK_AUTHOR,
     reaction_count: threadStats.count,
     viewer_reacted: threadStats.viewerReacted,
   };
@@ -241,7 +250,7 @@ export async function getThreadWithComments(
       body: c.body,
       parent_id: c.parent_id,
       created_at: c.created_at,
-      author: c.author ?? FALLBACK_AUTHOR,
+      author: authorsMap.get(c.author_id) ?? FALLBACK_AUTHOR,
       reaction_count: stats.count,
       viewer_reacted: stats.viewerReacted,
     };

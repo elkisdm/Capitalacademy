@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { TablesUpdate } from "@/lib/supabase/types";
 import { getThreadWithComments } from "@/lib/conversaciones/queries";
+import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 
 export const runtime = "nodejs";
 
@@ -137,7 +138,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     .update(updates)
     .eq("id", threadId)
     .select(
-      "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, author:profiles!conversation_threads_author_id_fkey(id, full_name, avatar_url)",
+      "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, author_id",
     )
     .single();
 
@@ -149,7 +150,15 @@ export async function PATCH(req: Request, { params }: Ctx) {
     );
   }
 
-  return NextResponse.json({ thread: updated });
+  // Autor resuelto por service-role (la policy de profiles está cerrada, 0045).
+  const authorsMap = await getPublicAuthorsMap([updated.author_id]);
+  const author = authorsMap.get(updated.author_id) ?? {
+    id: updated.author_id,
+    full_name: "Usuario",
+    avatar_url: null,
+  };
+
+  return NextResponse.json({ thread: { ...updated, author } });
 }
 
 // ── DELETE /api/classroom/conversaciones/[threadId] ──────────────────

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { uuidLike } from "@/lib/utils/zod";
+import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 
 export const runtime = "nodejs";
 
@@ -44,9 +45,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase
     .from("lesson_comments")
-    .select(
-      "id, content, parent_id, created_at, updated_at, profiles!inner(id, full_name, avatar_url)",
-    )
+    .select("id, content, parent_id, created_at, updated_at, author_id")
     .eq("lesson_id", lessonId)
     .order("created_at", { ascending: true });
 
@@ -58,7 +57,32 @@ export async function GET(req: Request) {
     );
   }
 
-  return NextResponse.json({ comments: data ?? [] });
+  // El autor se resuelve por service-role (solo id/nombre/avatar): la policy de
+  // `profiles` está cerrada a dueño+staff (0045). Se mantiene la clave `profiles`
+  // para no cambiar el contrato con el cliente.
+  const rows = (data ?? []) as Array<{
+    id: string;
+    content: string;
+    parent_id: string | null;
+    created_at: string;
+    updated_at: string | null;
+    author_id: string;
+  }>;
+  const authorsMap = await getPublicAuthorsMap(rows.map((r) => r.author_id));
+  const comments = rows.map((r) => ({
+    id: r.id,
+    content: r.content,
+    parent_id: r.parent_id,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    profiles: authorsMap.get(r.author_id) ?? {
+      id: r.author_id,
+      full_name: "Usuario",
+      avatar_url: null,
+    },
+  }));
+
+  return NextResponse.json({ comments });
 }
 
 // ── POST /api/classroom/comments ────────────────────────────

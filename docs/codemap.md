@@ -99,6 +99,7 @@
 | `lib/classroom/resolve-slugs.ts` | Resuelve slugs legibles ↔ UUIDs (compat retroactiva) | — | — |
 | `lib/classroom/verify-enrollment.ts` | Verifica matrícula activa para gating de contenido | — | 0004 |
 | `lib/classroom/staff-preview.ts` | Resuelve el cohorte que el staff previsualiza en "Ver como Alumno": el del entorno activo del switcher, no su matrícula (usado por `/classroom` y el layout) | — | — |
+| `lib/profiles/public-authors.ts` | Resuelve el "autor público" (solo id/nombre/avatar) por service-role para foro y comentarios; la policy de `profiles` está cerrada a dueño+staff (0045) para no exponer PII | — | 0045 |
 | `app/api/classroom/{progress,comments,transcript,summary,avatar}/route.ts` | Endpoints del alumno: progreso, comentarios, transcripción, resumen, avatar | — | — |
 
 ## Conversaciones

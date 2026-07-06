@@ -25,6 +25,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Al usar "Ver como Alumno", el staff ahora ve el classroom del entorno seleccionado en el switcher. Antes, si el usuario estaba matriculado en varios programas, siempre se abría el mismo (el de su matrícula más reciente) sin importar el entorno elegido (`310ab5b`)
 
 ### Added
+- Nuevo entorno "Ciclo de Capacitación Comercial CI": un ciclo interno y gratuito para la fuerza de ventas de Capital Inteligente, con classroom propio (5 sesiones presenciales de los martes), foro y login/onboarding con marca propia. Queda listo para matricular a sus asistentes (`885323d`)
+- Registro de asistencia por código QR: cada clase en vivo tiene un QR (para la presentación del docente) que el alumno escanea, inicia sesión y marca su asistencia con un tap; el equipo genera, descarga e imprime el QR desde el editor de sesiones (`0d5df46`)
+- El Ciclo de Capacitación Comercial CI envía recordatorios automáticos de cada sesión (24 h y 1 h antes) y, cuando se publica la grabación, un correo de seguimiento con el enlace a la clase (`bb70bf5`)
 - En Conversaciones ahora puedes reaccionar con ❤️, 👍, 🎉 o 💡 (antes solo con corazón), y la campana de notificaciones aparece en todo el classroom, no solo dentro del foro (`df0471f`)
 - Conversaciones ahora avisa y se actualiza en vivo: una campana con contador te notifica cuando responden tu conversación o te mencionan (escribes @ y eliges a la persona), también te llega un correo, y los comentarios nuevos aparecen sin recargar. El feed carga más conversaciones a medida que bajas (`76ce35b`)
 - En Conversaciones ahora puedes guardar una conversación y volver a ella desde el filtro "Guardados", y las direcciones web que escribes en los comentarios se vuelven enlaces clicables (`f428ea2`)

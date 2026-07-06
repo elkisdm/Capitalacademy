@@ -4,6 +4,8 @@ export type PublicAuthor = {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  /** Booleano derivado de rol (admin/ops). NO es PII — no expone el rol crudo. */
+  is_staff: boolean;
 };
 
 /**
@@ -26,14 +28,22 @@ export async function getPublicAuthorsMap(
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url")
+    .select("id, full_name, avatar_url, system_role, role")
     .in("id", unique);
 
-  for (const row of (data ?? []) as PublicAuthor[]) {
+  for (const row of (data ?? []) as Array<{
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    system_role: string | null;
+    role: string | null;
+  }>) {
+    const effectiveRole = row.system_role ?? row.role;
     map.set(row.id, {
       id: row.id,
       full_name: row.full_name ?? "Usuario",
       avatar_url: row.avatar_url ?? null,
+      is_staff: effectiveRole === "admin" || effectiveRole === "ops",
     });
   }
   return map;

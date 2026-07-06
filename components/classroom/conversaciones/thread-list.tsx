@@ -1,9 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { ThreadListItem } from "@/lib/conversaciones/queries";
+import {
+  CONVERSATION_CATEGORIES,
+  categoryLabel,
+  isValidCategory,
+} from "@/lib/conversaciones/categories";
 import { ThreadComposer, type ThreadListItemLike } from "./thread-composer";
 
 // ── Time helper (copiado de comment-section.tsx) ───────────────
@@ -74,9 +80,25 @@ function ThreadAvatar({
   );
 }
 
+// ── Team badge ───────────────────────────────────────────────────
+
+function TeamBadge() {
+  return (
+    <span className="shrink-0 rounded-full bg-ca-violet/[0.12] px-1.5 py-0.5 text-[10px] font-bold text-ca-violet">
+      Equipo
+    </span>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────
 
-type SortMode = "recent" | "top";
+type SortMode = "recent" | "top" | "unanswered";
+
+const SORT_TABS: Array<{ key: SortMode; label: string }> = [
+  { key: "recent", label: "Recientes" },
+  { key: "top", label: "Populares" },
+  { key: "unanswered", label: "Sin responder" },
+];
 
 type ThreadListProps = {
   programId: string;
@@ -98,72 +120,182 @@ export function ThreadList({
   viewerId,
   viewerName,
   viewerAvatarUrl,
+  isStaff,
 }: ThreadListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [threads, setThreads] = useState<ThreadListItem[]>(initialThreads);
-  const [sort, setSort] = useState<SortMode>("recent");
+
+  // Estado (categoría/orden/búsqueda) reflejado en la URL para que sea
+  // compartible y respete el botón "atrás". El filtrado sigue en cliente
+  // sobre los hilos ya cargados (patrón de users-list-client.tsx).
+  const catParam = searchParams.get("cat");
+  const activeCategory: string = catParam && isValidCategory(catParam) ? catParam : "all";
+  const sortParam = searchParams.get("sort");
+  const sort: SortMode =
+    sortParam === "top" || sortParam === "unanswered" ? sortParam : "recent";
+  const search = searchParams.get("q") ?? "";
+
+  const updateParams = useCallback(
+    (patch: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null || value === "") params.delete(key);
+        else params.set(key, value);
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, pathname, router],
+  );
+
+  const setCategory = useCallback(
+    (key: string) => updateParams({ cat: key === "all" ? null : key }),
+    [updateParams],
+  );
+  const setSort = useCallback(
+    (key: SortMode) => updateParams({ sort: key === "recent" ? null : key }),
+    [updateParams],
+  );
+  const setSearch = useCallback(
+    (value: string) => updateParams({ q: value || null }),
+    [updateParams],
+  );
 
   const handleCreated = (thread: ThreadListItemLike) => {
     const full: ThreadListItem = {
       ...thread,
-      author: { id: viewerId, full_name: viewerName, avatar_url: viewerAvatarUrl },
+      author: {
+        id: viewerId,
+        full_name: viewerName,
+        avatar_url: viewerAvatarUrl,
+        is_staff: isStaff,
+      },
       reaction_count: 0,
       viewer_reacted: false,
     };
     setThreads((prev) => [full, ...prev]);
   };
 
-  const sorted = useMemo(() => {
-    const list = [...threads];
-    if (sort === "top") {
-      list.sort((a, b) => b.reaction_count - a.reaction_count);
-      return list;
-    }
-    list.sort((a, b) => {
-      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-      return new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
+  const visible = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    let list = threads.filter((t) => {
+      if (activeCategory !== "all" && t.category !== activeCategory) return false;
+      if (q) {
+        const haystack = `${t.title} ${t.body}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
     });
+
+    if (sort === "top") {
+      list = [...list].sort((a, b) => b.reaction_count - a.reaction_count);
+    } else if (sort === "unanswered") {
+      list = list
+        .filter((t) => t.comment_count === 0)
+        .sort(
+          (a, b) =>
+            new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime(),
+        );
+    } else {
+      list = [...list].sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        return new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
+      });
+    }
     return list;
-  }, [threads, sort]);
+  }, [threads, activeCategory, search, sort]);
+
+  const hasFilters = activeCategory !== "all" || search.trim() !== "" || sort !== "recent";
 
   return (
     <div className="flex flex-col gap-5">
       <ThreadComposer programId={programId} onCreated={handleCreated} />
 
-      <div className="flex items-center gap-1.5">
+      {/* Chips de categoría */}
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar por categoría">
         <button
           type="button"
-          onClick={() => setSort("recent")}
+          onClick={() => setCategory("all")}
+          aria-pressed={activeCategory === "all"}
           className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-            sort === "recent"
+            activeCategory === "all"
               ? "bg-ca-violet/[0.1] text-ca-violet"
               : "text-ca-ink-soft hover:bg-ca-bg-soft"
           }`}
         >
-          Recientes
+          Todas
         </button>
-        <button
-          type="button"
-          onClick={() => setSort("top")}
-          className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-            sort === "top"
-              ? "bg-ca-violet/[0.1] text-ca-violet"
-              : "text-ca-ink-soft hover:bg-ca-bg-soft"
-          }`}
-        >
-          Populares
-        </button>
+        {CONVERSATION_CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            onClick={() => setCategory(c.key)}
+            aria-pressed={activeCategory === c.key}
+            className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+              activeCategory === c.key
+                ? "bg-ca-violet/[0.1] text-ca-violet"
+                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
       </div>
 
-      {sorted.length === 0 ? (
+      {/* Búsqueda + orden */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar…"
+          aria-label="Buscar conversaciones"
+          autoComplete="off"
+          className="w-full rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13px] text-ca-ink placeholder:text-ca-ink-soft/60 outline-none transition-colors focus:border-ca-violet sm:max-w-xs"
+        />
+        <div className="flex items-center gap-1.5">
+          {SORT_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setSort(tab.key)}
+              aria-pressed={sort === tab.key}
+              className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                sort === tab.key
+                  ? "bg-ca-violet/[0.1] text-ca-violet"
+                  : "text-ca-ink-soft hover:bg-ca-bg-soft"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
         <div className="ca-card flex flex-col items-center justify-center p-16 text-center">
-          <p className="text-[14px] font-bold text-ca-ink">Todavía no hay conversaciones</p>
-          <p className="mt-1 text-[13px] text-ca-ink-soft">
-            Sé el primero en compartir algo con la comunidad de {programName}.
-          </p>
+          {hasFilters ? (
+            <>
+              <p className="text-[14px] font-bold text-ca-ink">No hay conversaciones que coincidan</p>
+              <p className="mt-1 text-[13px] text-ca-ink-soft">
+                Prueba con otra categoría, orden o término de búsqueda.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[14px] font-bold text-ca-ink">Todavía no hay conversaciones</p>
+              <p className="mt-1 text-[13px] text-ca-ink-soft">
+                Sé el primero en compartir algo con la comunidad de {programName}.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {sorted.map((t) => (
+          {visible.map((t) => (
             <Link
               key={t.id}
               href={`/classroom/${cohortSlug}/conversaciones/${t.id}`}
@@ -172,10 +304,16 @@ export function ThreadList({
               <div className="flex items-center gap-3">
                 <ThreadAvatar initials={getInitials(t.author.full_name)} avatarUrl={t.author.avatar_url} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-bold text-ca-ink">{t.author.full_name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-[13px] font-bold text-ca-ink">{t.author.full_name}</p>
+                    {t.author.is_staff && <TeamBadge />}
+                  </div>
                   <p className="text-[11px] text-ca-ink-soft">{timeAgo(t.last_activity_at)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="rounded-full bg-ca-ink/[0.05] px-2 py-0.5 text-[11px] font-semibold text-ca-ink-soft">
+                    {categoryLabel(t.category)}
+                  </span>
                   {t.is_pinned && (
                     <span className="rounded-full bg-ca-lime/[0.2] px-2 py-0.5 text-[11px] font-bold text-ca-ink">
                       📌 Fijado

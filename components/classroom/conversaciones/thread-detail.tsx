@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { ThreadDetail, ConversationComment } from "@/lib/conversaciones/queries";
+import { categoryLabel } from "@/lib/conversaciones/categories";
 import { ReactionButton } from "./reaction-button";
 
 // ── Time helper (copiado de comment-section.tsx) ───────────────
@@ -661,12 +662,22 @@ export function ThreadDetail({
               size={40}
             />
             <div>
-              <p className="text-[13.5px] font-bold text-ca-ink">{thread.author.full_name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[13.5px] font-bold text-ca-ink">{thread.author.full_name}</p>
+                {thread.author.is_staff && (
+                  <span className="shrink-0 rounded-full bg-ca-violet/[0.12] px-1.5 py-0.5 text-[10px] font-bold text-ca-violet">
+                    Equipo
+                  </span>
+                )}
+              </div>
               <p className="text-[11.5px] text-ca-ink-soft">{timeAgo(thread.created_at)}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="rounded-full bg-ca-ink/[0.05] px-2 py-0.5 text-[11px] font-semibold text-ca-ink-soft">
+              {categoryLabel(thread.category)}
+            </span>
             {isPinned && (
               <span className="rounded-full bg-ca-lime/[0.2] px-2 py-0.5 text-[11px] font-bold text-ca-ink">
                 📌 Fijado

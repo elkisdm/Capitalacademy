@@ -5,6 +5,7 @@ export type ThreadAuthor = {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  is_staff?: boolean;
 };
 
 export type ThreadListItem = {
@@ -54,6 +55,7 @@ const FALLBACK_AUTHOR: ThreadAuthor = {
   id: "",
   full_name: "Usuario",
   avatar_url: null,
+  is_staff: false,
 };
 
 type ReactionStats = { count: number; viewerReacted: boolean };

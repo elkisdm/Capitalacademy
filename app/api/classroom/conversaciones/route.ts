@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { uuidLike } from "@/lib/utils/zod";
 import { getProgramThreads } from "@/lib/conversaciones/queries";
+import { isValidCategory } from "@/lib/conversaciones/categories";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,7 @@ const threadPostSchema = z.object({
   programId: uuidLike,
   title: z.string().trim().min(1, "El título no puede estar vacío").max(200),
   body: z.string().trim().min(1, "El cuerpo no puede estar vacío").max(10000),
+  category: z.string().optional(),
 });
 
 const sortSchema = z.enum(["recent", "top"]).optional();
@@ -94,6 +96,9 @@ export async function POST(req: Request) {
   const { programId } = parsed.data;
   const title = stripHtml(parsed.data.title);
   const threadBody = parsed.data.body;
+  const category = isValidCategory(parsed.data.category)
+    ? (parsed.data.category as string)
+    : "general";
 
   const { data, error } = await supabase
     .from("conversation_threads")
@@ -102,6 +107,7 @@ export async function POST(req: Request) {
       author_id: user.id,
       title,
       body: threadBody,
+      category,
     })
     .select(
       "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, author:profiles!conversation_threads_author_id_fkey(id, full_name, avatar_url)",

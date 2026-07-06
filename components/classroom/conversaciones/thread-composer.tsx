@@ -2,6 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { Loader2 } from "lucide-react";
+import {
+  CONVERSATION_CATEGORIES,
+  type ConversationCategoryKey,
+} from "@/lib/conversaciones/categories";
 
 // Forma mínima de un thread recién creado (respuesta cruda del insert de la
 // API, sin embed de autor ni conteos de reacciones — eso lo completa quien
@@ -27,6 +31,7 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [category, setCategory] = useState<ConversationCategoryKey>("general");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +40,7 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
   const handleCancel = () => {
     setTitle("");
     setBody("");
+    setCategory("general");
     setError(null);
     setExpanded(false);
   };
@@ -48,20 +54,21 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
       const res = await fetch("/api/classroom/conversaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ programId, title: title.trim(), body: body.trim() }),
+        body: JSON.stringify({ programId, title: title.trim(), body: body.trim(), category }),
       });
       if (!res.ok) throw new Error("Error al publicar");
       const data = await res.json();
       onCreated(data.thread);
       setTitle("");
       setBody("");
+      setCategory("general");
       setExpanded(false);
     } catch {
       setError("No se pudo publicar. Intenta de nuevo.");
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, programId, title, body, onCreated]);
+  }, [canSubmit, programId, title, body, category, onCreated]);
 
   if (!expanded) {
     return (
@@ -86,6 +93,23 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
         autoFocus
         className="w-full rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[15px] font-bold text-ca-ink placeholder:font-normal placeholder:text-ca-ink-soft/60 focus:border-ca-violet focus:outline-none"
       />
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Categoría de la conversación">
+        {CONVERSATION_CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            onClick={() => setCategory(c.key)}
+            aria-pressed={category === c.key}
+            className={`rounded-full px-3 py-1 text-[12px] font-semibold transition-colors ${
+              category === c.key
+                ? "bg-ca-violet/[0.1] text-ca-violet"
+                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}

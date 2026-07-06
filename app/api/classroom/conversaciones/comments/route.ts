@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { uuidLike } from "@/lib/utils/zod";
+import { sendConversacionNotificationEmail } from "@/lib/email/conversacion-notification";
 
 export const runtime = "nodejs";
 
@@ -17,7 +19,110 @@ const commentPostSchema = z.object({
   threadId: uuidLike,
   body: z.string().trim().min(1, "El comentario no puede estar vacío").max(5000),
   parentId: uuidLike.optional(),
+  mentions: z.array(z.string()).optional(),
 });
+
+const BASE_URL = (
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://capitalacademy.cl"
+).replace(/\/$/, "");
+
+/**
+ * Notifica menciones (fila 'mention' en `conversation_notifications`) + emails
+ * (al autor del hilo con 'reply' y a cada mencionado con 'mention'). Todo con
+ * el ADMIN client porque la RLS de `conversation_notifications`/`profiles` no
+ * deja insertar/leer al authenticated. Best-effort: cualquier fallo se traga
+ * (no debe romper la creación del comentario).
+ */
+async function notifyAndEmail(params: {
+  threadId: string;
+  commentId: string;
+  threadAuthorId: string;
+  threadTitle: string;
+  actorId: string;
+  actorName: string;
+  mentions: string[];
+  cohortSlug: string | null;
+}) {
+  const admin = createAdminClient();
+
+  const url = params.cohortSlug
+    ? `${BASE_URL}/classroom/${params.cohortSlug}/conversaciones/${params.threadId}`
+    : `${BASE_URL}/classroom`;
+
+  // Mencionados válidos: != autor, deduplicados, y que existan como perfil.
+  const mentionCandidates = [
+    ...new Set(params.mentions.filter((id) => id && id !== params.actorId)),
+  ];
+
+  let validMentions: Array<{ id: string; full_name: string | null; email: string | null }> = [];
+  if (mentionCandidates.length > 0) {
+    const { data } = await admin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", mentionCandidates);
+    validMentions = (data ?? []) as Array<{
+      id: string;
+      full_name: string | null;
+      email: string | null;
+    }>;
+  }
+
+  // Notificaciones 'mention' (una por mencionado válido).
+  if (validMentions.length > 0) {
+    await admin.from("conversation_notifications").insert(
+      validMentions.map((m) => ({
+        user_id: m.id,
+        actor_id: params.actorId,
+        type: "mention",
+        thread_id: params.threadId,
+        comment_id: params.commentId,
+      })),
+    );
+  }
+
+  // Email al autor del hilo ('reply') si comenta otra persona.
+  const emailJobs: Array<Promise<unknown>> = [];
+
+  if (params.threadAuthorId !== params.actorId) {
+    const { data: authorProfile } = await admin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", params.threadAuthorId)
+      .maybeSingle();
+
+    if (authorProfile?.email) {
+      emailJobs.push(
+        sendConversacionNotificationEmail({
+          to: authorProfile.email,
+          recipientName: authorProfile.full_name ?? "",
+          actorName: params.actorName,
+          threadTitle: params.threadTitle,
+          kind: "reply",
+          url,
+        }),
+      );
+    }
+  }
+
+  // Email a cada mencionado ('mention').
+  for (const m of validMentions) {
+    if (!m.email) continue;
+    emailJobs.push(
+      sendConversacionNotificationEmail({
+        to: m.email,
+        recipientName: m.full_name ?? "",
+        actorName: params.actorName,
+        threadTitle: params.threadTitle,
+        kind: "mention",
+        url,
+      }),
+    );
+  }
+
+  await Promise.allSettled(emailJobs);
+}
 
 // ── POST /api/classroom/conversaciones/comments ─────────────────────
 // Crea un comentario (o reply, con 1 solo nivel vía parentId).
@@ -51,11 +156,12 @@ export async function POST(req: Request) {
   }
 
   const { threadId, parentId } = parsed.data;
+  const mentions = parsed.data.mentions ?? [];
   const commentBody = stripHtml(parsed.data.body);
 
   const { data: thread, error: threadError } = await supabase
     .from("conversation_threads")
-    .select("id, is_locked")
+    .select("id, is_locked, author_id, title, program_id")
     .eq("id", threadId)
     .maybeSingle();
 
@@ -108,6 +214,34 @@ export async function POST(req: Request) {
       { error: "Error al crear el comentario" },
       { status: 500 },
     );
+  }
+
+  // Menciones + emails (best-effort): no bloquea ni falla la respuesta.
+  try {
+    const authorName =
+      (data.author as { full_name?: string | null } | null)?.full_name ?? "Alguien";
+
+    // Slug de una cohorte del programa para armar el enlace del email.
+    const { data: cohort } = await supabase
+      .from("cohorts")
+      .select("slug")
+      .eq("program_id", thread.program_id)
+      .not("slug", "is", null)
+      .limit(1)
+      .maybeSingle();
+
+    await notifyAndEmail({
+      threadId,
+      commentId: data.id,
+      threadAuthorId: thread.author_id,
+      threadTitle: thread.title,
+      actorId: user.id,
+      actorName: authorName,
+      mentions,
+      cohortSlug: cohort?.slug ?? null,
+    });
+  } catch (err) {
+    console.error("conversaciones comments notify error", err);
   }
 
   return NextResponse.json(

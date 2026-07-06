@@ -3,11 +3,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Bookmark, Loader2 } from "lucide-react";
+import { Bookmark, Loader2, RefreshCw } from "lucide-react";
 import type { ThreadDetail, ConversationComment } from "@/lib/conversaciones/queries";
 import { categoryLabel } from "@/lib/conversaciones/categories";
 import { linkify } from "@/lib/conversaciones/linkify";
+import { createClient } from "@/lib/supabase/client";
 import { ReactionButton } from "./reaction-button";
+
+// ── Miembros (typeahead de menciones) ──────────────────────────
+
+type Member = { id: string; full_name: string };
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Renderiza el cuerpo de un comentario resaltando las menciones `@Nombre`
+ * (violeta) de miembros conocidos, y aplica `linkify` al resto del texto para
+ * no romper los enlaces. Si aún no hay miembros cargados, cae a `linkify`.
+ */
+function renderWithMentions(text: string, memberNames: string[]): ReactNode {
+  if (memberNames.length === 0) return linkify(text);
+
+  // Nombres más largos primero para preferir el match completo.
+  const sorted = [...memberNames].sort((a, b) => b.length - a.length);
+  const pattern = new RegExp(`(@(?:${sorted.map(escapeRegExp).join("|")}))`, "g");
+  const parts = text.split(pattern);
+
+  return parts.map((part, i) => {
+    // Índices impares = grupos capturados (menciones).
+    if (i % 2 === 1) {
+      return (
+        <span key={i} className="rounded bg-ca-violet/[0.1] px-0.5 font-semibold text-ca-violet">
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{linkify(part)}</span>;
+  });
+}
 
 // ── Time helper (copiado de comment-section.tsx) ───────────────
 
@@ -116,6 +151,7 @@ function CommentInput({
   initials,
   avatarUrl,
   placeholder,
+  members,
   onSubmit,
   onCancel,
   autoFocus = false,
@@ -124,13 +160,20 @@ function CommentInput({
   initials: string;
   avatarUrl?: string | null;
   placeholder: string;
-  onSubmit: (body: string) => void;
+  members: Member[];
+  onSubmit: (body: string, mentions: string[]) => void;
   onCancel?: () => void;
   autoFocus?: boolean;
   compact?: boolean;
 }) {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(autoFocus);
+  // Ids de miembros mencionados (se agregan al elegir del typeahead).
+  const [mentions, setMentions] = useState<string[]>([]);
+  // Estado del typeahead: query tras la "@" y posición de esa "@" en el texto.
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [atIndex, setAtIndex] = useState<number>(-1);
+  const [activeOption, setActiveOption] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -139,21 +182,105 @@ function CommentInput({
     }
   }, [autoFocus]);
 
+  // Detecta el token "@…" inmediatamente antes del cursor para el typeahead.
+  const detectMention = (text: string, caret: number) => {
+    const upToCaret = text.slice(0, caret);
+    const match = upToCaret.match(/@([^@\n]*)$/);
+    if (match) {
+      setAtIndex(caret - match[0].length);
+      setMentionQuery(match[1]);
+      setActiveOption(0);
+    } else {
+      setMentionQuery(null);
+      setAtIndex(-1);
+    }
+  };
+
+  const suggestions = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase().trim();
+    return members
+      .filter((m) => (q ? m.full_name.toLowerCase().includes(q) : true))
+      .slice(0, 6);
+  }, [members, mentionQuery]);
+
+  const showTypeahead = mentionQuery !== null && suggestions.length > 0;
+
+  const selectMention = (member: Member) => {
+    if (atIndex < 0) return;
+    const caret = inputRef.current?.selectionStart ?? value.length;
+    const before = value.slice(0, atIndex);
+    const after = value.slice(caret);
+    const inserted = `@${member.full_name} `;
+    const next = `${before}${inserted}${after}`;
+    setValue(next);
+    setMentions((prev) => (prev.includes(member.id) ? prev : [...prev, member.id]));
+    setMentionQuery(null);
+    setAtIndex(-1);
+    // Reposiciona el cursor tras la mención insertada.
+    requestAnimationFrame(() => {
+      const pos = before.length + inserted.length;
+      const el = inputRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      }
+    });
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setValue(text);
+    detectMention(text, e.target.selectionStart ?? text.length);
+  };
+
   const handleSubmit = () => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    onSubmit(trimmed);
+    // Solo las menciones cuyo "@Nombre" sigue presente en el texto final.
+    const kept = mentions.filter((id) => {
+      const name = members.find((m) => m.id === id)?.full_name;
+      return name ? trimmed.includes(`@${name}`) : false;
+    });
+    onSubmit(trimmed, kept);
     setValue("");
+    setMentions([]);
+    setMentionQuery(null);
     setFocused(false);
   };
 
   const handleCancel = () => {
     setValue("");
+    setMentions([]);
+    setMentionQuery(null);
     setFocused(false);
     onCancel?.();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showTypeahead) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveOption((i) => (i + 1) % suggestions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveOption((i) => (i - 1 + suggestions.length) % suggestions.length);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        selectMention(suggestions[activeOption]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMentionQuery(null);
+        setAtIndex(-1);
+        return;
+      }
+    }
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit();
@@ -166,13 +293,14 @@ function CommentInput({
   return (
     <div className="flex gap-3">
       <Avatar initials={initials} avatarUrl={avatarUrl} isCurrentUser size={compact ? 28 : 32} />
-      <div className="flex-1">
+      <div className="relative flex-1">
         <textarea
           ref={inputRef}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={handleChange}
           onFocus={() => setFocused(true)}
           onKeyDown={handleKeyDown}
+          onClick={(e) => detectMention(value, e.currentTarget.selectionStart ?? value.length)}
           placeholder={placeholder}
           aria-label={placeholder}
           rows={focused ? 3 : 1}
@@ -180,6 +308,36 @@ function CommentInput({
             focused ? "min-h-[72px]" : "min-h-[38px]"
           }`}
         />
+
+        {showTypeahead && (
+          <ul
+            role="listbox"
+            aria-label="Sugerencias de mención"
+            className="absolute left-0 top-full z-20 mt-1 max-h-56 w-full max-w-[280px] overflow-auto rounded-lg border border-ca-ink/[0.08] bg-ca-surface py-1 shadow-lg"
+          >
+            {suggestions.map((m, i) => (
+              <li key={m.id} role="option" aria-selected={i === activeOption}>
+                <button
+                  type="button"
+                  // onMouseDown para no perder el foco del textarea antes del click.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    selectMention(m);
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12.5px] transition-colors ${
+                    i === activeOption ? "bg-ca-violet/[0.08] text-ca-violet" : "text-ca-ink hover:bg-ca-bg-soft"
+                  }`}
+                >
+                  <span className="shape-circle inline-grid h-6 w-6 shrink-0 place-items-center bg-ca-violet text-[10px] font-bold text-white">
+                    {getInitials(m.full_name)}
+                  </span>
+                  <span className="truncate font-semibold">{m.full_name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {focused && (
           <div className="mt-2 flex items-center justify-end gap-2">
             <button
@@ -207,10 +365,12 @@ function CommentInput({
 function ReplyItem({
   reply,
   viewerId,
+  memberNames,
   onDelete,
 }: {
   reply: ConversationComment;
   viewerId: string;
+  memberNames: string[];
   onDelete: (id: string) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
@@ -245,7 +405,7 @@ function ReplyItem({
           <span className="text-[10px] text-ca-ink-soft">{timeAgo(reply.created_at)}</span>
         </div>
         <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ca-ink">
-          {linkify(reply.body)}
+          {renderWithMentions(reply.body, memberNames)}
         </p>
         <div className="mt-1">
           <ReactionButton
@@ -296,6 +456,8 @@ function CommentItem({
   viewerAvatarUrl,
   locked,
   replies,
+  members,
+  memberNames,
   onReply,
   onDelete,
 }: {
@@ -305,7 +467,9 @@ function CommentItem({
   viewerAvatarUrl?: string | null;
   locked: boolean;
   replies: ConversationComment[];
-  onReply: (parentId: string, body: string) => void;
+  members: Member[];
+  memberNames: string[];
+  onReply: (parentId: string, body: string, mentions: string[]) => void;
   onDelete: (id: string) => void;
 }) {
   const [showReplies, setShowReplies] = useState(replies.length <= 2);
@@ -345,7 +509,7 @@ function CommentItem({
           </div>
 
           <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ca-ink">
-            {linkify(comment.body)}
+            {renderWithMentions(comment.body, memberNames)}
           </p>
 
           <div className="mt-1.5 flex items-center gap-3">
@@ -407,7 +571,13 @@ function CommentItem({
           )}
 
           {(showReplies ? replies : replies.slice(0, 2)).map((reply) => (
-            <ReplyItem key={reply.id} reply={reply} viewerId={viewerId} onDelete={onDelete} />
+            <ReplyItem
+              key={reply.id}
+              reply={reply}
+              viewerId={viewerId}
+              memberNames={memberNames}
+              onDelete={onDelete}
+            />
           ))}
 
           {replies.length > 2 && showReplies && (
@@ -427,8 +597,9 @@ function CommentItem({
             initials={viewerInitials}
             avatarUrl={viewerAvatarUrl}
             placeholder="Escribe una respuesta…"
-            onSubmit={(body) => {
-              onReply(comment.id, body);
+            members={members}
+            onSubmit={(body, mentions) => {
+              onReply(comment.id, body, mentions);
               setShowReplyInput(false);
             }}
             onCancel={() => setShowReplyInput(false)}
@@ -477,10 +648,63 @@ export function ThreadDetail({
   const [showThreadMenu, setShowThreadMenu] = useState(false);
   const [moderating, setModerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [hasNewComments, setHasNewComments] = useState(false);
   const threadMenuRef = useRef<HTMLDivElement>(null);
 
   const isAuthor = thread.author.id === viewerId;
   const canManageThread = isStaff || isAuthor;
+
+  const memberNames = useMemo(() => members.map((m) => m.full_name), [members]);
+
+  // Carga única de miembros del programa para el typeahead de menciones.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/classroom/conversaciones/members?programId=${encodeURIComponent(thread.program_id)}`,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setMembers((data.members ?? []) as Member[]);
+      } catch {
+        // typeahead opcional: si falla, el comentario sigue funcionando
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [thread.program_id]);
+
+  // Realtime: avisa (sin renderizar el comentario crudo) cuando entra un
+  // comentario de OTRA persona en este hilo. El RLS del cliente browser filtra
+  // a los hilos que el viewer puede leer.
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`thread-${thread.id}-comments`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_comments",
+          filter: `thread_id=eq.${thread.id}`,
+        },
+        (payload) => {
+          const row = payload.new as { author_id?: string };
+          if (row.author_id && row.author_id !== viewerId) {
+            setHasNewComments(true);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [thread.id, viewerId]);
 
   useEffect(() => {
     if (!showThreadMenu) return;
@@ -605,7 +829,7 @@ export function ThreadDetail({
   }, [comments]);
 
   const handleAddComment = useCallback(
-    async (body: string) => {
+    async (body: string, mentions: string[]) => {
       const optimistic: ConversationComment = {
         id: `temp-${Date.now()}`,
         body,
@@ -621,7 +845,7 @@ export function ThreadDetail({
         const res = await fetch("/api/classroom/conversaciones/comments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ threadId: thread.id, body }),
+          body: JSON.stringify({ threadId: thread.id, body, mentions }),
         });
         if (!res.ok) throw new Error("Error al crear comentario");
         const data = await res.json();
@@ -634,7 +858,7 @@ export function ThreadDetail({
   );
 
   const handleAddReply = useCallback(
-    async (parentId: string, body: string) => {
+    async (parentId: string, body: string, mentions: string[]) => {
       const optimistic: ConversationComment = {
         id: `temp-${Date.now()}`,
         body,
@@ -650,7 +874,7 @@ export function ThreadDetail({
         const res = await fetch("/api/classroom/conversaciones/comments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ threadId: thread.id, body, parentId }),
+          body: JSON.stringify({ threadId: thread.id, body, parentId, mentions }),
         });
         if (!res.ok) throw new Error("Error al crear respuesta");
         const data = await res.json();
@@ -804,6 +1028,20 @@ export function ThreadDetail({
           {comments.length} {comments.length === 1 ? "comentario" : "comentarios"}
         </h2>
 
+        {hasNewComments && (
+          <button
+            type="button"
+            onClick={() => {
+              setHasNewComments(false);
+              router.refresh();
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-ca-violet/[0.1] px-3 py-1.5 text-[12px] font-semibold text-ca-violet transition-colors hover:bg-ca-violet/[0.16]"
+          >
+            <RefreshCw size={13} />
+            Hay comentarios nuevos
+          </button>
+        )}
+
         {isLocked ? (
           <div className="rounded-lg border border-ca-ink/[0.08] bg-ca-bg-soft px-4 py-3 text-[13px] text-ca-ink-soft">
             Esta conversación está cerrada.
@@ -813,6 +1051,7 @@ export function ThreadDetail({
             initials={viewerInitials}
             avatarUrl={viewerAvatarUrl}
             placeholder="Escribe un comentario…"
+            members={members}
             onSubmit={handleAddComment}
           />
         )}
@@ -832,6 +1071,8 @@ export function ThreadDetail({
                 viewerAvatarUrl={viewerAvatarUrl}
                 locked={isLocked}
                 replies={repliesMap.get(comment.id) ?? []}
+                members={members}
+                memberNames={memberNames}
                 onReply={handleAddReply}
                 onDelete={handleDeleteComment}
               />

@@ -1728,6 +1728,54 @@ export type Database = {
           },
         ]
       }
+      conversation_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          actor_id: string | null
+          type: string
+          thread_id: string | null
+          comment_id: string | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          actor_id?: string | null
+          type: string
+          thread_id?: string | null
+          comment_id?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          actor_id?: string | null
+          type?: string
+          thread_id?: string | null
+          comment_id?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notifications_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

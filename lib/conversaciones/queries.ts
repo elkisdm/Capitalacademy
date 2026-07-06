@@ -169,10 +169,11 @@ const COMMENT_SELECT = `
 export async function getProgramThreads(
   programId: string,
   viewerId: string,
-  opts?: { sort?: "recent" | "top"; limit?: number },
+  opts?: { sort?: "recent" | "top"; limit?: number; offset?: number },
 ): Promise<ThreadListItem[]> {
   const supabase = await createClient();
   const limit = opts?.limit ?? DEFAULT_LIST_LIMIT;
+  const offset = opts?.offset ?? 0;
 
   const { data, error } = await supabase
     .from("conversation_threads")
@@ -180,7 +181,7 @@ export async function getProgramThreads(
     .eq("program_id", programId)
     .order("is_pinned", { ascending: false })
     .order("last_activity_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
 
   if (error || !data) return [];
 

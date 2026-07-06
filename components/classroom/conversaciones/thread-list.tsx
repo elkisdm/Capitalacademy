@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Loader2 } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { ThreadListItem } from "@/lib/conversaciones/queries";
 import {
@@ -95,6 +95,9 @@ function TeamBadge() {
 
 type SortMode = "recent" | "top" | "unanswered";
 
+// Debe coincidir con DEFAULT_LIST_LIMIT del server (getProgramThreads).
+const PAGE_SIZE = 50;
+
 const SORT_TABS: Array<{ key: SortMode; label: string }> = [
   { key: "recent", label: "Recientes" },
   { key: "top", label: "Populares" },
@@ -128,6 +131,50 @@ export function ThreadList({
   const searchParams = useSearchParams();
 
   const [threads, setThreads] = useState<ThreadListItem[]>(initialThreads);
+
+  // Infinite scroll: `offset` = filas ya consumidas de la BD; `hasMore` se
+  // apaga cuando una página vuelve con < PAGE_SIZE. El filtrado client-side
+  // (categoría/búsqueda/orden/guardados) opera sobre la lista acumulada.
+  const [offset, setOffset] = useState(initialThreads.length);
+  const [hasMore, setHasMore] = useState(initialThreads.length >= PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/classroom/conversaciones?programId=${encodeURIComponent(programId)}&offset=${offset}`,
+      );
+      if (!res.ok) throw new Error("Error al cargar más conversaciones");
+      const data = await res.json();
+      const next = (data.threads ?? []) as ThreadListItem[];
+      setThreads((prev) => {
+        const seen = new Set(prev.map((t) => t.id));
+        return [...prev, ...next.filter((t) => !seen.has(t.id))];
+      });
+      setOffset((o) => o + next.length);
+      if (next.length < PAGE_SIZE) setHasMore(false);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, offset, programId]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   // Estado (categoría/orden/búsqueda) reflejado en la URL para que sea
   // compartible y respete el botón "atrás". El filtrado sigue en cliente
@@ -432,6 +479,23 @@ export function ThreadList({
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Sentinela de infinite scroll: al entrar en viewport carga la página
+          siguiente desde la BD. El observer se re-arma vía `hasMore`. */}
+      {hasMore && (
+        <div ref={sentinelRef} className="flex items-center justify-center py-4">
+          {loadingMore && (
+            <span
+              className="inline-flex items-center gap-2 text-[12px] font-semibold text-ca-ink-soft"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 size={14} className="animate-spin" />
+              Cargando más…
+            </span>
+          )}
         </div>
       )}
     </div>

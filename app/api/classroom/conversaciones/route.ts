@@ -55,8 +55,15 @@ export async function GET(req: Request) {
     );
   }
 
+  const offsetParam = searchParams.get("offset");
+  const offset = offsetParam ? Number.parseInt(offsetParam, 10) : 0;
+  if (Number.isNaN(offset) || offset < 0) {
+    return NextResponse.json({ error: "offset inválido" }, { status: 422 });
+  }
+
   const threads = await getProgramThreads(programId, user.id, {
     sort: sortParsed.data,
+    offset,
   });
 
   return NextResponse.json({ threads });

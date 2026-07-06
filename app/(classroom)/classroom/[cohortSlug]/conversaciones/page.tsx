@@ -8,6 +8,7 @@ import { getCohortWithProgram } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { getProgramThreads } from "@/lib/conversaciones/queries";
 import { ThreadList } from "@/components/classroom/conversaciones/thread-list";
+import { NotificationBell } from "@/components/classroom/conversaciones/notification-bell";
 
 export const metadata: Metadata = {
   title: "Conversaciones · Capital Academy",
@@ -52,17 +53,22 @@ export default async function ConversacionesPage(
 
   return (
     <div className="ca-fade-up mx-auto max-w-4xl px-4 py-8 md:px-8 md:py-10">
-      <div className="mb-7">
-        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-ca-violet/[0.08] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-ca-violet">
-          <MessageCircle className="h-3.5 w-3.5" />
-          Conversaciones
+      <div className="mb-7 flex items-start justify-between gap-4">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-ca-violet/[0.08] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-ca-violet">
+            <MessageCircle className="h-3.5 w-3.5" />
+            Conversaciones
+          </div>
+          <h1 className="text-[28px] font-black leading-tight tracking-tight text-ca-ink md:text-[34px]">
+            Comunidad de {program.name}
+          </h1>
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ca-ink-soft">
+            Comparte dudas, avances y aprendizajes con el resto de tus compañeros del programa.
+          </p>
         </div>
-        <h1 className="text-[28px] font-black leading-tight tracking-tight text-ca-ink md:text-[34px]">
-          Comunidad de {program.name}
-        </h1>
-        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ca-ink-soft">
-          Comparte dudas, avances y aprendizajes con el resto de tus compañeros del programa.
-        </p>
+        <div className="shrink-0 pt-1">
+          <NotificationBell viewerId={user.id} cohortSlug={cohortSlug} />
+        </div>
       </div>
 
       <ThreadList

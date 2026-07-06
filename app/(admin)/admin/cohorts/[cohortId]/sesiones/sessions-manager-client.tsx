@@ -13,6 +13,7 @@ import { MonthCalendar } from "@/components/classroom/month-calendar";
 import { SessionQuizPanel } from "@/components/admin/quiz/session-quiz-panel";
 import { SessionRecordingPanel } from "@/components/admin/session-recording-panel";
 import { SessionQrButton } from "@/components/admin/session-qr";
+import { SessionAttendancePanel } from "@/components/admin/session-attendance-panel";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -500,6 +501,12 @@ export function SessionsManagerClient({
             reproductor completo (progreso, transcripción, resumen IA) desde la pantalla de la clase.
           </p>
           <SessionRecordingPanel sessionId={editing.id} />
+        </div>
+      )}
+
+      {editing && (
+        <div className="mb-6">
+          <SessionAttendancePanel sessionId={editing.id} />
         </div>
       )}
 

@@ -112,7 +112,7 @@ export function Avatar({
       style={{ width: size, height: size, fontSize: Math.max(10, size * 0.36) }}
     >
       {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+        <Image src={avatarUrl} alt="" width={size} height={size} className="h-full w-full rounded-full object-cover" />
       ) : (
         initials
       )}

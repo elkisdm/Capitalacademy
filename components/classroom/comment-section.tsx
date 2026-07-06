@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import Image from "next/image";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -155,7 +156,7 @@ function CommentAvatar({
       }}
     >
       {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+        <Image src={avatarUrl} alt="" width={size} height={size} className="h-full w-full rounded-full object-cover" />
       ) : (
         initials
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { formatRut, cleanRut, isValidRut } from "@/lib/utils/rut";
 import { BrandShapes } from "@/components/classroom/primitives";
@@ -493,7 +494,7 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
               }}
             >
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                <Image src={profile.avatar_url} alt="" width={96} height={96} className="h-full w-full rounded-full object-cover" />
               ) : (
                 initials
               )}

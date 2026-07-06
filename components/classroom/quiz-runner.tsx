@@ -2,11 +2,32 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { QuizStart } from "./quiz-start";
-import { QuizInProgress } from "./quiz-in-progress";
 import { QuizLocked } from "./quiz-locked";
-import QuizResultPass from "./quiz-result-pass";
-import QuizResultFail from "./quiz-result-fail";
+
+// Pantallas de llegada (QuizStart / QuizLocked) van eager. Las que aparecen tras
+// una acción del alumno —siempre con un fetch de por medio (iniciar/enviar)— se
+// cargan on-demand para no inflar el bundle inicial de la página de quiz; el
+// breve loader queda enmascarado por ese fetch.
+function QuizPhaseLoader() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-ca-violet border-t-transparent" />
+    </div>
+  );
+}
+
+const QuizInProgress = dynamic(
+  () => import("./quiz-in-progress").then((m) => m.QuizInProgress),
+  { loading: QuizPhaseLoader },
+);
+const QuizResultPass = dynamic(() => import("./quiz-result-pass"), {
+  loading: QuizPhaseLoader,
+});
+const QuizResultFail = dynamic(() => import("./quiz-result-fail"), {
+  loading: QuizPhaseLoader,
+});
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */

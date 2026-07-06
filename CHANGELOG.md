@@ -7,6 +7,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Changed
+- El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)
+- La pantalla de una conversación carga más liviana y rápida: dejó de enviarse el procesador de texto al navegador y los avatares se optimizan automáticamente (`db2c32d`)
+
 ### Security
 - Los datos personales sensibles de un alumno (RUT, dirección, contacto de emergencia, fecha de nacimiento) ya no son visibles para sus compañeros de programa; en el foro y los comentarios solo se comparte nombre y avatar. Además, los egresados vuelven a tener acceso a las grabaciones de sus clases en vivo (`4925e11`)
 

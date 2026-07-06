@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { TranscriptPanel } from "@/components/classroom/transcript-panel";
-import { useVideoSync } from "@/components/classroom/video-sync-context";
+import { useVideoSyncActions, useVideoSyncTime } from "@/components/classroom/video-sync-context";
 
 const LS_KEY = "ca-playlist-collapsed";
 
@@ -33,7 +33,8 @@ export function CollapsiblePlaylist({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mode, setMode] = useState<SidebarMode>("playlist");
   const [transcriptKey, setTranscriptKey] = useState(0);
-  const { currentTime, seekRef, openTranscriptRef } = useVideoSync();
+  const { seekRef, openTranscriptRef } = useVideoSyncActions();
+  const currentTime = useVideoSyncTime();
   const trapRef = useFocusTrap(mobileOpen);
   const hasTranscript = !!transcriptVtt;
 

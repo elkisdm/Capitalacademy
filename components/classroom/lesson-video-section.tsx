@@ -5,7 +5,7 @@ import { VideoPlayer } from "@/components/classroom/video-player";
 import { SummaryCard } from "@/components/classroom/summary-card";
 import { CommentSection } from "@/components/classroom/comment-section";
 import { ResourceList } from "@/components/classroom/resource-list";
-import { useVideoSync } from "@/components/classroom/video-sync-context";
+import { useVideoSyncActions } from "@/components/classroom/video-sync-context";
 import type { LessonResource } from "@/lib/classroom/types";
 
 type Tab = "resumen" | "recursos" | "comentarios";
@@ -53,7 +53,7 @@ export function LessonVideoSection({
   currentUserAvatarUrl,
   hasTranscript = false,
 }: LessonVideoSectionProps) {
-  const { currentTime, setCurrentTime, seekRef, openTranscriptRef } = useVideoSync();
+  const { setCurrentTime, seekRef, openTranscriptRef } = useVideoSyncActions();
   const hasResources = resources.length > 0;
   const hasSummary = !!summary;
 

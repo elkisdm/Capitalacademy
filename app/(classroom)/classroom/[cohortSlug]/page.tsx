@@ -229,7 +229,7 @@ export default async function CohortDashboardPage(
               <span className="shape-circle ca-pulse h-1.5 w-1.5 bg-ca-lime" />
               {program.code} · {cohort.name}
             </div>
-            <h1 className="text-[28px] font-black leading-[0.95] tracking-[-0.035em] md:text-[44px] lg:text-[56px]">
+            <h1 className="max-w-[20ch] text-balance text-[26px] font-black leading-[1.02] tracking-[-0.03em] md:text-[36px] lg:text-[44px]">
               {program.name}
             </h1>
             {program.description && (
@@ -270,7 +270,7 @@ export default async function CohortDashboardPage(
             </div>
           </div>
 
-          <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-md">
+          <div className="relative self-start rounded-3xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-md">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Tu progreso</div>
             </div>

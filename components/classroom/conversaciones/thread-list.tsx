@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Bookmark } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { ThreadListItem } from "@/lib/conversaciones/queries";
 import {
@@ -137,6 +138,7 @@ export function ThreadList({
   const sort: SortMode =
     sortParam === "top" || sortParam === "unanswered" ? sortParam : "recent";
   const search = searchParams.get("q") ?? "";
+  const savedOnly = searchParams.get("saved") === "1";
 
   const updateParams = useCallback(
     (patch: Record<string, string | null>) => {
@@ -163,6 +165,10 @@ export function ThreadList({
     (value: string) => updateParams({ q: value || null }),
     [updateParams],
   );
+  const setSavedOnly = useCallback(
+    (value: boolean) => updateParams({ saved: value ? "1" : null }),
+    [updateParams],
+  );
 
   const handleCreated = (thread: ThreadListItemLike) => {
     const full: ThreadListItem = {
@@ -175,13 +181,46 @@ export function ThreadList({
       },
       reaction_count: 0,
       viewer_reacted: false,
+      viewer_bookmarked: false,
     };
     setThreads((prev) => [full, ...prev]);
   };
 
+  const toggleBookmark = useCallback(
+    async (threadId: string) => {
+      const current = threads.find((t) => t.id === threadId);
+      const prev = current?.viewer_bookmarked ?? false;
+
+      setThreads((list) =>
+        list.map((t) => (t.id === threadId ? { ...t, viewer_bookmarked: !prev } : t)),
+      );
+
+      try {
+        const res = await fetch("/api/classroom/conversaciones/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ threadId }),
+        });
+        if (!res.ok) throw new Error("Error al guardar");
+        const data = await res.json();
+        setThreads((list) =>
+          list.map((t) =>
+            t.id === threadId ? { ...t, viewer_bookmarked: data.bookmarked } : t,
+          ),
+        );
+      } catch {
+        setThreads((list) =>
+          list.map((t) => (t.id === threadId ? { ...t, viewer_bookmarked: prev } : t)),
+        );
+      }
+    },
+    [threads],
+  );
+
   const visible = useMemo(() => {
     const q = search.toLowerCase().trim();
     let list = threads.filter((t) => {
+      if (savedOnly && !t.viewer_bookmarked) return false;
       if (activeCategory !== "all" && t.category !== activeCategory) return false;
       if (q) {
         const haystack = `${t.title} ${t.body}`.toLowerCase();
@@ -206,9 +245,10 @@ export function ThreadList({
       });
     }
     return list;
-  }, [threads, activeCategory, search, sort]);
+  }, [threads, activeCategory, search, sort, savedOnly]);
 
-  const hasFilters = activeCategory !== "all" || search.trim() !== "" || sort !== "recent";
+  const hasFilters =
+    activeCategory !== "all" || search.trim() !== "" || sort !== "recent" || savedOnly;
 
   return (
     <div className="flex flex-col gap-5">
@@ -256,7 +296,7 @@ export function ThreadList({
           autoComplete="off"
           className="w-full rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13px] text-ca-ink placeholder:text-ca-ink-soft/60 outline-none transition-colors focus:border-ca-violet sm:max-w-xs"
         />
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {SORT_TABS.map((tab) => (
             <button
               key={tab.key}
@@ -272,12 +312,36 @@ export function ThreadList({
               {tab.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setSavedOnly(!savedOnly)}
+            aria-pressed={savedOnly}
+            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+              savedOnly
+                ? "bg-ca-violet/[0.1] text-ca-violet"
+                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+            }`}
+          >
+            <Bookmark
+              size={13}
+              fill={savedOnly ? "currentColor" : "none"}
+              strokeWidth={savedOnly ? 0 : 1.75}
+            />
+            Guardados
+          </button>
         </div>
       </div>
 
       {visible.length === 0 ? (
         <div className="ca-card flex flex-col items-center justify-center p-16 text-center">
-          {hasFilters ? (
+          {savedOnly ? (
+            <>
+              <p className="text-[14px] font-bold text-ca-ink">Aún no has guardado conversaciones</p>
+              <p className="mt-1 text-[13px] text-ca-ink-soft">
+                Toca el ícono de guardar en una conversación para volver a ella más tarde.
+              </p>
+            </>
+          ) : hasFilters ? (
             <>
               <p className="text-[14px] font-bold text-ca-ink">No hay conversaciones que coincidan</p>
               <p className="mt-1 text-[13px] text-ca-ink-soft">
@@ -324,6 +388,29 @@ export function ThreadList({
                       🔒 Cerrado
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleBookmark(t.id);
+                    }}
+                    aria-pressed={t.viewer_bookmarked}
+                    aria-label={
+                      t.viewer_bookmarked ? "Quitar de guardados" : "Guardar conversación"
+                    }
+                    className={`rounded-full p-1.5 transition-colors ${
+                      t.viewer_bookmarked
+                        ? "text-ca-violet"
+                        : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                    }`}
+                  >
+                    <Bookmark
+                      size={15}
+                      fill={t.viewer_bookmarked ? "currentColor" : "none"}
+                      strokeWidth={t.viewer_bookmarked ? 0 : 1.75}
+                    />
+                  </button>
                 </div>
               </div>
 

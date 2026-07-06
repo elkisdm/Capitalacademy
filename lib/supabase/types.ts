@@ -1695,6 +1695,39 @@ export type Database = {
           },
         ]
       }
+      conversation_bookmarks: {
+        Row: {
+          user_id: string
+          thread_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          thread_id: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          thread_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_bookmarks_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

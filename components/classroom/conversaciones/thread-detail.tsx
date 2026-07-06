@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Bookmark, Loader2 } from "lucide-react";
 import type { ThreadDetail, ConversationComment } from "@/lib/conversaciones/queries";
 import { categoryLabel } from "@/lib/conversaciones/categories";
+import { linkify } from "@/lib/conversaciones/linkify";
 import { ReactionButton } from "./reaction-button";
 
 // ── Time helper (copiado de comment-section.tsx) ───────────────
@@ -243,7 +244,9 @@ function ReplyItem({
           <span className="text-[12px] font-bold text-ca-ink">{reply.author.full_name}</span>
           <span className="text-[10px] text-ca-ink-soft">{timeAgo(reply.created_at)}</span>
         </div>
-        <p className="mt-0.5 whitespace-pre-wrap text-[12px] leading-relaxed text-ca-ink">{reply.body}</p>
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ca-ink">
+          {linkify(reply.body)}
+        </p>
         <div className="mt-1">
           <ReactionButton
             targetType="comment"
@@ -341,7 +344,9 @@ function CommentItem({
             <span className="text-[11px] text-ca-ink-soft">{timeAgo(comment.created_at)}</span>
           </div>
 
-          <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-relaxed text-ca-ink">{comment.body}</p>
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ca-ink">
+            {linkify(comment.body)}
+          </p>
 
           <div className="mt-1.5 flex items-center gap-3">
             <ReactionButton
@@ -466,6 +471,8 @@ export function ThreadDetail({
   const router = useRouter();
   const [isPinned, setIsPinned] = useState(thread.is_pinned);
   const [isLocked, setIsLocked] = useState(thread.is_locked);
+  const [bookmarked, setBookmarked] = useState(thread.viewer_bookmarked);
+  const [bookmarking, setBookmarking] = useState(false);
   const [comments, setComments] = useState<ConversationComment[]>(initialComments);
   const [showThreadMenu, setShowThreadMenu] = useState(false);
   const [moderating, setModerating] = useState(false);
@@ -536,6 +543,27 @@ export function ThreadDetail({
       setShowThreadMenu(false);
     }
   }, [moderating, isLocked, thread.id]);
+
+  const handleToggleBookmark = useCallback(async () => {
+    if (bookmarking) return;
+    setBookmarking(true);
+    const prev = bookmarked;
+    setBookmarked(!prev);
+    try {
+      const res = await fetch("/api/classroom/conversaciones/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId: thread.id }),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
+      const data = await res.json();
+      setBookmarked(data.bookmarked);
+    } catch {
+      setBookmarked(prev);
+    } finally {
+      setBookmarking(false);
+    }
+  }, [bookmarking, bookmarked, thread.id]);
 
   const handleDeleteThread = useCallback(async () => {
     if (deleting) return;
@@ -688,6 +716,26 @@ export function ThreadDetail({
                 🔒 Cerrado
               </span>
             )}
+
+            <button
+              type="button"
+              onClick={handleToggleBookmark}
+              disabled={bookmarking}
+              aria-pressed={bookmarked}
+              aria-label={bookmarked ? "Quitar de guardados" : "Guardar conversación"}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors disabled:cursor-not-allowed ${
+                bookmarked
+                  ? "bg-ca-violet/[0.1] text-ca-violet"
+                  : "text-ca-ink-soft hover:bg-ca-bg-soft"
+              }`}
+            >
+              <Bookmark
+                size={14}
+                fill={bookmarked ? "currentColor" : "none"}
+                strokeWidth={bookmarked ? 0 : 1.75}
+              />
+              {bookmarked ? "Guardado" : "Guardar"}
+            </button>
 
             {canManageThread && (
               <div className="relative" ref={threadMenuRef}>

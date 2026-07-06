@@ -21,6 +21,7 @@ export type ThreadListItem = {
   author: ThreadAuthor;
   reaction_count: number;
   viewer_reacted: boolean;
+  viewer_bookmarked: boolean;
 };
 
 export type ConversationComment = {
@@ -47,6 +48,7 @@ export type ThreadDetail = {
   author: ThreadAuthor;
   reaction_count: number;
   viewer_reacted: boolean;
+  viewer_bookmarked: boolean;
 };
 
 const DEFAULT_LIST_LIMIT = 50;
@@ -95,6 +97,32 @@ async function getReactionStatsMap(
   }
 
   return map;
+}
+
+/**
+ * Devuelve el set de `thread_id` guardados por el viewer entre los `ids` dados.
+ * RLS de `conversation_bookmarks` ya filtra a user_id = auth.uid(), pero
+ * mantenemos el `.eq("user_id")` explícito por claridad.
+ */
+async function getBookmarkedSet(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ids: string[],
+  viewerId: string,
+): Promise<Set<string>> {
+  const set = new Set<string>();
+  if (ids.length === 0) return set;
+
+  const { data } = await supabase
+    .from("conversation_bookmarks")
+    .select("thread_id")
+    .eq("user_id", viewerId)
+    .in("thread_id", ids);
+
+  for (const row of (data ?? []) as Array<{ thread_id: string }>) {
+    set.add(row.thread_id);
+  }
+
+  return set;
 }
 
 type ThreadRow = {
@@ -158,9 +186,10 @@ export async function getProgramThreads(
 
   const threads = data as unknown as ThreadRow[];
   const threadIds = threads.map((t) => t.id);
-  const [reactionMap, authorsMap] = await Promise.all([
+  const [reactionMap, authorsMap, bookmarkedSet] = await Promise.all([
     getReactionStatsMap(supabase, "thread_id", threadIds, viewerId),
     getPublicAuthorsMap(threads.map((t) => t.author_id)),
+    getBookmarkedSet(supabase, threadIds, viewerId),
   ]);
 
   const items: ThreadListItem[] = threads.map((t) => {
@@ -178,6 +207,7 @@ export async function getProgramThreads(
       author: authorsMap.get(t.author_id) ?? FALLBACK_AUTHOR,
       reaction_count: stats.count,
       viewer_reacted: stats.viewerReacted,
+      viewer_bookmarked: bookmarkedSet.has(t.id),
     };
   });
 
@@ -218,14 +248,16 @@ export async function getThreadWithComments(
   const commentRows = (commentData ?? []) as unknown as CommentRow[];
   const commentIds = commentRows.map((c) => c.id);
 
-  const [threadReactions, commentReactions, authorsMap] = await Promise.all([
-    getReactionStatsMap(supabase, "thread_id", [threadId], viewerId),
-    getReactionStatsMap(supabase, "comment_id", commentIds, viewerId),
-    getPublicAuthorsMap([
-      threadRow.author_id,
-      ...commentRows.map((c) => c.author_id),
-    ]),
-  ]);
+  const [threadReactions, commentReactions, authorsMap, bookmarkedSet] =
+    await Promise.all([
+      getReactionStatsMap(supabase, "thread_id", [threadId], viewerId),
+      getReactionStatsMap(supabase, "comment_id", commentIds, viewerId),
+      getPublicAuthorsMap([
+        threadRow.author_id,
+        ...commentRows.map((c) => c.author_id),
+      ]),
+      getBookmarkedSet(supabase, [threadId], viewerId),
+    ]);
 
   const threadStats = threadReactions.get(threadId) ?? { count: 0, viewerReacted: false };
 
@@ -243,6 +275,7 @@ export async function getThreadWithComments(
     author: authorsMap.get(threadRow.author_id) ?? FALLBACK_AUTHOR,
     reaction_count: threadStats.count,
     viewer_reacted: threadStats.viewerReacted,
+    viewer_bookmarked: bookmarkedSet.has(threadId),
   };
 
   const comments: ConversationComment[] = commentRows.map((c) => {

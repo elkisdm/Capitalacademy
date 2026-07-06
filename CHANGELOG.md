@@ -25,6 +25,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Al usar "Ver como Alumno", el staff ahora ve el classroom del entorno seleccionado en el switcher. Antes, si el usuario estaba matriculado en varios programas, siempre se abría el mismo (el de su matrícula más reciente) sin importar el entorno elegido (`310ab5b`)
 
 ### Added
+- Conversaciones ahora se organiza y se busca: al abrir una conversación eliges una categoría (General, Dudas, Recursos, Logros, Presentaciones), el feed se filtra por categoría, se puede buscar por texto y ordenar por "Sin responder" (además de Recientes y Populares). Las respuestas del equipo se marcan con una insignia, y el filtro queda en el enlace para compartirlo (`71199fd`)
 - Nuevo espacio "Conversaciones" en el menú del alumno: un foro de comunidad del programa donde cualquiera abre una conversación (con título y contenido) y responde en hilos con reacciones, al estilo de Skool. El feed es compartido por todo el programa, no por generación (`2668ee1`)
 - En el editor de lección, si Mux no pudo procesar el último video ahora aparece un aviso con el detalle del error y la sugerencia de volver a subirlo, en vez de quedar en un estado ambiguo (`35a3dae`)
 - El selector de entorno ahora también aparece en "Ver como Alumno": el staff puede saltar entre programas mientras previsualiza el classroom, sin tener que volver a la vista de admin para cambiarlo (`8804b33`)

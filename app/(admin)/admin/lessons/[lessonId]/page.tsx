@@ -51,6 +51,7 @@ export default async function AdminLessonPage(
   const hasVideo = !!(lesson as Record<string, unknown>).mux_playback_id;
   const thumbnailUrl = (lesson as Record<string, unknown>).thumbnail_url as string | null;
   const videoDuration = (lesson as Record<string, unknown>).video_duration_seconds as number | null;
+  const muxError = (lesson as Record<string, unknown>).mux_error as string | null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:py-8">
@@ -103,6 +104,18 @@ export default async function AdminLessonPage(
           <Video className="h-5 w-5" />
           Video
         </h2>
+
+        {muxError && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-semibold text-red-700">
+              Mux no pudo procesar el último video
+            </p>
+            <p className="mt-1 text-sm text-red-600">{muxError}</p>
+            <p className="mt-2 text-xs text-red-500">
+              Vuelve a subir el video para reintentar.
+            </p>
+          </div>
+        )}
 
         {hasVideo ? (
           <div className="space-y-4">

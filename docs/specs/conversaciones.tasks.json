@@ -1,0 +1,24 @@
+{
+  "change": "conversaciones",
+  "spec_flow_tier": 3,
+  "tasks": [
+    { "id": 1, "title": "ADR + spec + plan técnico (RLS incluida)", "kind": "decision", "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "high", "breaking": false }, "depends_on": [] },
+    { "id": 2, "title": "Migración 0044: tablas + helpers + RLS + triggers", "kind": "feat", "size": "large",
+      "signals": { "type": "feat", "tier": 3, "risk": "high", "breaking": false }, "depends_on": [1] },
+    { "id": 3, "title": "lib/conversaciones: access + queries", "kind": "feat", "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [2] },
+    { "id": 4, "title": "API threads + [threadId] (GET/POST/PATCH/DELETE)", "kind": "feat", "size": "large",
+      "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [3] },
+    { "id": 5, "title": "API comments + reactions", "kind": "feat", "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [3] },
+    { "id": 6, "title": "Pages server (feed + detalle) con gate de acceso", "kind": "feat", "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [4, 5] },
+    { "id": 7, "title": "UI (thread-list, composer, detail, reaction-button) + sidebar", "kind": "feat", "size": "large",
+      "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [4, 5] },
+    { "id": 8, "title": "Verificación de integración (typecheck/build/imports)", "kind": "test", "size": "small",
+      "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [6, 7] },
+    { "id": 9, "title": "Documentar: CHANGELOG + codemap", "kind": "docs", "size": "small",
+      "signals": { "type": "docs", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [8] }
+  ]
+}

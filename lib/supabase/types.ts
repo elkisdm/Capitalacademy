@@ -1537,6 +1537,164 @@ export type Database = {
           },
         ]
       }
+      conversation_threads: {
+        Row: {
+          id: string
+          program_id: string
+          author_id: string
+          title: string
+          body: string
+          category: string
+          is_pinned: boolean
+          is_locked: boolean
+          comment_count: number
+          last_activity_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          author_id: string
+          title: string
+          body: string
+          category?: string
+          is_pinned?: boolean
+          is_locked?: boolean
+          comment_count?: number
+          last_activity_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          author_id?: string
+          title?: string
+          body?: string
+          category?: string
+          is_pinned?: boolean
+          is_locked?: boolean
+          comment_count?: number
+          last_activity_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_threads_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_threads_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_comments: {
+        Row: {
+          id: string
+          thread_id: string
+          author_id: string
+          parent_id: string | null
+          body: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          author_id: string
+          parent_id?: string | null
+          body: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          author_id?: string
+          parent_id?: string | null
+          body?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_comments_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_reactions: {
+        Row: {
+          id: string
+          user_id: string
+          thread_id: string | null
+          comment_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          thread_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          thread_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_reactions_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

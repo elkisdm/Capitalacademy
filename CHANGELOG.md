@@ -8,9 +8,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Fixed
+- Al abrir el enlace directo de una lección que es la repetición de una clase en vivo, ahora se redirige a la pantalla de esa clase (con su material y quiz) en vez de mostrarla como una lección suelta (`478f45b`)
+- Los correos con textos por defecto ahora usan copys neutros en vez de asumir que el destinatario es del Diplomado (`b5d9c6c`)
 - Al usar "Ver como Alumno", el staff ahora ve el classroom del entorno seleccionado en el switcher. Antes, si el usuario estaba matriculado en varios programas, siempre se abría el mismo (el de su matrícula más reciente) sin importar el entorno elegido (`310ab5b`)
 
 ### Added
+- Nuevo espacio "Conversaciones" en el menú del alumno: un foro de comunidad del programa donde cualquiera abre una conversación (con título y contenido) y responde en hilos con reacciones, al estilo de Skool. El feed es compartido por todo el programa, no por generación (`2668ee1`)
+- En el editor de lección, si Mux no pudo procesar el último video ahora aparece un aviso con el detalle del error y la sugerencia de volver a subirlo, en vez de quedar en un estado ambiguo (`35a3dae`)
 - El selector de entorno ahora también aparece en "Ver como Alumno": el staff puede saltar entre programas mientras previsualiza el classroom, sin tener que volver a la vista de admin para cambiarlo (`8804b33`)
 - El Programa de Liderazgo ya es un entorno completo con classroom propio: cuatro jornadas (una por módulo), su calendario de clases presenciales de los viernes de julio con el docente de cada una, y login/onboarding con la marca del programa. Queda listo para matricular a sus alumnos (`10575e2`)
 - La subida de videos ahora es más robusta: sube por partes y reintenta sola ante cortes de red, así que las grabaciones grandes ya no fallan a medio camino. Al subir la repetición de una clase, el equipo ve el avance y un aviso automático cuando queda lista o si Mux no pudo procesarla, con opción de reintentar (`4c4b2da`)

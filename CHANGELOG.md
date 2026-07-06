@@ -7,6 +7,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Fixed
+- Al usar "Ver como Alumno", el staff ahora ve el classroom del entorno seleccionado en el switcher. Antes, si el usuario estaba matriculado en varios programas, siempre se abría el mismo (el de su matrícula más reciente) sin importar el entorno elegido (`310ab5b`)
+
 ### Added
 - El Programa de Liderazgo ya es un entorno completo con classroom propio: cuatro jornadas (una por módulo), su calendario de clases presenciales de los viernes de julio con el docente de cada una, y login/onboarding con la marca del programa. Queda listo para matricular a sus alumnos (`10575e2`)
 - La subida de videos ahora es más robusta: sube por partes y reintenta sola ante cortes de red, así que las grabaciones grandes ya no fallan a medio camino. Al subir la repetición de una clase, el equipo ve el avance y un aviso automático cuando queda lista o si Mux no pudo procesarla, con opción de reintentar (`4c4b2da`)

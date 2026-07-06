@@ -277,8 +277,9 @@ function DateField({
 
   const display = isoToDisplay(value);
   return (
-    <div
-      className="ca-card group relative cursor-pointer overflow-hidden px-4 py-3.5 transition-all hover:border-ca-ink/[0.14]"
+    <button
+      type="button"
+      className="ca-card group relative w-full cursor-pointer overflow-hidden px-4 py-3.5 text-left transition-all hover:border-ca-ink/[0.14]"
       onClick={() => { setDraft(isoToDisplay(value)); setEditing(true); }}
     >
       <div className="flex items-center justify-between">
@@ -302,7 +303,7 @@ function DateField({
           Agregar cumpleaños
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -380,8 +381,9 @@ function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps
   }
 
   return (
-    <div
-      className="ca-card group relative cursor-pointer overflow-hidden px-4 py-3.5 transition-all hover:border-ca-ink/[0.14]"
+    <button
+      type="button"
+      className="ca-card group relative w-full cursor-pointer overflow-hidden px-4 py-3.5 text-left transition-all hover:border-ca-ink/[0.14]"
       onClick={() => setEditing(true)}
     >
       <div className="flex items-center justify-between">
@@ -405,7 +407,7 @@ function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps
           Agregar {label.toLowerCase()}
         </div>
       )}
-    </div>
+    </button>
   );
 }
 

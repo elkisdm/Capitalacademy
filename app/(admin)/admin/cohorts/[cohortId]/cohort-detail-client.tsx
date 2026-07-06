@@ -352,24 +352,29 @@ function RoleSection({
 
       <div className="divide-y divide-ca-ink/[0.04]">
         {members.map((m) => (
-          <button
+          <div
             key={m.user_id}
-            onClick={() => onRowClick(m.user_id)}
-            className="flex w-full items-center gap-4 px-6 py-3.5 text-left transition-colors hover:bg-ca-bg-soft/50"
+            className="flex w-full items-center gap-4 px-6 py-3.5 transition-colors hover:bg-ca-bg-soft/50"
           >
-            <Avatar
-              initials={getInitials(m.full_name, m.email)}
-              size={36}
-              accent={ACCENT_MAP[role]}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-bold text-ca-ink">
-                {m.full_name ?? m.email}
+            <button
+              type="button"
+              onClick={() => onRowClick(m.user_id)}
+              className="flex min-w-0 flex-1 items-center gap-4 text-left"
+            >
+              <Avatar
+                initials={getInitials(m.full_name, m.email)}
+                size={36}
+                accent={ACCENT_MAP[role]}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-bold text-ca-ink">
+                  {m.full_name ?? m.email}
+                </div>
+                <div className="truncate text-[11px] font-medium text-ca-ink-soft">
+                  {m.email}
+                </div>
               </div>
-              <div className="truncate text-[11px] font-medium text-ca-ink-soft">
-                {m.email}
-              </div>
-            </div>
+            </button>
             {role === "student" && (
               <SegmentToggle
                 cohortId={cohortId}
@@ -380,13 +385,14 @@ function RoleSection({
             <div className="hidden text-[11px] font-medium text-ca-ink-soft sm:block">
               {formatDate(m.granted_at)}
             </div>
-            <div
+            <button
+              type="button"
+              aria-label="Más acciones"
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-ink/[0.06]"
-              onClick={(e) => e.stopPropagation()}
             >
               <MoreIcon />
-            </div>
-          </button>
+            </button>
+          </div>
         ))}
       </div>
     </div>

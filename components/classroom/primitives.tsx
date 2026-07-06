@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export function Logo({ collapsed = false }: { collapsed?: boolean }) {
   return (
@@ -167,7 +168,7 @@ export function Breadcrumb({ items }: { items: Array<{ label: string; href?: str
             </svg>
           )}
           {it.href ? (
-            <a href={it.href} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</a>
+            <Link href={it.href} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</Link>
           ) : it.onClick ? (
             <button onClick={it.onClick} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</button>
           ) : (

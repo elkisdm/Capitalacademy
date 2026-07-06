@@ -68,7 +68,7 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
       className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
       style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
     >
-      <div ref={trapRef} className="ca-card relative w-full max-w-[460px] overflow-hidden">
+      <div ref={trapRef} style={{ overscrollBehavior: "contain" }} className="ca-card relative w-full max-w-[460px] overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6">
           <div

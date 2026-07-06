@@ -290,9 +290,7 @@ export function TranscriptPanel({
               key={seg.index}
               ref={setItemRef(seg.index)}
               role="listitem"
-              aria-current={isActive ? "true" : undefined}
-              onClick={() => onSeek(seg.start)}
-              className="group relative flex cursor-pointer gap-3 border-b border-ca-ink/[0.04] px-4 py-3 transition-colors hover:bg-ca-violet/[0.04]"
+              className="group relative border-b border-ca-ink/[0.04]"
               style={{
                 borderLeft: isActive ? "2px solid #c5f122" : "2px solid transparent",
                 background: isActive
@@ -302,14 +300,21 @@ export function TranscriptPanel({
                     : undefined,
               }}
             >
-              <span className="shrink-0 pt-px font-mono text-[11px] tabular-nums text-ca-ink-soft">
-                {fmtTimestamp(seg.start)}
-              </span>
-              <span
-                className={`flex-1 text-[13px] text-ca-ink ${isActive ? "font-bold" : ""}`}
+              <button
+                type="button"
+                aria-current={isActive ? "true" : undefined}
+                onClick={() => onSeek(seg.start)}
+                className="flex w-full cursor-pointer gap-3 px-4 py-3 text-left transition-colors hover:bg-ca-violet/[0.04]"
               >
-                {highlightMatch(seg.text, search)}
-              </span>
+                <span className="shrink-0 pt-px font-mono text-[11px] tabular-nums text-ca-ink-soft">
+                  {fmtTimestamp(seg.start)}
+                </span>
+                <span
+                  className={`flex-1 text-[13px] text-ca-ink ${isActive ? "font-bold" : ""}`}
+                >
+                  {highlightMatch(seg.text, search)}
+                </span>
+              </button>
 
               {/* Copy button */}
               <button

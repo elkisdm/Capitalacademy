@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AdminUserProfile, CohortPickerItem } from "@/lib/admin/user-queries";
 import { PlatformBadge, CohortRoleBadge, StateBadge } from "@/components/admin/user-primitives";
@@ -162,6 +163,10 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
   };
 
   const handleRemoveRole = async (cohortId: string, role: CohortRole) => {
+    const ok = window.confirm(
+      "¿Quitar el rol de este usuario en la cohorte? Perderá el acceso asociado a ese rol.",
+    );
+    if (!ok) return;
     const res = await fetch(
       `/api/admin/cohort-roles?id=${encodeURIComponent(cohortId)}`,
       { method: "DELETE" },
@@ -405,12 +410,10 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
           ) : (
             <div className="flex flex-col gap-3">
               {user.cohort_roles.map((cr) => (
-                <div
+                <Link
                   key={`${cr.cohort_id}-${cr.role}`}
+                  href={`/admin/cohorts/${cr.cohort_id}`}
                   className="ca-card ca-card-hoverable group relative cursor-pointer overflow-hidden px-5 py-4 transition-all"
-                  onClick={() =>
-                    router.push(`/admin/cohorts/${cr.cohort_id}`)
-                  }
                 >
                   <div className="flex items-center gap-4">
                     <div
@@ -455,6 +458,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                   <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         handleRemoveRole(cr.cohort_id, cr.role);
                       }}
@@ -465,7 +469,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                       <TrashIcon />
                     </button>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

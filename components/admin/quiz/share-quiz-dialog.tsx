@@ -34,6 +34,16 @@ export function ShareQuizDialog({
     setMounted(true);
   }, []);
 
+  // Cerrar con Escape mientras el diálogo esté abierto.
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
+
   // El enlace usa el origin actual (mismo dominio que el admin), derivado en
   // render para no depender de una env de URL pública ni de estado extra.
   const url = mounted ? `${window.location.origin}/classroom/quiz/${evaluationId}` : "";
@@ -80,13 +90,17 @@ export function ShareQuizDialog({
       <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
         <div
           ref={trapRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-quiz-title"
+          style={{ overscrollBehavior: "contain" }}
           className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-start justify-between border-b px-6 py-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
             <div className="pr-3">
-              <h2 className="text-[17px] font-black tracking-tight text-ca-ink">Compartir evaluación</h2>
+              <h2 id="share-quiz-title" className="text-[17px] font-black tracking-tight text-ca-ink">Compartir evaluación</h2>
               <p className="mt-0.5 text-[12.5px] text-ca-ink-soft">{title}</p>
             </div>
             <button

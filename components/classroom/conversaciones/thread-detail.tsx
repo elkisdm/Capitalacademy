@@ -223,8 +223,15 @@ function ReplyItem({
         setShowMenu(false);
       }
     };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMenu(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [showMenu]);
 
   return (
@@ -252,6 +259,8 @@ function ReplyItem({
             onClick={() => setShowMenu(!showMenu)}
             className="mt-0.5 rounded p-1 text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
             aria-label="Opciones del comentario"
+            aria-haspopup="menu"
+            aria-expanded={showMenu}
           >
             <DotsIcon size={14} />
           </button>
@@ -310,8 +319,15 @@ function CommentItem({
         setShowMenu(false);
       }
     };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMenu(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [showMenu]);
 
   return (
@@ -350,6 +366,8 @@ function CommentItem({
               onClick={() => setShowMenu(!showMenu)}
               className="mt-1 rounded p-1 text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
               aria-label="Opciones del comentario"
+              aria-haspopup="menu"
+              aria-expanded={showMenu}
             >
               <DotsIcon size={16} />
             </button>
@@ -463,8 +481,15 @@ export function ThreadDetail({
         setShowThreadMenu(false);
       }
     };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowThreadMenu(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [showThreadMenu]);
 
   const authorInitials = getInitials(thread.author.full_name);
@@ -513,6 +538,12 @@ export function ThreadDetail({
 
   const handleDeleteThread = useCallback(async () => {
     if (deleting) return;
+    if (
+      !window.confirm(
+        "¿Eliminar esta conversación por completo? Se borrarán la publicación y todos sus comentarios. Esta acción no se puede deshacer.",
+      )
+    )
+      return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/classroom/conversaciones/${thread.id}`, { method: "DELETE" });
@@ -603,6 +634,7 @@ export function ThreadDetail({
   );
 
   const handleDeleteComment = useCallback(async (id: string) => {
+    if (!window.confirm("¿Eliminar este comentario? Esta acción no se puede deshacer.")) return;
     const backup = commentsRef.current;
     setComments((prev) => prev.filter((c) => c.id !== id && c.parent_id !== id));
 
@@ -652,6 +684,8 @@ export function ThreadDetail({
                   onClick={() => setShowThreadMenu(!showThreadMenu)}
                   className="rounded p-1.5 text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
                   aria-label="Opciones de la conversación"
+                  aria-haspopup="menu"
+                  aria-expanded={showThreadMenu}
                 >
                   <DotsIcon size={18} />
                 </button>

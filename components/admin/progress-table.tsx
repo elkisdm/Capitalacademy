@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Avatar } from "@/components/classroom/primitives";
 import type { CohortStudentProgress } from "@/lib/classroom/admin-queries";
@@ -38,17 +38,30 @@ function DrillDownModal({ student, modules, onClose }: {
   onClose: () => void;
 }) {
   const trapRef = useFocusTrap(true);
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
   return (
     <div
       className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
       style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
     >
-      <div ref={trapRef} className="ca-card relative flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden">
+      <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drilldown-title"
+        className="ca-card relative flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden"
+      >
         <div className="relative flex items-start justify-between border-b border-ca-ink/[0.08] p-6">
           <div className="flex items-center gap-4">
             <Avatar initials={student.initials} size={56} accent="bg-ca-lime" />
             <div>
-              <h3 className="text-[22px] font-black tracking-tight text-ca-ink">{student.full_name}</h3>
+              <h3 id="drilldown-title" className="text-[22px] font-black tracking-tight text-ca-ink">{student.full_name}</h3>
               <div className="font-mono text-[11px] font-semibold text-ca-ink-soft">{student.email}</div>
             </div>
           </div>

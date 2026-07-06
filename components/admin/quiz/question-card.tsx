@@ -55,6 +55,8 @@ export function QuestionCard({
   };
 
   const handleDelete = async () => {
+    const ok = window.confirm("¿Eliminar esta pregunta? Esta acción no se puede deshacer.");
+    if (!ok) return;
     setDeleting(true);
     await onDelete(question.id);
     setDeleting(false);

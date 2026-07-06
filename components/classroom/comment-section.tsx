@@ -295,8 +295,15 @@ function CommentItem({
         setShowMenu(false);
       }
     };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMenu(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [showMenu]);
 
   return (
@@ -344,6 +351,8 @@ function CommentItem({
               onClick={() => setShowMenu(!showMenu)}
               className="mt-1 rounded p-1 text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
               aria-label="Opciones del comentario"
+              aria-haspopup="menu"
+              aria-expanded={showMenu}
             >
               <DotsIcon size={16} />
             </button>
@@ -442,8 +451,15 @@ function ReplyItem({
         setShowMenu(false);
       }
     };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMenu(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [showMenu]);
 
   return (
@@ -469,6 +485,8 @@ function ReplyItem({
             onClick={() => setShowMenu(!showMenu)}
             className="mt-0.5 rounded p-1 text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
             aria-label="Opciones del comentario"
+            aria-haspopup="menu"
+            aria-expanded={showMenu}
           >
             <DotsIcon size={14} />
           </button>
@@ -538,8 +556,15 @@ export function CommentSection({
         setShowSortMenu(false);
       }
     };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowSortMenu(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [showSortMenu]);
 
   // ── Build thread tree ──────────────────────────────────────
@@ -633,6 +658,7 @@ export function CommentSection({
   commentsRef.current = comments;
 
   const handleDelete = useCallback(async (id: string) => {
+    if (!window.confirm("¿Eliminar este comentario? Esta acción no se puede deshacer.")) return;
     const backup = commentsRef.current;
     setComments((prev) => prev.filter((c) => c.id !== id && c.parent_id !== id));
 
@@ -665,6 +691,8 @@ export function CommentSection({
           <button
             onClick={() => setShowSortMenu(!showSortMenu)}
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+            aria-haspopup="menu"
+            aria-expanded={showSortMenu}
           >
             <SortIcon size={14} />
             {sortOrder === "newest" ? "Más recientes" : "Más antiguos"}

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { AdminUserListItem, CohortPickerItem } from "@/lib/admin/user-queries";
 import {
   PlatformBadge,
@@ -272,15 +272,61 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
 
 export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }: UsersListClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toast, ToastContainer } = useToast();
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<Filter>("all");
+
+  // Estado de búsqueda/filtros/paginación reflejado en la URL (?q=&rol=&estado=&page=)
+  // para que sea compartible y respete el botón "atrás". Se deriva directamente
+  // de los query params; el filtrado/paginación sigue siendo en cliente.
+  const search = searchParams.get("q") ?? "";
+  const rolParam = searchParams.get("rol");
+  const activeFilter: Filter =
+    rolParam === "admin" || rolParam === "ops" || rolParam === "teacher" || rolParam === "student"
+      ? rolParam
+      : "all";
+  const estadoParam = searchParams.get("estado");
+  const statusFilter: "all" | "active" | "pending" =
+    estadoParam === "active" || estadoParam === "pending" ? estadoParam : "all";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
   // El entorno se fija globalmente (cookie + remount por `key`), no se cambia
   // dentro de la lista; por eso solo leemos el valor inicial.
   const [programFilter] = useState<string>(initialProgramFilter);
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+
+  const updateParams = useCallback(
+    (patch: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null || value === "") params.delete(key);
+        else params.set(key, value);
+      }
+      const qs = params.toString();
+      // `replace` (no `push`) para no llenar el historial con cada tecla/click.
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, pathname, router],
+  );
+
+  // Al cambiar búsqueda/filtros se resetea `page` a 1 (se elimina el param).
+  const setSearch = useCallback(
+    (value: string) => updateParams({ q: value || null, page: null }),
+    [updateParams],
+  );
+  const setActiveFilter = useCallback(
+    (key: Filter) => updateParams({ rol: key === "all" ? null : key, page: null }),
+    [updateParams],
+  );
+  const setStatusFilter = useCallback(
+    (value: "all" | "active" | "pending") =>
+      updateParams({ estado: value === "all" ? null : value, page: null }),
+    [updateParams],
+  );
+  const setPage = useCallback(
+    (n: number) => updateParams({ page: n <= 1 ? null : String(n) }),
+    [updateParams],
+  );
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
@@ -338,12 +384,6 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
   const filtered = useMemo(() => {
     return scopedForCounts.filter((u) => matchesFilter(u, activeFilter));
   }, [scopedForCounts, activeFilter]);
-
-  useEffect(() => {
-    // Reset de paginación al cambiar cualquier filtro.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPage(1);
-  }, [search, activeFilter, programFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -722,7 +762,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
               {totalPages > 1 && (
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => setPage(Math.max(1, safePage - 1))}
                     disabled={safePage <= 1}
                     aria-label="Página anterior"
                     className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-30 disabled:pointer-events-none"
@@ -751,7 +791,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                   )}
 
                   <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() => setPage(Math.min(totalPages, safePage + 1))}
                     disabled={safePage >= totalPages}
                     aria-label="Página siguiente"
                     className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-30 disabled:pointer-events-none"

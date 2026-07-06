@@ -42,6 +42,12 @@ export function EvaluationPanel({
   // de TODO el programa (la herramienta es específica del final). Reemplaza las
   // preguntas IA existentes y recarga.
   const handleGenerate = async () => {
+    if (questions.length > 0) {
+      const ok = window.confirm(
+        "Generar con IA reemplazará las preguntas generadas existentes de esta evaluación. ¿Continuar?",
+      );
+      if (!ok) return;
+    }
     setGenerating(true);
     try {
       const res = await fetch("/api/admin/generate-quiz", {
@@ -131,6 +137,10 @@ export function EvaluationPanel({
 
   const handleDeleteEvaluation = async () => {
     if (!onDeleted) return;
+    const ok = window.confirm(
+      "¿Eliminar esta evaluación? Se borrarán también todas sus preguntas y los intentos de los alumnos. Esta acción no se puede deshacer.",
+    );
+    if (!ok) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/evaluations/${evaluation.id}`, { method: "DELETE" });

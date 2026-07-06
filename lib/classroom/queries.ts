@@ -379,6 +379,35 @@ export async function getSessionForStudent(
   };
 }
 
+/**
+ * Si una lección es la repetición (grabación Mux) de una clase EN VIVO —enlazada
+ * vía class_sessions.lesson_id (0041)—, devuelve a dónde redirigir para que el
+ * acceso pase siempre por la pantalla de la clase y no por la lección suelta.
+ * La grabación se excluye del playlist del módulo, pero una URL directa/bookmark
+ * aún podría apuntar a ella. Se redirige a la cohorte REAL de la sesión, porque
+ * la pantalla de clase valida `session.cohort_id`.
+ */
+export async function getSessionRecordingRedirect(
+  lessonId: string,
+): Promise<{ cohortSlug: string; sessionId: string } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("class_sessions")
+    .select("id, cohort_id, cohorts(slug)")
+    .eq("lesson_id", lessonId)
+    .maybeSingle();
+  if (!data) return null;
+  const row = data as unknown as {
+    id: string;
+    cohort_id: string;
+    cohorts: { slug: string | null } | null;
+  };
+  return {
+    sessionId: row.id,
+    cohortSlug: row.cohorts?.slug ?? row.cohort_id,
+  };
+}
+
 export async function getLessonProgress(
   enrollmentId: string | null,
   lessonId: string,

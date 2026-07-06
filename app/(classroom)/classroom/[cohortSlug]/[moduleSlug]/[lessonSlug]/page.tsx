@@ -7,6 +7,7 @@ import {
   getLessonProgress,
   getModulesWithLessons,
   getCohortWithProgram,
+  getSessionRecordingRedirect,
 } from "@/lib/classroom/queries";
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveResourceUrls } from "@/lib/classroom/resource-urls";
@@ -48,6 +49,15 @@ export default async function LessonPage(
   const access = await getClassroomAccess(user.id, cohortId);
   if (!access) notFound();
   const enrollmentId = access.enrollment?.id ?? null;
+
+  // Si esta lección es la repetición de una clase EN VIVO, todo el acceso pasa
+  // por la pantalla de la clase (no por la lección suelta). Ver migración 0041.
+  const recordingRedirect = await getSessionRecordingRedirect(lessonId);
+  if (recordingRedirect) {
+    redirect(
+      `/classroom/${recordingRedirect.cohortSlug}/clase/${recordingRedirect.sessionId}`,
+    );
+  }
 
   const [lesson, cohort] = await Promise.all([
     getLessonById(lessonId),

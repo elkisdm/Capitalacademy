@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { correctTranscript } from "@/lib/classroom/correct-transcript";
 import { sendCapacitacionFollowupEmail } from "@/lib/email/capacitacion-emails";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
@@ -13,12 +14,12 @@ const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 // seguimiento post-clase. Ver lib/programs/registry.ts.
 const CAP_CI_PROGRAM_ID = "a0000000-0000-0000-0000-000000000004";
 
-// DECISIÓN ABIERTA: destino del CTA "programa pago" del follow-up. Aún no hay
-// una landing pública dedicada del programa pago (Diplomado/Liderazgo)
-// confirmada, así que se apunta al sitio de marketing con un label neutro y el
-// Diplomado como programa destino (flagship pago). Cambiar cuando se defina la
-// landing/checkout concreta.
-const FOLLOWUP_CTA_URL = "https://capitalacademy.cl";
+// CTA "programa pago" del follow-up. La URL base se resuelve por entorno de
+// deploy (getPublicBaseUrl → NEXT_PUBLIC_*), no se hardcodea; apunta a la
+// landing del sitio donde están todos los programas. El Diplomado es el
+// flagship pago destino. Si a futuro hay un checkout/landing dedicado, cambiar
+// el path (ej. `/pago`).
+const FOLLOWUP_CTA_URL = getPublicBaseUrl();
 const FOLLOWUP_CTA_LABEL = "Conoce nuestros programas";
 const FOLLOWUP_PAID_PROGRAM_NAME = "el Diplomado de Capital Academy";
 
@@ -81,7 +82,7 @@ async function dispatchCapacitacionFollowup(
       );
 
     const cohortSlug = cohort.slug ?? sessionRow.cohort_id;
-    const recordingUrl = `https://capitalacademy.cl/classroom/${cohortSlug}/clase/${sessionRow.id}`;
+    const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.id}`;
     const title = sessionRow.title ?? "tu capacitación";
 
     let sent = 0;

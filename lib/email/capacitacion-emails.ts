@@ -34,9 +34,13 @@
 //   subir el video). Se envía a los inscritos de la sesión.
 
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 const TZ = "America/Santiago";
-const PLATFORM_URL = "https://capitalacademy.cl/classroom";
+// URL base resuelta por entorno de deploy (dev/preview/prod), no hardcodeada.
+const SITE_URL = getPublicBaseUrl();
+const PLATFORM_URL = `${SITE_URL}/classroom`;
+const BRAND_LOGO_URL = `${SITE_URL}/brand/logo-light.png`;
 
 // Marca neutra por defecto. La marca real del programa se pasa por parámetro
 // (`programName`) para NO asumir "Diplomado" ni ningún programa concreto: el
@@ -218,7 +222,7 @@ function shell(eyebrow: string, bodyInner: string): string {
         <tr><td style="padding:0;background:#14163a;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
             <tr><td align="center" style="padding:32px 28px;">
-              <img src="https://capitalacademy.cl/brand/logo-light.png" alt="Capital Academy" width="200" style="display:block;width:200px;max-width:62%;height:auto;margin:0 auto 10px auto;border:0;outline:none;text-decoration:none;" />
+              <img src="${BRAND_LOGO_URL}" alt="Capital Academy" width="200" style="display:block;width:200px;max-width:62%;height:auto;margin:0 auto 10px auto;border:0;outline:none;text-decoration:none;" />
               <p style="margin:0;font-size:11px;letter-spacing:0.3em;color:#c5f122;text-transform:uppercase;font-weight:700;">${esc(eyebrow)}</p>
             </td></tr>
           </table>

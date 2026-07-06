@@ -7,6 +7,7 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { getCohortWithProgram } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { getThreadWithComments } from "@/lib/conversaciones/queries";
+import { Markdown } from "@/components/ui/markdown";
 import { ThreadDetail } from "@/components/classroom/conversaciones/thread-detail";
 
 export default async function ConversacionDetallePage(
@@ -60,6 +61,7 @@ export default async function ConversacionDetallePage(
 
       <ThreadDetail
         thread={data.thread}
+        bodyRendered={<Markdown content={data.thread.body} />}
         initialComments={data.comments}
         cohortSlug={cohortSlug}
         viewerId={user.id}

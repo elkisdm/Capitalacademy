@@ -65,7 +65,6 @@ function ThreadAvatar({
           alt=""
           width={size}
           height={size}
-          unoptimized
           className="h-full w-full rounded-full object-cover"
         />
       ) : (

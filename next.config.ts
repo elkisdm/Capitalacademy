@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "image.mux.com" },
+      // Avatares en Supabase Storage: habilita el optimizador de next/image
+      // (resize/WebP) en vez de servir el archivo original (hasta 2MB).
+      { protocol: "https", hostname: "igatsyghbadccbrjiurl.supabase.co" },
     ],
   },
   async headers() {

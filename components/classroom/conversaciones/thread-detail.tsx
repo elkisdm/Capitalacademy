@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { Markdown } from "@/components/ui/markdown";
 import type { ThreadDetail, ConversationComment } from "@/lib/conversaciones/queries";
 import { ReactionButton } from "./reaction-button";
 
@@ -100,7 +99,6 @@ function Avatar({
           alt=""
           width={size}
           height={size}
-          unoptimized
           className="h-full w-full rounded-full object-cover"
         />
       ) : (
@@ -422,6 +420,9 @@ function CommentItem({
 
 type ThreadDetailProps = {
   thread: ThreadDetail;
+  /** Cuerpo del hilo ya renderizado en el server (Markdown) — evita mandar el
+   *  parser de markdown al cliente en la ruta más pesada del classroom. */
+  bodyRendered: ReactNode;
   initialComments: ConversationComment[];
   cohortSlug: string;
   viewerId: string;
@@ -433,6 +434,7 @@ type ThreadDetailProps = {
 
 export function ThreadDetail({
   thread,
+  bodyRendered,
   initialComments,
   cohortSlug,
   viewerId,
@@ -690,7 +692,7 @@ export function ThreadDetail({
         <h1 className="mt-4 text-[22px] font-black leading-tight tracking-tight text-ca-ink md:text-[26px]">
           {thread.title}
         </h1>
-        <Markdown content={thread.body} className="mt-3" />
+        <div className="mt-3">{bodyRendered}</div>
 
         <div className="mt-4">
           <ReactionButton

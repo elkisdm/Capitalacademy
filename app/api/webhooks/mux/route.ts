@@ -1,12 +1,115 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { correctTranscript } from "@/lib/classroom/correct-transcript";
+import { sendCapacitacionFollowupEmail } from "@/lib/email/capacitacion-emails";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
 
 /** Max age for webhook signatures (5 minutes) to prevent replay attacks */
 const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
+
+// Ciclo de Capacitación Comercial CI: solo sus grabaciones disparan el
+// seguimiento post-clase. Ver lib/programs/registry.ts.
+const CAP_CI_PROGRAM_ID = "a0000000-0000-0000-0000-000000000004";
+
+// DECISIÓN ABIERTA: destino del CTA "programa pago" del follow-up. Aún no hay
+// una landing pública dedicada del programa pago (Diplomado/Liderazgo)
+// confirmada, así que se apunta al sitio de marketing con un label neutro y el
+// Diplomado como programa destino (flagship pago). Cambiar cuando se defina la
+// landing/checkout concreta.
+const FOLLOWUP_CTA_URL = "https://capitalacademy.cl";
+const FOLLOWUP_CTA_LABEL = "Conoce nuestros programas";
+const FOLLOWUP_PAID_PROGRAM_NAME = "el Diplomado de Capital Academy";
+
+/**
+ * Seguimiento post-clase del ciclo CAP-CI: cuando la grabación de una sesión
+ * en vivo queda publicada (lesson recorded enlazada vía class_sessions.lesson_id),
+ * envía el correo "grabación disponible" + CTA a programa pago a los inscritos
+ * activos de la cohorte. Idempotente vía capacitacion_followup_log (PK session_id).
+ * Nunca lanza: los errores se registran y el webhook responde 2xx igual.
+ */
+async function dispatchCapacitacionFollowup(
+  supabase: ReturnType<typeof createAdminClient>,
+  lessonId: string,
+): Promise<void> {
+  try {
+    // ¿Esta lección es la repetición de una sesión, y de qué programa?
+    const { data: session } = await supabase
+      .from("class_sessions")
+      .select("id, cohort_id, title, cohorts(program_id, slug)")
+      .eq("lesson_id", lessonId)
+      .maybeSingle();
+
+    if (!session) return;
+    const cohort = (
+      session as unknown as {
+        cohorts: { program_id: string; slug: string | null } | null;
+      }
+    ).cohorts;
+    if (!cohort || cohort.program_id !== CAP_CI_PROGRAM_ID) return;
+
+    const sessionRow = session as unknown as {
+      id: string;
+      cohort_id: string;
+      title: string | null;
+    };
+
+    // Idempotencia: reservar el envío ANTES de mandar correos. Si la fila ya
+    // existe (23505), otro evento del webhook ya lo envió -> no reenviar.
+    const { error: reserveErr } = await supabase
+      .from("capacitacion_followup_log")
+      .insert({ session_id: sessionRow.id, recipients_count: 0 });
+    if (reserveErr) return;
+
+    // Inscritos activos de la cohorte (mismo patrón que el cron de recordatorios).
+    const { data: enrollments } = await supabase
+      .from("enrollments")
+      .select("profiles(email, full_name)")
+      .eq("cohort_id", sessionRow.cohort_id)
+      .eq("status", "active");
+
+    const recipients = (
+      (enrollments ?? []) as Array<{
+        profiles: { email: string; full_name: string | null } | null;
+      }>
+    )
+      .map((e) => e.profiles)
+      .filter(
+        (p): p is { email: string; full_name: string | null } =>
+          Boolean(p?.email),
+      );
+
+    const cohortSlug = cohort.slug ?? sessionRow.cohort_id;
+    const recordingUrl = `https://capitalacademy.cl/classroom/${cohortSlug}/clase/${sessionRow.id}`;
+    const title = sessionRow.title ?? "tu capacitación";
+
+    let sent = 0;
+    for (const r of recipients) {
+      const res = await sendCapacitacionFollowupEmail({
+        email: r.email,
+        fullName: r.full_name ?? "",
+        sessionTitle: title,
+        recordingUrl,
+        programCtaUrl: FOLLOWUP_CTA_URL,
+        programCtaLabel: FOLLOWUP_CTA_LABEL,
+        programName: FOLLOWUP_PAID_PROGRAM_NAME,
+      });
+      if (res.success) sent++;
+    }
+
+    await supabase
+      .from("capacitacion_followup_log")
+      .update({ recipients_count: sent })
+      .eq("session_id", sessionRow.id);
+  } catch (err) {
+    console.error(
+      "Mux webhook: capacitación follow-up failed for lesson",
+      lessonId,
+      err,
+    );
+  }
+}
 
 type MuxWebhookEvent = {
   type: string;
@@ -113,7 +216,7 @@ export async function POST(req: Request) {
 
     const supabase = createAdminClient();
 
-    const { error } = await supabase
+    const { data: updatedLessons, error } = await supabase
       .from("lessons")
       .update({
         mux_asset_id: assetId,
@@ -123,7 +226,8 @@ export async function POST(req: Request) {
         // El asset quedó listo: limpia cualquier error de procesamiento previo.
         mux_error: null,
       } as never)
-      .eq("mux_upload_id", upload_id);
+      .eq("mux_upload_id", upload_id)
+      .select("id");
 
     if (error) {
       console.error("Mux webhook: failed to update lesson", error);
@@ -131,6 +235,13 @@ export async function POST(req: Request) {
         { error: "DB update failed" },
         { status: 500 },
       );
+    }
+
+    // Si esta lección es la grabación de una sesión del ciclo CAP-CI, dispara el
+    // seguimiento post-clase a los inscritos. Idempotente y tolerante a fallos.
+    const lessonId = (updatedLessons as Array<{ id: string }> | null)?.[0]?.id;
+    if (lessonId) {
+      await dispatchCapacitacionFollowup(supabase, lessonId);
     }
   }
 

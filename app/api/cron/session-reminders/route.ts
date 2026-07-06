@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSessionReminderEmail } from "@/lib/email/session-reminder";
+import { sendCapacitacionReminderEmail } from "@/lib/email/capacitacion-emails";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -8,6 +9,12 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const CHANNEL = "email" as const;
+
+// Ciclo de Capacitación Comercial CI (entorno de captación). Sus sesiones son
+// class_sessions normales, así que caen en este mismo cron; el único cambio es
+// enrutar el recordatorio a la voz de captación (sendCapacitacionReminderEmail)
+// en vez del genérico. Ningún otro programa cambia. Ver lib/programs/registry.ts.
+const CAP_CI_PROGRAM_ID = "a0000000-0000-0000-0000-000000000004";
 
 // Ventanas de antelación. El cron debe correr al menos cada 30 min para que
 // ninguna sesión se escape de su ventana. La tolerancia (slack) cubre el jitter
@@ -87,6 +94,21 @@ async function processWindow(
   const pending = sessions.filter((s) => !alreadySent.has(s.id));
   if (pending.length === 0) return { kind, sessions: 0, emails: 0, errors };
 
+  // Programa de cada cohorte (una sola consulta) para enrutar la voz del correo:
+  // las sesiones del ciclo CAP-CI usan la plantilla de captación; el resto queda
+  // exactamente igual con el recordatorio genérico.
+  const cohortIds = [...new Set(pending.map((s) => s.cohort_id))];
+  const programByCohort = new Map<string, string>();
+  if (cohortIds.length > 0) {
+    const { data: cohorts } = await admin
+      .from("cohorts")
+      .select("id, program_id")
+      .in("id", cohortIds);
+    for (const c of (cohorts ?? []) as Array<{ id: string; program_id: string }>) {
+      programByCohort.set(c.id, c.program_id);
+    }
+  }
+
   // Docentes (una sola consulta).
   const teacherIds = [
     ...new Set(
@@ -155,21 +177,34 @@ async function processWindow(
     const teacherName = session.teacher_id
       ? (teacherMap.get(session.teacher_id) ?? null)
       : null;
+    const isCapacitacion =
+      programByCohort.get(session.cohort_id) === CAP_CI_PROGRAM_ID;
 
     let sent = 0;
     let lastError: string | undefined;
     for (const r of recipients) {
-      const res = await sendSessionReminderEmail({
-        email: r.email,
-        fullName: r.full_name ?? "",
-        sessionTitle: title,
-        startsAtIso: session.starts_at,
-        endsAtIso: session.ends_at,
-        modality: session.modality,
-        meetingUrl: session.meeting_url,
-        teacherName,
-        kind,
-      });
+      const res = isCapacitacion
+        ? await sendCapacitacionReminderEmail({
+            email: r.email,
+            fullName: r.full_name ?? "",
+            sessionTitle: title,
+            startsAtIso: session.starts_at,
+            endsAtIso: session.ends_at,
+            modality: session.modality,
+            meetingUrl: session.meeting_url,
+            kind,
+          })
+        : await sendSessionReminderEmail({
+            email: r.email,
+            fullName: r.full_name ?? "",
+            sessionTitle: title,
+            startsAtIso: session.starts_at,
+            endsAtIso: session.ends_at,
+            modality: session.modality,
+            meetingUrl: session.meeting_url,
+            teacherName,
+            kind,
+          });
       if (res.success) sent++;
       else lastError = res.error;
     }

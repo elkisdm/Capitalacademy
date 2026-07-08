@@ -95,7 +95,7 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/(classroom)/classroom/page.tsx` | Dashboard del alumno: sus cohortes/programas | `/classroom` | — |
+| `app/(classroom)/classroom/page.tsx` | Landing del alumno: 1 matrícula→redirect directo, 2+→selector de programas (tarjetas); staff→entorno activo | `/classroom` | — |
 | `app/(classroom)/classroom/[cohortSlug]/page.tsx` | Home del programa: módulos + timeline de lecciones | `/classroom/[cohortSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/page.tsx` | Lista de lecciones del módulo | `/classroom/[cohortSlug]/[moduleSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/[lessonSlug]/page.tsx` | Reproductor de lección: video Mux, transcripción, resumen, comentarios y progreso | `…/[lessonSlug]` | — |

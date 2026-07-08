@@ -1,7 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
-import { getCohortSlugById } from "@/lib/classroom/queries";
+import {
+  getCohortSlugById,
+  getActiveEnrollmentsForUser,
+} from "@/lib/classroom/queries";
+import { getBrandByProgramId } from "@/lib/programs/registry";
 import { getActiveEnv } from "@/lib/admin/active-env";
 import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
 
@@ -28,18 +33,65 @@ export default async function ClassroomIndexPage() {
     if (previewSlug) redirect(`/classroom/${previewSlug}`);
   }
 
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select("cohort_id")
-    .eq("student_id", user.id)
-    .eq("status", "active")
-    .order("enrolled_at", { ascending: false })
-    .limit(1)
-    .single();
+  const programs = await getActiveEnrollmentsForUser(user.id);
 
-  if (enrollment) {
-    const slug = await getCohortSlugById(enrollment.cohort_id);
-    redirect(`/classroom/${slug ?? enrollment.cohort_id}`);
+  // Con una sola matrícula, no hay nada que elegir: entrada directa al programa.
+  if (programs.length === 1) {
+    const p = programs[0];
+    const slug = p.cohortSlug ?? (await getCohortSlugById(p.cohortId));
+    redirect(`/classroom/${slug ?? p.cohortId}`);
+  }
+
+  // Con varias matrículas activas, el alumno elige a qué programa entrar.
+  if (programs.length > 1) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:py-16">
+        <h1 className="text-2xl font-bold text-gray-900">Mis programas</h1>
+        <p className="mt-2 text-gray-500">
+          Tienes acceso a varios programas. Elige a cuál quieres entrar.
+        </p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {programs.map((p) => {
+            const brand = getBrandByProgramId(p.programId);
+            const href = `/classroom/${p.cohortSlug ?? p.cohortId}`;
+            return (
+              <Link
+                key={p.cohortId}
+                href={href}
+                className="group flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                style={{ ["--tw-ring-color" as string]: brand.accent }}
+              >
+                <span
+                  className="inline-flex h-1.5 w-10 rounded-full"
+                  style={{ backgroundColor: brand.accent }}
+                  aria-hidden
+                />
+                {p.programCode && (
+                  <span className="mt-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    {p.programCode}
+                    {p.cohortName ? ` · ${p.cohortName}` : ""}
+                  </span>
+                )}
+                <span className="mt-1 text-lg font-bold text-gray-900">
+                  {p.programName}
+                </span>
+                {p.programDescription && (
+                  <span className="mt-2 line-clamp-3 text-sm text-gray-500">
+                    {p.programDescription}
+                  </span>
+                )}
+                <span
+                  className="mt-4 text-sm font-semibold"
+                  style={{ color: brand.accent }}
+                >
+                  Entrar →
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (

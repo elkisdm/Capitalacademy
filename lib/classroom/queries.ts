@@ -62,6 +62,60 @@ export async function getEnrollmentForUser(userId: string, cohortId: string) {
   return data;
 }
 
+/**
+ * Programas que el alumno puede abrir (matrícula no revocada), para el selector
+ * de "Mis programas". Usa CONTENT_ACCESS_STATUSES para espejar el gate del
+ * classroom: un alumno con el Diplomado y la Capacitación CI activos ve ambos.
+ * Ordenado por matrícula más reciente primero.
+ */
+export type ActiveEnrollmentProgram = {
+  cohortId: string;
+  cohortSlug: string | null;
+  cohortName: string | null;
+  programId: string;
+  programName: string;
+  programCode: string | null;
+  programDescription: string | null;
+};
+
+export async function getActiveEnrollmentsForUser(
+  userId: string,
+): Promise<ActiveEnrollmentProgram[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("enrollments")
+    .select(
+      "enrolled_at, cohorts!inner(id, slug, name, programs!inner(id, name, code, description))",
+    )
+    .eq("student_id", userId)
+    .in("status", CONTENT_ACCESS_STATUSES)
+    .order("enrolled_at", { ascending: false });
+
+  type Row = {
+    cohorts: {
+      id: string;
+      slug: string | null;
+      name: string | null;
+      programs: {
+        id: string;
+        name: string;
+        code: string | null;
+        description: string | null;
+      };
+    };
+  };
+
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    cohortId: r.cohorts.id,
+    cohortSlug: r.cohorts.slug,
+    cohortName: r.cohorts.name,
+    programId: r.cohorts.programs.id,
+    programName: r.cohorts.programs.name,
+    programCode: r.cohorts.programs.code,
+    programDescription: r.cohorts.programs.description,
+  }));
+}
+
 export async function getCohortWithProgram(cohortId: string) {
   const supabase = await createClient();
   const { data } = await supabase

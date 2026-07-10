@@ -120,10 +120,28 @@
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
 | `db/migrations/0044_conversaciones.sql` | Tablas threads/comments/reactions + helpers has_program_access/is_program_staff + RLS por programa | — | 0010 |
+| `db/migrations/0046`–`0048_*.sql` | Reacciones con emoji, guardados (bookmarks) y notificaciones/menciones del foro | — | 0011 |
 | `lib/conversaciones/queries.ts` · `access.ts` | Lecturas del feed por programa + gate | — | 0010 |
-| `app/api/classroom/conversaciones/{route,[threadId],comments,reactions}/route.ts` | CRUD threads/comentarios/reacciones | — | 0010 |
+| `lib/conversaciones/categories.ts` · `reactions.ts` · `linkify.tsx` | Catálogo de categorías del feed, emojis de reacción permitidos, y auto-enlazado de URLs en comentarios | — | 0010 |
+| `app/api/classroom/conversaciones/{route,[threadId],comments,reactions,bookmarks,members,notifications}/route.ts` | CRUD threads/comentarios/reacciones + guardados, miembros para menciones (@) y notificaciones | — | 0010 |
 | `app/(classroom)/classroom/[cohortSlug]/conversaciones/{page,[threadId]/page}.tsx` | Feed + detalle del hilo | `/classroom/[cohortSlug]/conversaciones`, `/classroom/[cohortSlug]/conversaciones/[threadId]` | 0010 |
-| `components/classroom/conversaciones/` | thread-list, thread-composer, thread-detail, reaction-button | — | 0010 |
+| `components/classroom/conversaciones/` | thread-list, thread-composer, thread-detail, reaction-button, notification-bell (campana global con contador + Realtime) | — | 0010 |
+| `lib/email/conversacion-notification.ts` | Correo de aviso por respuesta o mención en el foro | — | 0011 |
+
+## Entregables
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `db/migrations/0053_entregables.sql` | Bucket privado `deliverables` + tablas `deliverables` (tarea, program-scoped) y `deliverable_submissions` (1 fila = 1 archivo) + RLS con has_program_access/is_program_staff. No aplicada a prod en este ciclo | — | — |
+| `lib/deliverables/file-types.ts` | Categorías de archivo permitidas (pdf/word/excel/image), `extensionAllowed`, labels | — | — |
+| `lib/deliverables/storage.ts` | Firma en lote las URLs de descarga de entregas (bucket privado `deliverables`) | — | — |
+| `lib/deliverables/notify.ts` | `notifyDeliverableOpen`: correo de apertura idempotente (reserva `open_notified_at` antes de enviar) | — | — |
+| `lib/email/deliverable-open.ts` | Correo "Ya puedes subir: <título>" al abrirse la ventana de un entregable | — | — |
+| `app/api/admin/deliverables/route.ts` · `[deliverableId]/route.ts` · `[deliverableId]/submissions/route.ts` | CRUD admin de entregables + roster de entregas por programa (con URLs firmadas) | `GET/POST/PATCH/DELETE /api/admin/deliverables` | — |
+| `app/api/classroom/deliverables/upload-url/route.ts` · `route.ts` | Subida del alumno: signed upload URL (valida matrícula/ventana/tipo/tamaño) + persistencia de la entrega | `POST /api/classroom/deliverables*` | — |
+| `app/api/cron/deliverable-openings/route.ts` · `netlify/functions/deliverable-openings-cron.mjs` | Cron (`*/30 min`) que notifica aperturas futuras de entregables pendientes | `POST /api/cron/deliverable-openings` | — |
+| `app/(admin)/admin/deliverables/page.tsx` · `components/admin/deliverables/deliverables-manager.tsx` | Panel admin: crear/editar/eliminar entregables y ver quién entregó | `/admin/deliverables` | — |
+| `app/(classroom)/classroom/[cohortSlug]/entregables/page.tsx` · `components/classroom/deliverables/deliverable-card.tsx` | Pantalla del alumno: sube/reemplaza sus archivos dentro de la ventana de cada tarea | `/classroom/[cohortSlug]/entregables` | — |
 
 ## Quiz & Certificación
 
@@ -215,6 +233,7 @@
 | `app/auth/callback/route.ts` | Callback de sesión de Supabase | `/auth/callback` | — |
 | `app/api/auth/signout/route.ts` | Cierre de sesión | `POST /api/auth/signout` | — |
 | `lib/supabase/{client,server,admin}.ts` | Clientes Supabase: browser / server / service-role | — | — |
+| `lib/supabase/auth.ts` | `getAuthUser` con React `cache()`: dedup de `getUser` por request (páginas + layout comparten una sola llamada) | — | — |
 
 ## Infra compartida
 
@@ -227,6 +246,9 @@
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
 | `components/ui/markdown.tsx` | Renderer markdown compartido (contenido de clases de texto, ayuda) | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0043`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0053`) | — | — |
 | `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
+| `db/migrations/0049_seed_capacitaciones.sql` | Siembra del entorno Ciclo de Capacitación Comercial CI: programa gratuito interno + cohorte + 5 sesiones presenciales | — | 0012 |
+| `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |
+| `scripts/invite-capacitaciones.mjs` | Invitación masiva de asistentes al ciclo CAP-CI (crea usuario + matrícula + correo branded) | — | 0012 |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

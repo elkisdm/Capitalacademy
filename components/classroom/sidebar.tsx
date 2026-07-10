@@ -403,6 +403,7 @@ export function ClassroomSidebar({
       { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" as const },
       ...(cohortId ? [
         { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },
+        { icon: "upload", label: "Entregables", href: `/classroom/${cohortId}/entregables`, section: "learn" as const },
         { icon: "chat", label: "Conversaciones", href: `/classroom/${cohortId}/conversaciones`, section: "learn" as const },
         { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
       ] : []),
@@ -415,6 +416,7 @@ export function ClassroomSidebar({
       // gestionan dentro de Lecciones (lecciones grabadas y clases en vivo).
       { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "config" as const },
       { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "config" as const },
+      { icon: "upload", label: "Entregables", href: "/admin/deliverables", section: "config" as const },
       { icon: "chart", label: "Progreso cohorte", href: "/admin/progress", section: "config" as const },
     ] : []),
   ];

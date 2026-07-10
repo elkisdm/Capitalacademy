@@ -28,6 +28,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Al usar "Ver como Alumno", el staff ahora ve el classroom del entorno seleccionado en el switcher. Antes, si el usuario estaba matriculado en varios programas, siempre se abría el mismo (el de su matrícula más reciente) sin importar el entorno elegido (`310ab5b`)
 
 ### Added
+- Nuevo "Calendario" en el panel admin (sección Configuración): muestra el mes completo de clases del entorno activo, con navegación mes a mes; cada clase enlaza directo a su editor de sesión.
 - En el editor de cada clase en vivo, el equipo ve la asistencia: quién estuvo presente (por QR o marcado a mano, con la hora) y quién faltó, más el conteo de presentes; y puede marcar o quitar la asistencia de un alumno manualmente cuando no alcanzó a escanear el QR (`7e6de27`)
 - Nuevo entorno "Ciclo de Capacitación Comercial CI": un ciclo interno y gratuito para la fuerza de ventas de Capital Inteligente, con classroom propio (5 sesiones presenciales de los martes), foro y login/onboarding con marca propia. Queda listo para matricular a sus asistentes (`885323d`)
 - Registro de asistencia por código QR: cada clase en vivo tiene un QR (para la presentación del docente) que el alumno escanea, inicia sesión y marca su asistencia con un tap; el equipo genera, descarga e imprime el QR desde el editor de sesiones (`0d5df46`)

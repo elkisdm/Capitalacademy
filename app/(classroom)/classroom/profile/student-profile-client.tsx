@@ -449,15 +449,10 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
 
   const saveField = async (field: string, value: string) => {
     try {
-      const res = await fetch("/api/onboarding/complete-profile", {
+      const res = await fetch("/api/classroom/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          full_name: profile.full_name ?? "",
-          phone: profile.phone ?? "",
-          rut: profile.rut ?? "",
-          [field]: value || null,
-        }),
+        body: JSON.stringify({ [field]: value || null }),
       });
       if (res.ok) {
         toast("Perfil actualizado", "success");

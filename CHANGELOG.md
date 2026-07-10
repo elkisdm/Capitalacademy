@@ -20,6 +20,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- Un usuario de staff/operación sin matrícula ya puede editar su perfil en el classroom: antes cualquier guardado fallaba porque el formulario reenviaba nombre, teléfono y RUT completos y esos campos estaban vacíos en su cuenta
 - Los alumnos matriculados en más de un programa (por ejemplo, el Diplomado y la Capacitación Comercial CI) ahora ven una pantalla para elegir a cuál entrar al abrir "Mis programas". Antes, el classroom abría siempre el programa más reciente y dejaba los demás sin forma de volver a ellos (`777fcf1`)
 - La barra de progreso y el control de volumen del reproductor ahora se pueden operar con el teclado (flechas, inicio/fin) y anuncian su posición a lectores de pantalla (`083bcf4`)
 - Ahora se pide confirmación antes de borrar algo que no se puede deshacer (una evaluación con sus intentos, una pregunta, un comentario o una conversación) y antes de que la IA reescriba preguntas ya creadas. Además, en el panel de Usuarios los filtros, la búsqueda y la página quedan en la dirección web: puedes compartir el enlace o usar el botón "atrás" (`dafbd56`)

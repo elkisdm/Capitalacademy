@@ -101,6 +101,7 @@
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/[lessonSlug]/page.tsx` | Reproductor de lección: video Mux, transcripción, resumen, comentarios y progreso | `…/[lessonSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/clase/[sessionId]/page.tsx` | Pantalla de una clase EN VIVO: cabecera (fecha/docente/modalidad), **repetición** (reusa `LessonVideoSection` con la lección `recorded` enlazada), material y quiz de la sesión. Entrada desde la lista de clases del módulo | `/classroom/[cohortSlug]/clase/[sessionId]` | 0041 |
 | `app/(classroom)/classroom/profile/page.tsx` | Perfil editable del alumno (foto, RUT, cumpleaños) | `/classroom/profile` | — |
+| `app/api/classroom/profile/route.ts` | Actualización PARCIAL del perfil (editor inline campo por campo); a diferencia de onboarding, full_name/phone/rut son opcionales | `PATCH /api/classroom/profile` | — |
 | `app/(classroom)/classroom/[cohortSlug]/recursos/page.tsx` | Centro de recursos del programa: reúne el material de clases grabadas y en vivo | `/classroom/[cohortSlug]/recursos` | — |
 | `app/(classroom)/classroom/guia/page.tsx` · `guia/[slug]/page.tsx` | Centro de ayuda: índice con buscador + página por tema; `lib/guide/content.tsx` es la fuente del contenido | `/classroom/guia`, `/classroom/guia/[slug]` | — |
 | `components/classroom/guide/guide-index-client.tsx` · `support-card.tsx` | Índice de ayuda (buscador/categorías) + tarjeta de soporte (mensaje + adjuntos) | — | — |

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type AuthResult =
   | { user: { id: string; email?: string }; error?: never }
@@ -108,7 +109,10 @@ export async function requireSessionStaff(
     return { user };
   }
 
-  const { data: session } = await supabase
+  // La policy class_sessions_select (0045) solo permite leer a platform staff
+  // o a alumnos matriculados; un docente puro (sin matrícula) no puede ver la
+  // sesión bajo RLS. Se resuelve con service-role para no depender de eso.
+  const { data: session } = await createAdminClient()
     .from("class_sessions")
     .select("cohort_id")
     .eq("id", sessionId)

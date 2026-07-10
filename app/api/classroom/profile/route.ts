@@ -1,0 +1,112 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { isValidRut } from "@/lib/utils/rut";
+import { normalizeUrl } from "@/lib/utils/url";
+
+export const runtime = "nodejs";
+
+/**
+ * Actualización PARCIAL del perfil desde /classroom/profile (editor inline
+ * campo por campo). A diferencia de /api/onboarding/complete-profile, aquí
+ * full_name/phone/rut son OPCIONALES: un staff/ops sin onboardear tiene esos
+ * campos en NULL y debe poder editar cualquier otro campo sin que el backend
+ * exija identidad completa.
+ */
+
+/** Identidad (full_name/phone/rut): "" o null → "no enviado" (no nulea). */
+const identityText = (min: number, max: number) =>
+  z.preprocess(
+    (v) => (v == null || v === "" ? undefined : v),
+    z.string().trim().min(min).max(max).optional(),
+  );
+
+/** Texto opcional: "" o null → null (permite limpiar el campo). */
+const nullableText = (max: number) =>
+  z.preprocess(
+    (v) => (v == null || v === "" ? null : v),
+    z.string().trim().max(max).nullable(),
+  );
+
+const profileUpdateSchema = z.object({
+  full_name: identityText(2, 120),
+  phone: identityText(6, 40),
+  rut: z.preprocess(
+    (v) => (v == null || v === "" ? undefined : v),
+    z.string().trim().refine(isValidRut, "RUT inválido").optional(),
+  ),
+  company: nullableText(160),
+  job_title: nullableText(120),
+  linkedin_url: z.preprocess(
+    (v) => (v == null || v === "" ? null : normalizeUrl(String(v))),
+    z.string().url().max(300).nullable(),
+  ),
+  bio: nullableText(1000),
+  address: nullableText(300),
+  emergency_contact_name: nullableText(120),
+  emergency_contact_phone: nullableText(40),
+  birthday: z.preprocess(
+    (v) => (v == null || v === "" ? null : v),
+    z.string().nullable(),
+  ),
+});
+
+export async function PATCH(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Body inválido" }, { status: 400 });
+  }
+
+  const parsed = profileUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validación fallida", issues: parsed.error.issues },
+      { status: 422 },
+    );
+  }
+
+  const rawKeys = new Set(
+    Object.keys(body as Record<string, unknown>),
+  );
+  const parsedData = parsed.data as Record<string, unknown>;
+
+  const updateData: Record<string, unknown> = {};
+  for (const col of Object.keys(profileUpdateSchema.shape)) {
+    if (rawKeys.has(col) && parsedData[col] !== undefined) {
+      updateData[col] = parsedData[col];
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json(
+      { error: "No hay campos para actualizar" },
+      { status: 422 },
+    );
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(updateData as never)
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("classroom profile update error:", error);
+    return NextResponse.json(
+      { error: "Error al actualizar perfil" },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}

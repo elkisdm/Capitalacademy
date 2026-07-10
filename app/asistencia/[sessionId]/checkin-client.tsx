@@ -2,6 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { registrarAsistencia, type CheckinStatus } from "./checkin-action";
+import {
+  BEFORE_WINDOW_LABEL,
+  EXPIRED_WINDOW_LABEL,
+  type WindowState,
+} from "@/lib/asistencia/window";
 
 const TZ = "America/Santiago";
 
@@ -47,12 +52,14 @@ export function CheckinClient({
   startsAt,
   cohortName,
   alreadyRegistered,
+  windowState,
 }: {
   sessionId: string;
   title: string;
   startsAt: string;
   cohortName: string | null;
   alreadyRegistered: boolean;
+  windowState: WindowState;
 }) {
   const [result, setResult] = useState<{ status: CheckinStatus; message: string } | null>(
     alreadyRegistered
@@ -63,6 +70,18 @@ export function CheckinClient({
 
   const done =
     result !== null && (result.status === "ok" || result.status === "already");
+
+  // Aviso proactivo cuando la ventana no está abierta y el alumno todavía no
+  // se registró: evita que tenga que hacer clic para enterarse. El Server
+  // Action ('outside_window') sigue siendo la defensa en profundidad si la
+  // ventana cambia entre el render y el clic.
+  const gateBlock =
+    !alreadyRegistered && windowState !== "open"
+      ? {
+          tone: (windowState === "closed" ? "warn" : "info") as Tone,
+          message: windowState === "closed" ? EXPIRED_WINDOW_LABEL : BEFORE_WINDOW_LABEL,
+        }
+      : null;
 
   function handleClick() {
     startTransition(async () => {
@@ -124,7 +143,21 @@ export function CheckinClient({
             </div>
           )}
 
-          {!done && (
+          {!result && gateBlock && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="mt-5 rounded-xl px-4 py-3 text-[13px] font-semibold"
+              style={{
+                background: TONE_STYLE[gateBlock.tone].bg,
+                color: TONE_STYLE[gateBlock.tone].color,
+              }}
+            >
+              {gateBlock.message}
+            </div>
+          )}
+
+          {!done && !gateBlock && (
             <button
               onClick={handleClick}
               disabled={isPending}

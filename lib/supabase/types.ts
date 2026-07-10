@@ -470,6 +470,54 @@ export type Database = {
           },
         ]
       }
+      attendance_alerts: {
+        Row: {
+          absences_count: number
+          cohort_id: string
+          error: string | null
+          id: string
+          kind: string
+          sent_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          absences_count?: number
+          cohort_id: string
+          error?: string | null
+          id?: string
+          kind?: string
+          sent_at?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          absences_count?: number
+          cohort_id?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          sent_at?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_alerts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_alerts_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_resources: {
         Row: {
           created_at: string

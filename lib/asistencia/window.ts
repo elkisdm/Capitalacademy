@@ -18,17 +18,36 @@ type SessionWindow = {
   ends_at: string;
 };
 
+export type WindowState = "before" | "open" | "closed";
+
+/**
+ * Estado de la ventana de asistencia respecto a `now`: 'before' (aún no abre),
+ * 'open' (dentro de [starts_at - 20min, ends_at + 30min]) o 'closed' (ya cerró).
+ * Única fuente de verdad: `isWithinWindow` delega en esta función.
+ */
+export function getWindowState(session: SessionWindow, now: Date = new Date()): WindowState {
+  const opensAt = new Date(session.starts_at).getTime() - GRACE_BEFORE_MIN * MINUTE_MS;
+  const closesAt = new Date(session.ends_at).getTime() + GRACE_AFTER_MIN * MINUTE_MS;
+  const t = now.getTime();
+  if (t < opensAt) return "before";
+  if (t > closesAt) return "closed";
+  return "open";
+}
+
 /**
  * `true` si `now` cae dentro de [starts_at - 20min, ends_at + 30min].
  */
 export function isWithinWindow(session: SessionWindow, now: Date = new Date()): boolean {
-  const opensAt = new Date(session.starts_at).getTime() - GRACE_BEFORE_MIN * MINUTE_MS;
-  const closesAt = new Date(session.ends_at).getTime() + GRACE_AFTER_MIN * MINUTE_MS;
-  const t = now.getTime();
-  return t >= opensAt && t <= closesAt;
+  return getWindowState(session, now) === "open";
 }
 
 /** Etiqueta lista para mensajes de error cuando el check-in cae fuera de horario. */
 export const OUTSIDE_WINDOW_LABEL =
   `El registro está disponible desde ${GRACE_BEFORE_MIN} minutos antes del inicio de la clase ` +
   `y hasta ${GRACE_AFTER_MIN} minutos después de que termina.`;
+
+/** Etiqueta para cuando la ventana aún no abre (windowState === 'before'). */
+export const BEFORE_WINDOW_LABEL = `El registro de asistencia abre ${GRACE_BEFORE_MIN} minutos antes del inicio de la clase.`;
+
+/** Etiqueta para cuando la ventana ya cerró (windowState === 'closed'). */
+export const EXPIRED_WINDOW_LABEL = `El registro de asistencia de esta clase ya cerró (hasta ${GRACE_AFTER_MIN} minutos después del término).`;

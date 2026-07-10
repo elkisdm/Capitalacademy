@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSessionReminderEmail } from "@/lib/email/session-reminder";
 import { sendCapacitacionReminderEmail } from "@/lib/email/capacitacion-emails";
+import { sendAttendanceWarningEmail } from "@/lib/email/attendance-warning";
+import { getStudentsAtAbsenceThreshold } from "@/lib/asistencia/queries";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,6 +28,13 @@ const REMINDER_WINDOWS: Array<{ kind: "24h" | "1h"; leadMs: number }> = [
 ];
 // Ancho de cada ventana. Debe ser >= al período del cron para no perder envíos.
 const WINDOW_SLACK_MS = 35 * 60 * 1000; // 35 min
+
+// Alerta de inasistencia: se avisa al alumno al llegar a 2 clases en vivo sin
+// registro (por debajo del máximo tolerado de 3), UNA vez por alumno+cohorte.
+// Ver docs/adr/0013-alerta-inasistencias-y-expiracion-qr.md.
+const ABSENCE_ALERT_KIND = "absence_2";
+const ABSENCE_ALERT_THRESHOLD = 2;
+const MAX_ABSENCES_TOLERATED = 3;
 
 type SessionRow = {
   id: string;
@@ -232,6 +241,80 @@ async function processWindow(
   return { kind, sessions: sessionsProcessed, emails: totalEmails, errors };
 }
 
+/**
+ * Detecta alumnos con `ABSENCE_ALERT_THRESHOLD` o más inasistencias a clases
+ * en vivo y envía UN correo de advertencia por alumno+cohorte, reservando la
+ * fila en `attendance_alerts` ANTES de enviar (mismo patrón reserva-antes-de-
+ * enviar de `processWindow`, líneas 136-149, contra `session_reminders`).
+ */
+async function processAbsenceAlerts(
+  admin: ReturnType<typeof createAdminClient>,
+  now: number,
+): Promise<{ evaluated: number; sent: number; errors: string[] }> {
+  const errors: string[] = [];
+  const rows = await getStudentsAtAbsenceThreshold(ABSENCE_ALERT_THRESHOLD);
+  if (rows.length === 0) return { evaluated: 0, sent: 0, errors };
+
+  // Descartar pares (alumno, cohorte) que YA tienen alerta enviada.
+  const { data: existing } = await admin
+    .from("attendance_alerts")
+    .select("student_id, cohort_id")
+    .eq("kind", ABSENCE_ALERT_KIND)
+    .in(
+      "student_id",
+      rows.map((r) => r.studentId),
+    );
+  const alreadySent = new Set(
+    ((existing ?? []) as Array<{ student_id: string; cohort_id: string }>).map(
+      (r) => `${r.student_id}:${r.cohort_id}`,
+    ),
+  );
+  const pending = rows.filter((r) => !alreadySent.has(`${r.studentId}:${r.cohortId}`));
+
+  let sent = 0;
+  for (const row of pending) {
+    // RESERVA de la fila ANTES de enviar: el unique (student_id, cohort_id,
+    // kind) bloquea cualquier corrida concurrente del cron.
+    const { error: reserveErr } = await admin.from("attendance_alerts").insert({
+      student_id: row.studentId,
+      cohort_id: row.cohortId,
+      kind: ABSENCE_ALERT_KIND,
+      absences_count: row.absences,
+      status: "sent",
+    });
+    if (reserveErr) {
+      // 23505 = unique_violation: ya reservado por otra corrida. No es error real.
+      if (!String(reserveErr.code).includes("23505")) {
+        errors.push(`reserve absence ${row.studentId}/${row.cohortId}: ${reserveErr.message}`);
+      }
+      continue;
+    }
+
+    const res = await sendAttendanceWarningEmail({
+      email: row.email,
+      fullName: row.fullName ?? "",
+      programId: row.programId,
+      cohortName: row.cohortName,
+      absencesCount: row.absences,
+      maxAbsences: MAX_ABSENCES_TOLERATED,
+    });
+
+    if (res.success) {
+      sent++;
+    } else {
+      errors.push(`send absence ${row.studentId}/${row.cohortId}: ${res.error ?? "unknown"}`);
+      await admin
+        .from("attendance_alerts")
+        .update({ status: "failed", error: res.error ?? "unknown" })
+        .eq("student_id", row.studentId)
+        .eq("cohort_id", row.cohortId)
+        .eq("kind", ABSENCE_ALERT_KIND);
+    }
+  }
+
+  return { evaluated: pending.length, sent, errors };
+}
+
 export async function GET(req: Request) {
   if (!authorize(req)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -248,10 +331,14 @@ export async function GET(req: Request) {
     allErrors.push(...r.errors);
   }
 
+  const absences = await processAbsenceAlerts(admin, now);
+  allErrors.push(...absences.errors);
+
   return NextResponse.json({
     ok: allErrors.length === 0,
     ran_at: new Date(now).toISOString(),
     windows: results,
+    absences: { evaluated: absences.evaluated, sent: absences.sent },
     errors: allErrors,
   });
 }

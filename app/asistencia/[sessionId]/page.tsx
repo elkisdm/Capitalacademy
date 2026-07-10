@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandByProgramId, loginPath } from "@/lib/programs/registry";
+import { getWindowState } from "@/lib/asistencia/window";
 import { CheckinClient } from "./checkin-client";
 
 export const metadata: Metadata = {
@@ -59,6 +60,7 @@ export default async function AsistenciaPage(props: {
     .maybeSingle();
 
   const cohortName = (session.cohorts as { name: string } | null)?.name ?? null;
+  const windowState = getWindowState({ starts_at: session.starts_at, ends_at: session.ends_at });
 
   return (
     <CheckinClient
@@ -67,6 +69,7 @@ export default async function AsistenciaPage(props: {
       startsAt={session.starts_at}
       cohortName={cohortName}
       alreadyRegistered={Boolean(existing)}
+      windowState={windowState}
     />
   );
 }

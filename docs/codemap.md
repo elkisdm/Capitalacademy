@@ -74,18 +74,19 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) | `POST /api/cron/session-reminders` | 0008 |
+| `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) y detecta inasistencias (`processAbsenceAlerts`) | `POST /api/cron/session-reminders` | 0008, 0013 |
 | `netlify/functions/session-reminders-cron.mjs` | Netlify Scheduled Function (`*/30`) que invoca el endpoint de recordatorios | — | 0008 |
-| `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI) | — | — |
+| `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI), `attendance-warning` (alerta de inasistencias, brandeada por entorno) | — | 0013 |
 
 ## Asistencia (QR)
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/asistencia/[sessionId]/` | Página **pública** de check-in por QR: valida matrícula, redirige a login branded, registra asistencia (page + Server Action `checkin-action` + client) | `/asistencia/[sessionId]` | — |
+| `app/asistencia/[sessionId]/` | Página **pública** de check-in por QR: valida matrícula, redirige a login branded, muestra estado de la ventana (abre/abierto/expirado) y registra asistencia (page + Server Action `checkin-action` + client) | `/asistencia/[sessionId]` | 0013 |
 | `lib/asistencia/checkin.ts` | Lógica **pura** de decisión del check-in (`evaluateCheckin`: sesión→matrícula→ventana→registro); la Server Action la envuelve | — | — |
-| `lib/asistencia/window.ts` | Ventana temporal válida (20 min antes / 30 después) | — | — |
-| `lib/asistencia/queries.ts` | Reportería de asistencia + marcado/desmarcado manual (service_role) | — | — |
+| `lib/asistencia/window.ts` | Ventana temporal válida (20 min antes / 30 después) y `getWindowState` (`before`/`open`/`closed`) | — | 0013 |
+| `lib/asistencia/queries.ts` | Reportería de asistencia + marcado/desmarcado manual (service_role) + `getStudentsAtAbsenceThreshold` (conteo de inasistencias para el cron) | — | 0013 |
+| `db/migrations/0054_attendance_alerts.sql` | Bitácora idempotente de correos de alerta de inasistencia (`unique student+cohort+kind`) | — | 0013 |
 | `app/api/admin/sessions/[sessionId]/attendance/route.ts` | GET reporte · POST marcar · DELETE desmarcar (con `requireStaff`) | `/api/admin/sessions/[sessionId]/attendance` | — |
 | `components/admin/session-qr.tsx` | QR imprimible por sesión para el PPT del docente (admin) | — | — |
 | `components/admin/session-attendance-panel.tsx` | Reportería + toggle de marcado manual en el editor de sesión | — | — |

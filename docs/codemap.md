@@ -171,6 +171,8 @@
 | `components/admin/lessons-scope-filter.tsx` · `module-sessions-list.tsx` | Selector programa+cohorte del editor + lista de clases en vivo por módulo (mover de módulo, enlace al calendario) | — | — |
 | `lib/utils/slug.ts` | `slugify` + `uniqueSlug` para URLs legibles del classroom | — | — |
 | `app/(admin)/admin/{resources,quizzes,progress}/page.tsx` | Recursos, quizzes y reporte de progreso por cohorte | `/admin/…` | — |
+| `app/(admin)/admin/alumnos/page.tsx` + `student-table.tsx` + `cohort-filter.tsx` | Panel roster por alumno del entorno activo: asistencia, avance de lecciones y evaluaciones en una tabla, con búsqueda, filtro "en riesgo" y drill-down | `/admin/alumnos` | — |
+| `lib/admin/student-panel-queries.ts` | `getStudentPanelReport(programId, cohortId?)`: agrega asistencia/avance/evaluaciones por alumno en consultas bulk (sin N+1), service-role | — | — |
 | `app/api/admin/users/` (`route`·`bulk`·`template`·`[userId]`) | CRUD de usuarios + importación CSV masiva | — | — |
 | `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |
 | `app/api/admin/send-invitation/route.ts` | Envío/reenvío de invitación por email | — | — |

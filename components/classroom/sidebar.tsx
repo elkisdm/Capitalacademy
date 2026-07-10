@@ -414,6 +414,7 @@ export function ClassroomSidebar({
       { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "general" as const },
       // Configuración: armado del contenido del entorno activo. Los recursos se
       // gestionan dentro de Lecciones (lecciones grabadas y clases en vivo).
+      { icon: "calendar", label: "Calendario", href: "/admin/calendario", section: "config" as const },
       { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "config" as const },
       { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "config" as const },
       { icon: "upload", label: "Entregables", href: "/admin/deliverables", section: "config" as const },

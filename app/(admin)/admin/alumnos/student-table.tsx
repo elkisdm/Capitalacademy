@@ -69,11 +69,16 @@ function DrillDownModal({ student, onClose }: { student: StudentPanelRow; onClos
           <div className="mb-6 grid grid-cols-3 gap-4">
             <div className="ca-card p-4">
               <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Asistencia</div>
-              <div className="mt-1 font-mono text-[28px] font-black" style={{ color: attendanceTone.fg }}>
-                {student.attendance.pct}%
+              <div
+                className="mt-1 font-mono text-[28px] font-black"
+                style={{ color: student.attendance.total === 0 ? "var(--color-ca-ink-soft)" : attendanceTone.fg }}
+              >
+                {student.attendance.total === 0 ? "—" : `${student.attendance.pct}%`}
               </div>
               <div className="text-[11px] font-semibold text-ca-ink-soft">
-                {student.attendance.present} de {student.attendance.total} sesiones
+                {student.attendance.total === 0
+                  ? "Sin clases aplicables"
+                  : `${student.attendance.present} de ${student.attendance.total} sesiones`}
               </div>
             </div>
             <div className="ca-card p-4">
@@ -244,10 +249,16 @@ export function StudentTable({ students }: { students: StudentPanelRow[] }) {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-[13px] font-black" style={{ color: attendanceTone.fg }}>
-                        {s.attendance.present}/{s.attendance.total}
-                      </span>
-                      <span className="ml-1.5 text-[11px] font-semibold text-ca-ink-soft">({s.attendance.pct}%)</span>
+                      {s.attendance.total === 0 ? (
+                        <span className="font-mono text-[13px] font-black text-ca-ink-soft">Sin clases</span>
+                      ) : (
+                        <>
+                          <span className="font-mono text-[13px] font-black" style={{ color: attendanceTone.fg }}>
+                            {s.attendance.present}/{s.attendance.total}
+                          </span>
+                          <span className="ml-1.5 text-[11px] font-semibold text-ca-ink-soft">({s.attendance.pct}%)</span>
+                        </>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -343,8 +354,11 @@ export function StudentTable({ students }: { students: StudentPanelRow[] }) {
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <div className="font-mono text-[15px] font-black" style={{ color: attendanceTone.fg }}>
-                      {s.attendance.present}/{s.attendance.total}
+                    <div
+                      className="font-mono text-[15px] font-black"
+                      style={{ color: s.attendance.total === 0 ? "var(--color-ca-ink-soft)" : attendanceTone.fg }}
+                    >
+                      {s.attendance.total === 0 ? "—" : `${s.attendance.present}/${s.attendance.total}`}
                     </div>
                     <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-ca-ink-soft">Asistencia</div>
                   </div>

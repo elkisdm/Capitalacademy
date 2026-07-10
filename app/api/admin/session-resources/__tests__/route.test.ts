@@ -1,34 +1,34 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+let staffResult: { user: { id: string } } | { error: Response };
+
 vi.mock("@/lib/auth/authorize-admin", () => ({
-  requireStaff: vi.fn(async () => ({ user: { id: "staff-1" } })),
+  requireSessionStaff: vi.fn(async () => staffResult),
 }));
 
 type Result = { data: unknown; error?: unknown };
+let resourceLookupResult: Result;
 let maxPosResult: Result;
 let insertResult: Result;
 let deleteResult: Result;
+let listResult: Result;
+const removeSpy = vi.fn(async () => ({ data: [], error: null }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(async () => ({
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: vi.fn(() => ({
     from: () => ({
-      select: () => ({
+      select: (cols: string) => ({
         eq: () => ({
           order: () => ({
             limit: () => ({ maybeSingle: () => Promise.resolve(maxPosResult) }),
           }),
+          maybeSingle: () =>
+            Promise.resolve(cols === "session_id" ? resourceLookupResult : maxPosResult),
         }),
       }),
       insert: () => ({ select: () => ({ single: () => Promise.resolve(insertResult) }) }),
       delete: () => ({ eq: () => ({ select: () => Promise.resolve(deleteResult) }) }),
     }),
-  })),
-}));
-
-let listResult: Result;
-const removeSpy = vi.fn(async () => ({ data: [], error: null }));
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: vi.fn(() => ({
     storage: {
       from: () => ({
         list: () => Promise.resolve(listResult),
@@ -58,6 +58,8 @@ function delReq(id?: string) {
 describe("admin/session-resources route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    staffResult = { user: { id: "staff-1" } };
+    resourceLookupResult = { data: { session_id: SESSION_ID } };
     maxPosResult = { data: { position: 1 } };
     insertResult = { data: { id: "sr1" }, error: null };
     deleteResult = { data: [{ id: "sr1", storage_path: null }], error: null };
@@ -124,6 +126,14 @@ describe("admin/session-resources route", () => {
       }),
     );
     expect(res!.status).toBe(422);
+  });
+
+  it("acepta a un docente de cohorte (requireSessionStaff) con 201", async () => {
+    staffResult = { user: { id: "teacher-1" } };
+    const res = await POST(
+      postReq({ source: "link", sessionId: SESSION_ID, title: "Lectura", type: "pdf", url: "https://x.com/a.pdf" }),
+    );
+    expect(res!.status).toBe(201);
   });
 
   it("DELETE 404 cuando no se borró nada", async () => {

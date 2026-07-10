@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockGetEnrollmentForUser = vi.fn();
 const mockProfileSelect = vi.fn();
+const mockCohortRoleSelect = vi.fn();
 
 vi.mock("@/lib/classroom/queries", () => ({
   getEnrollmentForUser: (...args: unknown[]) =>
@@ -10,13 +11,26 @@ vi.mock("@/lib/classroom/queries", () => ({
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: mockProfileSelect,
-        }),
-      }),
-    }),
+    from: (table: string) =>
+      table === "cohort_roles"
+        ? {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  in: () => ({
+                    maybeSingle: mockCohortRoleSelect,
+                  }),
+                }),
+              }),
+            }),
+          }
+        : {
+            select: () => ({
+              eq: () => ({
+                single: mockProfileSelect,
+              }),
+            }),
+          },
   })),
 }));
 
@@ -53,10 +67,25 @@ describe("getClassroomAccess", () => {
     mockProfileSelect.mockResolvedValue({
       data: { role: "user", system_role: "user" },
     });
+    mockCohortRoleSelect.mockResolvedValue({ data: null });
 
     const result = await getClassroomAccess(USER_ID, COHORT_ID);
 
     expect(result).toBeNull();
+  });
+
+  it("grants staff-preview access for a teacher of this cohort", async () => {
+    mockGetEnrollmentForUser.mockResolvedValue(null);
+    mockProfileSelect.mockResolvedValue({
+      data: { role: "user", system_role: "user" },
+    });
+    mockCohortRoleSelect.mockResolvedValue({ data: { role: "teacher" } });
+
+    const result = await getClassroomAccess(USER_ID, COHORT_ID);
+
+    expect(result).not.toBeNull();
+    expect(result!.enrollment).toBeNull();
+    expect(result!.isStaff).toBe(true);
   });
 
   it("grants staff access for admin without enrollment", async () => {
@@ -87,6 +116,7 @@ describe("getClassroomAccess", () => {
   it("returns null when profile cannot be fetched", async () => {
     mockGetEnrollmentForUser.mockResolvedValue(null);
     mockProfileSelect.mockResolvedValue({ data: null });
+    mockCohortRoleSelect.mockResolvedValue({ data: null });
 
     const result = await getClassroomAccess(USER_ID, COHORT_ID);
 

@@ -48,8 +48,16 @@ export default async function AdminAlumnosPage({
 
   const total = students.length;
   const enRiesgo = students.filter((s) => s.atRisk).length;
+  // Solo promedia entre alumnos con sesiones aplicables: los que aún no
+  // tienen ninguna (matrícula reciente, entorno recién iniciado) fuerzan
+  // pct=0 en la definición por-alumno y deflactarían el promedio del entorno.
+  const withAttendance = students.filter((s) => s.attendance.total > 0);
   const asistProm =
-    total > 0 ? Math.round(students.reduce((sum, s) => sum + s.attendance.pct, 0) / total) : 0;
+    withAttendance.length > 0
+      ? Math.round(
+          withAttendance.reduce((sum, s) => sum + s.attendance.pct, 0) / withAttendance.length,
+        )
+      : null;
   const avanceProm =
     total > 0 ? Math.round(students.reduce((sum, s) => sum + s.progress.pct, 0) / total) : 0;
 
@@ -74,7 +82,12 @@ export default async function AdminAlumnosPage({
         {[
           { label: "Total alumnos", value: `${total}`, sub: "activos", tone: "var(--color-ca-navy)" },
           { label: "En riesgo", value: `${enRiesgo}`, sub: "2+ inasistencias", tone: "#e11d48" },
-          { label: "Asistencia prom.", value: `${asistProm}%`, tone: "var(--color-ca-violet)" },
+          {
+            label: "Asistencia prom.",
+            value: asistProm === null ? "—" : `${asistProm}%`,
+            sub: asistProm === null ? "sin clases cerradas" : undefined,
+            tone: "var(--color-ca-violet)",
+          },
           { label: "Avance prom.", value: `${avanceProm}%`, tone: "var(--color-ca-lime-deep)" },
         ].map((s) => (
           <div key={s.label} className="ca-card relative overflow-hidden p-5">

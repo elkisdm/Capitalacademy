@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSessionStaff } from "@/lib/auth/authorize-admin";
 
@@ -49,8 +48,6 @@ const createResourceSchema = z.discriminatedUnion("source", [
 ]);
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-
   let body: unknown;
   try {
     body = await req.json();
@@ -104,7 +101,13 @@ export async function POST(req: Request) {
       (typeof obj.metadata?.size === "number" ? obj.metadata.size : null);
   }
 
-  const { data: maxPos } = await supabase
+  // Con service-role: session_resources_select (0027) solo permite platform
+  // staff o alumno matriculado, no docente/asistente puro (is_cohort_staff),
+  // aunque la policy de escritura sí lo autoriza — con el cliente de usuario
+  // el insert se hacía pero el RETURNING (y este maxPos) volvían vacíos.
+  const admin = createAdminClient();
+
+  const { data: maxPos } = await admin
     .from("session_resources")
     .select("position")
     .eq("session_id", sessionId)
@@ -114,7 +117,7 @@ export async function POST(req: Request) {
 
   const nextPosition = (maxPos?.position ?? 0) + 1;
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("session_resources")
     .insert({
       session_id: sessionId,
@@ -166,9 +169,9 @@ export async function DELETE(req: Request) {
   const staff = await requireSessionStaff(resource.session_id);
   if ("error" in staff) return staff.error;
 
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
+  // Igual que en POST: la policy de lectura no cubre al docente/asistente
+  // puro, así que el RETURNING necesita service-role para no volver vacío.
+  const { data, error } = await createAdminClient()
     .from("session_resources")
     .delete()
     .eq("id", id)

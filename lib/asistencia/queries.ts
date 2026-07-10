@@ -148,11 +148,12 @@ export type StudentAbsence = {
 };
 
 type CohortRow = { id: string; program_id: string; name: string };
-type ClosedSessionRow = { id: string; cohort_id: string; audience: string };
+type ClosedSessionRow = { id: string; cohort_id: string; audience: string; ends_at: string };
 type EnrollmentSegmentRow = {
   student_id: string;
   cohort_id: string;
   segment: string | null;
+  enrolled_at: string;
   profiles: { email: string | null; full_name: string | null } | null;
 };
 
@@ -187,7 +188,7 @@ export async function getStudentsAtAbsenceThreshold(
   const cutoff = new Date(Date.now() - GRACE_AFTER_MIN * 60_000).toISOString();
   const { data: sessionsRaw } = await admin
     .from("class_sessions")
-    .select("id, cohort_id, audience")
+    .select("id, cohort_id, audience, ends_at")
     .in("cohort_id", cohortIds)
     .neq("modality", "recorded")
     .neq("status", "cancelled")
@@ -204,7 +205,7 @@ export async function getStudentsAtAbsenceThreshold(
 
   const { data: enrollmentsRaw } = await admin
     .from("enrollments")
-    .select("student_id, cohort_id, segment, profiles(email, full_name)")
+    .select("student_id, cohort_id, segment, enrolled_at, profiles(email, full_name)")
     .in("cohort_id", cohortIds)
     .eq("status", "active");
   const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentSegmentRow[];
@@ -227,6 +228,7 @@ export async function getStudentsAtAbsenceThreshold(
     const cohortSessions = sessionsByCohort.get(e.cohort_id) ?? [];
     let absences = 0;
     for (const s of cohortSessions) {
+      if (s.ends_at < e.enrolled_at) continue; // sesión anterior a su matrícula: no cuenta como ausencia
       const applies =
         s.audience === "all" ||
         (s.audience === "capital_inteligente" && e.segment === "capital_inteligente");

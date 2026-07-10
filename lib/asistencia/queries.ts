@@ -8,6 +8,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { GRACE_AFTER_MIN } from "./window";
 
 export type AttendanceRow = {
   studentId: string;
@@ -134,6 +135,117 @@ export async function markManualAttendance(
   );
   if (error) return { ok: false, error: "No se pudo marcar la asistencia." };
   return { ok: true };
+}
+
+export type StudentAbsence = {
+  studentId: string;
+  cohortId: string;
+  programId: string | null;
+  cohortName: string | null;
+  email: string;
+  fullName: string | null;
+  absences: number;
+};
+
+type CohortRow = { id: string; program_id: string; name: string };
+type ClosedSessionRow = { id: string; cohort_id: string; audience: string };
+type EnrollmentSegmentRow = {
+  student_id: string;
+  cohort_id: string;
+  segment: string | null;
+  profiles: { email: string | null; full_name: string | null } | null;
+};
+
+/**
+ * Alumnos que acumulan `threshold` o más inasistencias a sesiones EN VIVO ya
+ * cerradas (sin registro en `session_attendance`) en sus cohortes activas.
+ * Respeta audiencia: una sesión `audience='capital_inteligente'` solo cuenta
+ * para alumnos con `enrollments.segment='capital_inteligente'`.
+ *
+ * Todo con service_role: el llamador (cron) no tiene sesión de usuario.
+ */
+export async function getStudentsAtAbsenceThreshold(
+  threshold: number,
+): Promise<StudentAbsence[]> {
+  const admin = createAdminClient();
+
+  const { data: cohortsRaw } = await admin
+    .from("cohorts")
+    .select("id, program_id, name")
+    .eq("status", "active");
+  const cohorts = (cohortsRaw ?? []) as CohortRow[];
+  if (cohorts.length === 0) return [];
+
+  const cohortIds = cohorts.map((c) => c.id);
+  const programByCohort = new Map(cohorts.map((c) => [c.id, c.program_id]));
+  const nameByCohort = new Map(cohorts.map((c) => [c.id, c.name]));
+
+  // Sesiones EN VIVO ya cerradas: su ventana de registro (ends_at + 30min)
+  // quedó atrás. No se distingue por `status` porque nada transiciona
+  // class_sessions.status a 'finished' automáticamente (solo se excluye
+  // 'cancelled').
+  const cutoff = new Date(Date.now() - GRACE_AFTER_MIN * 60_000).toISOString();
+  const { data: sessionsRaw } = await admin
+    .from("class_sessions")
+    .select("id, cohort_id, audience")
+    .in("cohort_id", cohortIds)
+    .neq("modality", "recorded")
+    .neq("status", "cancelled")
+    .lt("ends_at", cutoff);
+  const sessions = (sessionsRaw ?? []) as ClosedSessionRow[];
+  if (sessions.length === 0) return [];
+
+  const sessionsByCohort = new Map<string, ClosedSessionRow[]>();
+  for (const s of sessions) {
+    const list = sessionsByCohort.get(s.cohort_id) ?? [];
+    list.push(s);
+    sessionsByCohort.set(s.cohort_id, list);
+  }
+
+  const { data: enrollmentsRaw } = await admin
+    .from("enrollments")
+    .select("student_id, cohort_id, segment, profiles(email, full_name)")
+    .in("cohort_id", cohortIds)
+    .eq("status", "active");
+  const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentSegmentRow[];
+  if (enrollments.length === 0) return [];
+
+  const sessionIds = sessions.map((s) => s.id);
+  const { data: attendanceRaw } = await admin
+    .from("session_attendance")
+    .select("session_id, student_id")
+    .in("session_id", sessionIds);
+  const attended = new Set(
+    ((attendanceRaw ?? []) as Array<{ session_id: string; student_id: string }>).map(
+      (a) => `${a.session_id}:${a.student_id}`,
+    ),
+  );
+
+  const result: StudentAbsence[] = [];
+  for (const e of enrollments) {
+    if (!e.profiles?.email) continue;
+    const cohortSessions = sessionsByCohort.get(e.cohort_id) ?? [];
+    let absences = 0;
+    for (const s of cohortSessions) {
+      const applies =
+        s.audience === "all" ||
+        (s.audience === "capital_inteligente" && e.segment === "capital_inteligente");
+      if (!applies) continue;
+      if (!attended.has(`${s.id}:${e.student_id}`)) absences++;
+    }
+    if (absences >= threshold) {
+      result.push({
+        studentId: e.student_id,
+        cohortId: e.cohort_id,
+        programId: programByCohort.get(e.cohort_id) ?? null,
+        cohortName: nameByCohort.get(e.cohort_id) ?? null,
+        email: e.profiles.email,
+        fullName: e.profiles.full_name,
+        absences,
+      });
+    }
+  }
+  return result;
 }
 
 /** Quita la asistencia de un alumno a una sesión (corrección administrativa). */

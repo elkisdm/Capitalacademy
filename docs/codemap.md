@@ -53,7 +53,7 @@
 | `app/onboarding/[programa]/set-password/page.tsx` | Set-password branded por entorno | `/onboarding/<slug>/set-password` | — |
 | `app/(onboarding)/onboarding/complete-profile/` | Complete-profile genérico; deriva la marca desde la matrícula del usuario | `/onboarding/complete-profile` | — |
 | `app/(onboarding)/onboarding/[programa]/complete-profile/page.tsx` | Complete-profile branded por slug | `/onboarding/<slug>/complete-profile` | — |
-| `lib/classroom/access.ts` | Gate de acceso al classroom: matrícula activa **o** rol staff (admin/ops) sin matrícula | — | 0004 |
+| `lib/classroom/access.ts` | Gate de acceso al classroom: matrícula activa, rol staff (admin/ops), o docente/asistente (`cohort_roles`) de esa cohorte, todos sin matrícula | — | 0004, 0013 |
 | `lib/supabase/middleware.ts` | Whitelist de rutas públicas (incl. set-password genérico y branded) | — | — |
 | `app/auth/confirm/route.ts` | Verifica OTP de invitación/recovery y redirige al `next` (branded por entorno) | `/auth/confirm` | — |
 | `lib/classroom/enroll-from-payment.ts` | Matrícula + onboarding branded del comprador del Diplomado (link a `/onboarding/diplomado/set-password`) | — | — |
@@ -64,7 +64,8 @@
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/cohorts/[cohortId]/sesiones/` | Editor admin del calendario de la cohorte (crear/editar/eliminar sesiones, lista o calendario) | `/admin/cohorts/[cohortId]/sesiones` | 0008 |
 | `app/api/admin/sessions/route.ts` · `[sessionId]/route.ts` | CRUD de sesiones de clase de una cohorte | `POST/PATCH/DELETE /api/admin/sessions` | 0008 |
-| `app/api/admin/session-resources/route.ts` · `upload-url/route.ts` | Recursos de una sesión: link o **archivo subido** (≤50MB, bucket privado `lesson-resources`); DELETE limpia el objeto | `/api/admin/session-resources` | 0008 |
+| `app/api/admin/session-resources/route.ts` · `upload-url/route.ts` | Recursos de una sesión: link o **archivo subido** (≤50MB, bucket privado `lesson-resources`); DELETE limpia el objeto; gateado por `requireSessionStaff` (staff o docente de esa cohorte) | `/api/admin/session-resources` | 0008, 0013 |
+| `components/admin/session-resources-panel.tsx` | UI de material de la clase (subir/enlazar/borrar recurso); extraído de `sessions-manager-client.tsx` para reusarlo en el panel del profesor | — | 0013 |
 | `app/api/admin/enrollment-segment/route.ts` | Asignación manual del segmento "Capital Inteligente" a una matrícula | `/api/admin/enrollment-segment` | 0008 |
 | `components/admin/segment-toggle.tsx` | Toggle admin del segmento de un alumno | — | 0008 |
 | `app/(classroom)/classroom/[cohortSlug]/calendario/` | Calendario de clases del alumno (vista lista + mes, recursos por sesión, CTA "Responder quiz" si la sesión tiene evaluación `scope='session'` activa) | `/classroom/[cohortSlug]/calendario` | 0008 |
@@ -86,10 +87,18 @@
 | `lib/asistencia/checkin.ts` | Lógica **pura** de decisión del check-in (`evaluateCheckin`: sesión→matrícula→ventana→registro); la Server Action la envuelve | — | — |
 | `lib/asistencia/window.ts` | Ventana temporal válida (20 min antes / 30 después) | — | — |
 | `lib/asistencia/queries.ts` | Reportería de asistencia + marcado/desmarcado manual (service_role) | — | — |
-| `app/api/admin/sessions/[sessionId]/attendance/route.ts` | GET reporte · POST marcar · DELETE desmarcar (con `requireStaff`) | `/api/admin/sessions/[sessionId]/attendance` | — |
+| `app/api/admin/sessions/[sessionId]/attendance/route.ts` | GET reporte · POST marcar · DELETE desmarcar (gateado por `requireSessionStaff`: staff o docente/asistente de esa cohorte) | `/api/admin/sessions/[sessionId]/attendance` | 0013 |
 | `components/admin/session-qr.tsx` | QR imprimible por sesión para el PPT del docente (admin) | — | — |
 | `components/admin/session-attendance-panel.tsx` | Reportería + toggle de marcado manual en el editor de sesión | — | — |
 | `scripts/test-asistencia-e2e.mjs` | E2E autolimpiante del check-in (datos de prueba efímeros contra la BD real) | — | — |
+
+## Panel docente
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `app/(docente)/layout.tsx` | Layout dedicado del panel (sin `ClassroomSidebar`); gate: platform staff o docente/asistente (`cohort_roles`) en cualquier cohorte | — | 0013 |
+| `app/(docente)/docente/page.tsx` · `docente-panel-client.tsx` | Panel de solo lectura: SUS sesiones (próximas/pasadas) con asistencia y material por clase; link a Conversaciones por programa | `/docente` | 0013 |
+| `lib/docente/queries.ts` | Lecturas por service-role: `getTeacherCohorts`/`getTeacherSessions`, siempre partiendo de `cohort_roles` del propio usuario | — | 0013 |
 
 ## Classroom (alumno)
 
@@ -120,6 +129,7 @@
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
 | `db/migrations/0044_conversaciones.sql` | Tablas threads/comments/reactions + helpers has_program_access/is_program_staff + RLS por programa | — | 0010 |
+| `db/migrations/0057_teacher_panel.sql` | Redefine `has_program_access` para incluir `is_program_staff` (docente/asistente sin matrícula) | — | 0013 |
 | `lib/conversaciones/queries.ts` · `access.ts` | Lecturas del feed por programa + gate | — | 0010 |
 | `app/api/classroom/conversaciones/{route,[threadId],comments,reactions}/route.ts` | CRUD threads/comentarios/reacciones | — | 0010 |
 | `app/(classroom)/classroom/[cohortSlug]/conversaciones/{page,[threadId]/page}.tsx` | Feed + detalle del hilo | `/classroom/[cohortSlug]/conversaciones`, `/classroom/[cohortSlug]/conversaciones/[threadId]` | 0010 |
@@ -187,7 +197,7 @@
 | `lib/admin/active-env.ts` · `env-actions.ts` | Entorno activo (program_id) + modo de vista (admin/alumno) del staff, en cookies; `resolveProgramScope` (precedencia `?program` > cookie) y server actions `setActiveEnv`/`setViewMode` | — | — |
 | `components/admin/env-switcher.tsx` | Selector global de entorno + toggle "Ver como Admin/Alumno" (en el sidebar, solo staff) | — | — |
 | `lib/admin/session-module.ts` | Valida que el módulo de una sesión pertenezca al programa de la cohorte (POST/PATCH de sesiones) | — | — |
-| `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada y modelo de roles | — | 0004 |
+| `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada, modelo de roles y `requireSessionStaff` (gate por-sesión: staff o docente/asistente de la cohorte de esa sesión) | — | 0004, 0013 |
 
 ## Landing (público)
 

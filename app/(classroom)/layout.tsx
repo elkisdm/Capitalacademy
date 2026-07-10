@@ -112,6 +112,20 @@ export default async function ClassroomLayout({
     ]);
   }
 
+  // Docente/asistente (cohort_roles), para mostrar el link "Panel docente" en
+  // el sidebar. El staff ya tiene su propia nav (admin), no necesita este check.
+  let isTeacher = false;
+  if (!isStaff) {
+    const { data: cohortRole } = await supabase
+      .from("cohort_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .in("role", ["teacher", "assistant"])
+      .limit(1)
+      .maybeSingle();
+    isTeacher = !!cohortRole;
+  }
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
       <ClassroomSidebar
@@ -126,6 +140,7 @@ export default async function ClassroomLayout({
         envOptions={envOptions}
         activeEnv={activeEnv}
         viewerId={user.id}
+        isTeacher={isTeacher}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="ca-fade-up">{children}</div>

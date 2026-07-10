@@ -40,5 +40,18 @@ export async function getClassroomAccess(
     return { enrollment: null, isStaff: true };
   }
 
+  // Docente/asistente de ESTE cohort (cohort_roles, no system_role): acceso
+  // staff-preview acotado a las cohortes donde realmente tiene el rol.
+  const { data: cohortRole } = await supabase
+    .from("cohort_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("cohort_id", cohortId)
+    .in("role", ["teacher", "assistant"])
+    .maybeSingle();
+  if (cohortRole) {
+    return { enrollment: null, isStaff: true };
+  }
+
   return null;
 }

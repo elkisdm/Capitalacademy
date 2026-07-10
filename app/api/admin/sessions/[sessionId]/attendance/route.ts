@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireStaff } from "@/lib/auth/authorize-admin";
+import { requireSessionStaff } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
 import {
   getSessionAttendance,
@@ -24,13 +24,13 @@ export async function GET(
   _req: Request,
   props: { params: Promise<{ sessionId: string }> },
 ) {
-  const auth = await requireStaff();
-  if ("error" in auth) return auth.error;
-
   const sessionId = await resolveSessionId(props);
   if (!sessionId) {
     return NextResponse.json({ error: "ID inválido" }, { status: 422 });
   }
+
+  const auth = await requireSessionStaff(sessionId);
+  if ("error" in auth) return auth.error;
 
   const report = await getSessionAttendance(sessionId);
   if (!report) {
@@ -44,13 +44,13 @@ export async function POST(
   req: Request,
   props: { params: Promise<{ sessionId: string }> },
 ) {
-  const auth = await requireStaff();
-  if ("error" in auth) return auth.error;
-
   const sessionId = await resolveSessionId(props);
   if (!sessionId) {
     return NextResponse.json({ error: "ID inválido" }, { status: 422 });
   }
+
+  const auth = await requireSessionStaff(sessionId);
+  if ("error" in auth) return auth.error;
 
   let body: unknown;
   try {
@@ -79,13 +79,13 @@ export async function DELETE(
   req: Request,
   props: { params: Promise<{ sessionId: string }> },
 ) {
-  const auth = await requireStaff();
-  if ("error" in auth) return auth.error;
-
   const sessionId = await resolveSessionId(props);
   if (!sessionId) {
     return NextResponse.json({ error: "ID inválido" }, { status: 422 });
   }
+
+  const auth = await requireSessionStaff(sessionId);
+  if ("error" in auth) return auth.error;
 
   let body: unknown;
   try {

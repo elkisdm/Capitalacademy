@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff } from "@/lib/auth/authorize-admin";
+import { requireSessionStaff } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
@@ -33,9 +33,6 @@ function safeName(name: string): string {
 }
 
 export async function POST(req: Request) {
-  const staff = await requireStaff();
-  if ("error" in staff) return staff.error;
-
   let body: unknown;
   try {
     body = await req.json();
@@ -52,6 +49,9 @@ export async function POST(req: Request) {
   }
 
   const { sessionId, filename } = parsed.data;
+
+  const staff = await requireSessionStaff(sessionId);
+  if ("error" in staff) return staff.error;
   // Path con prefijo de sesión: aísla los archivos por clase y evita colisiones.
   const path = `s/${sessionId}/${crypto.randomUUID()}-${safeName(filename)}`;
 

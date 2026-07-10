@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff } from "@/lib/auth/authorize-admin";
+import { requireSessionStaff } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
 
@@ -49,10 +49,6 @@ const createResourceSchema = z.discriminatedUnion("source", [
 ]);
 
 export async function POST(req: Request) {
-  const staff = await requireStaff();
-  if ("error" in staff) return staff.error;
-  const user = staff.user;
-
   const supabase = await createClient();
 
   let body: unknown;
@@ -72,6 +68,10 @@ export async function POST(req: Request) {
 
   const input = parsed.data;
   const { sessionId, title, type } = input;
+
+  const staff = await requireSessionStaff(sessionId);
+  if ("error" in staff) return staff.error;
+  const user = staff.user;
 
   // Para archivos subidos: el path debe pertenecer a esta sesión y el objeto
   // debe existir en Storage (evita filas huérfanas o referenciar otro archivo).
@@ -146,16 +146,27 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const staff = await requireStaff();
-  if ("error" in staff) return staff.error;
-
-  const supabase = await createClient();
-
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "id es requerido" }, { status: 422 });
   }
+
+  // Resuelve la sesión del recurso por service-role: el DELETE solo recibe
+  // `id`, así que el gate por-sesión necesita el session_id antes de autorizar.
+  const { data: resource } = await createAdminClient()
+    .from("session_resources")
+    .select("session_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!resource) {
+    return NextResponse.json({ error: "Recurso no encontrado" }, { status: 404 });
+  }
+
+  const staff = await requireSessionStaff(resource.session_id);
+  if ("error" in staff) return staff.error;
+
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("session_resources")

@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import {
@@ -48,9 +49,21 @@ function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons;
             className={`relative aspect-video w-full overflow-hidden ${thumb}`}
             style={{ borderRadius: 16, filter: isLocked ? "grayscale(0.6) brightness(0.7)" : "none" }}
           >
-            <div className="shape-circle absolute -right-6 -top-6 h-20 w-20 bg-white/30" />
-            <div className="shape-circle absolute -bottom-4 -left-4 h-16 w-16 bg-ca-lime opacity-85" />
-            <div className="shape-circle absolute bottom-4 right-4 h-3 w-3 bg-white" />
+            {mod.cover_image_url ? (
+              <Image
+                src={mod.cover_image_url}
+                alt=""
+                fill
+                sizes="(max-width:1280px) 100vw, 200px"
+                className="object-cover"
+              />
+            ) : (
+              <>
+                <div className="shape-circle absolute -right-6 -top-6 h-20 w-20 bg-white/30" />
+                <div className="shape-circle absolute -bottom-4 -left-4 h-16 w-16 bg-ca-lime opacity-85" />
+                <div className="shape-circle absolute bottom-4 right-4 h-3 w-3 bg-white" />
+              </>
+            )}
             <div className="absolute inset-0 flex items-end p-4">
               <div className="font-black leading-none text-white" style={{ fontSize: 56, letterSpacing: "-0.04em", textShadow: "0 4px 24px rgba(0,0,0,0.25)" }}>
                 {String(mod.position).padStart(2, "0")}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Trash2, Check, AlertTriangle } from "lucide-react";
 import { LessonContentEditor } from "@/components/admin/lesson-content-editor";
+import { CoverImageField } from "@/components/admin/cover-image-field";
 
 type LessonKind = "live_in_person" | "live_online" | "recorded";
 
@@ -21,6 +22,7 @@ type LessonEditFormProps = {
     content: string | null;
     kind: LessonKind;
     unlockAt: string | null;
+    coverImageUrl: string | null;
   };
 };
 
@@ -119,6 +121,8 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
           placeholder="Breve descripción de la lección (opcional)"
         />
       </div>
+
+      <CoverImageField target="lesson" id={lessonId} initialUrl={initial.coverImageUrl} />
 
       <div>
         <label className="mb-1 block text-xs font-medium text-ca-ink-soft">

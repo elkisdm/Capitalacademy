@@ -328,7 +328,7 @@ function CommentItem({
           </div>
 
           {/* Content */}
-          <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-relaxed text-ca-ink">
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ca-ink">
             {comment.content}
           </p>
 
@@ -475,7 +475,7 @@ function ReplyItem({
             {timeAgo(reply.created_at)}
           </span>
         </div>
-        <p className="mt-0.5 whitespace-pre-wrap text-[12px] leading-relaxed text-ca-ink">
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ca-ink">
           {reply.content}
         </p>
       </div>

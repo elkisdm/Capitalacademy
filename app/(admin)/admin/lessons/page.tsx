@@ -168,6 +168,8 @@ export default async function AdminLessonsPage(props: {
                       code: mod.code as string,
                       title: mod.title as string,
                       description: (mod.description as string | null) ?? null,
+                      cover_image_url:
+                        ((mod as Record<string, unknown>).cover_image_url as string | null) ?? null,
                     }}
                   />
                 </div>

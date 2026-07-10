@@ -54,7 +54,16 @@ function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
           className={`relative block h-16 w-28 overflow-hidden rounded-xl bg-ca-ink/5`}
           style={{ filter: isLocked ? "grayscale(0.7) brightness(0.7)" : "none" }}
         >
-          {lesson.mux_playback_id ? (
+          {lesson.cover_image_url ? (
+            <Image
+              src={lesson.cover_image_url}
+              alt=""
+              fill
+              sizes="112px"
+              className="object-cover"
+              loading="lazy"
+            />
+          ) : lesson.mux_playback_id ? (
             <Image
               src={`https://image.mux.com/${lesson.mux_playback_id}/thumbnail.webp?time=30&width=224&height=128&fit_mode=smartcrop`}
               alt=""

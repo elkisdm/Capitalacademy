@@ -6,6 +6,7 @@ export type Lesson = Tables<"lessons"> & {
   mux_upload_id: string | null;
   video_duration_seconds: number | null;
   thumbnail_url: string | null;
+  cover_image_url: string | null;
 };
 
 export type VideoProgress = {
@@ -46,6 +47,7 @@ export type LessonWithProgress = Lesson & {
 export type ModuleWithLessons = Tables<"program_modules"> & {
   lessons: LessonWithProgress[];
   teacher: { full_name: string | null } | null;
+  cover_image_url: string | null;
 };
 
 export type ModuleProgress = {

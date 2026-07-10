@@ -94,6 +94,7 @@ export default async function AdminLessonPage(
               | "live_online"
               | "recorded") ?? "recorded",
             unlockAt: ((lesson as Record<string, unknown>).unlock_at as string | null) ?? null,
+            coverImageUrl: ((lesson as Record<string, unknown>).cover_image_url as string | null) ?? null,
           }}
         />
       </section>

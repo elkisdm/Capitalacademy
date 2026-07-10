@@ -19,6 +19,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Los datos personales sensibles de un alumno (RUT, dirección, contacto de emergencia, fecha de nacimiento) ya no son visibles para sus compañeros de programa; en el foro y los comentarios solo se comparte nombre y avatar. Además, los egresados vuelven a tener acceso a las grabaciones de sus clases en vivo (`4925e11`)
 
 ### Fixed
+- Un enlace largo pegado sin espacios en un comentario de clase o en un hilo del foro ya no desborda el diseño en el celular: ahora el texto envuelve dentro del contenedor.
 - Los alumnos matriculados en más de un programa (por ejemplo, el Diplomado y la Capacitación Comercial CI) ahora ven una pantalla para elegir a cuál entrar al abrir "Mis programas". Antes, el classroom abría siempre el programa más reciente y dejaba los demás sin forma de volver a ellos (`777fcf1`)
 - La barra de progreso y el control de volumen del reproductor ahora se pueden operar con el teclado (flechas, inicio/fin) y anuncian su posición a lectores de pantalla (`083bcf4`)
 - Ahora se pide confirmación antes de borrar algo que no se puede deshacer (una evaluación con sus intentos, una pregunta, un comentario o una conversación) y antes de que la IA reescriba preguntas ya creadas. Además, en el panel de Usuarios los filtros, la búsqueda y la página quedan en la dirección web: puedes compartir el enlace o usar el botón "atrás" (`dafbd56`)
@@ -28,6 +29,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Al usar "Ver como Alumno", el staff ahora ve el classroom del entorno seleccionado en el switcher. Antes, si el usuario estaba matriculado en varios programas, siempre se abría el mismo (el de su matrícula más reciente) sin importar el entorno elegido (`310ab5b`)
 
 ### Added
+- El equipo ahora puede subir una portada personalizada a cada módulo y cada clase grabada desde el editor; el classroom del alumno la muestra en la tarjeta del módulo y en la lista de lecciones, con el diseño actual como respaldo si no hay portada.
 - En el editor de cada clase en vivo, el equipo ve la asistencia: quién estuvo presente (por QR o marcado a mano, con la hora) y quién faltó, más el conteo de presentes; y puede marcar o quitar la asistencia de un alumno manualmente cuando no alcanzó a escanear el QR (`7e6de27`)
 - Nuevo entorno "Ciclo de Capacitación Comercial CI": un ciclo interno y gratuito para la fuerza de ventas de Capital Inteligente, con classroom propio (5 sesiones presenciales de los martes), foro y login/onboarding con marca propia. Queda listo para matricular a sus asistentes (`885323d`)
 - Registro de asistencia por código QR: cada clase en vivo tiene un QR (para la presentación del docente) que el alumno escanea, inicia sesión y marca su asistencia con un tap; el equipo genera, descarga e imprime el QR desde el editor de sesiones (`0d5df46`)

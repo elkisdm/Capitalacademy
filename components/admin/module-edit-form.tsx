@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Save, Trash2, Check, AlertTriangle, X } from "lucide-react";
+import { CoverImageField } from "@/components/admin/cover-image-field";
 
 type ModuleEditFormProps = {
   module: {
@@ -10,6 +11,7 @@ type ModuleEditFormProps = {
     code: string;
     title: string;
     description: string | null;
+    cover_image_url: string | null;
   };
 };
 
@@ -126,6 +128,8 @@ export function ModuleEditForm({ module }: ModuleEditFormProps) {
           placeholder="Descripción del módulo (opcional)"
         />
       </div>
+
+      <CoverImageField target="module" id={module.id} initialUrl={module.cover_image_url} />
 
       {error && (
         <p role="alert" className="flex items-center gap-1.5 text-sm text-red-600">

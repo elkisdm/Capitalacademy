@@ -31,7 +31,7 @@ export function linkify(text: string): ReactNode {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-ca-violet underline break-words"
+          className="text-ca-violet underline break-all"
         >
           {url}
         </a>

@@ -63,6 +63,8 @@ type EnrollmentRow = {
   id: string;
   student_id: string;
   cohort_id: string;
+  segment: string | null;
+  enrolled_at: string;
   profiles: { full_name: string | null; email: string | null } | null;
 };
 
@@ -107,7 +109,7 @@ export async function getStudentPanelReport(
     scopeCohortIds.length > 0
       ? await admin
           .from("enrollments")
-          .select("id, student_id, cohort_id, profiles(full_name, email)")
+          .select("id, student_id, cohort_id, segment, enrolled_at, profiles(full_name, email)")
           .in("cohort_id", scopeCohortIds)
           .eq("status", "active")
       : { data: [] as EnrollmentRow[] };
@@ -117,9 +119,10 @@ export async function getStudentPanelReport(
     scopeCohortIds.length > 0
       ? await admin
           .from("class_sessions")
-          .select("id, cohort_id, title, starts_at, ends_at, status")
+          .select("id, cohort_id, title, starts_at, ends_at, status, audience")
           .in("cohort_id", scopeCohortIds)
           .neq("status", "cancelled")
+          .neq("modality", "recorded")
           .lt("ends_at", nowIso)
       : { data: [] };
   const closedSessions = (sessionsRaw ?? []).filter(
@@ -215,9 +218,15 @@ export async function getStudentPanelReport(
     const fullName = profile?.full_name ?? profile?.email ?? "Alumno";
     const email = profile?.email ?? "";
 
-    const cohortSessions = sessionsByCohort.get(enr.cohort_id) ?? [];
-    const total = cohortSessions.length;
-    const missed = cohortSessions.filter(
+    const applicableSessions = (sessionsByCohort.get(enr.cohort_id) ?? []).filter((s) => {
+      if (s.ends_at < enr.enrolled_at) return false; // sesión anterior a su matrícula: no cuenta
+      return (
+        s.audience === "all" ||
+        (s.audience === "capital_inteligente" && enr.segment === "capital_inteligente")
+      );
+    });
+    const total = applicableSessions.length;
+    const missed = applicableSessions.filter(
       (s) => !presentSet.has(`${enr.student_id}:${s.id}`),
     );
     const present = total - missed.length;

@@ -6,6 +6,7 @@ import { MuxUploader } from "@/components/admin/mux-uploader";
 import { ResourceManager } from "@/components/admin/resource-manager";
 import { LessonEditForm } from "@/components/admin/lesson-edit-form";
 import { LessonQuizPanel } from "@/components/admin/quiz/lesson-quiz-panel";
+import { CollapsibleSection } from "@/components/admin/collapsible-section";
 import { Pencil, ListChecks } from "lucide-react";
 
 function formatDuration(seconds: number | null): string {
@@ -78,11 +79,12 @@ export default async function AdminLessonPage(
       </div>
 
       {/* Editar metadatos de la lección */}
-      <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
-          <Pencil className="h-5 w-5" />
-          Editar lección
-        </h2>
+      <CollapsibleSection
+        title="Editar lección"
+        subtitle="Título, descripción, tipo, portada y contenido"
+        icon={<Pencil className="h-5 w-5" />}
+        defaultOpen
+      >
         <LessonEditForm
           lessonId={lessonId}
           initial={{
@@ -97,15 +99,14 @@ export default async function AdminLessonPage(
             coverImageUrl: ((lesson as Record<string, unknown>).cover_image_url as string | null) ?? null,
           }}
         />
-      </section>
+      </CollapsibleSection>
 
       {/* Video section */}
-      <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
-          <Video className="h-5 w-5" />
-          Video
-        </h2>
-
+      <CollapsibleSection
+        title="Video"
+        icon={<Video className="h-5 w-5" />}
+        summary={hasVideo ? "Video listo" : "Sin video"}
+      >
         {muxError && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-semibold text-red-700">
@@ -158,33 +159,33 @@ export default async function AdminLessonPage(
             <MuxUploader lessonId={lessonId} />
           </div>
         )}
-      </section>
+      </CollapsibleSection>
 
       {/* Resources section */}
-      <section className="mb-8 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
-          <FileText className="h-5 w-5" />
-          Recursos
-        </h2>
+      <CollapsibleSection
+        title="Recursos"
+        icon={<FileText className="h-5 w-5" />}
+        summary={`${resources?.length ?? 0} recurso${(resources?.length ?? 0) === 1 ? "" : "s"}`}
+      >
         <ResourceManager
           lessonId={lessonId}
           initialResources={resources ?? []}
         />
-      </section>
+      </CollapsibleSection>
 
       {/* Evaluación de la clase */}
       {mod?.program_id && (
-        <section className="rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ca-ink">
-            <ListChecks className="h-5 w-5" />
-            Evaluación de la clase
-          </h2>
+        <CollapsibleSection
+          title="Evaluación de la clase"
+          subtitle="Quiz de la lección: preguntas y configuración"
+          icon={<ListChecks className="h-5 w-5" />}
+        >
           <LessonQuizPanel
             programId={mod.program_id}
             lessonId={lessonId}
             lessonTitle={lesson.title}
           />
-        </section>
+        </CollapsibleSection>
       )}
     </div>
   );

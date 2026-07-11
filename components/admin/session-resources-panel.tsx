@@ -138,15 +138,7 @@ export function SessionResourcesPanel({
   }
 
   return (
-    <div className="ca-card mb-6 p-6">
-      <h2 className="mb-1 text-[18px] font-black text-ca-ink">
-        Material de la clase
-      </h2>
-      <p className="mb-4 text-[12px] text-ca-ink-soft">
-        Recursos asociados a esta sesión (presentaciones, lecturas, enlaces). El
-        alumno los verá en su calendario.
-      </p>
-
+    <div>
       {resources.length > 0 ? (
         <div className="mb-4 flex flex-col divide-y divide-ca-ink/[0.06] rounded-xl border border-ca-ink/[0.08]">
           {resources.map((r) => (

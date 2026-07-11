@@ -9,10 +9,11 @@ import {
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { LessonVideoSection } from "@/components/classroom/lesson-video-section";
+import { ClassTranscriptPanel } from "@/components/classroom/class-transcript-panel";
 import { EvaluationRunner } from "@/components/classroom/evaluation/evaluation-runner";
 import { VideoSyncProvider } from "@/components/classroom/video-sync-context";
 import { Breadcrumb, Avatar } from "@/components/classroom/primitives";
-import type { SessionResourceType } from "@/lib/classroom/types";
+import { ClassMaterial } from "@/components/classroom/class-material";
 
 const TZ = "America/Santiago";
 
@@ -20,14 +21,6 @@ const MODALITY_LABEL: Record<string, string> = {
   live_in_person: "Presencial",
   live_online: "Online",
   recorded: "Grabada",
-};
-
-const RESOURCE_ICON: Record<SessionResourceType | "other", string> = {
-  pdf: "📄",
-  link: "🔗",
-  template: "📋",
-  document: "📝",
-  other: "📎",
 };
 
 function fmtSessionDate(iso: string) {
@@ -162,6 +155,12 @@ export default async function ClassSessionPage(
           currentUserAvatarUrl={profile?.avatar_url ?? null}
           hasTranscript={!!transcript?.content_vtt}
         />
+        {transcript?.content_vtt && (
+          <ClassTranscriptPanel
+            transcriptVtt={transcript.content_vtt}
+            correctedVtt={transcript.corrected_vtt}
+          />
+        )}
       </VideoSyncProvider>
     );
   }
@@ -248,21 +247,7 @@ export default async function ClassSessionPage(
           <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             Material de la clase
           </div>
-          <div className="flex flex-wrap gap-2">
-            {session.resources.map((r) => (
-              <a
-                key={r.id}
-                href={r.url ?? undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-disabled={r.url ? undefined : true}
-                className={`inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] bg-ca-surface px-3 py-1.5 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet${r.url ? "" : " pointer-events-none opacity-60"}`}
-              >
-                <span>{RESOURCE_ICON[r.type] ?? RESOURCE_ICON.other}</span>
-                {r.title}
-              </a>
-            ))}
-          </div>
+          <ClassMaterial resources={session.resources} />
         </section>
       )}
 

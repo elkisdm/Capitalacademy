@@ -39,7 +39,13 @@ function initialsOf(row: AttendanceRow): string {
  * Reportería de asistencia de una sesión + marcado manual por staff.
  * Vive dentro del editor de sesión (junto al QR y al panel de grabación).
  */
-export function SessionAttendancePanel({ sessionId }: { sessionId: string }) {
+export function SessionAttendancePanel({
+  sessionId,
+  embedded = false,
+}: {
+  sessionId: string;
+  embedded?: boolean;
+}) {
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +144,7 @@ export function SessionAttendancePanel({ sessionId }: { sessionId: string }) {
   const bulkBusy = bulk !== null;
 
   return (
-    <div className="ca-card overflow-hidden">
+    <div className={embedded ? "overflow-hidden" : "ca-card overflow-hidden"}>
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div>
           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ca-ink-soft">

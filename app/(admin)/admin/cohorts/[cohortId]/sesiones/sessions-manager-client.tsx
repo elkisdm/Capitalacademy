@@ -12,8 +12,10 @@ import { MonthCalendar } from "@/components/classroom/month-calendar";
 import { SessionQuizPanel } from "@/components/admin/quiz/session-quiz-panel";
 import { SessionRecordingPanel } from "@/components/admin/session-recording-panel";
 import { SessionQrButton } from "@/components/admin/session-qr";
-import { SessionAttendancePanel } from "@/components/admin/session-attendance-panel";
+import { SessionAttendanceButton } from "@/components/admin/session-attendance-button";
+import { SessionDeleteDialog } from "@/components/admin/session-delete-dialog";
 import { SessionResourcesPanel } from "@/components/admin/session-resources-panel";
+import { CollapsibleSection } from "@/components/admin/collapsible-section";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -157,6 +159,28 @@ function fmtRange(startsAt: string, endsAt: string): string {
   return `${day} · ${start}–${end}`;
 }
 
+type TimeState = "live" | "upcoming" | "past";
+
+function timeStateOf(s: ClassSession, nowMs: number): TimeState {
+  const start = new Date(s.starts_at).getTime();
+  const end = new Date(s.ends_at).getTime();
+  if (start <= nowMs && nowMs <= end) return "live";
+  if (start > nowMs) return "upcoming";
+  return "past";
+}
+
+const TIME_STATE_PILL: Record<TimeState, string> = {
+  live: "bg-ca-lime text-ca-ink",
+  upcoming: "bg-ca-violet/10 text-ca-violet",
+  past: "bg-ca-bg-soft text-ca-ink-soft",
+};
+
+const TIME_STATE_LABEL: Record<TimeState, string> = {
+  live: "En vivo",
+  upcoming: "Próxima",
+  past: "Finalizada",
+};
+
 function emptyForm(): FormState {
   return {
     title: "",
@@ -215,6 +239,12 @@ export function SessionsManagerClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "month">("list");
+  const [now, setNow] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ClassSession | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
 
   const teacherName = (id: string | null) =>
     id ? (instructors.find((i) => i.id === id)?.full_name ?? "Sin docente") : "Sin docente";
@@ -335,15 +365,11 @@ export function SessionsManagerClient({
     }
   }
 
-  async function handleDelete(s: ClassSession) {
-    const ok = window.confirm(
-      `¿Eliminar la sesión "${s.title ?? "Sin título"}"? Esta acción no se puede deshacer.`,
-    );
-    if (!ok) return;
-
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/sessions/${s.id}`, {
+      const res = await fetch(`/api/admin/sessions/${deleteTarget.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -352,6 +378,7 @@ export function SessionsManagerClient({
         return;
       }
       await reloadSessions();
+      setDeleteTarget(null);
     } catch {
       setError("Error de red al eliminar la sesión.");
     } finally {
@@ -396,6 +423,120 @@ export function SessionsManagerClient({
   }
 
   const showForm = creating || editing !== null;
+
+  const upcomingSessions =
+    now !== null ? sessions.filter((s) => timeStateOf(s, now) !== "past") : [];
+  const pastSessions =
+    now !== null
+      ? sessions
+          .filter((s) => timeStateOf(s, now) === "past")
+          .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+      : [];
+
+  function renderSessionCard(s: ClassSession) {
+    const status = s.status as SessionStatus;
+    const timeState = now !== null ? timeStateOf(s, now) : null;
+    const useDerivedPill = timeState !== null && status !== "cancelled";
+    const pillLabel = useDerivedPill ? TIME_STATE_LABEL[timeState] : STATUS_LABELS[status];
+    const pillClass = useDerivedPill ? TIME_STATE_PILL[timeState] : STATUS_PILL[status];
+    const isPast = timeState === "past";
+
+    const qrButton = (
+      <SessionQrButton
+        key="qr"
+        sessionId={s.id}
+        sessionTitle={s.title ?? "Clase en vivo"}
+        emphasized={timeState !== null && !isPast}
+      />
+    );
+    const attendanceButton = (
+      <SessionAttendanceButton
+        key="attendance"
+        sessionId={s.id}
+        sessionTitle={s.title ?? "Clase en vivo"}
+        emphasized={isPast}
+      />
+    );
+
+    return (
+      <div
+        key={s.id}
+        className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] font-bold text-ca-ink-soft">
+              {fmtRange(s.starts_at, s.ends_at)}
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pillClass}`}
+            >
+              {pillLabel}
+            </span>
+            {s.audience === "capital_inteligente" && (
+              <span className="rounded-full bg-ca-navy-ink/[0.06] px-2 py-0.5 text-[10px] font-bold text-ca-ink">
+                Solo CI
+              </span>
+            )}
+          </div>
+          <h3 className="mt-1 truncate text-[15px] font-extrabold tracking-tight text-ca-ink">
+            {s.title ?? "Sin título"}
+          </h3>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-ca-ink-soft">
+            <span>{MODALITY_LABELS[s.modality as Modality]}</span>
+            <span>·</span>
+            <span>{teacherName(s.teacher_id)}</span>
+            {s.meeting_url && (
+              <>
+                <span>·</span>
+                <a
+                  href={s.meeting_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-ca-violet hover:underline"
+                >
+                  Enlace
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {isPast ? (
+            <>
+              {attendanceButton}
+              {qrButton}
+            </>
+          ) : (
+            <>
+              {qrButton}
+              {attendanceButton}
+            </>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => openEdit(s)}
+            aria-label="Editar sesión"
+            className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
+          >
+            <PencilIcon />
+            Editar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setDeleteTarget(s)}
+            aria-label="Eliminar sesión"
+            disabled={saving}
+            className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] text-ca-ink-soft hover:border-ca-amber hover:text-[#8b6914]"
+          >
+            <TrashIcon />
+            Eliminar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -463,58 +604,59 @@ export function SessionsManagerClient({
       )}
 
       {showForm && (
-        <SessionForm
-          form={form}
-          instructors={instructors}
-          modules={modules}
-          saving={saving}
-          error={error}
-          isEditing={editing !== null}
-          onChange={updateField}
-          onCancel={closeForm}
-          onSubmit={handleSubmit}
-        />
+        <CollapsibleSection
+          title={editing ? "Editar sesión" : "Nueva sesión"}
+          icon={<PencilIcon />}
+          defaultOpen
+        >
+          <SessionForm
+            form={form}
+            instructors={instructors}
+            modules={modules}
+            saving={saving}
+            error={error}
+            isEditing={editing !== null}
+            onChange={updateField}
+            onCancel={closeForm}
+            onSubmit={handleSubmit}
+          />
+        </CollapsibleSection>
       )}
 
       {editing && (
-        <SessionResourcesPanel
-          sessionId={editing.id}
-          resources={resources.filter((r) => r.session_id === editing.id)}
-          onAdd={addResource}
-          onRemove={removeResource}
-        />
+        <CollapsibleSection
+          title="Material de la clase"
+          summary={`${resources.filter((r) => r.session_id === editing.id).length} recursos`}
+        >
+          <SessionResourcesPanel
+            sessionId={editing.id}
+            resources={resources.filter((r) => r.session_id === editing.id)}
+            onAdd={addResource}
+            onRemove={removeResource}
+          />
+        </CollapsibleSection>
       )}
 
       {editing && programId && (
-        <div className="ca-card mb-6 p-6">
-          <h2 className="mb-1 text-[18px] font-black text-ca-ink">Quiz de la clase</h2>
-          <p className="mb-4 text-[12px] text-ca-ink-soft">
-            Evaluación formativa de esta clase en vivo. Compártela por enlace o QR para que el
-            alumno la responda durante o después de la sesión.
-          </p>
+        <CollapsibleSection
+          title="Quiz de la clase"
+          subtitle="Evaluación formativa por enlace o QR"
+        >
           <SessionQuizPanel
             programId={programId}
             sessionId={editing.id}
             sessionLabel={editing.title ?? "Clase en vivo"}
           />
-        </div>
+        </CollapsibleSection>
       )}
 
       {editing && (
-        <div className="ca-card mb-6 p-6">
-          <h2 className="mb-1 text-[18px] font-black text-ca-ink">Repetición de la clase</h2>
-          <p className="mb-4 text-[12px] text-ca-ink-soft">
-            Sube la grabación de esta clase en vivo. El alumno la verá como repetición con el
-            reproductor completo (progreso, transcripción, resumen IA) desde la pantalla de la clase.
-          </p>
+        <CollapsibleSection
+          title="Repetición de la clase"
+          subtitle="Sube la grabación de la clase en vivo"
+        >
           <SessionRecordingPanel sessionId={editing.id} />
-        </div>
-      )}
-
-      {editing && (
-        <div className="mb-6">
-          <SessionAttendancePanel sessionId={editing.id} />
-        </div>
+        </CollapsibleSection>
       )}
 
       {view === "month" ? (
@@ -538,84 +680,43 @@ export function SessionsManagerClient({
             Crea la primera clase con el botón &ldquo;Nueva sesión&rdquo;.
           </p>
         </div>
-      ) : (
+      ) : now === null ? (
         <div className="ca-card divide-y divide-ca-ink/[0.06] overflow-hidden">
-          {sessions.map((s) => {
-            const status = s.status as SessionStatus;
-            return (
-              <div
-                key={s.id}
-                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[11px] font-bold text-ca-ink-soft">
-                      {fmtRange(s.starts_at, s.ends_at)}
-                    </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_PILL[status]}`}
-                    >
-                      {STATUS_LABELS[status]}
-                    </span>
-                    {s.audience === "capital_inteligente" && (
-                      <span className="rounded-full bg-ca-navy-ink/[0.06] px-2 py-0.5 text-[10px] font-bold text-ca-ink">
-                        Solo CI
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mt-1 truncate text-[15px] font-extrabold tracking-tight text-ca-ink">
-                    {s.title ?? "Sin título"}
-                  </h3>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-ca-ink-soft">
-                    <span>{MODALITY_LABELS[s.modality as Modality]}</span>
-                    <span>·</span>
-                    <span>{teacherName(s.teacher_id)}</span>
-                    {s.meeting_url && (
-                      <>
-                        <span>·</span>
-                        <a
-                          href={s.meeting_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-bold text-ca-violet hover:underline"
-                        >
-                          Enlace
-                        </a>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2">
-                  <SessionQrButton
-                    sessionId={s.id}
-                    sessionTitle={s.title ?? "Clase en vivo"}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => openEdit(s)}
-                    aria-label="Editar sesión"
-                    className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
-                  >
-                    <PencilIcon />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDelete(s)}
-                    aria-label="Eliminar sesión"
-                    disabled={saving}
-                    className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] text-ca-ink-soft hover:border-ca-amber hover:text-[#8b6914]"
-                  >
-                    <TrashIcon />
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+          {sessions.map((s) => renderSessionCard(s))}
         </div>
+      ) : (
+        <>
+          {upcomingSessions.length > 0 && (
+            <>
+              <h2 className="mb-2 mt-6 text-[11px] font-black uppercase tracking-[0.2em] text-ca-ink-soft">
+                Próximas
+              </h2>
+              <div className="ca-card divide-y divide-ca-ink/[0.06] overflow-hidden">
+                {upcomingSessions.map((s) => renderSessionCard(s))}
+              </div>
+            </>
+          )}
+          {pastSessions.length > 0 && (
+            <>
+              <h2 className="mb-2 mt-6 text-[11px] font-black uppercase tracking-[0.2em] text-ca-ink-soft">
+                Pasadas
+              </h2>
+              <div className="ca-card divide-y divide-ca-ink/[0.06] overflow-hidden">
+                {pastSessions.map((s) => renderSessionCard(s))}
+              </div>
+            </>
+          )}
+        </>
       )}
+
+      <SessionDeleteDialog
+        open={deleteTarget !== null}
+        session={deleteTarget}
+        resourceCount={resources.filter((r) => r.session_id === deleteTarget?.id).length}
+        deleting={saving}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
@@ -647,16 +748,7 @@ function SessionForm({
   const groupCls = "border-t border-ca-ink/[0.06] pt-5";
 
   return (
-    <div className="ca-card mb-6 p-6">
-      <h2 className="mb-1 text-[18px] font-black text-ca-ink">
-        {isEditing ? "Editar sesión" : "Nueva sesión"}
-      </h2>
-      <p className="mb-5 text-[12px] text-ca-ink-soft">
-        {isEditing
-          ? "Actualiza los datos de esta clase."
-          : "Completa los datos para programar la nueva clase."}
-      </p>
-
+    <div>
       <div className="flex flex-col gap-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveResourceUrls } from "./resource-urls";
 import type {
   ModuleWithLessons,
@@ -163,6 +164,7 @@ export async function getModulesWithLessons(
   if (lessonIds.length > 0) {
     // Sin matrícula (staff en modo previsualización) no hay progreso personal:
     // se omite la consulta y los módulos se muestran con progreso vacío.
+    const admin = createAdminClient();
     const [{ data: progress }, { data: resources }, { data: recLinks }] =
       await Promise.all([
         enrollmentId
@@ -177,7 +179,12 @@ export async function getModulesWithLessons(
           .select("*")
           .in("lesson_id", lessonIds)
           .order("position", { ascending: true }),
-        supabase
+        // Reverse-lookup de exclusión: DEBE cubrir TODAS las cohortes del programa (la
+        // RLS de class_sessions solo deja ver la cohorte propia y ocultaba las
+        // repeticiones de otras cohortes → se colaban como lección suelta). Admin SOLO
+        // para este set de ids a excluir (solo columna lesson_id, acotado a lessonIds;
+        // sin PII).
+        admin
           .from("class_sessions")
           .select("lesson_id")
           .in("lesson_id", lessonIds),

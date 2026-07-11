@@ -24,6 +24,7 @@ type SessionRowLite = {
   ends_at: string;
   status: string;
   title: string | null;
+  lesson_id: string | null;
 };
 
 function fmtUnlock(iso: string) {
@@ -71,7 +72,7 @@ export default async function CohortDashboardPage(
   if (moduleIds.length > 0) {
     const { data: sessionRows } = await supabase
       .from("class_sessions")
-      .select("id, module_id, starts_at, ends_at, status, title")
+      .select("id, module_id, starts_at, ends_at, status, title, lesson_id")
       .eq("cohort_id", cohortId)
       .in("module_id", moduleIds)
       .neq("status", "cancelled");
@@ -147,34 +148,32 @@ export default async function CohortDashboardPage(
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
     const contentCount = mod.lessons.length + moduleSessions.length;
 
-    let rows: ClassRowData[];
-    if (mod.lessons.length > 0) {
-      rows = mod.lessons.map((lesson) => {
-        const lessonStatus = getLessonStatus(lesson);
-        const status: ClassRowData["status"] = lessonStatus === "no_video" ? "available" : lessonStatus;
-        return {
-          key: lesson.id,
-          title: lesson.title,
-          status,
-          href: status === "locked" ? null : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}/${lesson.slug ?? lesson.id}`,
-          durationOrDate: fmtDuration(lesson.video_duration_seconds),
-          unlockLabel: status === "locked" && lesson.unlock_at ? `Desde ${fmtUnlock(lesson.unlock_at)}` : undefined,
-        };
-      });
-    } else {
-      rows = moduleSessions.map((session) => {
-        const start = new Date(session.starts_at);
-        const end = new Date(session.ends_at);
-        const status: ClassRowData["status"] = end < now ? "completed" : start <= now && now <= end ? "in_progress" : "available";
-        return {
-          key: session.id,
-          title: session.title ?? "Sin título",
-          status,
-          href: `/classroom/${cohortSlug}/clase/${session.id}`,
-          durationOrDate: fmtUnlock(session.starts_at),
-        };
-      });
-    }
+    const lessonRows: ClassRowData[] = mod.lessons.map((lesson) => {
+      const lessonStatus = getLessonStatus(lesson);
+      const status: ClassRowData["status"] = lessonStatus === "no_video" ? "available" : lessonStatus;
+      return {
+        key: lesson.id,
+        title: lesson.title,
+        status,
+        href: status === "locked" ? null : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}/${lesson.slug ?? lesson.id}`,
+        durationOrDate: fmtDuration(lesson.video_duration_seconds),
+        unlockLabel: status === "locked" && lesson.unlock_at ? `Desde ${fmtUnlock(lesson.unlock_at)}` : undefined,
+      };
+    });
+    const sessionRows: ClassRowData[] = moduleSessions.map((session) => {
+      const start = new Date(session.starts_at);
+      const end = new Date(session.ends_at);
+      const status: ClassRowData["status"] = end < now ? "completed" : start <= now && now <= end ? "in_progress" : "available";
+      return {
+        key: session.id,
+        title: session.title ?? "Sin título",
+        status,
+        href: `/classroom/${cohortSlug}/clase/${session.id}`,
+        durationOrDate: fmtUnlock(session.starts_at),
+        hasRecording: Boolean(session.lesson_id),
+      };
+    });
+    const rows: ClassRowData[] = [...lessonRows, ...sessionRows];
 
     const progress = calculateModuleProgress(mod.lessons);
     const isLocked = mod.lessons.length > 0 && mod.lessons.every((l) => l.unlock_at && new Date(l.unlock_at) > new Date());
@@ -336,46 +335,6 @@ export default async function CohortDashboardPage(
         </aside>
       </div>
 
-      {/* Certificate band */}
-      <div className="relative mt-4 overflow-hidden rounded-3xl bg-ca-navy-ink px-8 py-10">
-        <div className="shape-circle absolute -left-12 -top-12 h-40 w-40 bg-ca-violet opacity-40" />
-        <div className="shape-circle absolute -bottom-8 right-24 h-24 w-24 bg-ca-lime opacity-20" />
-        <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-lime">
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-              </svg>
-              Tu certificado
-            </div>
-            <h3 className="mt-2 text-[24px] font-black leading-tight tracking-tight text-white">
-              Certificado ejecutivo Capital Academy
-            </h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-white/60">
-              Completa las {totalContent} {totalContent === 1 ? "clase" : "clases"} para obtener tu certificado.
-            </p>
-            <div className="mt-4">
-              <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold">
-                <span className="text-white/60">{completedLessons} de {totalContent} {totalContent === 1 ? "clase" : "clases"}</span>
-                <span className="font-mono font-bold text-ca-lime">{totalContent > 0 ? Math.round((completedLessons / totalContent) * 100) : 0}%</span>
-              </div>
-              <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-ca-lime"
-                  style={{ width: `${totalContent > 0 ? (completedLessons / totalContent) * 100 : 0}%`, transition: "width 320ms ease" }}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <div className="grid h-20 w-20 place-items-center rounded-2xl border border-white/10 bg-white/[0.06]">
-              <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="var(--color-ca-lime)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

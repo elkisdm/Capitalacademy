@@ -30,8 +30,12 @@ export type LessonResource = {
   title: string;
   type: "pdf" | "link" | "template" | "document" | "other";
   // null cuando el recurso es un archivo subido todavía sin firmar; el resolver
-  // (resolveResourceUrls) la reemplaza por una signed URL antes de renderizar.
+  // (resolveResourceUrls) la reemplaza por una signed URL (con &download=) antes
+  // de renderizar.
   url: string | null;
+  // Signed URL SIN forzar descarga, para el visor in-app (null en links externos
+  // o si aún no se resolvió). Opcional: filas crudas de Supabase no la traen.
+  viewUrl?: string | null;
   storage_path: string | null;
   file_size_bytes: number | null;
   position: number;
@@ -88,8 +92,11 @@ export type SessionResource = {
   title: string;
   type: SessionResourceType;
   // null si es un archivo subido sin firmar; resolveResourceUrls la reemplaza
-  // por una signed URL antes de renderizar.
+  // por una signed URL (con &download=) antes de renderizar.
   url: string | null;
+  // Signed URL SIN forzar descarga, para el visor in-app (null en links externos
+  // o si aún no se resolvió). Opcional: filas crudas de Supabase no la traen.
+  viewUrl?: string | null;
   storage_path: string | null;
   position: number;
 };

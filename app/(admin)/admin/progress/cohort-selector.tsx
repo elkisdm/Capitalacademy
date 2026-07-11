@@ -26,10 +26,10 @@ export function CohortSelector({
   }
 
   return (
-    <div className="mb-6">
+    <div className="flex items-center gap-2">
       <label
         htmlFor="cohort-select"
-        className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft"
+        className="shrink-0 text-[11px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft"
       >
         Cohorte
       </label>
@@ -37,7 +37,7 @@ export function CohortSelector({
         id="cohort-select"
         value={selectedId}
         onChange={handleChange}
-        className="max-w-sm"
+        className="max-w-xs"
       >
         {cohorts.map((c) => (
           <option key={c.id} value={c.id}>

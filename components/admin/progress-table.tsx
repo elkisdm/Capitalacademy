@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { Avatar } from "@/components/classroom/primitives";
 import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  StudentToolbar,
+  StudentRow,
+  TwoPane,
+  MetricCard,
+  DetailSectionTitle,
+} from "@/components/admin/students/shared";
 import type { CohortStudentProgress } from "@/lib/classroom/admin-queries";
 
 function progressTone(pct: number) {
@@ -14,42 +21,22 @@ function progressTone(pct: number) {
   return { bg: "rgba(20,22,58,0.05)", fg: "var(--color-ca-ink-soft)", label: "sin iniciar" };
 }
 
-function ProgressCell({ pct, onClick }: { pct: number; onClick: () => void }) {
-  const tone = progressTone(pct);
+function UsersEmptyIcon({ className }: { className?: string }) {
   return (
-    <button
-      onClick={onClick}
-      className="group relative w-full overflow-hidden rounded-xl px-3 py-2.5 text-left transition-transform hover:scale-[1.02]"
-      style={{ background: tone.bg }}
-    >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-mono text-[15px] font-black tabular-nums" style={{ color: tone.fg }}>{pct}%</span>
-        <span className="text-[9px] font-bold uppercase tracking-[0.16em]" style={{ color: tone.fg, opacity: 0.8 }}>{tone.label}</span>
-      </div>
-      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-black/10">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: tone.fg, opacity: 0.7 }} />
-      </div>
-    </button>
+    <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    </svg>
   );
 }
 
-function DrillDownModal({ student, modules, onClose }: {
-  student: CohortStudentProgress;
-  modules: Array<{ id: string; title: string; position: number }>;
-  onClose: () => void;
-}) {
+function ProgressDetail({ student, onClose }: { student: CohortStudentProgress; onClose: () => void }) {
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      aria-labelledby="drilldown-title"
-      className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden p-0"
-    >
-      <div className="relative flex items-start justify-between border-b border-ca-ink/[0.08] p-6">
+    <div className="flex max-h-[88vh] flex-col overflow-hidden lg:max-h-none">
+      <div className="flex items-start justify-between border-b border-ca-ink/[0.08] p-5">
         <div className="flex items-center gap-4">
-          <Avatar initials={student.initials} size={56} accent="bg-ca-lime" />
+          <Avatar initials={student.initials} size={48} accent="bg-ca-lime" />
           <div>
-            <h3 id="drilldown-title" className="text-[22px] font-black tracking-tight text-ca-ink">{student.full_name}</h3>
+            <h3 className="text-[18px] font-black tracking-tight text-ca-ink">{student.full_name}</h3>
             <div className="font-mono text-[11px] font-semibold text-ca-ink-soft">{student.email}</div>
           </div>
         </div>
@@ -58,40 +45,38 @@ function DrillDownModal({ student, modules, onClose }: {
           size="sm"
           onClick={onClose}
           aria-label="Cerrar"
-          className="h-10 w-10 rounded-full p-0"
+          className="h-9 w-9 shrink-0 rounded-full p-0 lg:hidden"
         >
-          <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg aria-hidden="true" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </Button>
       </div>
 
-      <div className="relative flex-1 overflow-y-auto p-6">
-        <div className="mb-6 grid grid-cols-3 gap-4">
-          <div className="ca-card p-4">
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Progreso global</div>
-            <div className="mt-1 font-mono text-[28px] font-black text-ca-ink">{student.overall_percentage}%</div>
-          </div>
-          <div className="ca-card p-4">
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Módulos completos</div>
-            <div className="mt-1 font-mono text-[28px] font-black" style={{ color: "var(--color-ca-lime-deep)" }}>
-              {student.module_progress.filter((m) => m.percentage >= 90).length}
-              <span className="text-[14px] opacity-50">/{student.module_progress.length}</span>
-            </div>
-          </div>
-          <div className="ca-card p-4">
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Última actividad</div>
-            <div className="mt-1 font-mono text-[16px] font-black text-ca-ink">
-              {student.last_seen
+      <div className="flex-1 overflow-y-auto p-5">
+        <div className="mb-6 grid grid-cols-3 gap-3">
+          <MetricCard label="Progreso global" value={`${student.overall_percentage}%`} />
+          <MetricCard
+            label="Módulos completos"
+            value={
+              <>
+                {student.module_progress.filter((m) => m.percentage >= 90).length}
+                <span className="text-[14px] opacity-50">/{student.module_progress.length}</span>
+              </>
+            }
+            tone="var(--color-ca-lime-deep)"
+          />
+          <MetricCard
+            label="Última actividad"
+            value={
+              student.last_seen
                 ? new Date(student.last_seen).toLocaleDateString("es-CL", { day: "numeric", month: "short" })
-                : "Sin actividad"}
-            </div>
-          </div>
+                : "Sin actividad"
+            }
+          />
         </div>
 
-        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-          Lecciones por módulo
-        </div>
+        <DetailSectionTitle>Lecciones por módulo</DetailSectionTitle>
         <div className="flex flex-col gap-3">
           {student.module_progress.map((mp) => {
             const tone = progressTone(mp.percentage);
@@ -130,13 +115,7 @@ function DrillDownModal({ student, modules, onClose }: {
           })}
         </div>
       </div>
-
-      <div className="relative flex items-center justify-between gap-3 border-t border-ca-ink/[0.08] bg-ca-bg-soft px-6 py-4">
-        <div className="text-[11px] font-semibold text-ca-ink-soft">
-          Datos en vivo · se actualiza con cada reproducción
-        </div>
-      </div>
-    </Dialog>
+    </div>
   );
 }
 
@@ -145,8 +124,8 @@ type ProgressTableProps = {
   modules: Array<{ id: string; title: string; position: number }>;
 };
 
-export function ProgressTable({ students, modules }: ProgressTableProps) {
-  const [drillStudent, setDrillStudent] = useState<CohortStudentProgress | null>(null);
+export function ProgressTable({ students }: ProgressTableProps) {
+  const [selected, setSelected] = useState<CohortStudentProgress | null>(null);
   const [filter, setFilter] = useState<"all" | "behind" | "on_track" | "complete">("all");
   const [search, setSearch] = useState("");
 
@@ -164,215 +143,92 @@ export function ProgressTable({ students, modules }: ProgressTableProps) {
 
   return (
     <>
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {[
-          { id: "all" as const, label: "Todos", count: students.length },
-          { id: "complete" as const, label: "Certificables", count: complete },
-          { id: "on_track" as const, label: "Al día", count: onTrack },
-          { id: "behind" as const, label: "En riesgo", count: behind },
-        ].map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ca-violet/40"
-            style={{
-              background: filter === f.id ? "var(--color-ca-ink)" : "transparent",
-              color: filter === f.id ? "#fff" : "var(--color-ca-ink-soft)",
-              border: filter === f.id ? "1px solid var(--color-ca-ink)" : "1px solid rgba(20,22,58,0.14)",
-            }}
-          >
-            {f.label}
-            <span
-              className="rounded-full px-1.5 text-[10px]"
-              style={{
-                background: filter === f.id ? "var(--color-ca-lime)" : "var(--color-ca-bg-soft)",
-                color: "var(--color-ca-ink)",
-              }}
-            >
-              {f.count}
-            </span>
-          </button>
-        ))}
-        <div className="ml-auto flex items-center gap-2 rounded-full bg-ca-bg-soft px-3 py-1.5">
-          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
-            <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />
-          </svg>
-          <input
-            aria-label="Buscar alumno"
-            placeholder="Buscar alumno…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-48 bg-transparent text-[12px] font-medium text-ca-ink outline-none"
-          />
-        </div>
-      </div>
+      <StudentToolbar
+        chips={[
+          { id: "all", label: "Todos", count: students.length },
+          { id: "complete", label: "Certificables", count: complete },
+          { id: "on_track", label: "Al día", count: onTrack },
+          { id: "behind", label: "En riesgo", count: behind },
+        ]}
+        activeChip={filter}
+        onChip={(id) => setFilter(id as "all" | "behind" | "on_track" | "complete")}
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Buscar alumno…"
+      />
 
-      {/* Desktop Table (md and up) */}
-      <div className="ca-card hidden overflow-hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: "var(--color-ca-bg-soft)" }}>
-                <th className="sticky left-0 z-10 bg-ca-bg-soft px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft" style={{ minWidth: 240 }}>
-                  Alumno
-                </th>
-                {modules.map((m) => (
-                  <th key={m.id} className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft" style={{ minWidth: 140, maxWidth: 140 }}>
-                    <div className="font-mono">M{String(m.position).padStart(2, "0")}</div>
-                    <div className="mt-0.5 truncate text-[10px] normal-case tracking-normal text-ca-ink" title={m.title}>
-                      {m.title}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft" style={{ minWidth: 120 }}>
-                  Promedio
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => (
-                <tr key={s.student_id} className="border-t border-ca-ink/[0.08] transition-colors hover:bg-ca-bg-soft">
-                  <td className="sticky left-0 z-10 bg-ca-surface px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar initials={s.initials} size={36} />
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-bold text-ca-ink">{s.full_name}</div>
-                        <div className="font-mono text-[10px] text-ca-ink-soft">{s.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  {s.module_progress.map((mp) => (
-                    <td key={mp.module_id} className="px-3 py-3 align-middle">
-                      <ProgressCell pct={mp.percentage} onClick={() => setDrillStudent(s)} />
-                    </td>
-                  ))}
-                  <td className="px-4 py-3 text-right">
-                    <div
-                      className="font-mono text-[18px] font-black"
-                      style={{
-                        color: s.overall_percentage >= 70
-                          ? "var(--color-ca-lime-deep)"
-                          : "var(--color-ca-ink)",
-                      }}
+      <TwoPane
+        onClose={() => setSelected(null)}
+        detail={selected ? <ProgressDetail student={selected} onClose={() => setSelected(null)} /> : null}
+        list={
+          <div className="flex flex-col gap-3">
+            {filtered.length === 0 ? (
+              <EmptyState
+                icon={UsersEmptyIcon}
+                title="Sin alumnos en este filtro"
+                description="Ajusta el filtro para ver más resultados."
+              />
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {filtered.map((s) => {
+                  const tone = progressTone(s.overall_percentage);
+                  return (
+                    <StudentRow
+                      key={s.student_id}
+                      initials={s.initials}
+                      name={s.full_name}
+                      sub={s.email}
+                      selected={selected?.student_id === s.student_id}
+                      onSelect={() => setSelected(s)}
                     >
-                      {s.overall_percentage}%
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="grid place-items-center py-16">
-            <div className="text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-ca-bg-soft">
-                <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-                </svg>
-              </div>
-              <div className="mt-3 text-[14px] font-bold text-ca-ink">Sin alumnos en este filtro</div>
-              <div className="text-[12px] text-ca-ink-soft">Ajusta el filtro para ver más resultados.</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Card Layout (below md) */}
-      <div className="flex flex-col gap-3 md:hidden">
-        {filtered.length === 0 ? (
-          <div className="ca-card grid place-items-center py-16">
-            <div className="text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-ca-bg-soft">
-                <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-                </svg>
-              </div>
-              <div className="mt-3 text-[14px] font-bold text-ca-ink">Sin alumnos en este filtro</div>
-              <div className="text-[12px] text-ca-ink-soft">Ajusta el filtro para ver más resultados.</div>
-            </div>
-          </div>
-        ) : (
-          filtered.map((s) => {
-            const overallTone = progressTone(s.overall_percentage);
-            return (
-              <button
-                key={s.student_id}
-                onClick={() => setDrillStudent(s)}
-                className="ca-card w-full p-4 text-left transition-colors hover:bg-ca-bg-soft/60"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar initials={s.initials} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[14px] font-bold text-ca-ink">{s.full_name}</div>
-                    <div className="font-mono text-[10px] text-ca-ink-soft">{s.email}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-[20px] font-black" style={{ color: overallTone.fg }}>
-                      {s.overall_percentage}%
-                    </div>
-                    <div className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: overallTone.fg, opacity: 0.8 }}>
-                      {overallTone.label}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-col gap-1.5">
-                  {s.module_progress.map((mp) => {
-                    const tone = progressTone(mp.percentage);
-                    return (
-                      <div key={mp.module_id} className="flex items-center gap-2">
-                        <span className="w-10 shrink-0 font-mono text-[10px] font-bold text-ca-ink-soft">
-                          M{String(mp.module_position).padStart(2, "0")}
-                        </span>
-                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/[0.06]">
+                      <div className="flex w-28 gap-0.5">
+                        {s.module_progress.map((mp) => (
                           <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${mp.percentage}%`, background: tone.fg, opacity: 0.7 }}
+                            key={mp.module_id}
+                            className="h-2 flex-1 rounded-sm"
+                            style={{ background: progressTone(mp.percentage).fg, opacity: 0.75 }}
                           />
-                        </div>
-                        <span className="w-10 shrink-0 text-right font-mono text-[11px] font-bold" style={{ color: tone.fg }}>
-                          {mp.percentage}%
-                        </span>
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-              </button>
-            );
-          })
-        )}
-      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-[18px] font-black" style={{ color: tone.fg }}>
+                          {s.overall_percentage}%
+                        </div>
+                        <div
+                          className="text-[9px] font-bold uppercase tracking-[0.1em]"
+                          style={{ color: tone.fg, opacity: 0.8 }}
+                        >
+                          {tone.label}
+                        </div>
+                      </div>
+                    </StudentRow>
+                  );
+                })}
+              </div>
+            )}
 
-      {/* Legend */}
-      <div className="mt-5 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-ca-ink-soft">
-        <span>Click en una celda para ver el detalle</span>
-        <span className="opacity-30">·</span>
-        {([
-          [90, "Completado"],
-          [70, "Al día"],
-          [30, "En progreso"],
-          [10, "Atrasado"],
-          [0, "Sin iniciar"],
-        ] as const).map(([p, l]) => {
-          const t = progressTone(p);
-          return (
-            <span key={l} className="inline-flex items-center gap-1.5">
-              <span className="shape-circle h-2.5 w-2.5" style={{ background: t.fg, opacity: 0.7 }} />
-              {l}
-            </span>
-          );
-        })}
-      </div>
-
-      {drillStudent && (
-        <DrillDownModal
-          student={drillStudent}
-          modules={modules}
-          onClose={() => setDrillStudent(null)}
-        />
-      )}
+            <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-ca-ink-soft">
+              <span>Selecciona un alumno para ver el detalle</span>
+              <span className="opacity-30">·</span>
+              {([
+                [90, "Completado"],
+                [70, "Al día"],
+                [30, "En progreso"],
+                [10, "Atrasado"],
+                [0, "Sin iniciar"],
+              ] as const).map(([p, l]) => {
+                const t = progressTone(p);
+                return (
+                  <span key={l} className="inline-flex items-center gap-1.5">
+                    <span className="shape-circle h-2.5 w-2.5" style={{ background: t.fg, opacity: 0.7 }} />
+                    {l}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        }
+      />
     </>
   );
 }

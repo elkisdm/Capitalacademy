@@ -4,6 +4,7 @@ import { getCohortProgressReport } from "@/lib/classroom/admin-queries";
 import { getActiveEnv } from "@/lib/admin/active-env";
 import { ProgressTable } from "@/components/admin/progress-table";
 import { CohortSelector } from "./cohort-selector";
+import { StatStrip } from "@/components/admin/students/shared";
 
 export default async function AdminProgressPage({
   searchParams,
@@ -79,36 +80,30 @@ export default async function AdminProgressPage({
 
   return (
     <div className="ca-fade-up mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">
-      <div className="mb-7">
-        <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-          Operaciones · Reportes
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            Operaciones · Reportes
+          </div>
+          <h1 className="mt-1 text-[24px] font-black tracking-[-0.025em] text-ca-ink">
+            Progreso de la cohorte
+          </h1>
+          <p className="mt-1 text-[14px] font-semibold text-ca-ink-soft">
+            {(program as { name: string }).name} · {cohort.name} · {students.length} alumnos activos
+          </p>
         </div>
-        <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">
-          Progreso de la cohorte
-        </h1>
-        <p className="mt-1 text-[14px] font-semibold text-ca-ink-soft">
-          {(program as { name: string }).name} · {cohort.name} · {students.length} alumnos activos
-        </p>
+
+        <CohortSelector cohorts={cohortOptions} selectedId={selectedCohortId} />
       </div>
 
-      <CohortSelector cohorts={cohortOptions} selectedId={selectedCohortId} />
-
-      {/* Stat cards */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {[
+      <StatStrip
+        items={[
           { label: "Promedio cohorte", value: `${cohortAvg}%`, tone: "var(--color-ca-violet)" },
           { label: "Completaron todo", value: `${complete}`, sub: `de ${students.length} alumnos`, tone: "var(--color-ca-lime-deep)" },
           { label: "En riesgo (<30%)", value: `${behind}`, sub: "requieren outreach", tone: "#e11d48" },
           { label: "Total alumnos", value: `${students.length}`, sub: "activos en la cohorte", tone: "var(--color-ca-navy)" },
-        ].map((s) => (
-          <div key={s.label} className="ca-card relative overflow-hidden p-5">
-            <div className="shape-circle absolute -right-4 -top-4 h-16 w-16 opacity-[0.08]" style={{ background: s.tone }} />
-            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">{s.label}</div>
-            <div className="mt-2 font-mono text-[32px] font-black tracking-tight" style={{ color: s.tone }}>{s.value}</div>
-            {s.sub && <div className="text-[11px] font-semibold text-ca-ink-soft">{s.sub}</div>}
-          </div>
-        ))}
-      </div>
+        ]}
+      />
 
       <ProgressTable
         students={students}

@@ -8,6 +8,8 @@ export type ClassRowData = {
   href: string | null;
   durationOrDate: string;
   unlockLabel?: string;
+  /** Clase en vivo con repetición lista; href ya va a clase/[sessionId]. */
+  hasRecording?: boolean;
 };
 
 export type ModuleAccordionItemProps = {
@@ -34,6 +36,11 @@ function ClassRow({ row }: { row: ClassRowData }) {
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ca-ink">
           {row.title}
         </span>
+        {row.hasRecording && (
+          <span className="shrink-0 rounded-full bg-ca-violet/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-ca-violet">
+            Repetición
+          </span>
+        )}
         <span className="shrink-0 font-mono text-[11px] text-ca-ink-soft">
           {row.durationOrDate}
         </span>

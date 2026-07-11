@@ -416,11 +416,12 @@ export function ClassroomSidebar({
 
   const navItems: NavItem[] = [
     ...(showLearn ? [
-      // "Mis programas" solo tiene sentido si hay algo entre lo que elegir: el
-      // staff siempre lo ve (referencia de todos los entornos), el alumno solo
-      // si tiene más de una matrícula activa. Con una sola, el nombre del
-      // programa ya se muestra como contexto en el item "Inicio" de abajo.
-      ...(staff || hasMultiplePrograms ? [
+      // "Mis programas" solo se muestra cuando hay más de un programa entre
+      // los que elegir (alumno con varias matrículas activas). El staff
+      // cambia de entorno con el switcher "Entorno", no con este item: para
+      // el staff, /classroom siempre redirige a la cohorte activa (= "Inicio"),
+      // así que mostrárselo sería redundante.
+      ...(hasMultiplePrograms ? [
         { icon: "book", label: "Mis programas", href: "/classroom", section: "learn" as const },
       ] : []),
       { icon: "home", label: cohortLabel ?? "Inicio", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" as const },
@@ -443,6 +444,9 @@ export function ClassroomSidebar({
       // General: opciones globales (no atadas a un entorno).
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "general" as const },
       { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "general" as const },
+      ...(cohortId ? [
+        { icon: "chat", label: "Conversaciones", href: `/classroom/${cohortId}/conversaciones`, section: "general" as const },
+      ] : []),
       // Configuración: armado del contenido del entorno activo. Los recursos se
       // gestionan dentro de Lecciones (lecciones grabadas y clases en vivo).
       { icon: "calendar", label: "Calendario", href: "/admin/calendario", section: "config" as const },

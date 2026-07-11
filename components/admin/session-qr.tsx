@@ -22,19 +22,23 @@ function checkinBase(): string {
 export function SessionQrButton({
   sessionId,
   sessionTitle,
+  emphasized = false,
 }: {
   sessionId: string;
   sessionTitle: string;
+  emphasized?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Button
-        variant="outline"
+        variant={emphasized ? "lime" : "outline"}
         onClick={() => setOpen(true)}
         aria-label="QR de asistencia"
-        className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
+        className={`!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] ${
+          emphasized ? "" : "hover:border-ca-violet hover:text-ca-violet"
+        }`}
       >
         <QrGlyph />
         QR

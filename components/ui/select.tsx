@@ -53,7 +53,7 @@ const TYPEAHEAD_RESET_MS = 350;
 // Misma base visual que triggerBase en date-picker.tsx: el borde/fondo/padding
 // viven en el contenedor (aquí, containerRef), no en el botón interno.
 const triggerBase =
-  "w-full rounded-xl border border-ca-ink/[0.14] bg-ca-surface px-3.5 py-2.5 text-sm text-ca-ink transition-colors focus-within:border-ca-violet focus-within:ring-2 focus-within:ring-ca-violet/20";
+  "w-full rounded-xl border border-ca-ink/[0.14] bg-ca-surface px-3.5 py-2.5 text-base md:text-sm text-ca-ink transition-colors focus-within:border-ca-violet focus-within:ring-2 focus-within:ring-ca-violet/20";
 
 const triggerErrorClass = "border-destructive focus-within:border-destructive focus-within:ring-destructive/20";
 
@@ -381,7 +381,7 @@ export function Select({
             }}
             placeholder="Buscar..."
             aria-label="Buscar opción"
-            className="w-full rounded-lg border border-transparent bg-ca-bg-soft px-2.5 py-1.5 text-sm text-ca-ink outline-none focus:border-ca-violet"
+            className="w-full rounded-lg border border-transparent bg-ca-bg-soft px-2.5 py-1.5 text-base md:text-sm text-ca-ink outline-none focus:border-ca-violet"
           />
         </div>
       )}
@@ -407,7 +407,7 @@ export function Select({
               onMouseEnter={() => setActiveIndex(idx)}
               onClick={() => !opt.disabled && commitValue(opt.value)}
               className={cn(
-                "cursor-pointer rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+                "cursor-pointer rounded-lg px-2.5 py-2.5 md:py-2 text-sm font-medium transition-colors",
                 isSelected && "bg-ca-violet/10 text-ca-violet",
                 !isSelected && isActive && "bg-ca-ink/[0.04] text-ca-ink",
                 !isSelected && !isActive && "text-ca-ink",

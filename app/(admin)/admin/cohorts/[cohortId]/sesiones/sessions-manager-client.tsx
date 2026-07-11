@@ -794,7 +794,7 @@ function SessionForm({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
-  const fieldCls = "text-[13px] font-medium";
+  const fieldCls = "text-[16px] md:text-[13px] font-medium";
   const labelCls =
     "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft";
   const groupCls = "border-t border-ca-ink/[0.06] pt-5";

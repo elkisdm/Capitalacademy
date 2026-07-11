@@ -209,6 +209,8 @@ export function CobroCheckoutClient({
             <Input
               type="text"
               inputMode="text"
+              autoComplete="off"
+              autoCapitalize="characters"
               placeholder="12.345.678-9"
               value={rutValue}
               onChange={(e) =>

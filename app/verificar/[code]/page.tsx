@@ -228,7 +228,7 @@ export default async function VerifyPage({
   const cert = await verifyCertificate(code);
 
   return (
-    <div className="relative min-h-screen" style={{ background: "var(--color-ca-bg)" }}>
+    <div className="relative min-h-dvh" style={{ background: "var(--color-ca-bg)" }}>
       {/* Public header */}
       <header
         className="flex items-center justify-between border-b px-6 py-5 md:px-12"
@@ -299,7 +299,7 @@ function ValidCertificate({
         <Pill tone="violet" icon="shield">
           Verificacion de certificado
         </Pill>
-        <h1 className="mt-4 text-[40px] font-black leading-[1] tracking-[-0.035em] text-ca-ink">
+        <h1 className="mt-4 text-3xl font-black leading-[1] tracking-[-0.035em] text-ca-ink sm:text-[40px]">
           Este certificado es{" "}
           <span style={{ color: "var(--color-ca-lime-deep)" }}>autentico</span>.
         </h1>
@@ -332,7 +332,7 @@ function ValidCertificate({
         <div className="grid gap-0 md:grid-cols-[1fr_auto]">
           <div className="p-6 md:p-8">
             <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Otorgado a</div>
-            <h2 className="mt-1 text-[40px] font-black leading-[1] tracking-[-0.035em] text-ca-ink">
+            <h2 className="mt-1 break-words text-3xl font-black leading-[1] tracking-[-0.035em] text-ca-ink sm:text-[40px]">
               {firstName}
               {lastName && (
                 <>
@@ -418,7 +418,7 @@ function InvalidCode({ code }: { code: string }) {
         <Pill tone="rose" icon="x">
           Verificacion fallida
         </Pill>
-        <h1 className="mt-4 text-[40px] font-black leading-[1] tracking-[-0.035em] text-ca-ink">
+        <h1 className="mt-4 text-3xl font-black leading-[1] tracking-[-0.035em] text-ca-ink sm:text-[40px]">
           Codigo no encontrado
         </h1>
         <p className="mt-3 text-[14.5px] font-medium text-ca-ink-soft">

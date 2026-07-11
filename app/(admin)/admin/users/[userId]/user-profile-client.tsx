@@ -459,13 +459,16 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                     </div>
                   </Link>
 
-                  <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute right-4 top-1/2 z-10 flex -translate-y-1/2 items-center gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => handleRemoveRole(cr.cohort_id, cr.role)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveRole(cr.cohort_id, cr.role);
+                      }}
                       aria-label={`Remover rol en ${cr.cohort_name}`}
-                      className="h-8 w-8 rounded-lg p-0 hover:bg-red-50 hover:text-red-600"
+                      className="relative h-8 w-8 rounded-lg p-0 hover:bg-red-50 hover:text-red-600"
                       title="Remover"
                     >
                       <TrashIcon />

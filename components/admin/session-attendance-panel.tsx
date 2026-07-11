@@ -158,7 +158,7 @@ export function SessionAttendancePanel({
             {report ? `${report.present} de ${report.total} presentes` : "Asistencia de la clase"}
           </h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {bulkBusy && (
             <span className="text-[11px] text-ca-ink-soft">
               Guardando…
@@ -199,7 +199,7 @@ export function SessionAttendancePanel({
             placeholder="Buscar alumno…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-9 py-1.5 text-[13px]"
+            className="h-9 py-1.5 text-[16px] md:text-[13px]"
           />
           {query.trim() && (
             <p className="mt-1 text-[11px] text-ca-ink-soft">
@@ -236,7 +236,7 @@ export function SessionAttendancePanel({
             return (
               <li
                 key={row.studentId}
-                className="flex items-center gap-3 px-4 py-2"
+                className="flex items-center gap-3 px-4 py-2.5"
               >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ca-violet/10 text-[11px] font-bold text-ca-violet">
                   {initialsOf(row)}

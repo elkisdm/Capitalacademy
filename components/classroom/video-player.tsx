@@ -6,6 +6,7 @@ import {
   useRef,
   useEffect,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MutableRefObject,
 } from "react";
@@ -289,6 +290,7 @@ export function VideoPlayer({
   const trackRef = useRef<HTMLDivElement>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isDragging = useRef(false);
+  const isVolumeDragging = useRef(false);
   const lastSyncRef = useRef(0);
 
   const progress =
@@ -560,7 +562,16 @@ export function VideoPlayer({
     const el = rootRef.current;
     if (!el) return;
     if (!document.fullscreenElement) {
-      el.requestFullscreen?.();
+      if (el.requestFullscreen) {
+        el.requestFullscreen();
+      } else {
+        // iOS Safari no soporta Fullscreen API en el contenedor — usa el
+        // reproductor nativo del <video> (webkitEnterFullscreen).
+        const video = videoRef.current as unknown as {
+          webkitEnterFullscreen?: () => void;
+        } | null;
+        video?.webkitEnterFullscreen?.();
+      }
     } else {
       document.exitFullscreen?.();
     }
@@ -569,7 +580,21 @@ export function VideoPlayer({
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
+
+    // iOS Safari (webkitEnterFullscreen) no dispara fullscreenchange, sino
+    // los eventos propietarios webkitbeginfullscreen/webkitendfullscreen
+    // sobre el propio <video>.
+    const video = videoRef.current;
+    const onBegin = () => setIsFullscreen(true);
+    const onEnd = () => setIsFullscreen(false);
+    video?.addEventListener("webkitbeginfullscreen" as any, onBegin);
+    video?.addEventListener("webkitendfullscreen" as any, onEnd);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      video?.removeEventListener("webkitbeginfullscreen" as any, onBegin);
+      video?.removeEventListener("webkitendfullscreen" as any, onEnd);
+    };
   }, []);
 
   // ── PiP ────────────────────────────────────────────────────
@@ -690,34 +715,21 @@ export function VideoPlayer({
     [durationSeconds],
   );
 
-  const onTrackMouseDown = useCallback(
-    (e: ReactMouseEvent) => {
+  const onTrackPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
       isDragging.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
       seekFromEvent(e);
-
-      const onMove = (ev: MouseEvent) => {
-        seekFromEvent(ev);
-        const track = trackRef.current;
-        if (track) {
-          const rect = track.getBoundingClientRect();
-          setScrubX(
-            Math.max(
-              0,
-              Math.min(100, ((ev.clientX - rect.left) / rect.width) * 100),
-            ),
-          );
-        }
-      };
-      const onUp = () => {
-        isDragging.current = false;
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-      };
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
     },
     [seekFromEvent],
   );
+
+  const onTrackPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    isDragging.current = false;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }, []);
 
   const onTrackKeyDown = useCallback(
     (e: ReactKeyboardEvent) => {
@@ -757,23 +769,26 @@ export function VideoPlayer({
     [durationSeconds],
   );
 
-  const onTrackMove = useCallback((e: ReactMouseEvent) => {
-    if (isDragging.current) return;
-    const track = trackRef.current;
-    if (!track) return;
-    const rect = track.getBoundingClientRect();
-    setScrubX(
-      Math.max(
-        0,
-        Math.min(100, ((e.clientX - rect.left) / rect.width) * 100),
-      ),
-    );
-  }, []);
+  const onTrackPointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      const track = trackRef.current;
+      if (!track) return;
+      const rect = track.getBoundingClientRect();
+      setScrubX(
+        Math.max(
+          0,
+          Math.min(100, ((e.clientX - rect.left) / rect.width) * 100),
+        ),
+      );
+      if (isDragging.current) seekFromEvent(e);
+    },
+    [seekFromEvent],
+  );
 
   // ── Volume control ─────────────────────────────────────────
 
-  const onVolumeSliderClick = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>) => {
+  const applyVolumeFromPointer = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const val = Math.max(
         0,
@@ -783,6 +798,33 @@ export function VideoPlayer({
       if (video) {
         video.volume = val;
         video.muted = val === 0;
+      }
+    },
+    [],
+  );
+
+  const onVolumePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      isVolumeDragging.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      applyVolumeFromPointer(e);
+    },
+    [applyVolumeFromPointer],
+  );
+
+  const onVolumePointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!isVolumeDragging.current) return;
+      applyVolumeFromPointer(e);
+    },
+    [applyVolumeFromPointer],
+  );
+
+  const onVolumePointerUp = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      isVolumeDragging.current = false;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
       }
     },
     [],
@@ -900,7 +942,7 @@ export function VideoPlayer({
           playsInline
           crossOrigin="anonymous"
           poster={posterUrl}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain"
         />
 
         {/* Loading overlay before ready — mantiene visible el poster debajo,
@@ -1043,15 +1085,17 @@ export function VideoPlayer({
               aria-valuenow={Math.round(currentTime)}
               aria-valuetext={`${fmtTimestamp(currentTime)} de ${fmtTimestamp(durationSeconds)}`}
               onKeyDown={onTrackKeyDown}
-              className="mb-2 cursor-pointer rounded-full px-1 outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-              style={{ height: 16 }}
-              onMouseEnter={() => setHoverBar(true)}
-              onMouseLeave={() => {
+              className="mb-2 cursor-pointer rounded-full px-1 outline-none touch-none focus-visible:ring-2 focus-visible:ring-white/80"
+              style={{ height: 24 }}
+              onPointerEnter={() => setHoverBar(true)}
+              onPointerLeave={() => {
                 setHoverBar(false);
                 setScrubX(null);
               }}
-              onMouseMove={onTrackMove}
-              onMouseDown={onTrackMouseDown}
+              onPointerMove={onTrackPointerMove}
+              onPointerDown={onTrackPointerDown}
+              onPointerUp={onTrackPointerUp}
+              onPointerCancel={onTrackPointerUp}
             >
               <div className="relative h-full w-full">
                 {/* Track */}
@@ -1134,8 +1178,8 @@ export function VideoPlayer({
                     }}
                   />
                 )}
-                {/* Scrub tooltip */}
-                {scrubX != null && hoverBar && (
+                {/* Scrub tooltip — visible en hover (mouse) o durante drag táctil */}
+                {scrubX != null && (hoverBar || isDragging.current) && (
                   <div
                     className="absolute -top-9 -translate-x-1/2 rounded-md px-2 py-1 font-mono text-[11px] font-bold text-white"
                     style={{
@@ -1242,7 +1286,10 @@ export function VideoPlayer({
                         onKeyDown={onVolumeKeyDown}
                         className="relative h-1 w-20 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                         style={{ background: "rgba(255,255,255,0.22)" }}
-                        onClick={onVolumeSliderClick}
+                        onPointerDown={onVolumePointerDown}
+                        onPointerMove={onVolumePointerMove}
+                        onPointerUp={onVolumePointerUp}
+                        onPointerCancel={onVolumePointerUp}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-full"

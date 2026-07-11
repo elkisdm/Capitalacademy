@@ -48,7 +48,7 @@ export default async function DocenteLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: "var(--color-ca-bg)" }}>
+    <div className="flex min-h-dvh flex-col" style={{ background: "var(--color-ca-bg)" }}>
       <header className="flex items-center justify-between border-b border-ca-ink/[0.08] bg-ca-surface px-5 py-3.5">
         <Logo />
         <div className="flex items-center gap-4">

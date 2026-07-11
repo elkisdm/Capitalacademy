@@ -120,7 +120,7 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
         aria-label="Mensaje de la conversación"
         rows={4}
         maxLength={10000}
-        className="resize-none rounded-lg px-3 py-2 text-[13.5px] leading-relaxed"
+        className="resize-none rounded-lg px-3 py-2 text-[16px] leading-relaxed md:text-[13.5px]"
       />
       {error && <p className="text-[12px] text-red-600">{error}</p>}
       <div className="flex items-center justify-end gap-2">

@@ -180,7 +180,7 @@ export function ProgressTable({ students }: ProgressTableProps) {
                       selected={selected?.student_id === s.student_id}
                       onSelect={() => setSelected(s)}
                     >
-                      <div className="flex w-28 gap-0.5">
+                      <div className="hidden w-28 gap-0.5 sm:flex">
                         {s.module_progress.map((mp) => (
                           <div
                             key={mp.module_id}

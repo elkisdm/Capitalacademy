@@ -270,7 +270,7 @@ export function NotificationBell({ viewerId }: { viewerId: string }) {
         onClick={toggleOpen}
         aria-label="Notificaciones"
         aria-expanded={open}
-        className="relative inline-grid h-10 w-10 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
+        className="relative inline-grid h-11 w-11 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink md:h-10 md:w-10"
       >
         <Bell className="h-5 w-5" />
         {unread > 0 && (

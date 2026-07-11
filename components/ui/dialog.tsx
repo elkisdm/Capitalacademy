@@ -64,7 +64,11 @@ export function Dialog({ open, onClose, children, className, ...aria }: DialogPr
         role="dialog"
         aria-modal="true"
         {...aria}
-        className={cn("ca-card relative w-full max-w-md p-6", closing ? "ca-scale-out" : "ca-scale-in", className)}
+        className={cn(
+          "ca-card relative max-h-[85dvh] w-full max-w-md overflow-y-auto p-6",
+          closing ? "ca-scale-out" : "ca-scale-in",
+          className,
+        )}
         onAnimationEnd={() => {
           if (closing) onClose();
         }}

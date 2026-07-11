@@ -140,7 +140,7 @@ export function SetPasswordForm({
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-4 py-12"
+      className="flex min-h-dvh items-center justify-center px-4 py-12"
       style={{ background: "#070a29" }}
     >
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
@@ -241,7 +241,7 @@ export function SetPasswordForm({
                     type="button"
                     onClick={() => setShowPwd((s) => !s)}
                     aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9b9db5] transition-colors hover:text-[#14163a]"
+                    className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center text-[#9b9db5] transition-colors hover:text-[#14163a]"
                   >
                     {showPwd ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
@@ -311,7 +311,7 @@ export function SetPasswordForm({
                     type="button"
                     onClick={() => setShowConfirm((s) => !s)}
                     aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9b9db5] transition-colors hover:text-[#14163a]"
+                    className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center text-[#9b9db5] transition-colors hover:text-[#14163a]"
                   >
                     {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
                   </button>

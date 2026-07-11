@@ -271,7 +271,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
               <label className="mb-2 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                 Rol en la cohorte
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {ROLE_CARDS.map((rc) => {
                   const isActive = selectedRole === rc.value;
                   const rs = ROLE_STYLES[rc.value];

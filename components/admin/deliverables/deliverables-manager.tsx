@@ -326,7 +326,7 @@ export function DeliverablesManager({
                     size="sm"
                     onClick={() => openRoster(d)}
                     aria-label={`Ver entregas de ${d.title}`}
-                    className="!h-auto !w-auto rounded p-1.5"
+                    className="grid h-11 w-11 place-items-center rounded md:h-8 md:w-8"
                   >
                     <Users className="h-4 w-4" />
                   </Button>
@@ -336,7 +336,7 @@ export function DeliverablesManager({
                     size="sm"
                     onClick={() => startEdit(d)}
                     aria-label={`Editar ${d.title}`}
-                    className="!h-auto !w-auto rounded p-1.5"
+                    className="grid h-11 w-11 place-items-center rounded md:h-8 md:w-8"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -347,7 +347,7 @@ export function DeliverablesManager({
                     onClick={() => handleDelete(d.id)}
                     disabled={deletingId === d.id}
                     aria-label={`Eliminar ${d.title}`}
-                    className="!h-auto !w-auto rounded p-1.5 hover:bg-red-50 hover:text-red-500"
+                    className="grid h-11 w-11 place-items-center rounded hover:bg-red-50 hover:text-red-500 md:h-8 md:w-8"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -379,7 +379,7 @@ export function DeliverablesManager({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <DatePicker
                   withTime
                   label="Se abre"
@@ -420,7 +420,7 @@ export function DeliverablesManager({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                     Tamaño máx. (MB)
@@ -497,7 +497,7 @@ export function DeliverablesManager({
                 size="sm"
                 onClick={() => setRosterFor(null)}
                 aria-label="Cerrar"
-                className="!h-auto !w-auto rounded p-1"
+                className="grid h-11 w-11 place-items-center rounded md:h-8 md:w-8"
               >
                 <X className="h-4 w-4" />
               </Button>

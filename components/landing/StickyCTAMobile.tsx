@@ -2,12 +2,12 @@ import { COMUNIDAD_WHATSAPP_URL } from "@/lib/landing/constants";
 
 /**
  * Barra fija inferior visible solo en mobile/tablet.
- * El WhatsApp FAB existente queda anclado arriba en mobile (bottom-24)
- * para no chocar con esta barra.
+ * El WhatsApp FAB (WhatsappFAB.tsx) está oculto en mobile (hidden md:flex)
+ * para no chocar con esta barra; solo aparece en desktop.
  */
 export function StickyCTAMobile() {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(20,22,58,0.08)] bg-white/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_rgba(20,22,58,0.08)] md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(20,22,58,0.08)] bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl shadow-[0_-8px_24px_rgba(20,22,58,0.08)] md:hidden">
       <div className="mx-auto flex max-w-md items-center gap-3">
         <a
           href="#contacto"

@@ -134,7 +134,7 @@ function SegmentCard({
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={2}
-          className="flex-1 resize-none rounded-xl border border-ca-ink/[0.08] bg-ca-surface px-3 py-2 text-[13px] text-ca-ink outline-none transition-colors placeholder:text-ca-ink-soft/60 focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20"
+          className="flex-1 resize-none rounded-xl border border-ca-ink/[0.08] bg-ca-surface px-3 py-2 text-[16px] text-ca-ink outline-none transition-colors placeholder:text-ca-ink-soft/60 focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20 md:text-[13px]"
         />
         <button
           onClick={handleSave}

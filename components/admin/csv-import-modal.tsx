@@ -630,7 +630,7 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                 </p>
 
                 {/* Stat cards */}
-                <div className="mt-6 grid w-full grid-cols-3 gap-3">
+                <div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-xl px-4 py-4" style={{ background: "rgba(63,90,5,0.08)" }}>
                     <div className="font-mono text-[28px] font-black" style={{ color: "#3f5a05" }}>
                       {result.created}

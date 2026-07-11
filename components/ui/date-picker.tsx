@@ -123,7 +123,7 @@ function todayKeyNow(): string {
 }
 
 const triggerBase =
-  "w-full rounded-xl border border-ca-ink/[0.14] bg-ca-surface px-3.5 py-2.5 text-sm text-ca-ink transition-colors focus-within:border-ca-violet focus-within:ring-2 focus-within:ring-ca-violet/20";
+  "w-full rounded-xl border border-ca-ink/[0.14] bg-ca-surface px-3.5 py-2.5 text-base md:text-sm text-ca-ink transition-colors focus-within:border-ca-violet focus-within:ring-2 focus-within:ring-ca-violet/20";
 
 const triggerErrorClass = "border-destructive focus-within:border-destructive focus-within:ring-destructive/20";
 
@@ -407,7 +407,7 @@ export function DatePicker({
               aria-label={`${cell.day} de ${currentMonthLabel}`}
               onClick={() => selectDay(cell.key)}
               className={cn(
-                "m-0.5 grid h-8 place-items-center rounded-full text-[12px] font-bold transition-colors",
+                "m-0.5 grid h-9 md:h-8 place-items-center rounded-full text-[12px] font-bold transition-colors",
                 !cell.inMonth && "text-ca-ink-soft/50",
                 cell.inMonth && !isSelected && "text-ca-ink hover:bg-ca-bg-soft",
                 isSelected && "bg-ca-violet text-white",

@@ -202,7 +202,7 @@ export function StudentTable({ students }: { students: StudentPanelRow[] }) {
                       Asistencia
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="hidden text-right sm:block">
                     <div
                       className="font-mono text-[13px] font-black"
                       style={{ color: s.attendance.absences >= 2 ? "#9f1b3e" : "var(--color-ca-ink)" }}
@@ -227,7 +227,7 @@ export function StudentTable({ students }: { students: StudentPanelRow[] }) {
                       Avance
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="hidden text-right sm:block">
                     <div className="font-mono text-[13px] font-black text-ca-ink">
                       {s.evaluations.approved}/{s.evaluations.total}
                     </div>

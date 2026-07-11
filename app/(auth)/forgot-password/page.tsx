@@ -17,7 +17,7 @@ export default async function ForgotPasswordPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6" style={{ background: "var(--color-ca-bg)" }}>
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6" style={{ background: "var(--color-ca-bg)" }}>
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="shape-circle absolute -left-32 -top-32 h-[500px] w-[500px] opacity-[0.06]" style={{ background: "var(--color-ca-violet)" }} />
         <div className="shape-circle absolute -bottom-20 -right-20 h-80 w-80 opacity-[0.08]" style={{ background: "var(--color-ca-lime)" }} />

@@ -63,7 +63,7 @@ export function EvaluationAttempts({ evaluationId }: { evaluationId: string }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Stat label="Intentos" value={String(attempts.length)} />
         <Stat label="Aprobación" value={`${passRate}%`} color="var(--color-ca-lime-deep)" />
         <Stat label="Nota prom." value={`${avgScore}%`} color="var(--color-ca-violet)" />

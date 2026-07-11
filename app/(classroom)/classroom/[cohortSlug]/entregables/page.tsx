@@ -77,7 +77,7 @@ export default async function EntregablesPage(
       </div>
 
       {deliverables.length === 0 ? (
-        <div className="ca-card flex flex-col items-center justify-center p-16 text-center">
+        <div className="ca-card flex flex-col items-center justify-center p-8 text-center md:p-16">
           <UploadCloud className="h-10 w-10 text-ca-ink-soft/40" />
           <p className="mt-3 text-[14px] font-bold text-ca-ink">Aún no hay entregables</p>
           <p className="mt-1 text-[13px] text-ca-ink-soft">

@@ -169,6 +169,74 @@ Con feedback inline check/alert y mensaje "RUT inválido. Verifica el dígito ve
 
 ---
 
+## 6. Responsive y táctil
+
+### 6.1 Inputs a 16px en móvil
+
+**Regla:** Todo control de texto (`input`/`textarea`/`select` reales) usa `text-base md:text-sm` (o `text-[16px] md:text-[Npx]` si el tamaño desktop es un valor arbitrario); nunca `<16px` en un control de entrada — iOS Safari hace auto-zoom al enfocar un campo con `font-size` menor a 16px.
+
+**Ejemplo correcto:** `field.tsx:14` (`fieldBase`: `text-base md:text-sm`).
+
+**Antipatrón:** fijar `text-[13px]`/`text-[14px]` directo sobre un `<input>`/`<textarea>` sin el prefijo `md:` — el zoom involuntario rompe el flujo de llenado de formularios en móvil.
+
+### 6.2 Mínimo táctil ≥44px
+
+**Regla:** Icon-buttons a mano usan `h-11 w-11 md:h-9 md:w-9` (44px en móvil, tamaño desktop normal con puntero fino); `Button size="sm"` ya trae `min-h-11 … md:min-h-0` para no forzar el `h-8` de escritorio.
+
+**Ejemplo correcto:** `video-player.tsx:1192` (`h-11 w-11 … md:h-9 md:w-9`); `button.tsx:17` (`sm: "h-8 min-h-11 px-3 text-xs md:min-h-0"`).
+
+**Antipatrón:** botones/íconos táctiles de ~24-32px sin variante móvil — el objetivo de Apple/WCAG es 44×44px como mínimo.
+
+### 6.3 Nunca hover-only para acciones
+
+**Regla:** Ninguna acción (editar, eliminar, copiar, menú) puede depender solo de `:hover`, porque en táctil no existe. Patrón: `opacity-100 md:opacity-0 md:group-hover:opacity-100` (visible siempre en móvil, oculto hasta hover solo en desktop).
+
+**Ejemplo correcto:** `app/(admin)/admin/users/users-list-client.tsx:171`.
+
+**Antipatrón:** `opacity-0 group-hover:opacity-100` sin el prefijo `md:` — en móvil la acción queda inalcanzable.
+
+### 6.4 Pointer Events en superficies arrastrables
+
+**Regla:** Barras de progreso, sliders y cualquier elemento arrastrable usan `onPointerDown`/`onPointerMove`/`onPointerUp` (+ `setPointerCapture`) en vez de `onMouseDown`/`onMouseMove`/`onMouseEnter`/`onMouseLeave`, que no reciben eventos táctiles.
+
+**Ejemplo correcto:** `components/classroom/video-player.tsx` (barra de progreso y slider de volumen).
+
+**Antipatrón:** handlers `onMouse*` exclusivos en un control que también debe operarse con el dedo.
+
+### 6.5 Full-height con `min-h-dvh`, nunca `min-h-screen`
+
+**Regla:** Contenedores de pantalla completa usan `min-h-dvh` (alto de viewport dinámico, descuenta la barra de Safari/Chrome móvil), no `min-h-screen` (equivalente a `100vh`, que en móvil deja un remanente de scroll fantasma).
+
+**Ejemplo correcto:** `app/pago/gracias/page.tsx:9,19`.
+
+**Antipatrón:** `min-h-screen` en layouts o pantallas completas nuevas — usa `min-h-dvh` desde el inicio.
+
+### 6.6 Safe-areas en elementos fijos
+
+**Regla:** Todo elemento fijo/sticky pegado al borde inferior (CTA sticky, footers de quiz, drawers) suma el inset de la barra de gestos: `pb-[max(0.75rem,env(safe-area-inset-bottom))]` (o sumado al padding existente). Esto solo funciona porque el viewport global ya declara `viewportFit: "cover"` (`app/layout.tsx`).
+
+**Ejemplo correcto:** `app/layout.tsx` (`export const viewport = { …, viewportFit: "cover" }`).
+
+**Antipatrón:** un elemento `fixed bottom-0` con solo `pb-3`/`pb-4` fijo — en iPhone con home indicator el contenido queda pegado o tapado.
+
+### 6.7 Grids siempre con colapso
+
+**Regla:** Toda grilla usa un breakpoint de colapso: `grid-cols-1 sm:grid-cols-N`. Nunca `grid-cols-N` (N > 1) sin prefijo dentro de modales, paneles o tarjetas de estadísticas — a 360px las columnas quedan ilegibles o se desbordan.
+
+**Ejemplo correcto:** patrón general del design system; ver cualquier grilla de stats o formularios en modales.
+
+**Antipatrón:** `grid grid-cols-3 gap-3` sin prefijo responsive en un panel que también se renderiza en móvil.
+
+### 6.8 Filas flex densas: `min-w-0`/`truncate`/`flex-wrap`
+
+**Regla:** En filas con contenido variable + acciones (roster, listas de alumnos, breadcrumbs), el contenido principal lleva `min-w-0 truncate` para no forzar el ancho de la fila, y el grupo de acciones lleva `flex-wrap` para no cortarse. Nunca sacrificar el dato principal (nombre, título) por las acciones.
+
+**Ejemplo correcto:** `components/ui/select.tsx` (`min-w-0 flex-1 truncate` en el trigger, línea 451).
+
+**Antipatrón:** una fila `flex items-center gap-2` sin `min-w-0` en el hijo de texto — el contenido largo desborda el contenedor en vez de truncarse.
+
+---
+
 ## Deuda conocida (no replicar; migrar si tocas el archivo)
 
 | Deuda | Ubicación | Patrón correcto |

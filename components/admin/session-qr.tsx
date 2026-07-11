@@ -150,7 +150,7 @@ function QrModal({
           variant="ghost"
           onClick={onClose}
           aria-label="Cerrar"
-          className="!h-auto !w-auto shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-ca-ink-soft hover:!bg-transparent hover:text-ca-ink"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-[18px] leading-none text-ca-ink-soft hover:!bg-transparent hover:text-ca-ink md:h-9 md:w-9"
         >
           ×
         </Button>

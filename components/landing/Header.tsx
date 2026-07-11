@@ -84,7 +84,7 @@ export function Header() {
           {/* Hamburger button — visible below md */}
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="grid h-10 w-10 place-items-center rounded-lg text-[var(--color-ca-ink)] transition-colors hover:bg-[var(--color-ca-violet-soft)] md:hidden"
+            className="grid h-11 w-11 place-items-center rounded-lg text-[var(--color-ca-ink)] transition-colors hover:bg-[var(--color-ca-violet-soft)] md:hidden"
             aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={menuOpen}
           >
@@ -125,7 +125,7 @@ export function Header() {
           {/* Drawer */}
           <nav
             aria-label="Menú móvil"
-            className="fixed inset-x-0 top-[73px] z-50 border-b border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] shadow-[0_12px_40px_rgba(20,22,58,0.12)] md:hidden"
+            className="absolute inset-x-0 top-full z-50 border-b border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] shadow-[0_12px_40px_rgba(20,22,58,0.12)] md:hidden"
           >
             <div className="flex flex-col gap-1 px-6 py-4">
               {links.map((l) => (

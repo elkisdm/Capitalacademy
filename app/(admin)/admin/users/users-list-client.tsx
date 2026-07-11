@@ -504,7 +504,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
             </span>
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button type="button" variant="outline" onClick={() => setCsvImportOpen(true)}>
             <UploadIcon />
             Importar CSV
@@ -532,7 +532,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                 autoComplete="off"
                 name="ca-user-search"
                 data-form-type="other"
-                className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
+                className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[16px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet md:text-[13px]"
               />
             </div>
 

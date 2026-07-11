@@ -64,7 +64,7 @@ export function DocumentViewer({ resource, onClose }: DocumentViewerProps) {
       open={!!resource}
       onClose={onClose}
       aria-label={resource?.title ?? "Documento"}
-      className="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden p-0"
+      className="flex h-[85dvh] w-full max-w-5xl flex-col overflow-hidden p-0"
     >
       {resource && (
         <>
@@ -76,7 +76,7 @@ export function DocumentViewer({ resource, onClose }: DocumentViewerProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Cerrar"
-                className="ca-btn-interactive grid h-8 w-8 place-items-center rounded-full text-ca-ink-soft hover:bg-ca-bg-soft hover:text-ca-ink"
+                className="ca-btn-interactive grid h-11 w-11 place-items-center rounded-full text-ca-ink-soft hover:bg-ca-bg-soft hover:text-ca-ink md:h-9 md:w-9"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -314,7 +314,7 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             aria-label="Página anterior"
-            className="ca-btn-interactive grid h-8 w-8 place-items-center rounded-full border border-ca-ink/[0.1] text-ca-ink disabled:pointer-events-none disabled:opacity-40"
+            className="ca-btn-interactive grid h-11 w-11 place-items-center rounded-full border border-ca-ink/[0.1] text-ca-ink disabled:pointer-events-none disabled:opacity-40 md:h-9 md:w-9"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -326,7 +326,7 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
             onClick={() => setPage((p) => Math.min(numPages, p + 1))}
             disabled={page >= numPages}
             aria-label="Página siguiente"
-            className="ca-btn-interactive grid h-8 w-8 place-items-center rounded-full border border-ca-ink/[0.1] text-ca-ink disabled:pointer-events-none disabled:opacity-40"
+            className="ca-btn-interactive grid h-11 w-11 place-items-center rounded-full border border-ca-ink/[0.1] text-ca-ink disabled:pointer-events-none disabled:opacity-40 md:h-9 md:w-9"
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>

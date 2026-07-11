@@ -121,7 +121,7 @@ export function StudentToolbar({
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => onSearch(e.target.value)}
-            className="h-auto w-56 border-none bg-transparent p-0 text-[12px] font-medium focus:ring-0"
+            className="h-auto w-full min-w-0 flex-1 border-none bg-transparent p-0 text-[16px] font-medium focus:ring-0 sm:w-56 md:text-[12px]"
           />
         </div>
       </div>

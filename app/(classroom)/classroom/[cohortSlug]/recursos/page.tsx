@@ -99,7 +99,7 @@ export default async function RecursosPage(
       </div>
 
       {total === 0 ? (
-        <div className="ca-card flex flex-col items-center justify-center p-16 text-center">
+        <div className="ca-card flex flex-col items-center justify-center p-8 text-center md:p-16">
           <FolderOpen className="h-10 w-10 text-ca-ink-soft/40" />
           <p className="mt-3 text-[14px] font-bold text-ca-ink">Aún no hay material publicado</p>
           <p className="mt-1 text-[13px] text-ca-ink-soft">

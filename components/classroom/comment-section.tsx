@@ -290,7 +290,7 @@ function CommentInput({
           aria-label={placeholder}
           rows={focused ? 3 : 1}
           disabled={submitting}
-          className={`resize-none rounded-lg px-3 py-2 text-[13px] transition-all ${
+          className={`resize-none rounded-lg px-3 py-2 text-[16px] transition-all md:text-[13px] ${
             focused ? "min-h-[72px]" : "min-h-[38px]"
           }`}
         />
@@ -359,7 +359,7 @@ function InlineEditForm({
         rows={3}
         disabled={submitting}
         autoFocus
-        className="resize-none rounded-lg px-3 py-2 text-[13px]"
+        className="resize-none rounded-lg px-3 py-2 text-[16px] md:text-[13px]"
       />
       {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
       <div className="mt-1.5 flex items-center justify-end gap-2">
@@ -519,7 +519,7 @@ function CommentItem({
               type="button"
               variant="ghost"
               onClick={() => setShowMenu(!showMenu)}
-              className="mt-1 h-auto min-h-0 rounded p-1 text-ca-ink-soft opacity-0 group-hover:opacity-100"
+              className="mt-1 h-auto min-h-0 rounded p-2.5 text-ca-ink-soft opacity-100 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Opciones del comentario"
               aria-haspopup="menu"
               aria-expanded={showMenu}
@@ -706,7 +706,7 @@ function ReplyItem({
             type="button"
             variant="ghost"
             onClick={() => setShowMenu(!showMenu)}
-            className="mt-0.5 h-auto min-h-0 rounded p-1 text-ca-ink-soft opacity-0 group-hover:opacity-100"
+            className="mt-0.5 h-auto min-h-0 rounded p-2.5 text-ca-ink-soft opacity-100 md:opacity-0 md:group-hover:opacity-100"
             aria-label="Opciones del comentario"
             aria-haspopup="menu"
             aria-expanded={showMenu}

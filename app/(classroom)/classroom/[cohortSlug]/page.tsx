@@ -333,7 +333,7 @@ export default async function CohortDashboardPage(
             </div>
             {nextSession && (
               <Link
-                href="/calendario"
+                href={`/classroom/${cohortSlug}/calendario`}
                 className="mt-4 block rounded-xl bg-ca-bg-soft px-3 py-2.5 text-[12px] font-bold text-ca-ink transition-colors hover:bg-ca-violet/10"
               >
                 Próxima: {fmtSessionShort(nextSession.starts_at)}

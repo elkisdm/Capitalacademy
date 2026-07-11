@@ -92,7 +92,7 @@ export function CheckinClient({
 
   return (
     <div
-      className="grid min-h-screen place-items-center px-4 py-10"
+      className="grid min-h-dvh place-items-center px-4 py-10"
       style={{ background: "var(--color-ca-bg)" }}
     >
       <article className="ca-card w-full max-w-[440px] overflow-hidden">

@@ -135,7 +135,7 @@ export function CollapsiblePlaylist({
                 <button
                   type="button"
                   onClick={toggle}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-ca-ink-soft transition-[background,color,transform] duration-[150ms] hover:bg-ca-bg-soft hover:text-ca-ink hover:scale-110 active:scale-95"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ca-ink-soft transition-[background,color,transform] duration-[150ms] hover:bg-ca-bg-soft hover:text-ca-ink hover:scale-110 active:scale-95 md:h-9 md:w-9"
                   aria-label="Minimizar panel"
                   title="Minimizar panel"
                 >
@@ -217,7 +217,9 @@ export function CollapsiblePlaylist({
       </div>
 
       {/* -------- Mobile (<lg): toggle pill + slide-over -------- */}
-      <div className="lg:hidden">
+      {/* Sticky bajo el header móvil: sigue alcanzable al hacer scroll, sin
+          tener que llegar hasta el final de la página para encontrarlo. */}
+      <div className="sticky top-16 z-30 lg:hidden">
         {/* Floating pill button */}
         <button
           type="button"
@@ -271,7 +273,7 @@ export function CollapsiblePlaylist({
               onClick={() => setMobileOpen(false)}
             />
             {/* Drawer from right */}
-            <aside ref={trapRef} className="ca-slide-in-right absolute bottom-0 right-0 top-0 flex w-[320px] max-w-[85vw] flex-col bg-ca-surface shadow-2xl">
+            <aside ref={trapRef} className="ca-slide-in-right absolute bottom-0 right-0 top-0 flex w-[320px] max-w-[85vw] flex-col bg-ca-surface pb-[env(safe-area-inset-bottom)] shadow-2xl">
               {/* Drawer header */}
               <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-5 py-4">
                 <div>
@@ -285,7 +287,7 @@ export function CollapsiblePlaylist({
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="grid h-9 w-9 place-items-center rounded-xl text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+                  className="grid h-11 w-11 place-items-center rounded-xl text-ca-ink-soft transition-colors hover:bg-ca-bg-soft md:h-9 md:w-9"
                   aria-label="Cerrar playlist"
                 >
                   <svg

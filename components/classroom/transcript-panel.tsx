@@ -269,7 +269,7 @@ export function TranscriptPanel({
             onChange={(e) => setSearchRaw(e.target.value)}
             placeholder="Buscar en transcripción…"
             aria-label="Buscar en la transcripción"
-            className="rounded-xl border-ca-ink/[0.08] bg-ca-bg-soft py-2 pl-9 pr-3 text-[13px] focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20"
+            className="rounded-xl border-ca-ink/[0.08] bg-ca-bg-soft py-2 pl-9 pr-3 text-[16px] focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20 md:text-[13px]"
           />
         </div>
         {search && (
@@ -330,7 +330,7 @@ export function TranscriptPanel({
                   e.stopPropagation();
                   handleCopy(seg.text, seg.index);
                 }}
-                className="absolute right-3 top-3 h-6 min-h-0 w-6 rounded-md p-0 opacity-0 group-hover:opacity-100"
+                className="absolute right-3 top-3 h-11 min-h-0 w-11 rounded-md p-0 opacity-100 md:h-9 md:w-9 md:opacity-0 md:group-hover:opacity-100"
                 aria-label="Copiar segmento"
               >
                 {isCopied ? (

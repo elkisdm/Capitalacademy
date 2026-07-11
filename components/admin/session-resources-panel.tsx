@@ -61,7 +61,7 @@ export function SessionResourcesPanel({
     }
   }
 
-  const fieldCls = "text-[13px] font-medium";
+  const fieldCls = "text-[16px] md:text-[13px] font-medium";
 
   function onFileChange(files: FileList) {
     setError(null);

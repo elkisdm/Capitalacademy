@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <div
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6"
+      className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6"
       style={{ background: "linear-gradient(165deg, #0f1340 0%, #1a1060 40%, #0f1340 100%)" }}
     >
       <style>{`

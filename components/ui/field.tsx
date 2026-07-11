@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils/cn";
 import { Select as SelectEngine, optionsFromChildren } from "@/components/ui/select";
 
 const fieldBase =
-  "w-full rounded-xl border border-ca-ink/[0.14] bg-ca-surface px-3.5 py-2.5 text-sm text-ca-ink placeholder:text-ca-ink-soft/60 transition-colors focus:border-ca-violet focus:outline-none focus:ring-2 focus:ring-ca-violet/20 disabled:cursor-not-allowed disabled:opacity-50";
+  "w-full rounded-xl border border-ca-ink/[0.14] bg-ca-surface px-3.5 py-2.5 text-base md:text-sm text-ca-ink placeholder:text-ca-ink-soft/60 transition-colors focus:border-ca-violet focus:outline-none focus:ring-2 focus:ring-ca-violet/20 disabled:cursor-not-allowed disabled:opacity-50";
 
 const fieldErrorClass = "border-destructive focus:border-destructive focus:ring-destructive/20";
 

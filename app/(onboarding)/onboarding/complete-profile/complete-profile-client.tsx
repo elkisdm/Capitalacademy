@@ -372,6 +372,8 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                   <Input
                     id="rut"
                     type="text"
+                    autoComplete="off"
+                    autoCapitalize="characters"
                     value={rut}
                     onChange={(e) => handleRutChange(e.target.value)}
                     placeholder="12.345.678-9"
@@ -495,7 +497,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
 
         {/* Sticky footer */}
         <div
-          className="flex items-center justify-between gap-4 border-t px-6 py-4 lg:px-10"
+          className="flex flex-col-reverse gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-10"
           style={{ borderColor: "rgba(20,22,58,0.08)" }}
         >
           <div className="hidden items-center gap-2 sm:flex">
@@ -513,7 +515,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
               variant="outline"
               onClick={handleSkip}
               disabled={!requiredDone || submitting}
-              className="h-auto px-5 py-2.5 text-[13px]"
+              className="h-auto w-full px-5 py-2.5 text-[13px] sm:w-auto"
             >
               Completar después
             </Button>
@@ -521,7 +523,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
               type="button"
               onClick={handleSubmit}
               disabled={!requiredDone || submitting}
-              className="h-auto flex-1 px-6 py-2.5 text-[13px] sm:flex-none"
+              className="h-auto w-full px-6 py-2.5 text-[13px] sm:w-auto"
             >
               {submitting ? "Guardando..." : "Completar y entrar al classroom"}
             </Button>

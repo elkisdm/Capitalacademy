@@ -212,7 +212,7 @@ export function DeliverableCard({
                   aria-label={`Eliminar ${f.filename}`}
                   onClick={() => handleDelete(f.id)}
                   disabled={deletingId === f.id}
-                  className="shrink-0 rounded p-1 text-ca-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded text-ca-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50 md:h-9 md:w-9"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

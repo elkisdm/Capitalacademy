@@ -60,7 +60,7 @@ export function ClassTranscriptPanel({
         onClick={close}
       />
       {/* Drawer from right */}
-      <aside ref={trapRef} className="ca-slide-in-right absolute bottom-0 right-0 top-0 flex w-[380px] max-w-[90vw] flex-col bg-ca-surface shadow-2xl">
+      <aside ref={trapRef} className="ca-slide-in-right absolute bottom-0 right-0 top-0 flex w-[380px] max-w-[90vw] flex-col bg-ca-surface pb-[env(safe-area-inset-bottom)] shadow-2xl">
         <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-5 py-4">
           <div className="text-[14px] font-extrabold leading-tight tracking-tight text-ca-ink">
             Transcripción

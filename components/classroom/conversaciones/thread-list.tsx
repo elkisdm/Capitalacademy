@@ -421,7 +421,7 @@ export function ThreadList({
           <Loader2 size={18} className="animate-spin text-ca-ink-soft" />
         </div>
       ) : visible.length === 0 ? (
-        <div className="ca-card flex flex-col items-center justify-center p-16 text-center">
+        <div className="ca-card flex flex-col items-center justify-center p-8 text-center md:p-16">
           {savedOnly ? (
             <>
               <p className="text-[14px] font-bold text-ca-ink">Aún no has guardado conversaciones</p>
@@ -497,7 +497,7 @@ export function ThreadList({
                     aria-label={
                       t.viewer_bookmarked ? "Quitar de guardados" : "Guardar conversación"
                     }
-                    className={`pointer-events-auto relative z-20 h-auto min-h-0 rounded-full p-1.5 ${
+                    className={`pointer-events-auto relative z-20 inline-grid h-11 w-11 place-items-center rounded-full md:h-9 md:w-9 ${
                       t.viewer_bookmarked ? "text-ca-violet" : "text-ca-ink-soft"
                     }`}
                   >

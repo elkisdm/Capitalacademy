@@ -349,10 +349,10 @@ export function QuizInProgress({
           borderColor: "var(--color-ca-outline)",
         }}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
           <button
             onClick={onExit}
-            className="shape-circle grid h-9 w-9 place-items-center"
+            className="shape-circle grid h-9 w-9 shrink-0 place-items-center"
             style={{
               background: "var(--color-ca-bg-soft)",
               color: "var(--color-ca-ink)",
@@ -361,7 +361,7 @@ export function QuizInProgress({
           >
             <Icon name="x" size={16} stroke={2} />
           </button>
-          <div className="leading-tight">
+          <div className="min-w-0 leading-tight">
             <div
               className="font-sans text-[10px] font-bold uppercase tracking-[0.22em]"
               style={{ color: "var(--color-ca-ink-soft)" }}
@@ -369,7 +369,7 @@ export function QuizInProgress({
               Quiz final
             </div>
             <div
-              className="text-[14px] font-extrabold tracking-tight"
+              className="truncate text-[14px] font-extrabold tracking-tight"
               style={{ color: "var(--color-ca-ink)" }}
             >
               {programTitle}
@@ -377,10 +377,10 @@ export function QuizInProgress({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           {/* Attempt pill */}
           <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
+            className="hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em] sm:inline-flex"
             style={{
               background: "transparent",
               color: "var(--color-ca-ink)",
@@ -500,31 +500,33 @@ export function QuizInProgress({
 
           {/* Footer nav */}
           <div
-            className="mt-6 flex items-center justify-between gap-4 border-t pt-5"
+            className="mt-6 flex flex-col gap-3 border-t pt-5 pb-[env(safe-area-inset-bottom)] sm:flex-row sm:items-center sm:justify-between"
             style={{ borderColor: "var(--color-ca-outline)" }}
           >
             <Button
               onClick={goPrev}
               disabled={isFirst}
               variant="outline"
-              className="h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
+              className="h-auto min-h-0 w-full gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em] sm:w-auto"
             >
               <Icon name="arrowLeft" size={15} stroke={2} />
               Anterior
             </Button>
 
-            <ProgressDots
-              total={total}
-              currentIdx={currentIdx}
-              answeredSet={answeredSet}
-              onDotClick={setCurrentIdx}
-            />
+            <div className="flex justify-center sm:contents">
+              <ProgressDots
+                total={total}
+                currentIdx={currentIdx}
+                answeredSet={answeredSet}
+                onDotClick={setCurrentIdx}
+              />
+            </div>
 
             <Button
               onClick={goNext}
               disabled={!selectedLetter}
               variant="lime"
-              className="h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
+              className="h-auto min-h-0 w-full gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em] sm:w-auto"
             >
               {isLast ? "Enviar respuestas" : "Siguiente"}
               <Icon name="arrowRight" size={15} stroke={2} />

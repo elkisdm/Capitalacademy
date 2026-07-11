@@ -155,7 +155,7 @@ export default async function ClassroomLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
+    <div className="flex min-h-dvh flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
       <ClassroomSidebar
         userInitials={initials}
         userName={name}

@@ -293,7 +293,7 @@ export function CertView({
                 </div>
 
                 {/* Side panel */}
-                <div className="relative p-5" style={{ background: "var(--color-ca-ink)", color: "#fff", width: 168 }}>
+                <div className="relative w-full p-5 md:w-[168px]" style={{ background: "var(--color-ca-ink)", color: "#fff" }}>
                   <div className="shape-circle absolute -left-3 top-1/3 h-5 w-5" style={{ background: "var(--color-ca-lime)" }} />
                   <div className="font-sans text-[8px] font-bold uppercase tracking-[0.22em] text-white/60">Validación</div>
                   <div className="mt-3 inline-block rounded-md bg-white p-1.5">

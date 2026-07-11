@@ -173,23 +173,26 @@ export function LessonStatusIcon({ status, size = 28 }: { status: string; size?:
 
 export function Breadcrumb({ items }: { items: Array<{ label: string; href?: string; onClick?: () => void }> }) {
   return (
-    <nav className="flex items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-      {items.map((it, i) => (
-        <span key={i} className="flex items-center gap-1.5">
-          {i > 0 && (
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          )}
-          {it.href ? (
-            <Link href={it.href} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</Link>
-          ) : it.onClick ? (
-            <button onClick={it.onClick} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</button>
-          ) : (
-            <span className={i === items.length - 1 ? "text-ca-ink" : ""}>{it.label}</span>
-          )}
-        </span>
-      ))}
+    <nav className="flex flex-wrap min-w-0 items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+      {items.map((it, i) => {
+        const isLast = i === items.length - 1;
+        return (
+          <span key={i} className={isLast ? "flex min-w-0 items-center gap-1.5" : "flex items-center gap-1.5"}>
+            {i > 0 && (
+              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            )}
+            {it.href ? (
+              <Link href={it.href} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</Link>
+            ) : it.onClick ? (
+              <button onClick={it.onClick} className="transition-colors hover:text-ca-violet hover:underline underline-offset-2">{it.label}</button>
+            ) : (
+              <span className={isLast ? "min-w-0 max-w-full truncate text-ca-ink" : ""}>{it.label}</span>
+            )}
+          </span>
+        );
+      })}
     </nav>
   );
 }

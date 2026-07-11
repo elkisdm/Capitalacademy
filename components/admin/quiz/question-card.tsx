@@ -99,7 +99,7 @@ export function QuestionCard({
             size="sm"
             onClick={() => setExpanded((v) => !v)}
             aria-label={expanded ? "Colapsar" : "Expandir"}
-            className="!h-auto !w-auto rounded-full p-1 text-ca-ink-soft"
+            className="grid h-11 w-11 place-items-center rounded-full text-ca-ink-soft md:h-8 md:w-8"
           >
             <ChevronIcon open={expanded} />
           </Button>

@@ -116,7 +116,7 @@ export function LoginForm({
             type="button"
             onClick={() => setShowPwd((s) => !s)}
             aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-ca-ink-soft transition-colors hover:text-ca-ink"
+            className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center text-ca-ink-soft transition-colors hover:text-ca-ink"
           >
             {showPwd ? <EyeOffIcon /> : <EyeIcon />}
           </button>

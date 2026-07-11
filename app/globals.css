@@ -509,7 +509,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 }
 .ca-prose pre code { background: transparent; padding: 0; font-size: 0.85em; }
 .ca-prose hr { border: 0; border-top: 1px solid var(--color-ca-outline); margin: 1.6em 0; }
-.ca-prose table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+.ca-prose table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
 .ca-prose th, .ca-prose td {
   border: 1px solid var(--color-ca-outline);
   padding: 0.5em 0.7em;

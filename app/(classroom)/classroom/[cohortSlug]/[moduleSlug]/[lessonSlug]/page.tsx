@@ -97,8 +97,8 @@ export default async function LessonPage(
 
   if (lesson.unlock_at && new Date(lesson.unlock_at) > new Date()) {
     return (
-      <div className="ca-fade-up mx-auto max-w-3xl px-8 py-8">
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-ca-ink/[0.08] bg-ca-surface p-16 text-center">
+      <div className="ca-fade-up mx-auto max-w-3xl px-4 py-8 md:px-8">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-ca-ink/[0.08] bg-ca-surface p-8 text-center md:p-16">
           <svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-ca-ink-soft">
             <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" />
           </svg>
@@ -197,7 +197,7 @@ export default async function LessonPage(
         <Breadcrumb items={[
           { label: program.name, href: `/classroom/${cohortSlug}` },
           { label: `Módulo ${String(currentModule?.position ?? 0).padStart(2, "0")}`, href: `/classroom/${cohortSlug}/${moduleSlug}` },
-          { label: `Lec. ${String(idx + 1).padStart(2, "0")} · ${lesson.title}` },
+          { label: `Lec. ${String(idx + 1).padStart(2, "0")}` },
         ]} />
       </div>
 

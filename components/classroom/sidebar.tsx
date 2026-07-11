@@ -515,7 +515,7 @@ export function ClassroomSidebar({
           {/* Drawer */}
           <aside
             ref={trapRef}
-            className="ca-slide-in-left absolute bottom-0 left-0 top-0 flex w-[280px] flex-col bg-ca-surface shadow-2xl"
+            className="ca-slide-in-left absolute bottom-0 left-0 top-0 flex w-[280px] flex-col bg-ca-surface pb-[env(safe-area-inset-bottom)] shadow-2xl"
           >
             <div className="flex items-center justify-between px-4 py-3">
               <Logo />

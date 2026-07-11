@@ -158,7 +158,7 @@ export function QuizStart({
         />
       </div>
 
-      <div className="ca-fade-up relative mx-auto max-w-[820px] px-10 py-14">
+      <div className="ca-fade-up relative mx-auto max-w-[820px] px-5 py-8 md:px-10 md:py-14">
         {/* Eyebrow pill */}
         <Badge tone="violet" className="uppercase tracking-[0.16em]">
           <Icon name="trophy" size={11} stroke={2.5} />
@@ -166,7 +166,7 @@ export function QuizStart({
         </Badge>
 
         <h1
-          className="mt-4 text-[44px] font-black leading-[1] tracking-[-0.03em]"
+          className="mt-4 text-[32px] font-black leading-[1] tracking-[-0.03em] md:text-[44px]"
           style={{ color: "var(--color-ca-ink)" }}
         >
           Estás listo para certificarte.
@@ -270,11 +270,11 @@ export function QuizStart({
         </div>
 
         {/* CTA */}
-        <div className="mt-8 flex items-center justify-between gap-4">
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             onClick={onBack}
             variant="outline"
-            className="h-auto min-h-0 gap-2 px-6 text-[13px] uppercase tracking-[0.08em]"
+            className="h-auto min-h-0 w-full gap-2 px-6 text-[13px] uppercase tracking-[0.08em] sm:w-auto"
             style={{ height: 52 }}
           >
             <Icon name="arrowLeft" size={18} stroke={2} />
@@ -283,7 +283,7 @@ export function QuizStart({
           <Button
             onClick={onStart}
             variant="lime"
-            className="h-auto min-h-0 gap-2 px-7 text-[14px] uppercase tracking-[0.08em]"
+            className="h-auto min-h-0 w-full gap-2 px-7 text-[14px] uppercase tracking-[0.08em] sm:w-auto"
             style={{ height: 56 }}
           >
             Comenzar quiz

@@ -74,7 +74,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <div
                 key={t.id}
                 className={cn(
-                  "pointer-events-auto flex items-center gap-3 rounded-full border px-5 py-2.5 text-[13px] font-bold shadow-lg transition-all duration-300",
+                  "pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-2xl border px-5 py-2.5 text-[13px] font-bold shadow-lg transition-all duration-300",
                   VARIANT_STYLES[t.variant],
                   t.exiting ? "-translate-y-2 opacity-0" : "translate-y-0 opacity-100",
                 )}

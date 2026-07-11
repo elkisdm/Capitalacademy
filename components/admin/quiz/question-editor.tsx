@@ -160,7 +160,7 @@ export function QuestionEditor({
                       size="sm"
                       onClick={() => removeOption(key)}
                       aria-label={`Eliminar opción ${key}`}
-                      className="!h-auto !w-auto shrink-0 rounded-lg p-1.5 text-ca-ink-soft hover:bg-red-50 hover:text-red-600"
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ca-ink-soft hover:bg-red-50 hover:text-red-600 md:h-8 md:w-8"
                     >
                       <TrashIcon />
                     </Button>
@@ -240,7 +240,7 @@ export function QuestionEditor({
                     size="sm"
                     onClick={() => set({ shortAnswers: draft.shortAnswers.filter((_, j) => j !== i) })}
                     aria-label="Eliminar respuesta"
-                    className="!h-auto !w-auto shrink-0 rounded-lg p-1.5 text-ca-ink-soft hover:bg-red-50 hover:text-red-600"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ca-ink-soft hover:bg-red-50 hover:text-red-600 md:h-8 md:w-8"
                   >
                     <TrashIcon />
                   </Button>

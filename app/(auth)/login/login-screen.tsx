@@ -17,7 +17,7 @@ export function LoginScreen({
 }) {
   return (
     <main
-      className="relative flex min-h-screen items-center justify-center overflow-hidden px-6"
+      className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6"
       style={{ background: "var(--color-ca-bg)" }}
     >
       {/* Background brand shapes (tintadas con el acento del entorno) */}

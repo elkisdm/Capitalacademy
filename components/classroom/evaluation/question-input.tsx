@@ -39,7 +39,7 @@ export function QuestionInput({
           disabled={disabled}
           placeholder="Tu respuesta…"
           aria-label="Tu respuesta"
-          className="w-full rounded-xl border border-ca-ink/[0.10] bg-white px-4 py-2.5 text-[14px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40 disabled:opacity-70"
+          className="w-full rounded-xl border border-ca-ink/[0.10] bg-white px-4 py-2.5 text-[16px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40 disabled:opacity-70 md:text-[14px]"
         />
         {review && (
           <p className="mt-2 text-[12px] font-semibold text-ca-ink-soft">

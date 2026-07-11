@@ -7,6 +7,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Added
+- Los formularios del panel administrativo, el checkout y el classroom ahora usan controles propios de marca (selector de fecha, menú desplegable, casillas, radios y selector de archivo) en vez de los del navegador; el panel de asistencia de una clase queda más compacto con búsqueda y marcado en bloque, y el popover de notificaciones ya no se corta en pantallas angostas (`43626f6`)
+
 ### Changed
 - El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)
 - La pantalla de una conversación carga más liviana y rápida: dejó de enviarse el procesador de texto al navegador y los avatares se optimizan automáticamente (`db2c32d`)

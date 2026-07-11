@@ -8,6 +8,7 @@ import { ModuleEditForm } from "@/components/admin/module-edit-form";
 import { LessonsScopeFilter } from "@/components/admin/lessons-scope-filter";
 import { ModuleSessionsList } from "@/components/admin/module-sessions-list";
 import { getActiveEnv, resolveProgramScope } from "@/lib/admin/active-env";
+import { getSessionRecordingLessonIds } from "@/lib/classroom/queries";
 
 type SessionRow = {
   id: string;
@@ -15,7 +16,16 @@ type SessionRow = {
   starts_at: string;
   modality: string;
   module_id: string | null;
+  lesson_id: string | null;
   teacher: { full_name: string | null } | null;
+};
+
+type RecordingInfo = {
+  lessonId: string;
+  muxPlaybackId: string | null;
+  muxUploadId: string | null;
+  muxError: string | null;
+  durationSeconds: number | null;
 };
 
 type SessionResourceRow = {
@@ -76,13 +86,32 @@ export default async function AdminLessonsPage(props: {
   const selectedCohortId =
     cohortOptions.find((c) => c.id === cohortParam)?.id ?? cohortOptions[0]?.id ?? null;
 
+  // Lecciones que son la repetición de una clase en vivo: se excluyen de
+  // "Lecciones grabadas" y se muestran integradas en su fila de sesión.
+  const allLessonIds = (modules ?? []).flatMap((m) =>
+    ((m.lessons ?? []) as Array<{ id: string }>).map((l) => l.id),
+  );
+  const recordingLessonIds = await getSessionRecordingLessonIds(allLessonIds);
+  const recordingByLessonId = new Map<string, RecordingInfo>();
+  for (const mod of modules ?? []) {
+    for (const lesson of (mod.lessons ?? []) as Array<Record<string, unknown>>) {
+      recordingByLessonId.set(lesson.id as string, {
+        lessonId: lesson.id as string,
+        muxPlaybackId: (lesson.mux_playback_id as string | null) ?? null,
+        muxUploadId: (lesson.mux_upload_id as string | null) ?? null,
+        muxError: (lesson.mux_error as string | null) ?? null,
+        durationSeconds: (lesson.video_duration_seconds as number | null) ?? null,
+      });
+    }
+  }
+
   // Clases en vivo de la cohorte, agrupadas por módulo.
   const sessionsByModule = new Map<string, SessionRow[]>();
   const resourcesBySession = new Map<string, SessionResourceRow[]>();
   if (selectedCohortId) {
     const { data: sessionRows } = await supabase
       .from("class_sessions")
-      .select("id, title, starts_at, modality, module_id, teacher:instructors(full_name)")
+      .select("id, title, starts_at, modality, module_id, lesson_id, teacher:instructors(full_name)")
       .eq("cohort_id", selectedCohortId)
       .not("module_id", "is", null)
       .neq("status", "cancelled")
@@ -164,9 +193,9 @@ export default async function AdminLessonsPage(props: {
       <div className="space-y-10">
         {modules.map((mod) => {
           const program = mod.programs as { name: string; code: string } | null;
-          const lessons = ((mod.lessons ?? []) as Array<Record<string, unknown>>).sort(
-            (a, b) => (a.position as number) - (b.position as number),
-          );
+          const lessons = ((mod.lessons ?? []) as Array<Record<string, unknown>>)
+            .filter((l) => !recordingLessonIds.has(l.id as string))
+            .sort((a, b) => (a.position as number) - (b.position as number));
           const siblingModules = moduleOptions.filter((m) => m.id !== mod.id);
           const moduleSessions = sessionsByModule.get(mod.id as string) ?? [];
 
@@ -253,6 +282,7 @@ export default async function AdminLessonsPage(props: {
                       modality: s.modality,
                       teacherName: s.teacher?.full_name ?? null,
                       resources: resourcesBySession.get(s.id) ?? [],
+                      recording: s.lesson_id ? (recordingByLessonId.get(s.lesson_id) ?? null) : null,
                     }))}
                   />
                 </div>

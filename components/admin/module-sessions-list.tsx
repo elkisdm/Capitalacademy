@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, AlertTriangle, Paperclip, ChevronDown, Pencil } from "lucide-react";
+import { Calendar, AlertTriangle, Paperclip, ChevronDown, Pencil, Video } from "lucide-react";
 import { ResourceManager } from "./resource-manager";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
+import { lessonVideoStatus } from "@/lib/admin/lesson-video-status";
+import { fmtDuration } from "@/lib/classroom/format";
 
 type SessionResource = {
   id: string;
@@ -19,6 +22,14 @@ type SessionResource = {
   position: number;
 };
 
+type SessionRecording = {
+  lessonId: string;
+  muxPlaybackId: string | null;
+  muxUploadId: string | null;
+  muxError: string | null;
+  durationSeconds: number | null;
+};
+
 type SessionItem = {
   id: string;
   title: string;
@@ -26,6 +37,7 @@ type SessionItem = {
   modality: string;
   teacherName: string | null;
   resources: SessionResource[];
+  recording: SessionRecording | null;
 };
 
 type SiblingModule = { id: string; title: string };
@@ -44,6 +56,22 @@ function fmt(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/** Estado de la repetición (lección vinculada a la clase en vivo). Ver migración 0041. */
+function recordingStatus(recording: SessionRecording | null) {
+  if (!recording) return { tone: "neutral" as const, label: "Sin repetición" };
+  const status = lessonVideoStatus({
+    muxPlaybackId: recording.muxPlaybackId,
+    muxUploadId: recording.muxUploadId,
+    muxError: recording.muxError,
+    hasContent: false,
+  });
+  if (recording.muxPlaybackId) {
+    const dur = fmtDuration(recording.durationSeconds);
+    return { tone: status.tone, label: dur === "—" ? "Repetición" : `Repetición · ${dur}` };
+  }
+  return status;
 }
 
 /**
@@ -109,6 +137,7 @@ export function ModuleSessionsList({
       {items.map((s) => {
         const expanded = expandedId === s.id;
         const count = s.resources.length;
+        const recording = recordingStatus(s.recording);
         return (
           <div
             key={s.id}
@@ -125,6 +154,9 @@ export function ModuleSessionsList({
                   {fmt(s.startsAt)} · {MODALITY_LABEL[s.modality] ?? s.modality}
                   {s.teacherName ? ` · ${s.teacherName}` : ""}
                 </p>
+                <Badge tone={recording.tone} size="sm" className="mt-1">
+                  {recording.label}
+                </Badge>
               </div>
 
               <Button
@@ -168,6 +200,17 @@ export function ModuleSessionsList({
                 <Pencil className="h-3.5 w-3.5" />
                 Editar
               </Link>
+
+              {s.recording?.muxPlaybackId && (
+                <Link
+                  href={`/admin/lessons/${s.recording.lessonId}`}
+                  className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
+                  title="Editar la repetición de esta clase"
+                >
+                  <Video className="h-3.5 w-3.5" />
+                  Editar repetición
+                </Link>
+              )}
             </div>
 
             {expanded && (

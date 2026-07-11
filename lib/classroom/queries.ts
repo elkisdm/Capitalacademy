@@ -37,6 +37,34 @@ async function getActiveSessionEvaluations(
   return map;
 }
 
+/**
+ * Reverse-lookup de lecciones que son la repetición de una clase EN VIVO
+ * (class_sessions.lesson_id). DEBE cubrir TODAS las cohortes vía service-role:
+ * la RLS de class_sessions solo deja ver la cohorte propia y ocultaba las
+ * repeticiones de otras cohortes, que se colaban como lección suelta. Admin
+ * SOLO para este set de ids a excluir (solo columna lesson_id, acotado a
+ * lessonIds; sin PII). Si falla la creación del client o el query, se degrada
+ * a un set vacío en vez de tumbar la vista con un error. Ver migración 0041.
+ */
+export async function getSessionRecordingLessonIds(lessonIds: string[]): Promise<Set<string>> {
+  if (lessonIds.length === 0) return new Set();
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("class_sessions")
+      .select("lesson_id")
+      .in("lesson_id", lessonIds);
+    return new Set(
+      ((data ?? []) as Array<{ lesson_id: string | null }>)
+        .map((r) => r.lesson_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+  } catch (err) {
+    console.error("getSessionRecordingLessonIds: fallo reverse-lookup", err);
+    return new Set();
+  }
+}
+
 export async function getCohortSlugById(cohortId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -190,28 +218,7 @@ export async function getModulesWithLessons(
       }
     }
 
-    // Reverse-lookup de exclusión: DEBE cubrir TODAS las cohortes del programa (la
-    // RLS de class_sessions solo deja ver la cohorte propia y ocultaba las
-    // repeticiones de otras cohortes → se colaban como lección suelta). Admin SOLO
-    // para este set de ids a excluir (solo columna lesson_id, acotado a lessonIds;
-    // sin PII). createAdminClient() lanza sincrónicamente si falta
-    // SUPABASE_SERVICE_ROLE_KEY: si falla la creación del client o el query, se
-    // degrada a un set vacío (las repeticiones reaparecen como lección suelta)
-    // en vez de tumbar todo el temario con un 500.
-    try {
-      const admin = createAdminClient();
-      const { data: recLinks } = await admin
-        .from("class_sessions")
-        .select("lesson_id")
-        .in("lesson_id", lessonIds);
-      recordingLessonIds = new Set(
-        ((recLinks ?? []) as Array<{ lesson_id: string | null }>)
-          .map((r) => r.lesson_id)
-          .filter((id): id is string => Boolean(id)),
-      );
-    } catch (err) {
-      console.error("getModulesWithLessons: fallo reverse-lookup de repeticiones", err);
-    }
+    recordingLessonIds = await getSessionRecordingLessonIds(lessonIds);
   }
 
   return modules.map((mod) => ({

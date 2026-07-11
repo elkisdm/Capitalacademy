@@ -175,12 +175,15 @@ function StaffControls({
   return (
     <div className={collapsed ? "mb-1 border-b border-ca-ink/[0.08] pb-1" : "mb-1 border-b border-ca-ink/[0.08] pb-2"}>
       <ViewModeToggle mode={viewMode} collapsed={collapsed} />
-      <EnvSwitcher
-        options={envOptions}
-        activeEnv={activeEnv}
-        collapsed={collapsed}
-        studentPreview={viewMode === "student"}
-      />
+      {/* "Entorno" es jerga/función de admin: en vista alumno (viewMode student,
+          incluyendo el "ver como" del staff) no debe mostrarse. */}
+      {viewMode === "admin" && (
+        <EnvSwitcher
+          options={envOptions}
+          activeEnv={activeEnv}
+          collapsed={collapsed}
+        />
+      )}
     </div>
   );
 }
@@ -351,6 +354,7 @@ export function ClassroomSidebar({
   viewerId,
   isTeacher = false,
   hasFinalEvaluation = false,
+  hasMultiplePrograms = false,
 }: {
   userInitials: string;
   userName: string;
@@ -367,6 +371,9 @@ export function ClassroomSidebar({
   isTeacher?: boolean;
   /** Hay una evaluación final publicada (activa) para el programa de la cohorte activa. */
   hasFinalEvaluation?: boolean;
+  /** El alumno (no staff) tiene más de una matrícula activa: solo entonces se
+   * muestra "Mis programas" como selector. Con una sola, no hay nada que elegir. */
+  hasMultiplePrograms?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -409,8 +416,14 @@ export function ClassroomSidebar({
 
   const navItems: NavItem[] = [
     ...(showLearn ? [
-      { icon: "home", label: "Mis programas", href: "/classroom", section: "learn" as const },
-      { icon: "book", label: cohortLabel ?? "Mi programa", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" as const },
+      // "Mis programas" solo tiene sentido si hay algo entre lo que elegir: el
+      // staff siempre lo ve (referencia de todos los entornos), el alumno solo
+      // si tiene más de una matrícula activa. Con una sola, el nombre del
+      // programa ya se muestra como contexto en el item "Inicio" de abajo.
+      ...(staff || hasMultiplePrograms ? [
+        { icon: "book", label: "Mis programas", href: "/classroom", section: "learn" as const },
+      ] : []),
+      { icon: "home", label: cohortLabel ?? "Inicio", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" as const },
       { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" as const },
       ...(cohortId ? [
         { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },

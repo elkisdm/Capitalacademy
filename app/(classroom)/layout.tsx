@@ -5,7 +5,10 @@ import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
 import { getActiveEnv, getEnvOptions, getViewMode, type EnvOption, type ViewMode } from "@/lib/admin/active-env";
 import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
-import { getCohortWithProgram } from "@/lib/classroom/queries";
+import {
+  getCohortWithProgram,
+  getActiveEnrollmentsForUser,
+} from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 
 export const metadata = {
@@ -142,6 +145,15 @@ export default async function ClassroomLayout({
     isTeacher = !!cohortRole;
   }
 
+  // "Mis programas" solo se muestra al alumno si tiene más de una matrícula
+  // activa (staff siempre lo ve, vía la condición en el sidebar). Reutiliza la
+  // misma fuente de verdad que /classroom usa para decidir si hay algo que elegir.
+  let hasMultiplePrograms = false;
+  if (!isStaff) {
+    const enrollments = await getActiveEnrollmentsForUser(user.id);
+    hasMultiplePrograms = enrollments.length > 1;
+  }
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
       <ClassroomSidebar
@@ -158,6 +170,7 @@ export default async function ClassroomLayout({
         viewerId={user.id}
         isTeacher={isTeacher}
         hasFinalEvaluation={hasFinalEvaluation}
+        hasMultiplePrograms={hasMultiplePrograms}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         {children}

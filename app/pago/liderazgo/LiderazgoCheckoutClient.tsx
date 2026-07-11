@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   liderazgoCheckoutSchema,
@@ -16,6 +16,7 @@ import { formatRut } from "@/lib/utils/rut";
 import { COMUNIDAD_WHATSAPP_URL } from "@/lib/landing/constants";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, Radio } from "@/components/ui/radio";
 
 type Status = "idle" | "submitting" | "redirecting" | "error";
 
@@ -45,6 +46,7 @@ export function LiderazgoCheckoutClient({
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<LiderazgoCheckoutInput>({
     resolver: zodResolver(liderazgoCheckoutSchema),
@@ -236,50 +238,56 @@ export function LiderazgoCheckoutClient({
           <legend className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--color-ca-ink-soft)]">
             Forma de pago
           </legend>
-          <div className="grid grid-cols-1 gap-2">
-            {LIDERAZGO_PLAN_KEYS.map((planKey) => {
-              const plan = LIDERAZGO_PLANS[planKey];
-              const isSelected = selectedPlan === planKey;
-              const planAmount = amountFor(planKey);
-              return (
-                <label
-                  key={planKey}
-                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-xl border px-4 py-3 transition-colors ${
-                    isSelected
-                      ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
-                      : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
-                  }`}
-                >
-                  <span className="flex items-start gap-3">
-                    <input
-                      type="radio"
+          <Controller
+            name="plan"
+            control={control}
+            render={({ field }) => (
+              <RadioGroup
+                value={field.value ?? "lid-contado"}
+                onChange={field.onChange}
+                name="plan"
+                className="grid grid-cols-1 gap-2"
+              >
+                {LIDERAZGO_PLAN_KEYS.map((planKey) => {
+                  const plan = LIDERAZGO_PLANS[planKey];
+                  const isSelected = selectedPlan === planKey;
+                  const planAmount = amountFor(planKey);
+                  return (
+                    <Radio
+                      key={planKey}
                       value={planKey}
-                      {...register("plan")}
-                      className="mt-1 h-4 w-4 accent-[var(--color-ca-violet)]"
-                    />
-                    <span className="block">
-                      <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
-                        {plan.label}
+                      className={`rounded-xl border px-4 py-3 transition-colors ${
+                        isSelected
+                          ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
+                          : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
+                      }`}
+                    >
+                      <span className="flex w-full items-start justify-between gap-3">
+                        <span className="block">
+                          <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
+                            {plan.label}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] text-[var(--color-ca-ink-soft)]">
+                            {plan.description}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 flex-col items-end">
+                          {launchApplied && (
+                            <span className="text-[11px] font-medium text-[var(--color-ca-ink-soft)] line-through decoration-[var(--color-ca-ink-soft)]/60">
+                              {priceFormatter.format(plan.amount)}
+                            </span>
+                          )}
+                          <span className="text-sm font-bold text-[var(--color-ca-ink)]">
+                            {priceFormatter.format(planAmount)}
+                          </span>
+                        </span>
                       </span>
-                      <span className="mt-0.5 block text-[11px] text-[var(--color-ca-ink-soft)]">
-                        {plan.description}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 flex-col items-end">
-                    {launchApplied && (
-                      <span className="text-[11px] font-medium text-[var(--color-ca-ink-soft)] line-through decoration-[var(--color-ca-ink-soft)]/60">
-                        {priceFormatter.format(plan.amount)}
-                      </span>
-                    )}
-                    <span className="text-sm font-bold text-[var(--color-ca-ink)]">
-                      {priceFormatter.format(planAmount)}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+                    </Radio>
+                  );
+                })}
+              </RadioGroup>
+            )}
+          />
           {errors.plan?.message && (
             <p className="mt-2 text-[11px] text-rose-600">
               {errors.plan.message}

@@ -14,6 +14,7 @@ import {
 } from "@/lib/cobro/plans";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, Radio } from "@/components/ui/radio";
 
 const cobroFormSchema = checkoutFormSchema.pick({
   firstname: true,
@@ -134,29 +135,27 @@ export function CobroCheckoutClient({
 
         <fieldset>
           <legend className="sr-only">Forma de pago</legend>
-          <div className="grid grid-cols-1 gap-2">
+          <RadioGroup
+            value={plan}
+            onChange={(value) => setPlan(value as CobroPlan)}
+            name="cobro-plan"
+            className="grid grid-cols-1 gap-2"
+          >
             {COBRO_PLAN_KEYS.map((planKey) => {
               const config = COBRO_PLANS[planKey];
               const isSelected = plan === planKey;
               const planAmount = resolveCobroAmount(amountClp, planKey);
               return (
-                <label
+                <Radio
                   key={planKey}
-                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                  value={planKey}
+                  className={`rounded-xl border px-4 py-3 transition-colors ${
                     isSelected
                       ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
                       : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
                   }`}
                 >
-                  <span className="flex items-start gap-3">
-                    <input
-                      type="radio"
-                      name="cobro-plan"
-                      value={planKey}
-                      checked={isSelected}
-                      onChange={() => setPlan(planKey)}
-                      className="mt-1 h-4 w-4 accent-[var(--color-ca-violet)]"
-                    />
+                  <span className="flex w-full items-start justify-between gap-3">
                     <span className="block">
                       <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
                         {config.label}
@@ -165,14 +164,14 @@ export function CobroCheckoutClient({
                         {config.description}
                       </span>
                     </span>
+                    <span className="shrink-0 text-sm font-bold text-[var(--color-ca-ink)]">
+                      {priceFormatter.format(planAmount)}
+                    </span>
                   </span>
-                  <span className="shrink-0 text-sm font-bold text-[var(--color-ca-ink)]">
-                    {priceFormatter.format(planAmount)}
-                  </span>
-                </label>
+                </Radio>
               );
             })}
-          </div>
+          </RadioGroup>
         </fieldset>
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -43,6 +44,11 @@ type Notification = {
 
 const ENDPOINT = "/api/classroom/conversaciones/notifications";
 
+// Ancho del panel y margen mínimo respecto al borde del viewport, usados
+// para calcular su posición `fixed` (ver comentario en `updatePosition`).
+const PANEL_WIDTH = 360;
+const VIEWPORT_MARGIN = 16;
+
 export function NotificationBell({
   viewerId,
   cohortSlug,
@@ -53,7 +59,13 @@ export function NotificationBell({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   // Nombre de canal ÚNICO por instancia montada. La campana se renderiza en
   // más de un lugar a la vez (sidebar desktop + header móvil, ambos montados
@@ -124,70 +136,79 @@ export function NotificationBell({
     }
   }, []);
 
+  // La campana puede vivir dentro del sidebar angosto (256px) o del header
+  // móvil: anclar el panel con `absolute right-0` lo desborda por la
+  // izquierda cuando el contenedor es más angosto que el panel. En su lugar
+  // se posiciona `fixed` a partir del rect real del botón, alineado a su
+  // borde derecho y clampeado dentro del viewport.
+  const updatePosition = useCallback(() => {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const maxLeft = Math.max(window.innerWidth - PANEL_WIDTH - VIEWPORT_MARGIN, VIEWPORT_MARGIN);
+    const left = Math.min(Math.max(rect.right - PANEL_WIDTH, VIEWPORT_MARGIN), maxLeft);
+    setPanelPos({ top: rect.bottom + 8, left });
+  }, []);
+
   const toggleOpen = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
-      // Al abrir, marca todas como leídas.
-      if (next && unread > 0) void markAllRead();
+      if (next) {
+        updatePosition();
+        // Al abrir, marca todas como leídas.
+        if (unread > 0) void markAllRead();
+      }
       return next;
     });
-  }, [unread, markAllRead]);
+  }, [unread, markAllRead, updatePosition]);
 
-  // Cerrar con Escape o click fuera.
+  // Cerrar con Escape o click fuera; recalcular posición en scroll/resize.
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     function onClick(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function onReflow() {
+      updatePosition();
     }
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onClick);
+    window.addEventListener("resize", onReflow);
+    window.addEventListener("scroll", onReflow, true);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onClick);
+      window.removeEventListener("resize", onReflow);
+      window.removeEventListener("scroll", onReflow, true);
     };
-  }, [open]);
+  }, [open, updatePosition]);
 
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={toggleOpen}
-        aria-label="Notificaciones"
-        aria-expanded={open}
-        className="relative inline-grid h-10 w-10 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
-      >
-        <Bell className="h-5 w-5" />
-        {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 inline-grid min-w-[18px] place-items-center rounded-full bg-ca-violet px-1 py-0.5 text-[10px] font-bold leading-none text-white">
-            {unread > 99 ? "99+" : unread}
-          </span>
+  const panel = open && panelPos && (
+    <div
+      ref={panelRef}
+      className="ca-card fixed z-50 w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-xl"
+      style={{ top: panelPos.top, left: panelPos.left }}
+    >
+      <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-4 py-3">
+        <p className="text-[13px] font-bold text-ca-ink">Notificaciones</p>
+        {notifications.some((n) => !n.read) && (
+          <button
+            type="button"
+            onClick={markAllRead}
+            className="text-[11px] font-semibold text-ca-violet transition-colors hover:underline"
+          >
+            Marcar todas como leídas
+          </button>
         )}
-      </button>
+      </div>
 
-      {open && (
-        <div className="ca-card absolute right-0 z-20 mt-2 w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-xl">
-          <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-4 py-3">
-            <p className="text-[13px] font-bold text-ca-ink">Notificaciones</p>
-            {notifications.some((n) => !n.read) && (
-              <button
-                type="button"
-                onClick={markAllRead}
-                className="text-[11px] font-semibold text-ca-violet transition-colors hover:underline"
-              >
-                Marcar todas como leídas
-              </button>
-            )}
-          </div>
-
-          <div className="max-h-[380px] overflow-y-auto">
+      <div className="max-h-[380px] overflow-y-auto">
             {notifications.length === 0 ? (
               <p className="px-4 py-8 text-center text-[13px] text-ca-ink-soft">
                 No tienes notificaciones todavía.
@@ -246,9 +267,29 @@ export function NotificationBell({
                 })}
               </ul>
             )}
-          </div>
-        </div>
-      )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleOpen}
+        aria-label="Notificaciones"
+        aria-expanded={open}
+        className="relative inline-grid h-10 w-10 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
+      >
+        <Bell className="h-5 w-5" />
+        {unread > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 inline-grid min-w-[18px] place-items-center rounded-full bg-ca-violet px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
+      </button>
+
+      {mounted && panel && createPortal(panel, document.body)}
     </div>
   );
 }

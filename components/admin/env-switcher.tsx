@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setActiveEnv, setViewMode } from "@/lib/admin/env-actions";
 import type { EnvOption, ViewMode } from "@/lib/admin/active-env";
+import { Select } from "@/components/ui/field";
 
 /**
  * Selector global de entorno (programa) para el staff. Persiste la elección en
@@ -61,7 +62,7 @@ export function EnvSwitcher({
       >
         Entorno
       </label>
-      <select
+      <Select
         id="env-switcher"
         value={activeEnv ?? "all"}
         disabled={pending}
@@ -75,7 +76,7 @@ export function EnvSwitcher({
             {o.name}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

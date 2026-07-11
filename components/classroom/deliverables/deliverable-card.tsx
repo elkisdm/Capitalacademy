@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { FileText, Upload, Trash2, Lock, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CATEGORY_LABELS } from "@/lib/deliverables/file-types";
+import { FileInput } from "@/components/ui/file-input";
 
 type Deliverable = {
   id: string;
@@ -66,7 +67,6 @@ export function DeliverableCard({
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { windowOpen, closed } = computeWindow(deliverable);
   const hasSubmitted = files.length > 0;
@@ -78,9 +78,8 @@ export function DeliverableCard({
     .flatMap((c) => CATEGORY_ACCEPT[c] ?? [])
     .join(",");
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0] ?? null;
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleFileChange = async (files: FileList) => {
+    const selected = files[0] ?? null;
     if (!selected) return;
 
     if (selected.size > deliverable.max_file_size_bytes) {
@@ -241,13 +240,11 @@ export function DeliverableCard({
                   : "Puedes reemplazar tu entrega subiendo un archivo nuevo."}
               </p>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
+            <FileInput
               accept={accept}
-              onChange={handleFileChange}
+              onFiles={handleFileChange}
               disabled={uploading}
-              className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-1.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-ca-violet/10 file:px-2 file:py-1 file:text-xs file:text-ca-violet disabled:opacity-50"
+              maxSizeMb={deliverable.max_file_size_bytes / (1024 * 1024)}
             />
             {uploading && (
               <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-ca-ink-soft">

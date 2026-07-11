@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/admin/toast";
 import type { Evaluation, EvaluationScope } from "./types";
 import { EvaluationPanel } from "./evaluation-panel";
@@ -230,23 +231,25 @@ function EvalRow({
               <span className="hidden text-[11.5px] text-ca-ink-soft sm:inline">
                 {evalItem.questionCount ?? 0} preg.
               </span>
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => onToggle(expanded ? null : evalItem.id)}
-                className="rounded-lg border px-3 py-1.5 text-[12px] font-bold text-ca-ink transition-colors"
-                style={{ borderColor: "rgba(20,22,58,0.14)" }}
               >
                 {expanded ? "Cerrar" : "Gestionar"}
-              </button>
+              </Button>
             </>
           ) : (
-            <button
+            <Button
+              type="button"
+              variant="lime"
+              size="sm"
               onClick={onCreate}
               disabled={creating === rowKey}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold text-ca-ink transition-colors disabled:opacity-40"
-              style={{ background: "var(--color-ca-lime)" }}
             >
               {creating === rowKey ? <LoaderIcon /> : "Crear quiz"}
-            </button>
+            </Button>
           )}
         </div>
       </div>

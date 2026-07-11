@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { SessionResource, SessionResourceType } from "@/lib/classroom/types";
 import { PlusIcon, TrashIcon } from "@/components/admin/icons";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
+import { FileInput } from "@/components/ui/file-input";
 
 const RESOURCE_TYPE_LABELS: Record<SessionResourceType, string> = {
   link: "Enlace",
@@ -47,7 +48,6 @@ export function SessionResourcesPanel({
   const [adding, setAdding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleRemove(id: string) {
     setError(null);
@@ -63,13 +63,12 @@ export function SessionResourcesPanel({
 
   const fieldCls = "text-[13px] font-medium";
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onFileChange(files: FileList) {
     setError(null);
-    const selected = e.target.files?.[0] ?? null;
+    const selected = files[0] ?? null;
     if (selected && selected.size > MAX_RESOURCE_SIZE) {
       setError("El archivo no puede superar 50 MB.");
       setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setFile(selected);
@@ -81,7 +80,6 @@ export function SessionResourcesPanel({
     setUrl("");
     setFile(null);
     setType("document");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleAdd() {
@@ -264,13 +262,7 @@ export function SessionResourcesPanel({
               <label htmlFor="resource-file" className="sr-only">
                 Archivo (máx. 50 MB)
               </label>
-              <Input
-                id="resource-file"
-                ref={fileInputRef}
-                type="file"
-                onChange={onFileChange}
-                className="py-2 text-[13px] text-ca-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-ca-violet/10 file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-ca-violet"
-              />
+              <FileInput onFiles={onFileChange} label="Archivo (máx. 50 MB)" />
               {file && (
                 <p className="mt-1 text-[11px] text-ca-ink-soft">
                   {file.name} · {(file.size / (1024 * 1024)).toFixed(1)} MB

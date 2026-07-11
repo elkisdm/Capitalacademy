@@ -47,7 +47,7 @@ export function AddModuleButton({ programs }: { programs: ProgramOption[] }) {
 
   if (!open) {
     return (
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="lime" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" />
         Nuevo módulo
       </Button>
@@ -89,6 +89,7 @@ export function AddModuleButton({ programs }: { programs: ProgramOption[] }) {
       <div className="flex gap-2">
         <Button
           type="button"
+          variant="lime"
           onClick={handleCreate}
           disabled={saving || !programId || !code.trim() || !title.trim()}
         >

@@ -7,6 +7,7 @@ import { LessonContentEditor } from "@/components/admin/lesson-content-editor";
 import { CoverImageField } from "@/components/admin/cover-image-field";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/field";
+import { DatePicker } from "@/components/ui/date-picker";
 
 type LessonKind = "live_in_person" | "live_online" | "recorded";
 
@@ -28,7 +29,7 @@ type LessonEditFormProps = {
   };
 };
 
-// timestamptz ISO → valor para <input type="datetime-local"> (hora local).
+// timestamptz ISO → valor para el <DatePicker> (hora local).
 function isoToLocalInput(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -141,13 +142,11 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
-            Apertura por calendario
-          </label>
-          <Input
-            type="datetime-local"
+          <DatePicker
+            withTime
+            label="Se abre"
             value={unlockAt}
-            onChange={(e) => setUnlockAt(e.target.value)}
+            onChange={(v) => setUnlockAt(v)}
           />
           <p className="mt-1 text-[11px] text-ca-ink-soft">
             Vacío = disponible siempre. Con fecha, queda bloqueada hasta ese momento.

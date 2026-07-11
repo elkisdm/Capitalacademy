@@ -398,6 +398,11 @@
 *::-webkit-scrollbar-thumb { background: rgba(20, 22, 58, 0.14); border-radius: 9999px; border: 2px solid var(--color-ca-bg); }
 *::-webkit-scrollbar-thumb:hover { background: var(--color-ca-ink-soft); }
 
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+
 /* === Quiz UI === */
 .quiz-progress-fill {
   background: linear-gradient(90deg, var(--color-ca-violet), var(--color-ca-lime));

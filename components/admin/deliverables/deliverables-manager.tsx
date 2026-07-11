@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { Input, Textarea, Select } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DatePicker } from "@/components/ui/date-picker";
 
 type Deliverable = {
   id: string;
@@ -361,22 +363,18 @@ export function DeliverablesManager({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Se abre</label>
-                  <Input
-                    type="datetime-local"
-                    value={form.opensAt}
-                    onChange={(e) => setForm((f) => ({ ...f, opensAt: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Fecha límite</label>
-                  <Input
-                    type="datetime-local"
-                    value={form.dueAt}
-                    onChange={(e) => setForm((f) => ({ ...f, dueAt: e.target.value }))}
-                  />
-                </div>
+                <DatePicker
+                  withTime
+                  label="Se abre"
+                  value={form.opensAt}
+                  onChange={(v) => setForm((f) => ({ ...f, opensAt: v }))}
+                />
+                <DatePicker
+                  withTime
+                  label="Fecha límite"
+                  value={form.dueAt}
+                  onChange={(v) => setForm((f) => ({ ...f, dueAt: v }))}
+                />
               </div>
 
               <div>
@@ -421,21 +419,22 @@ export function DeliverablesManager({
                   />
                 </div>
                 <div className="flex items-end pb-2">
-                  <label className="flex items-center gap-2 text-xs font-medium text-ca-ink-soft">
-                    <input
-                      type="checkbox"
-                      checked={form.allowMultiple}
-                      onChange={(e) => setForm((f) => ({ ...f, allowMultiple: e.target.checked }))}
-                    />
-                    Permitir varios archivos por alumno
-                  </label>
+                  <Checkbox
+                    checked={form.allowMultiple}
+                    onChange={(v) => setForm((f) => ({ ...f, allowMultiple: v }))}
+                    label={
+                      <span className="text-xs font-medium text-ca-ink-soft">
+                        Permitir varios archivos por alumno
+                      </span>
+                    }
+                  />
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant="primary"
+                  variant="lime"
                   size="sm"
                   onClick={handleSubmit}
                   disabled={saving || !canSubmit}
@@ -450,7 +449,7 @@ export function DeliverablesManager({
           ) : (
             <Button
               type="button"
-              variant="outline"
+              variant="lime"
               size="sm"
               onClick={() => setIsCreating(true)}
               className="w-fit rounded-md border-dashed"

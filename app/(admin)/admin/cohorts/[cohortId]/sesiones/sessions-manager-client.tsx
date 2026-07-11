@@ -23,6 +23,7 @@ import {
 } from "@/components/admin/icons";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const TZ = "America/Santiago";
 
@@ -422,13 +423,16 @@ export function SessionsManagerClient({
             <span className="text-[11px] text-ca-ink-soft">{cohort.name}</span>
           </div>
         </div>
-        <Button
-          onClick={openCreate}
-          className="!h-auto gap-2 self-start px-5 py-2.5 text-[13px] sm:self-auto"
-        >
-          <PlusIcon />
-          Nueva sesión
-        </Button>
+        {!showForm && (
+          <Button
+            variant="lime"
+            onClick={openCreate}
+            className="!h-auto gap-2 self-start px-5 py-2.5 text-[13px] sm:self-auto"
+          >
+            <PlusIcon />
+            Nueva sesión
+          </Button>
+        )}
       </div>
 
       <div className="mb-5 flex items-center gap-1 self-start rounded-2xl bg-ca-bg-soft p-1">
@@ -662,31 +666,21 @@ function SessionForm({
           />
         </div>
 
-        <div>
-          <label className={labelCls} htmlFor="session-starts">
-            Inicio (hora Chile)
-          </label>
-          <Input
-            id="session-starts"
-            type="datetime-local"
-            value={form.starts_at}
-            onChange={(e) => onChange("starts_at", e.target.value)}
-            className={fieldCls}
-          />
-        </div>
+        <DatePicker
+          withTime
+          id="session-starts"
+          label="Inicio (hora Chile)"
+          value={form.starts_at}
+          onChange={(v) => onChange("starts_at", v)}
+        />
 
-        <div>
-          <label className={labelCls} htmlFor="session-ends">
-            Término (hora Chile)
-          </label>
-          <Input
-            id="session-ends"
-            type="datetime-local"
-            value={form.ends_at}
-            onChange={(e) => onChange("ends_at", e.target.value)}
-            className={fieldCls}
-          />
-        </div>
+        <DatePicker
+          withTime
+          id="session-ends"
+          label="Término (hora Chile)"
+          value={form.ends_at}
+          onChange={(v) => onChange("ends_at", v)}
+        />
 
         <div>
           <label className={labelCls} htmlFor="session-modality">
@@ -805,6 +799,7 @@ function SessionForm({
 
       <div className="mt-5 flex items-center gap-3">
         <Button
+          variant="lime"
           onClick={onSubmit}
           disabled={saving}
           className="!h-auto gap-2 px-5 py-2.5 text-[13px]"

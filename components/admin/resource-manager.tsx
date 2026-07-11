@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   FileText,
   ExternalLink,
@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
+import { FileInput } from "@/components/ui/file-input";
 
 type Resource = {
   id: string;
@@ -80,7 +81,6 @@ export function ResourceManager({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setTitle("");
@@ -89,16 +89,14 @@ export function ResourceManager({
     setType("document");
     setError(null);
     setIsAdding(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (files: FileList) => {
     setError(null);
-    const selected = e.target.files?.[0] ?? null;
+    const selected = files[0] ?? null;
     if (selected && selected.size > MAX_SIZE) {
       setError("El archivo no puede superar 50 MB.");
       setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setFile(selected);
@@ -332,12 +330,7 @@ export function ResourceManager({
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                     Archivo (máx. 50 MB)
                   </label>
-                  <Input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleFileChange}
-                    className="py-1.5 file:mr-3 file:rounded file:border-0 file:bg-ca-violet/10 file:px-2 file:py-1 file:text-xs file:text-ca-violet"
-                  />
+                  <FileInput onFiles={handleFileChange} />
                 </>
               )}
             </div>

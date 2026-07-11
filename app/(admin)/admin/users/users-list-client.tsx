@@ -19,6 +19,7 @@ import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/field";
 import {
   SearchIcon,
   PlusIcon,
@@ -508,7 +509,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
             <UploadIcon />
             Importar CSV
           </Button>
-          <Button type="button" variant="primary" onClick={handleOpenCreate}>
+          <Button type="button" variant="lime" onClick={handleOpenCreate}>
             <PlusIcon />
             Nuevo usuario
           </Button>
@@ -538,7 +539,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
             {/* Filtro por estado. El entorno se controla con el selector global
                 del sidebar (cookie), no aquí, para no duplicar controles. */}
             <div className="flex flex-wrap items-center gap-2">
-              <select
+              <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "pending")}
                 aria-label="Filtrar por estado"
@@ -547,7 +548,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                 <option value="all">Todos los estados</option>
                 <option value="active">Activos</option>
                 <option value="pending">Pendientes</option>
-              </select>
+              </Select>
             </div>
           </div>
 

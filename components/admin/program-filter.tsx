@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Select } from "@/components/ui/field";
 
 type ProgramOption = { id: string; name: string };
 
@@ -28,7 +29,7 @@ export function ProgramFilter({
       >
         Programa
       </label>
-      <select
+      <Select
         id="program-filter"
         value={selectedProgramId}
         onChange={(e) => router.push(`${basePath}?program=${e.target.value}`)}
@@ -39,7 +40,7 @@ export function ProgramFilter({
             {p.name}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

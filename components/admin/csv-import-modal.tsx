@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
 import Papa from "papaparse";
 // XLSX is imported dynamically in parseFile only when handling .xlsx/.xls files
 
@@ -296,6 +297,8 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
     return { validCount: valid, duplicateCount: duplicate, invalidCount: invalid, selectedCount: selected, allValidSelected: allValidSel };
   }, [rows]);
 
+  const someValidSelected = selectedCount > 0 && !allValidSelected;
+
   const toggleSelectAll = () => {
     const newVal = !allValidSelected;
     setRows((prev) =>
@@ -555,12 +558,11 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                     <thead>
                       <tr style={{ background: "var(--color-ca-bg)" }}>
                         <th className="px-3 py-2.5">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={allValidSelected}
+                            indeterminate={someValidSelected}
                             onChange={toggleSelectAll}
                             aria-label="Seleccionar todas las filas válidas"
-                            className="h-4 w-4 rounded accent-[var(--color-ca-violet)]"
                           />
                         </th>
                         <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Nombre</th>
@@ -580,13 +582,11 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                           }}
                         >
                           <td className="px-3 py-2.5">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={row.selected}
                               disabled={row.estado !== "valid"}
                               onChange={() => toggleRow(i)}
                               aria-label={`Seleccionar ${row.email || row.nombre || `fila ${i + 1}`}`}
-                              className="h-4 w-4 rounded accent-[var(--color-ca-violet)] disabled:opacity-40"
                             />
                           </td>
                           <td className="px-3 py-2.5 text-[13px] font-semibold text-ca-ink">

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { PlatformRole } from "./user-primitives";
 
 type UserData = {
@@ -301,17 +302,17 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
 
               {/* Send invite email — create only */}
               {mode === "create" && (
-                <label className="flex items-center gap-3 py-1">
-                  <input
-                    type="checkbox"
+                <div className="py-1">
+                  <Checkbox
                     checked={sendInvite}
-                    onChange={(e) => setSendInvite(e.target.checked)}
-                    className="h-4 w-4 rounded border-ca-ink/[0.14] text-ca-violet accent-ca-violet"
+                    onChange={setSendInvite}
+                    label={
+                      <span className="text-[13px] font-semibold text-ca-ink">
+                        Enviar email de invitación
+                      </span>
+                    }
                   />
-                  <span className="text-[13px] font-semibold text-ca-ink">
-                    Enviar email de invitación
-                  </span>
-                </label>
+                </div>
               )}
             </div>
           </form>
@@ -324,7 +325,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
           </Button>
           <Button
             type="button"
-            variant="primary"
+            variant="lime"
             onClick={handleSubmit}
             disabled={saving || !name.trim() || !email.trim()}
           >

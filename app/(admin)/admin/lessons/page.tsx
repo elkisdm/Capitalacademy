@@ -1,4 +1,6 @@
+import { Video, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { Badge } from "@/components/ui/badge";
 import { AddLessonButton } from "@/components/admin/add-lesson-button";
 import { LessonReorderList } from "@/components/admin/lesson-reorder-list";
 import { AddModuleButton } from "@/components/admin/add-module-button";
@@ -144,7 +146,7 @@ export default async function AdminLessonsPage(props: {
   }));
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 md:py-8">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
@@ -192,9 +194,18 @@ export default async function AdminLessonsPage(props: {
               </div>
 
               {/* Lecciones grabadas */}
-              <p className="mb-2 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                Lecciones grabadas
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-3.5 w-3.5 text-ca-ink-soft" />
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                    Lecciones grabadas
+                  </p>
+                  <Badge tone="neutral" size="sm">
+                    {lessons.length}
+                  </Badge>
+                </div>
+                <AddLessonButton moduleId={mod.id as string} />
+              </div>
               {lessons.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-ca-ink/[0.10] px-4 py-3 text-sm text-ca-ink-soft">
                   Sin lecciones grabadas en este módulo.
@@ -207,18 +218,31 @@ export default async function AdminLessonsPage(props: {
                     id: lesson.id as string,
                     title: lesson.title as string,
                     kind: lesson.kind as string,
-                    hasVideo: !!(lesson.mux_playback_id as string | null),
+                    position: lesson.position as number,
+                    muxPlaybackId: (lesson.mux_playback_id as string | null) ?? null,
+                    thumbnailUrl: (lesson.thumbnail_url as string | null) ?? null,
+                    durationSeconds: (lesson.video_duration_seconds as number | null) ?? null,
+                    muxUploadId: (lesson.mux_upload_id as string | null) ?? null,
+                    muxError: (lesson.mux_error as string | null) ?? null,
+                    muxTrackId: (lesson.mux_track_id as string | null) ?? null,
+                    hasContent: !!(lesson.content as string | null)?.trim(),
+                    unlockAt: (lesson.unlock_at as string | null) ?? null,
                   }))}
                 />
               )}
-              <AddLessonButton moduleId={mod.id as string} />
 
               {/* Clases en vivo (calendario) */}
               {selectedCohortId && (
                 <div className="mt-5">
-                  <p className="mb-2 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                    Clases en vivo (calendario)
-                  </p>
+                  <div className="mb-2 flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-ca-ink-soft" />
+                    <p className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                      Clases en vivo (calendario)
+                    </p>
+                    <Badge tone="neutral" size="sm">
+                      {moduleSessions.length}
+                    </Badge>
+                  </div>
                   <ModuleSessionsList
                     cohortId={selectedCohortId}
                     siblingModules={siblingModules}

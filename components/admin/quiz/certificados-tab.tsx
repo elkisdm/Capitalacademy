@@ -134,7 +134,7 @@ export function CertificadosTab({ programId }: { programId: string }) {
         </div>
       )}
 
-      {/* Table */}
+      {/* Grid de certificados */}
       {certificates.length === 0 ? (
         <div className="grid place-items-center py-16">
           <div className="text-center">
@@ -151,61 +151,38 @@ export function CertificadosTab({ programId }: { programId: string }) {
           </div>
         </div>
       ) : (
-        <div className="ca-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr style={{ background: "var(--color-ca-bg-soft)" }}>
-                  <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                    Alumno
-                  </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                    Codigo
-                  </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                    Fecha emision
-                  </th>
-                  <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                    PDF
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {certificates.map((c) => (
-                  <tr key={c.id} className="border-t border-ca-ink/[0.08] transition-colors hover:bg-ca-bg-soft">
-                    <td className="px-5 py-3">
-                      <span className="text-[13px] font-bold text-ca-ink">{c.studentName}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-[12px] font-semibold text-ca-ink-soft">
-                        {c.verificationCode}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-[12px] font-medium text-ca-ink-soft">
-                        {formatDate(c.issuedAt)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {c.pdfUrl ? (
-                        <a
-                          href={c.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/5"
-                        >
-                          <DownloadIcon />
-                          Descargar
-                        </a>
-                      ) : (
-                        <span className="text-[11px] text-ca-ink-soft">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {certificates.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-col gap-3 rounded-xl border border-ca-ink/[0.08] bg-white p-4"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-[13.5px] font-bold text-ca-ink">{c.studentName}</div>
+                <div className="mt-0.5 font-mono text-[11.5px] font-semibold text-ca-ink-soft">
+                  {c.verificationCode}
+                </div>
+              </div>
+              <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                <span className="text-[11.5px] font-medium text-ca-ink-soft">
+                  {formatDate(c.issuedAt)}
+                </span>
+                {c.pdfUrl ? (
+                  <a
+                    href={c.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/5"
+                  >
+                    <DownloadIcon />
+                    Descargar
+                  </a>
+                ) : (
+                  <span className="text-[11px] text-ca-ink-soft">-</span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

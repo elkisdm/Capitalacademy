@@ -55,6 +55,15 @@ function fmtDateTime(iso: string): string {
   });
 }
 
+function windowStatus(opensAt: string, dueAt: string): { label: string; tone: "lime" | "neutral" | "amber" } {
+  const now = Date.now();
+  const opens = new Date(opensAt).getTime();
+  const due = new Date(dueAt).getTime();
+  if (now < opens) return { label: "Próximamente", tone: "amber" };
+  if (now > due) return { label: "Cerrado", tone: "neutral" };
+  return { label: "Abierto", tone: "lime" };
+}
+
 type FormState = {
   title: string;
   description: string;
@@ -277,70 +286,78 @@ export function DeliverablesManager({
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {loadError && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{loadError}</p>
+            <p className="col-span-full rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{loadError}</p>
           )}
           {deliverables.length === 0 && !isCreating && (
-            <p className="text-sm text-ca-ink-soft">Aún no hay entregables para este programa.</p>
+            <p className="col-span-full text-sm text-ca-ink-soft">Aún no hay entregables para este programa.</p>
           )}
 
-          {deliverables.map((d) => (
-            <div
-              key={d.id}
-              className="flex items-start justify-between gap-3 rounded-xl border border-ca-ink/[0.08] bg-white p-4"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-bold text-ca-ink">{d.title}</p>
-                {d.description && (
-                  <p className="mt-0.5 line-clamp-2 text-[12.5px] text-ca-ink-soft">{d.description}</p>
-                )}
-                <p className="mt-1.5 text-[12px] text-ca-ink-soft">
-                  Abre {fmtDateTime(d.opens_at)} · Cierra {fmtDateTime(d.due_at)}
-                </p>
-                <p className="mt-1 text-[12px] text-ca-ink-soft">
-                  {d.allowed_file_types.map((c) => CATEGORY_LABELS[c] ?? c).join(", ")} ·{" "}
-                  {d.submissionCount} entrega{d.submissionCount === 1 ? "" : "s"}
-                </p>
+          {deliverables.map((d) => {
+            const status = windowStatus(d.opens_at, d.due_at);
+            return (
+              <div
+                key={d.id}
+                className="flex items-start justify-between gap-3 rounded-xl border border-ca-ink/[0.08] bg-white p-3.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-[14px] font-bold text-ca-ink">{d.title}</p>
+                    <Badge tone={status.tone} size="sm" className="shrink-0">
+                      {status.label}
+                    </Badge>
+                  </div>
+                  {d.description && (
+                    <p className="mt-0.5 line-clamp-2 text-[12.5px] text-ca-ink-soft">{d.description}</p>
+                  )}
+                  <p className="mt-1.5 text-[12px] text-ca-ink-soft">
+                    Abre {fmtDateTime(d.opens_at)} · Cierra {fmtDateTime(d.due_at)}
+                  </p>
+                  <p className="mt-1 text-[12px] text-ca-ink-soft">
+                    {d.allowed_file_types.map((c) => CATEGORY_LABELS[c] ?? c).join(", ")} ·{" "}
+                    {d.submissionCount} entrega{d.submissionCount === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openRoster(d)}
+                    aria-label={`Ver entregas de ${d.title}`}
+                    className="!h-auto !w-auto rounded p-1.5"
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => startEdit(d)}
+                    aria-label={`Editar ${d.title}`}
+                    className="!h-auto !w-auto rounded p-1.5"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(d.id)}
+                    disabled={deletingId === d.id}
+                    aria-label={`Eliminar ${d.title}`}
+                    className="!h-auto !w-auto rounded p-1.5 hover:bg-red-50 hover:text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openRoster(d)}
-                  aria-label={`Ver entregas de ${d.title}`}
-                  className="!h-auto !w-auto rounded p-1.5"
-                >
-                  <Users className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startEdit(d)}
-                  aria-label={`Editar ${d.title}`}
-                  className="!h-auto !w-auto rounded p-1.5"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(d.id)}
-                  disabled={deletingId === d.id}
-                  aria-label={`Eliminar ${d.title}`}
-                  className="!h-auto !w-auto rounded p-1.5 hover:bg-red-50 hover:text-red-500"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isCreating ? (
-            <div className="space-y-3 rounded-xl border border-ca-violet/20 bg-ca-violet/[0.04] p-4">
+            <div className="col-span-full space-y-3 rounded-xl border border-ca-violet/20 bg-ca-violet/[0.04] p-4">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Título</label>
                 <Input

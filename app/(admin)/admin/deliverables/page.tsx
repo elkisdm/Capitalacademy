@@ -19,7 +19,7 @@ export default async function DeliverablesPage() {
   const activeEnv = await getActiveEnv();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 md:px-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 md:px-8">
       <div className="mb-7">
         <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Operaciones

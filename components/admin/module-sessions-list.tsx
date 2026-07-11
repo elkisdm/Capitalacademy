@@ -112,12 +112,12 @@ export function ModuleSessionsList({
         return (
           <div
             key={s.id}
-            className="rounded-lg border border-ca-ink/[0.08] bg-ca-surface"
+            className="rounded-xl border border-ca-ink/[0.08] bg-ca-surface transition hover:-translate-y-0.5 hover:border-ca-violet/30 hover:shadow-[0_8px_24px_rgba(20,22,58,0.08)]"
           >
-            <div className="flex items-center gap-3 p-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ca-bg-soft text-ca-ink-soft">
-                <Calendar className="h-4 w-4" />
-              </span>
+            <div className="flex items-center gap-4 p-3">
+              <div className="flex aspect-video w-32 shrink-0 items-center justify-center rounded-lg bg-ca-bg-soft text-ca-ink-soft/60">
+                <Calendar className="h-6 w-6" />
+              </div>
 
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-ca-ink">{s.title}</p>

@@ -11,9 +11,12 @@ export const dynamic = "force-dynamic";
 // ---------------------------------------------------------------------------
 // GET/POST  /api/cron/deliverable-openings
 //   Cubre aperturas futuras: notifica los entregables cuya ventana ya abrió
-//   y que aún no fueron notificados (open_notified_at IS NULL). El envío
-//   inmediato al crear (si la ventana ya está abierta) lo cubre la API de
-//   creación; este cron toma el resto cada 30 min.
+//   y cuyo envío no terminó (open_notify_completed_at IS NULL — incluye tanto
+//   los nunca reservados como una reserva vieja sin terminar por un crash a
+//   mitad de camino, ver 0063). El envío inmediato al crear (si la ventana ya
+//   está abierta) lo cubre la API de creación; este cron toma el resto cada
+//   30 min. El reclamo atómico y el filtro de "reserva vieja" viven en
+//   notifyDeliverableOpen: aquí solo se arma la lista de candidatos.
 // ---------------------------------------------------------------------------
 
 export async function GET(req: Request) {
@@ -25,7 +28,7 @@ export async function GET(req: Request) {
   const { data: pending, error } = await admin
     .from("deliverables")
     .select("id")
-    .is("open_notified_at", null)
+    .is("open_notify_completed_at", null)
     .lte("opens_at", new Date().toISOString());
 
   if (error) {

@@ -6,6 +6,7 @@ import { getAuthUser } from "@/lib/supabase/auth";
 import { uuidLike } from "@/lib/utils/zod";
 import { DELIVERABLES_BUCKET, resolveDeliverableUrls } from "@/lib/deliverables/storage";
 import { extensionAllowed } from "@/lib/deliverables/file-types";
+import { sendDeliverableReceivedEmail } from "@/lib/email/deliverable-received";
 
 export const runtime = "nodejs";
 
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
 
   const { data: deliverable } = await admin
     .from("deliverables")
-    .select("allow_multiple, max_file_size_bytes, allowed_file_types")
+    .select("title, program_id, allow_multiple, max_file_size_bytes, allowed_file_types")
     .eq("id", deliverableId)
     .single();
   if (!deliverable) {
@@ -150,6 +151,30 @@ export async function POST(req: Request) {
       await admin.storage.from(DELIVERABLES_BUCKET).remove(stalePaths);
       await admin.from("deliverable_submissions").delete().in("id", staleIds);
     }
+  }
+
+  // Correo de confirmación: no debe romper la respuesta de subida si Resend
+  // falla (mismo criterio de tolerancia a fallos que el resto de los senders).
+  try {
+    const [{ data: profile }, { data: program }] = await Promise.all([
+      admin.from("profiles").select("full_name, email").eq("id", user.id).single(),
+      admin.from("programs").select("name").eq("id", deliverable.program_id).single(),
+    ]);
+    if (profile?.email) {
+      const result = await sendDeliverableReceivedEmail({
+        to: profile.email,
+        studentName: profile.full_name ?? "",
+        deliverableTitle: deliverable.title,
+        programName: program?.name,
+        fileName: filename,
+        submittedAt: created.uploaded_at,
+      });
+      if (!result.success) {
+        console.error("deliverable received email error", result.error);
+      }
+    }
+  } catch (err) {
+    console.error("deliverable received email exception", err);
   }
 
   const [withUrl] = await resolveDeliverableUrls([created]);

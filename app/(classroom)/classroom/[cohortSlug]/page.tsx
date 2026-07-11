@@ -10,13 +10,21 @@ import {
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
-import {
-  BrandShapes,
-  StatusPill,
-  ProgressBar,
-  Avatar,
-} from "@/components/classroom/primitives";
-import type { ModuleWithLessons } from "@/lib/classroom/types";
+import { fmtDuration } from "@/lib/classroom/format";
+import { BrandShapes, ProgressBar } from "@/components/classroom/primitives";
+import { ModuleAccordionItem, type ClassRowData } from "@/components/classroom/module-accordion";
+
+// Fila mínima de class_sessions usada por esta página. `title` y `status` se
+// agregan en migraciones posteriores a la generación de tipos de Supabase, por
+// eso se castean explícitamente (mismo patrón que [moduleSlug]/page.tsx).
+type SessionRowLite = {
+  id: string;
+  module_id: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: string;
+  title: string | null;
+};
 
 function fmtUnlock(iso: string) {
   const d = new Date(iso);
@@ -24,133 +32,13 @@ function fmtUnlock(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons; cohortSlug: string; liveSessions: number }) {
-  const progress = calculateModuleProgress(mod.lessons);
-  // El contenido del módulo combina lecciones grabadas y clases en vivo.
-  const contentCount = mod.lessons.length + liveSessions;
-  const isLocked = mod.lessons.length > 0 && mod.lessons.every((l) => l.unlock_at && new Date(l.unlock_at) > new Date());
-  const hasProgress = progress.percentage > 0;
-  const isCompleted = progress.percentage === 100 && progress.total_with_video > 0;
-  const status = isCompleted ? "completed" : hasProgress ? "in_progress" : isLocked ? "locked" : "available";
-
-  const thumb = mod.position % 3 === 1 ? "thumb-diplomado" : mod.position % 3 === 2 ? "thumb-liderazgo" : "thumb-ruta";
-
-  return (
-    <Link
-      href={isLocked ? "#" : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}`}
-      className={`ca-card ca-card-hoverable group relative overflow-hidden ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
-      aria-disabled={isLocked}
-      tabIndex={isLocked ? -1 : undefined}
-    >
-      <BrandShapes variant="corner-violet" />
-      <div className="relative grid gap-5 p-5 md:grid-cols-[200px_1fr] md:p-6">
-        <div className="relative">
-          <div
-            className={`relative aspect-video w-full overflow-hidden ${thumb}`}
-            style={{ borderRadius: 16, filter: isLocked ? "grayscale(0.6) brightness(0.7)" : "none" }}
-          >
-            {mod.cover_image_url ? (
-              <Image
-                src={mod.cover_image_url}
-                alt=""
-                fill
-                sizes="(max-width:1280px) 100vw, 200px"
-                className="object-cover"
-              />
-            ) : (
-              <>
-                <div className="shape-circle absolute -right-6 -top-6 h-20 w-20 bg-white/30" />
-                <div className="shape-circle absolute -bottom-4 -left-4 h-16 w-16 bg-ca-lime opacity-85" />
-                <div className="shape-circle absolute bottom-4 right-4 h-3 w-3 bg-white" />
-              </>
-            )}
-            <div className="absolute inset-0 flex items-end p-4">
-              <div className="font-black leading-none text-white" style={{ fontSize: 56, letterSpacing: "-0.04em", textShadow: "0 4px 24px rgba(0,0,0,0.25)" }}>
-                {String(mod.position).padStart(2, "0")}
-              </div>
-            </div>
-            {isLocked && (
-              <div className="absolute inset-0 grid place-items-center bg-black/40">
-                <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" />
-                </svg>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
-                <span>Módulo {String(mod.position).padStart(2, "0")}</span>
-                <span className="opacity-40">·</span>
-                <span>{contentCount} {contentCount === 1 ? "clase" : "clases"}</span>
-              </div>
-              <h3 className="text-[20px] font-extrabold leading-tight tracking-tight text-ca-ink">
-                {mod.title}
-              </h3>
-              {mod.description && (
-                <p className="mt-1 text-[13px] leading-snug text-ca-ink-soft">
-                  {mod.description}
-                </p>
-              )}
-            </div>
-            <div className="shrink-0">
-              <StatusPill status={status} />
-            </div>
-          </div>
-
-          {mod.teacher?.full_name && (
-            <div className="flex items-center gap-2.5 border-t border-ca-ink/[0.08] pt-3">
-              <Avatar
-                initials={mod.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-                size={32}
-              />
-              <div className="min-w-0 leading-tight">
-                <div className="truncate text-[12px] font-bold text-ca-ink" title={mod.teacher.full_name}>{mod.teacher.full_name}</div>
-                <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">Profesor</div>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-auto">
-            {isLocked ? (
-              <div className="flex items-center gap-2 rounded-xl bg-ca-bg-soft p-3 text-[12px] font-semibold text-ca-ink-soft">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" />
-                </svg>
-                Se desbloquea el <span className="text-ca-ink">{fmtUnlock(mod.lessons[0]?.unlock_at ?? "")}</span>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-ca-ink-soft">
-                  <span>{progress.completed_lessons} de {contentCount} {contentCount === 1 ? "clase" : "clases"}</span>
-                  <span className={`font-mono font-bold ${isCompleted ? "text-[#3f5a05]" : "text-ca-ink"}`}>
-                    {progress.percentage}%
-                  </span>
-                </div>
-                <ProgressBar value={progress.percentage} completed={isCompleted} />
-              </div>
-            )}
-
-            {!isLocked && (
-              <span className={`mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[0.1em] transition-all ${
-                isCompleted
-                  ? "border border-ca-ink/[0.08] text-ca-ink-soft hover:bg-ca-bg-soft"
-                  : "ca-btn-primary text-white shadow-sm"
-              }`}>
-                {isCompleted ? "Repasar" : hasProgress ? "Continuar" : "Comenzar"}
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+function fmtSessionShort(iso: string) {
+  return new Date(iso).toLocaleDateString("es-CL", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default async function CohortDashboardPage(
@@ -178,22 +66,36 @@ export default async function CohortDashboardPage(
   // Clases en vivo (class_sessions) por módulo de ESTA cohorte. Para programas
   // híbridos/presenciales el contenido del módulo son sus sesiones del
   // calendario, no lecciones grabadas; sin esto el módulo mostraba "0 lecciones".
-  const liveSessionsByModule = new Map<string, number>();
+  const sessionsByModule = new Map<string, SessionRowLite[]>();
   const moduleIds = modules.map((m) => m.id);
   if (moduleIds.length > 0) {
     const { data: sessionRows } = await supabase
       .from("class_sessions")
-      .select("module_id")
+      .select("id, module_id, starts_at, ends_at, status, title")
       .eq("cohort_id", cohortId)
       .in("module_id", moduleIds)
       .neq("status", "cancelled");
-    for (const r of sessionRows ?? []) {
+    for (const r of (sessionRows ?? []) as unknown as SessionRowLite[]) {
       if (r.module_id) {
-        liveSessionsByModule.set(r.module_id, (liveSessionsByModule.get(r.module_id) ?? 0) + 1);
+        const list = sessionsByModule.get(r.module_id) ?? [];
+        list.push(r);
+        sessionsByModule.set(r.module_id, list);
       }
     }
   }
-  const totalSessions = Array.from(liveSessionsByModule.values()).reduce((s, n) => s + n, 0);
+  const totalSessions = Array.from(sessionsByModule.values()).reduce((s, arr) => s + arr.length, 0);
+
+  const now = new Date();
+  let nextSession: SessionRowLite | null = null;
+  for (const list of sessionsByModule.values()) {
+    for (const s of list) {
+      if (s.status !== "cancelled" && new Date(s.starts_at) > now) {
+        if (!nextSession || new Date(s.starts_at) < new Date(nextSession.starts_at)) {
+          nextSession = s;
+        }
+      }
+    }
+  }
 
   const totalModules = modules.length;
   const completedModules = modules.filter((m) => {
@@ -225,9 +127,73 @@ export default async function CohortDashboardPage(
     (l) => !l.unlock_at || new Date(l.unlock_at) <= new Date(),
   );
 
+  const resume = currentModule && currentLesson
+    ? { mod: currentModule, lesson: currentLesson, pct: currentLesson.video_progress?.watch_percentage ?? 0, label: "Continuar" as const }
+    : firstAvailableModule && firstAvailableLesson
+      ? { mod: firstAvailableModule, lesson: firstAvailableLesson, pct: 0, label: "Comenzar programa" as const }
+      : null;
+
+  // Por módulo: filas del acordeón (grabadas o en vivo) + métricas de progreso.
+  const moduleRowsData = new Map<string, {
+    rows: ClassRowData[];
+    contentCount: number;
+    completed: number;
+    pct: number;
+    moduleStatus: "completed" | "in_progress" | "available" | "locked";
+  }>();
+  for (const mod of modules) {
+    const moduleSessions = (sessionsByModule.get(mod.id) ?? [])
+      .slice()
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+    const contentCount = mod.lessons.length + moduleSessions.length;
+
+    let rows: ClassRowData[];
+    if (mod.lessons.length > 0) {
+      rows = mod.lessons.map((lesson) => {
+        const lessonStatus = getLessonStatus(lesson);
+        const status: ClassRowData["status"] = lessonStatus === "no_video" ? "available" : lessonStatus;
+        return {
+          key: lesson.id,
+          title: lesson.title,
+          status,
+          href: status === "locked" ? null : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}/${lesson.slug ?? lesson.id}`,
+          durationOrDate: fmtDuration(lesson.video_duration_seconds),
+          unlockLabel: status === "locked" && lesson.unlock_at ? `Desde ${fmtUnlock(lesson.unlock_at)}` : undefined,
+        };
+      });
+    } else {
+      rows = moduleSessions.map((session) => {
+        const start = new Date(session.starts_at);
+        const end = new Date(session.ends_at);
+        const status: ClassRowData["status"] = end < now ? "completed" : start <= now && now <= end ? "in_progress" : "available";
+        return {
+          key: session.id,
+          title: session.title ?? "Sin título",
+          status,
+          href: `/classroom/${cohortSlug}/clase/${session.id}`,
+          durationOrDate: fmtUnlock(session.starts_at),
+        };
+      });
+    }
+
+    const progress = calculateModuleProgress(mod.lessons);
+    const isLocked = mod.lessons.length > 0 && mod.lessons.every((l) => l.unlock_at && new Date(l.unlock_at) > new Date());
+    const hasProgress = progress.percentage > 0;
+    const isCompleted = progress.percentage === 100 && progress.total_with_video > 0;
+    const moduleStatus = isCompleted ? "completed" : hasProgress ? "in_progress" : isLocked ? "locked" : "available";
+
+    moduleRowsData.set(mod.id, {
+      rows,
+      contentCount,
+      completed: progress.completed_lessons,
+      pct: progress.percentage,
+      moduleStatus,
+    });
+  }
+
   return (
     <div className="ca-fade-up mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
-      {/* Hero */}
+      {/* Hero compacto */}
       <section
         className="relative overflow-hidden text-white"
         style={{
@@ -236,179 +202,138 @@ export default async function CohortDashboardPage(
         }}
       >
         <BrandShapes variant="hero" />
-        <div className="relative grid gap-6 px-5 py-6 md:gap-10 md:px-10 md:py-10 md:grid-cols-[1.4fr_1fr]">
+        <div className="relative flex flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-8 md:py-6">
           <div className="min-w-0">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] backdrop-blur">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] backdrop-blur">
               <span className="shape-circle ca-pulse h-1.5 w-1.5 bg-ca-lime" />
               {program.code} · {cohort.name}
             </div>
-            <h1 className="max-w-[20ch] text-balance text-[26px] font-black leading-[1.02] tracking-[-0.03em] md:text-[36px] lg:text-[44px]">
+            <h1 className="truncate text-2xl font-black tracking-[-0.03em] md:text-3xl">
               {program.name}
             </h1>
-            {program.description && (
-              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/75">
-                {program.description}
-              </p>
-            )}
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] font-semibold text-white/60">
-              <span className="inline-flex items-center gap-1.5">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
-                {new Date(cohort.start_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
-                {" – "}
-                {new Date(cohort.end_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z" /><path d="M4 17a3 3 0 013-3h12" /></svg>
-                {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
-              </span>
-            </div>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              {currentModule && currentLesson ? (
-                <Link
-                  href={`/classroom/${cohortSlug}/${currentModule.slug ?? currentModule.id}/${currentLesson.slug ?? currentLesson.id}`}
-                  className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
-                >
-                  <svg width={16} height={16} viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" /></svg>
-                  Continuar viendo
-                </Link>
-              ) : firstAvailableModule && firstAvailableLesson ? (
-                <Link
-                  href={`/classroom/${cohortSlug}/${firstAvailableModule.slug ?? firstAvailableModule.id}/${firstAvailableLesson.slug ?? firstAvailableLesson.id}`}
-                  className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
-                >
-                  <svg width={16} height={16} viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" /></svg>
-                  Empezar workshop
-                </Link>
-              ) : null}
+            <div className="mt-1.5 text-sm text-white/60">
+              {new Date(cohort.start_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {" – "}
+              {new Date(cohort.end_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {" · "}
+              {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
             </div>
           </div>
 
-          <div className="relative self-start rounded-3xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-md">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Tu progreso</div>
+          <div className="shrink-0 md:w-56">
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Tu progreso</div>
+            <div className="mb-2 text-[28px] font-black leading-none">
+              {overallPct}<span className="text-[16px] opacity-70">%</span>
             </div>
-            <div className="flex items-center gap-5">
-              <div className="relative h-24 w-24 shrink-0">
-                <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8" />
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="var(--color-ca-lime)" strokeWidth="8"
-                    strokeDasharray={`${overallPct * 2.764} 1000`} strokeLinecap="round" />
-                </svg>
-                <div className="absolute inset-0 grid place-items-center">
-                  <div className="text-[26px] font-black leading-none">
-                    {overallPct}<span className="text-[14px] opacity-70">%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[22px] font-black leading-tight">
-                  {completedLessons} <span className="text-[16px] opacity-50">/ {totalContent}</span>
-                </div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">clases completadas</div>
-                <div className="mt-2 text-[11px] font-semibold text-white/50">
-                  {completedModules} de {totalModules} {totalModules === 1 ? "módulo" : "módulos"}
-                </div>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-2" style={{ gridTemplateColumns: `repeat(${totalModules}, 1fr)` }}>
-              {modules.map((m) => {
-                const p = calculateModuleProgress(m.lessons);
-                return (
-                  <div key={m.id} className="flex flex-col items-center gap-1">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${p.percentage}%`,
-                          background: p.percentage === 100 ? "var(--color-ca-lime)" : p.percentage > 0 ? "#fff" : "transparent",
-                        }}
-                      />
-                    </div>
-                    <div className="truncate text-[9px] font-semibold text-white/50" title={m.title}>
-                      M{m.position}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <ProgressBar value={overallPct} height={6} color="bg-ca-lime" track="bg-white/15" />
           </div>
         </div>
       </section>
 
-      {/* Up Next Strip */}
-      {currentModule && currentLesson && (
+      {/* Banda "Continuar" */}
+      {resume && (
         <section className="ca-card relative overflow-hidden" style={{ background: "var(--color-ca-ink)", borderColor: "transparent" }}>
-          <div className="shape-circle absolute -right-10 -top-10 h-40 w-40 bg-ca-violet opacity-50" />
-          <div className="shape-circle absolute right-24 top-8 h-3 w-3 bg-ca-lime" />
-          <div className="relative grid gap-6 px-7 py-6 text-white md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/65">
-                <span className="shape-circle ca-pulse h-1.5 w-1.5 bg-ca-lime" />
-                Retomar donde lo dejaste
-              </div>
-              <h3 className="text-[22px] font-black leading-tight tracking-tight">
-                {currentLesson.title}
-              </h3>
-              <div className="mt-1.5 text-[13px] font-semibold text-white/70">
-                Módulo {currentModule.position} · {currentModule.title}
-                {currentModule.teacher?.full_name && ` · con ${currentModule.teacher.full_name}`}
-              </div>
-              {currentLesson.video_progress && (
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="max-w-xs flex-1">
-                    <ProgressBar
-                      value={currentLesson.video_progress.watch_percentage}
-                      track="bg-white/15"
-                      color="bg-ca-lime"
-                    />
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-white/85">
-                    {Math.round(currentLesson.video_progress.watch_percentage)}%
-                  </span>
-                </div>
+          <div className="shape-circle absolute -right-10 -top-10 h-32 w-32 bg-ca-violet opacity-40" />
+          <div className="relative flex items-center gap-4 px-5 py-4">
+            <div className="relative hidden h-[54px] w-24 shrink-0 overflow-hidden rounded-lg bg-white/5 sm:block">
+              {resume.lesson.mux_playback_id ? (
+                <Image
+                  src={`https://image.mux.com/${resume.lesson.mux_playback_id}/thumbnail.webp?time=10&width=192&height=108&fit_mode=smartcrop`}
+                  alt=""
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                />
+              ) : (
+                <>
+                  <span className="shape-circle absolute -right-4 -top-4 h-12 w-12 bg-white/15" />
+                  <span className="shape-circle absolute -bottom-3 -left-3 h-10 w-10 bg-ca-lime opacity-70" />
+                </>
               )}
             </div>
+            <div className="min-w-0 flex-1 text-white">
+              <div className="mb-0.5 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/65">
+                <span className="shape-circle ca-pulse h-1.5 w-1.5 bg-ca-lime" />
+                {resume.label === "Continuar" ? "Retomar donde lo dejaste" : "Empieza tu programa"}
+              </div>
+              <div className="truncate text-[15px] font-extrabold tracking-tight">{resume.lesson.title}</div>
+              <div className="truncate text-[12px] font-semibold text-white/60">
+                Módulo {resume.mod.position} · {resume.mod.title}
+              </div>
+            </div>
             <Link
-              href={`/classroom/${cohortSlug}/${currentModule.slug ?? currentModule.id}/${currentLesson.slug ?? currentLesson.id}`}
-              className="ca-btn-lime inline-flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.08em]"
+              href={`/classroom/${cohortSlug}/${resume.mod.slug ?? resume.mod.id}/${resume.lesson.slug ?? resume.lesson.id}`}
+              className="ca-btn-lime inline-flex shrink-0 items-center gap-2 px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em]"
             >
-              <svg width={16} height={16} viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" /></svg>
-              Reanudar
+              <svg width={14} height={14} viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" /></svg>
+              {resume.label === "Continuar" ? "Reanudar" : "Comenzar"}
             </Link>
           </div>
         </section>
       )}
 
-      {/* Section header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-            {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalLessons} lecciones
+      {/* Ruta de aprendizaje: acordeón denso de 2 columnas + aside de progreso */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="order-2 flex flex-col gap-4 lg:order-1">
+          <div>
+            <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+              {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
+            </div>
+            <h2 className="mt-1 text-[26px] font-black tracking-tight text-ca-ink">
+              Tu ruta de aprendizaje
+            </h2>
           </div>
-          <h2 className="mt-1 text-[26px] font-black tracking-tight text-ca-ink">
-            Tu ruta de aprendizaje
-          </h2>
-        </div>
-      </div>
 
-      {/* Module cards grid. 2 columnas solo en xl+ (donde cada tarjeta tiene
-          ancho suficiente para la imagen + el texto); por debajo, una sola
-          columna a ancho completo para que el texto no se quiebre palabra a
-          palabra ni se desborde el botón. */}
-      <div className="grid gap-5 xl:grid-cols-2">
-        {modules.map((mod, i) => (
-          <div
-            key={mod.id}
-            className={`ca-fade-up ca-stagger${totalModules % 2 === 1 && i === totalModules - 1 ? " xl:col-span-2" : ""}`}
-            style={{ "--i": i } as React.CSSProperties}
-          >
-            <ModuleCard
-              mod={mod}
-              cohortSlug={cohortSlug}
-              liveSessions={liveSessionsByModule.get(mod.id) ?? 0}
-            />
+          <div className="flex flex-col gap-3">
+            {modules.map((mod) => {
+              const data = moduleRowsData.get(mod.id)!;
+              return (
+                <ModuleAccordionItem
+                  key={mod.id}
+                  position={mod.position}
+                  title={mod.title}
+                  teacherName={mod.teacher?.full_name}
+                  pct={data.pct}
+                  completed={data.completed}
+                  contentCount={data.contentCount}
+                  moduleStatus={data.moduleStatus}
+                  isCurrent={mod.id === (currentModule?.id ?? firstAvailableModule?.id)}
+                  rows={data.rows}
+                />
+              );
+            })}
           </div>
-        ))}
+        </div>
+
+        <aside className="order-1 lg:sticky lg:top-6 lg:order-2 lg:self-start">
+          <div className="ca-card p-5">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Progreso general</div>
+            <div className="mt-1 text-[32px] font-black leading-none text-ca-ink">
+              {overallPct}<span className="text-[16px] font-bold text-ca-ink-soft">%</span>
+            </div>
+            <div className="mt-3">
+              <ProgressBar value={overallPct} completed={overallPct === 100} />
+            </div>
+            <div className="mt-4 flex flex-col gap-2 text-[12px] font-semibold text-ca-ink-soft">
+              <div className="flex items-center justify-between">
+                <span>Clases</span>
+                <span className="font-mono font-bold text-ca-ink">{completedLessons}/{totalContent}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Módulos</span>
+                <span className="font-mono font-bold text-ca-ink">{completedModules}/{totalModules}</span>
+              </div>
+            </div>
+            {nextSession && (
+              <Link
+                href="/calendario"
+                className="mt-4 block rounded-xl bg-ca-bg-soft px-3 py-2.5 text-[12px] font-bold text-ca-ink transition-colors hover:bg-ca-violet/10"
+              >
+                Próxima: {fmtSessionShort(nextSession.starts_at)}
+              </Link>
+            )}
+          </div>
+        </aside>
       </div>
 
       {/* Certificate band */}

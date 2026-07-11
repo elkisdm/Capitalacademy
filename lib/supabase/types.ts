@@ -64,16 +64,19 @@ export type Database = {
       }
       capacitacion_followup_log: {
         Row: {
+          completed_at: string | null
           recipients_count: number
           sent_at: string
           session_id: string
         }
         Insert: {
+          completed_at?: string | null
           recipients_count?: number
           sent_at?: string
           session_id: string
         }
         Update: {
+          completed_at?: string | null
           recipients_count?: number
           sent_at?: string
           session_id?: string
@@ -765,6 +768,7 @@ export type Database = {
           max_file_size_bytes: number
           open_notified_at: string | null
           open_notified_count: number
+          open_notify_completed_at: string | null
           opens_at: string
           program_id: string
           title: string
@@ -781,6 +785,7 @@ export type Database = {
           max_file_size_bytes?: number
           open_notified_at?: string | null
           open_notified_count?: number
+          open_notify_completed_at?: string | null
           opens_at: string
           program_id: string
           title: string
@@ -797,6 +802,7 @@ export type Database = {
           max_file_size_bytes?: number
           open_notified_at?: string | null
           open_notified_count?: number
+          open_notify_completed_at?: string | null
           opens_at?: string
           program_id?: string
           title?: string
@@ -1373,6 +1379,8 @@ export type Database = {
           mux_track_id: string | null
           mux_upload_id: string | null
           position: number
+          recording_notified_at: string | null
+          recording_notify_completed_at: string | null
           slug: string | null
           thumbnail_url: string | null
           title: string
@@ -1393,6 +1401,8 @@ export type Database = {
           mux_track_id?: string | null
           mux_upload_id?: string | null
           position: number
+          recording_notified_at?: string | null
+          recording_notify_completed_at?: string | null
           slug?: string | null
           thumbnail_url?: string | null
           title: string
@@ -1413,6 +1423,8 @@ export type Database = {
           mux_track_id?: string | null
           mux_upload_id?: string | null
           position?: number
+          recording_notified_at?: string | null
+          recording_notify_completed_at?: string | null
           slug?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -2140,7 +2152,7 @@ export type Database = {
         | "succeeded"
         | "failed"
         | "refunded"
-      reminder_status: "sent" | "skipped" | "failed"
+      reminder_status: "sent" | "skipped" | "failed" | "pending"
       resource_type: "pdf" | "link" | "template" | "document" | "other"
       session_status: "scheduled" | "in_progress" | "finished" | "cancelled"
       system_role: "user" | "ops" | "admin"
@@ -2290,7 +2302,7 @@ export const Constants = {
         "failed",
         "refunded",
       ],
-      reminder_status: ["sent", "skipped", "failed"],
+      reminder_status: ["sent", "skipped", "failed", "pending"],
       resource_type: ["pdf", "link", "template", "document", "other"],
       session_status: ["scheduled", "in_progress", "finished", "cancelled"],
       system_role: ["user", "ops", "admin"],

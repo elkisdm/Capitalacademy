@@ -42,6 +42,15 @@ const ABSENCE_ALERT_KIND = "absence_2";
 const ABSENCE_ALERT_THRESHOLD = 2;
 const MAX_ABSENCES_TOLERATED = 3;
 
+// Ventana de "reserva sin terminar" (status='pending' que nunca llegó a un
+// estado terminal): señal de que el proceso murió a mitad de camino entre la
+// reserva y el envío/update final. Mayor al maxDuration del handler (60s,
+// límite duro de una sola corrida) y menor al período del cron (>=30 min),
+// para reintentar recuperando el correo perdido sin pisar una corrida activa.
+// Ver migración 0063 (agrega el estado 'pending' a session_reminders y
+// attendance_alerts).
+const RETRY_STALE_MS = 10 * 60 * 1000; // 10 min
+
 type SessionRow = {
   id: string;
   cohort_id: string;
@@ -70,7 +79,7 @@ async function processWindow(
   // así se cubre downtime realista sin ensanchar la ventana '24h' a "en algún
   // momento hoy" para sesiones creadas con poca antelación. La sesión solo se
   // procesa si de verdad le falta el recordatorio (ver `alreadySent` más
-  // abajo, que ya excluye 'failed' para permitir reintento).
+  // abajo, que excluye 'failed' y 'pending' viejo para permitir reintento).
   const catchupFrom = new Date(now + leadMs - CATCHUP_MS).toISOString();
 
   const { data: sessionsData, error: sessErr } = await admin
@@ -92,20 +101,32 @@ async function processWindow(
   const sessions = (sessionsData ?? []) as unknown as SessionRow[];
   if (sessions.length === 0) return { kind, sessions: 0, emails: 0, errors };
 
-  // Idempotencia: descartar sesiones que YA tienen recordatorio de esta ventana.
-  // Excluye status='failed': un envío fallido no debe bloquear el reintento en
-  // la próxima corrida (el unique de 0026 sigue protegiendo contra duplicados
-  // cuando el envío sí tuvo éxito o se marcó 'skipped').
+  // Idempotencia: descartar sesiones que YA tienen recordatorio RESUELTO de
+  // esta ventana ('sent'/'skipped') o RESERVADO hace poco ('pending' fresco:
+  // probablemente una corrida concurrente todavía en curso). 'failed' y
+  // 'pending' viejo (>RETRY_STALE_MS, reserva que nunca terminó — señal de
+  // crash a mitad de camino) SÍ se reintentan: el unique de 0026 + el
+  // reclamo atómico condicional más abajo siguen protegiendo contra
+  // duplicados.
   const sessionIds = sessions.map((s) => s.id);
+  const staleCutoffIso = new Date(now - RETRY_STALE_MS).toISOString();
   const { data: existing } = await admin
     .from("session_reminders")
-    .select("session_id")
+    .select("session_id, status, sent_at")
     .eq("kind", kind)
     .eq("channel", CHANNEL)
-    .neq("status", "failed")
     .in("session_id", sessionIds);
   const alreadySent = new Set(
-    ((existing ?? []) as Array<{ session_id: string }>).map((r) => r.session_id),
+    (
+      (existing ?? []) as Array<{ session_id: string; status: string; sent_at: string }>
+    )
+      .filter(
+        (r) =>
+          r.status === "sent" ||
+          r.status === "skipped" ||
+          (r.status === "pending" && r.sent_at >= staleCutoffIso),
+      )
+      .map((r) => r.session_id),
   );
   const pending = sessions.filter((s) => !alreadySent.has(s.id));
   if (pending.length === 0) return { kind, sessions: 0, emails: 0, errors };
@@ -147,31 +168,53 @@ async function processWindow(
 
   for (const session of pending) {
     // RESERVA del slot ANTES de enviar: el unique (session_id, kind, channel)
-    // bloquea cualquier ejecución concurrente del cron. Si el insert choca con
-    // el unique, otra invocación ya tomó esta sesión -> saltar.
+    // bloquea cualquier ejecución concurrente del cron. Se reserva en
+    // status='pending' (no terminal) para que, si el proceso muere antes del
+    // update final más abajo, la próxima corrida pueda detectarlo y
+    // reintentar en vez de darlo por enviado.
+    const nowIso = new Date(now).toISOString();
     const { error: reserveErr } = await admin.from("session_reminders").insert({
       session_id: session.id,
       kind,
       channel: CHANNEL,
-      status: "sent",
+      status: "pending",
       recipients_count: 0,
+      sent_at: nowIso,
     });
     if (reserveErr) {
       if (String(reserveErr.code).includes("23505")) {
         // 23505 = unique_violation: ya existe una fila para este slot. Puede
-        // ser una corrida concurrente (status 'sent'/'skipped', dejar en paz)
-        // o un intento previo fallido (status 'failed', reintentable): la
-        // única forma de distinguirlos es re-reservar con un update
-        // condicional que solo toma la fila si sigue en 'failed'.
-        const { data: retried } = await admin
+        // ser una corrida concurrente (status 'sent'/'skipped'/'pending'
+        // fresco, dejar en paz) o un intento previo sin terminar: 'failed'
+        // (reintentable de inmediato) o 'pending' viejo (>RETRY_STALE_MS,
+        // crash a mitad de camino). El reclamo es un update condicional
+        // atómico: Postgres re-evalúa el WHERE contra el valor ya
+        // comprometido, así que si otra corrida ya reclamó la fila (cambió
+        // status/sent_at) este update no matchea ninguna fila y `retried`
+        // queda vacío — no hay forma de que dos corridas ganen la misma fila.
+        const { data: retriedFailed } = await admin
           .from("session_reminders")
-          .update({ status: "sent", recipients_count: 0, error: null })
+          .update({ status: "pending", recipients_count: 0, error: null, sent_at: nowIso })
           .eq("session_id", session.id)
           .eq("kind", kind)
           .eq("channel", CHANNEL)
           .eq("status", "failed")
           .select("session_id")
           .maybeSingle();
+        let retried = retriedFailed;
+        if (!retried) {
+          const { data: retriedStale } = await admin
+            .from("session_reminders")
+            .update({ status: "pending", recipients_count: 0, error: null, sent_at: nowIso })
+            .eq("session_id", session.id)
+            .eq("kind", kind)
+            .eq("channel", CHANNEL)
+            .eq("status", "pending")
+            .lt("sent_at", staleCutoffIso)
+            .select("session_id")
+            .maybeSingle();
+          retried = retriedStale;
+        }
         if (!retried) continue; // no era reintentable: otra corrida ya tiene el slot.
       } else {
         errors.push(`reserve ${session.id} (${kind}): ${reserveErr.message}`);
@@ -267,7 +310,7 @@ async function processWindow(
  * Detecta alumnos con `ABSENCE_ALERT_THRESHOLD` o más inasistencias a clases
  * en vivo y envía UN correo de advertencia por alumno+cohorte, reservando la
  * fila en `attendance_alerts` ANTES de enviar (mismo patrón reserva-antes-de-
- * enviar de `processWindow`, líneas 136-149, contra `session_reminders`).
+ * enviar de `processWindow`, contra `session_reminders`).
  */
 async function processAbsenceAlerts(
   admin: ReturnType<typeof createAdminClient>,
@@ -277,52 +320,81 @@ async function processAbsenceAlerts(
   const rows = await getStudentsAtAbsenceThreshold(ABSENCE_ALERT_THRESHOLD);
   if (rows.length === 0) return { evaluated: 0, sent: 0, errors };
 
-  // Descartar pares (alumno, cohorte) que YA tienen alerta enviada. Excluye
-  // status='failed': un envío fallido no debe bloquear el reintento en la
-  // próxima corrida.
+  // Descartar pares (alumno, cohorte) que YA tienen alerta RESUELTA
+  // ('sent') o RESERVADA hace poco ('pending' fresco). 'failed' y 'pending'
+  // viejo (>RETRY_STALE_MS: reserva que nunca terminó) SÍ se reintentan.
+  const staleCutoffIso = new Date(now - RETRY_STALE_MS).toISOString();
   const { data: existing } = await admin
     .from("attendance_alerts")
-    .select("student_id, cohort_id")
+    .select("student_id, cohort_id, status, sent_at")
     .eq("kind", ABSENCE_ALERT_KIND)
-    .neq("status", "failed")
     .in(
       "student_id",
       rows.map((r) => r.studentId),
     );
   const alreadySent = new Set(
-    ((existing ?? []) as Array<{ student_id: string; cohort_id: string }>).map(
-      (r) => `${r.student_id}:${r.cohort_id}`,
-    ),
+    (
+      (existing ?? []) as Array<{
+        student_id: string;
+        cohort_id: string;
+        status: string;
+        sent_at: string;
+      }>
+    )
+      .filter(
+        (r) => r.status === "sent" || (r.status === "pending" && r.sent_at >= staleCutoffIso),
+      )
+      .map((r) => `${r.student_id}:${r.cohort_id}`),
   );
   const pending = rows.filter((r) => !alreadySent.has(`${r.studentId}:${r.cohortId}`));
 
   let sent = 0;
   for (const row of pending) {
     // RESERVA de la fila ANTES de enviar: el unique (student_id, cohort_id,
-    // kind) bloquea cualquier corrida concurrente del cron.
+    // kind) bloquea cualquier corrida concurrente del cron. status='pending'
+    // (no terminal) para que un crash entre la reserva y el envío quede
+    // marcado como reintentable en vez de darse por enviado.
+    const nowIso = new Date(now).toISOString();
     const { error: reserveErr } = await admin.from("attendance_alerts").insert({
       student_id: row.studentId,
       cohort_id: row.cohortId,
       kind: ABSENCE_ALERT_KIND,
       absences_count: row.absences,
-      status: "sent",
+      status: "pending",
+      sent_at: nowIso,
     });
     if (reserveErr) {
       if (String(reserveErr.code).includes("23505")) {
         // 23505 = unique_violation: ya existe una fila para este slot. Puede
-        // ser una corrida concurrente (status 'sent', dejar en paz) o un
-        // intento previo fallido (status 'failed', reintentable): la única
-        // forma de distinguirlos es re-reservar con un update condicional
-        // que solo toma la fila si sigue en 'failed'.
-        const { data: retried } = await admin
+        // ser una corrida concurrente (status 'sent'/'pending' fresco, dejar
+        // en paz) o un intento previo sin terminar: 'failed' (reintentable
+        // de inmediato) o 'pending' viejo (>RETRY_STALE_MS, crash a mitad de
+        // camino). El reclamo es un update condicional atómico: solo una
+        // corrida puede ganar la fila (ver comentario equivalente en
+        // processWindow).
+        const { data: retriedFailed } = await admin
           .from("attendance_alerts")
-          .update({ status: "sent", absences_count: row.absences, error: null })
+          .update({ status: "pending", absences_count: row.absences, error: null, sent_at: nowIso })
           .eq("student_id", row.studentId)
           .eq("cohort_id", row.cohortId)
           .eq("kind", ABSENCE_ALERT_KIND)
           .eq("status", "failed")
           .select("student_id")
           .maybeSingle();
+        let retried = retriedFailed;
+        if (!retried) {
+          const { data: retriedStale } = await admin
+            .from("attendance_alerts")
+            .update({ status: "pending", absences_count: row.absences, error: null, sent_at: nowIso })
+            .eq("student_id", row.studentId)
+            .eq("cohort_id", row.cohortId)
+            .eq("kind", ABSENCE_ALERT_KIND)
+            .eq("status", "pending")
+            .lt("sent_at", staleCutoffIso)
+            .select("student_id")
+            .maybeSingle();
+          retried = retriedStale;
+        }
         if (!retried) continue; // no era reintentable: otra corrida ya tiene el slot.
       } else {
         errors.push(`reserve absence ${row.studentId}/${row.cohortId}: ${reserveErr.message}`);
@@ -341,6 +413,12 @@ async function processAbsenceAlerts(
 
     if (res.success) {
       sent++;
+      await admin
+        .from("attendance_alerts")
+        .update({ status: "sent", error: null })
+        .eq("student_id", row.studentId)
+        .eq("cohort_id", row.cohortId)
+        .eq("kind", ABSENCE_ALERT_KIND);
     } else {
       errors.push(`send absence ${row.studentId}/${row.cohortId}: ${res.error ?? "unknown"}`);
       await admin

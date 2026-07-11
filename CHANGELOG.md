@@ -15,6 +15,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La pantalla de una conversación carga más liviana y rápida: dejó de enviarse el procesador de texto al navegador y los avatares se optimizan automáticamente (`db2c32d`)
 - Las fotos de perfil en todo el classroom (menú, comentarios, perfil) se sirven optimizadas y livianas en vez del archivo original, y la página del quiz carga menos código de entrada (las pantallas de resultado se traen recién al terminar) (`624b57c`)
 - La pantalla de la lección se siente más fluida mientras el video reproduce: dejó de repintarse varias veces por segundo, evitando micro-tirones al hacer scroll o interactuar (`110a23e`)
+- El classroom, el checkout y el panel del docente cargan más rápido: marcar asistencia de toda una clase ahora es una sola operación en vez de decenas, la pantalla de pago se sirve desde caché en vez de generarse en cada visita, y el aviso de notificaciones dejó de pedirse dos veces. Además, el panel del docente suma un código QR para el registro de asistencia y el video de cada lección genera automáticamente su glosario y capítulos al procesarse (`7d87e12`)
 
 ### Security
 - Se cerró un agujero por el que un alumno podía elevar su propia cuenta a administrador y así acceder a los datos personales de todos los usuarios; ahora solo un administrador o los procesos internos pueden cambiar el rol de una cuenta (`312267c`)

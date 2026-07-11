@@ -63,6 +63,7 @@ export default async function ConversacionDetallePage(
         thread={data.thread}
         bodyRendered={<Markdown content={data.thread.body} />}
         initialComments={data.comments}
+        initialHasMoreComments={data.hasMoreComments}
         cohortSlug={cohortSlug}
         viewerId={user.id}
         viewerName={viewerName}

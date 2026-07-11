@@ -125,6 +125,10 @@
 | `app/api/support/route.ts` · `lib/email/support-request.ts` | Soporte in-app: recibe mensaje + adjuntos y los envía por correo al equipo | `POST /api/support` | — |
 | `components/classroom/mark-complete-button.tsx` · `resource-list.tsx` | Botón "marcar completada" y lista de materiales de la lección (descarga con URL firmada) | — | — |
 | `components/classroom/` | UI del classroom: `video-player`, `sidebar`, `comment-section`, `transcript-panel`, `summary-card`, `quiz-*`, `collapsible-playlist` | — | — |
+| `components/classroom/comment-section.tsx` | Comentarios de lección: 1 nivel de respuesta, edición propia ("(editado)"), moderación (staff borra comentarios ajenos), badge Profesor/Equipo, timestamps `mm:ss` clicables que saltan el video (`onSeek`), linkify, paginación "cargar más" | — | 0014 |
+| `app/(classroom)/classroom/go/thread/[threadId]/page.tsx` · `go/lesson/[lessonId]/page.tsx` | Rutas neutras de redirección: resuelven `program_id` del hilo/lección → cohorte del viewer con acceso (matrícula, teacher/assistant o admin/ops) → `redirect()` a la URL real, o `notFound()`. Único mecanismo para los enlaces de campana y correo (foro y lección), evita 404 cross-programa/cross-cohorte | `/classroom/go/thread/[id]`, `/classroom/go/lesson/[id]` | 0014 |
+| `lib/notifications/lesson-comment.ts` | `notifyLessonComment`: notifica (campana + correo, admin client) respuestas y comentarios nuevos de lección — `lesson_reply` al autor del padre, `lesson_comment_new` a los docentes/asistentes del programa; cooldown de correo de 1h por usuario/lección | — | 0014 |
+| `lib/profiles/program-staff.ts` | `getProgramStaffIds`: resuelve el set de `user_id` staff de un programa (`cohort_roles` teacher/assistant + admin/ops transversal), para overlayar el badge "Profesor/Equipo" sobre `getPublicAuthorsMap` | — | 0014 |
 | `lib/classroom/queries.ts` · `admin-queries.ts` | Lecturas de módulos/lecciones/progreso (alumno y admin); `getModulesWithLessons` excluye del playlist las lecciones-repetición de clases en vivo; `getSessionForStudent` arma la pantalla de clase | — | — |
 | `lib/classroom/progress.ts` · `use-video-progress.ts` | Tracking granular de progreso de video | — | — |
 | `lib/classroom/resolve-slugs.ts` | Resuelve slugs legibles ↔ UUIDs (compat retroactiva) | — | — |
@@ -140,12 +144,13 @@
 | `db/migrations/0044_conversaciones.sql` | Tablas threads/comments/reactions + helpers has_program_access/is_program_staff + RLS por programa | — | 0010 |
 | `db/migrations/0046`–`0048_*.sql` | Reacciones con emoji, guardados (bookmarks) y notificaciones/menciones del foro | — | 0011 |
 | `db/migrations/0057_teacher_panel.sql` | Redefine `has_program_access` para incluir `is_program_staff` (docente/asistente sin matrícula) | — | 0013 |
+| `db/migrations/0065`–`0067_*.sql` | Endurecimiento: soft delete + `edited_at` en `lesson_comments`/`conversation_*`, freeze de columnas de sistema vía triggers (cierra la fuga cross-tenant del `WITH CHECK` de threads), policy `UPDATE` en `conversation_reactions`, RLS docente en `lesson_comments`, y generalización de `conversation_notifications` para comentarios de lección (`lesson_reply`/`lesson_comment_new`) | — | 0014 |
 | `lib/conversaciones/queries.ts` · `access.ts` | Lecturas del feed por programa + gate | — | 0010 |
 | `lib/conversaciones/categories.ts` · `reactions.ts` · `linkify.tsx` | Catálogo de categorías del feed, emojis de reacción permitidos, y auto-enlazado de URLs en comentarios | — | 0010 |
-| `app/api/classroom/conversaciones/{route,[threadId],comments,reactions,bookmarks,members,notifications}/route.ts` | CRUD threads/comentarios/reacciones + guardados, miembros para menciones (@) y notificaciones | — | 0010 |
+| `app/api/classroom/conversaciones/{route,[threadId],comments,reactions,bookmarks,members,notifications}/route.ts` | CRUD threads/comentarios/reacciones + guardados, miembros para menciones (@) y notificaciones; comentarios y threads soportan edición (`PATCH`, `edited_at`) y soft delete; `notifications` GET calcula `href`/`title` server-side (vía `/classroom/go/*`) para foro y lección, POST acepta `{id}`/`{ids}`/`{all}` | — | 0010, 0014 |
 | `app/(classroom)/classroom/[cohortSlug]/conversaciones/{page,[threadId]/page}.tsx` | Feed + detalle del hilo | `/classroom/[cohortSlug]/conversaciones`, `/classroom/[cohortSlug]/conversaciones/[threadId]` | 0010 |
-| `components/classroom/conversaciones/` | thread-list, thread-composer, thread-detail, reaction-button, notification-bell (campana global con contador + Realtime) | — | 0010 |
-| `lib/email/conversacion-notification.ts` | Correo de aviso por respuesta o mención en el foro | — | 0011 |
+| `components/classroom/conversaciones/` | thread-list, thread-composer, thread-detail (edición, moderación de comentarios ajenos por staff), reaction-button, notification-bell (campana global con contador + Realtime; consume `href`/`title`/`type` ya resueltos por el servidor — cubre también `lesson_reply`/`lesson_comment_new`, no solo el foro) | — | 0010, 0014 |
+| `lib/email/conversacion-notification.ts` | Correo de aviso por respuesta o mención en el foro, y por respuesta/comentario nuevo en una lección (`lesson_reply`/`lesson_comment_new`) | — | 0011, 0014 |
 
 ## Entregables
 
@@ -227,6 +232,7 @@
 | `lib/classroom/generate-chapters.ts` · `generate-summary.ts` | Lógica de generación IA de capítulos y resumen de una lección, invocada por su ruta admin y por el pipeline post-procesamiento de Mux | — | — |
 | `app/api/admin/{modules,resources,quiz-questions,certificates}/route.ts` | CRUD admin de módulos/recursos/preguntas/certificados (config e intentos del quiz se gestionan por evaluación, no por programa) | — | — |
 | `components/admin/` | UI admin: `user-drawer`, `progress-table`, `quiz-manager`, `mux-uploader`, `resource-manager`, `csv-import-modal`, `transcript-review` | — | — |
+| `components/admin/collapsible-section.tsx` | Sección colapsable reusable para paneles largos del admin (editor de lección, sesiones de cohorte) | — | — |
 | `lib/admin/user-queries.ts` | Lecturas de usuarios/segmento para el admin; `getAdminUsersList(programId?)` scopea por entorno (miembros del programa + staff transversal admin/ops) | — | — |
 | `lib/admin/active-env.ts` · `env-actions.ts` | Entorno activo (program_id) + modo de vista (admin/alumno) del staff, en cookies; `resolveProgramScope` (precedencia `?program` > cookie) y server actions `setActiveEnv`/`setViewMode` | — | — |
 | `components/admin/env-switcher.tsx` | Selector global de entorno + toggle "Ver como Admin/Alumno" (en el sidebar, solo staff) | — | — |
@@ -270,10 +276,10 @@
 | `lib/pricing.ts` | Cálculo de precios y planes del Diplomado | — | — |
 | `lib/rate-limit.ts` | Rate limiting de rutas API | — | — |
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
-| `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
+| `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap`, `time-ago` (relativo tipo "hace 2h"), `initials` (iniciales para avatar) | — | — |
 | `components/ui/markdown.tsx` | Renderer markdown compartido (contenido de clases de texto, ayuda) | — | — |
 | `components/ui/{checkbox,date-picker,file-input,radio,select}.tsx` | Componentes de formulario propios de marca (reemplazan los controles nativos del navegador) | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0064`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0067`) | — | — |
 | `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
 | `db/migrations/0049_seed_capacitaciones.sql` | Siembra del entorno Ciclo de Capacitación Comercial CI: programa gratuito interno + cohorte + 5 sesiones presenciales | — | 0012 |
 | `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |

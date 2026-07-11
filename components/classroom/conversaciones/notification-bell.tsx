@@ -1,43 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-
-// ── Time helper (copiado de thread-list.tsx) ───────────────────
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = Math.max(0, now - then);
-
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return "hace un momento";
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `hace ${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `hace ${days} ${days === 1 ? "día" : "días"}`;
-
-  const months = Math.floor(days / 30);
-  if (months < 12) return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
-
-  const years = Math.floor(months / 12);
-  return `hace ${years} ${years === 1 ? "año" : "años"}`;
-}
+import { timeAgo } from "@/lib/utils/time-ago";
 
 type Notification = {
   id: string;
   type: string;
   actorName: string;
-  threadId: string | null;
-  threadTitle: string | null;
+  title: string | null;
+  href: string | null;
   read: boolean;
   createdAt: string;
 };
@@ -72,13 +47,26 @@ function fetchNotifications() {
 const PANEL_WIDTH = 360;
 const VIEWPORT_MARGIN = 16;
 
-export function NotificationBell({
-  viewerId,
-  cohortSlug,
-}: {
-  viewerId: string;
-  cohortSlug: string;
-}) {
+/** Copy por tipo de notificación (foro y lección, T14/T16). `title` ya viene
+ *  resuelto server-side (título del hilo o de la lección). */
+function notificationCopy(n: Notification): ReactNode {
+  const titleNode = (
+    <span className="font-semibold">&ldquo;{n.title ?? "una conversación"}&rdquo;</span>
+  );
+  switch (n.type) {
+    case "mention":
+      return <>te mencionó en {titleNode}</>;
+    case "lesson_reply":
+      return <>respondió tu comentario en la lección {titleNode}</>;
+    case "lesson_comment_new":
+      return <>comentó en tu lección {titleNode}</>;
+    case "reply":
+    default:
+      return <>respondió tu conversación {titleNode}</>;
+  }
+}
+
+export function NotificationBell({ viewerId }: { viewerId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -129,7 +117,7 @@ export function NotificationBell({
           filter: `user_id=eq.${viewerId}`,
         },
         () => {
-          // El payload crudo no trae el nombre del actor: re-fetch.
+          // El payload crudo no trae el nombre del actor ni el título: re-fetch.
           void refetch();
         },
       )
@@ -140,19 +128,23 @@ export function NotificationBell({
     };
   }, [viewerId, refetch]);
 
-  const markAllRead = useCallback(async () => {
+  // Marca leídas SOLO las notificaciones visibles en el panel (no "todas" a
+  // ciegas): usa {ids} contra el POST generalizado (T14/T16).
+  const markVisibleRead = useCallback(async () => {
+    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
     setUnread(0);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
       await fetch(ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
+        body: JSON.stringify({ ids: unreadIds }),
       });
     } catch {
       // Silencioso.
     }
-  }, []);
+  }, [notifications]);
 
   // La campana puede vivir dentro del sidebar angosto (256px) o del header
   // móvil: anclar el panel con `absolute right-0` lo desborda por la
@@ -173,12 +165,12 @@ export function NotificationBell({
       const next = !prev;
       if (next) {
         updatePosition();
-        // Al abrir, marca todas como leídas.
-        if (unread > 0) void markAllRead();
+        // Al abrir, marca como leídas las visibles en el panel.
+        if (unread > 0) void markVisibleRead();
       }
       return next;
     });
-  }, [unread, markAllRead, updatePosition]);
+  }, [unread, markVisibleRead, updatePosition]);
 
   // Cerrar con Escape o click fuera; recalcular posición en scroll/resize.
   useEffect(() => {
@@ -218,7 +210,7 @@ export function NotificationBell({
         {notifications.some((n) => !n.read) && (
           <button
             type="button"
-            onClick={markAllRead}
+            onClick={markVisibleRead}
             className="text-[11px] font-semibold text-ca-violet transition-colors hover:underline"
           >
             Marcar todas como leídas
@@ -237,22 +229,7 @@ export function NotificationBell({
                   const content = (
                     <>
                       <p className="text-[13px] leading-snug text-ca-ink">
-                        <span className="font-bold">{n.actorName}</span>{" "}
-                        {n.type === "mention" ? (
-                          <>
-                            te mencionó en{" "}
-                            <span className="font-semibold">
-                              &ldquo;{n.threadTitle ?? "una conversación"}&rdquo;
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            respondió tu conversación{" "}
-                            <span className="font-semibold">
-                              &ldquo;{n.threadTitle ?? "una conversación"}&rdquo;
-                            </span>
-                          </>
-                        )}
+                        <span className="font-bold">{n.actorName}</span> {notificationCopy(n)}
                       </p>
                       <p className="mt-0.5 text-[11px] text-ca-ink-soft">
                         {timeAgo(n.createdAt)}
@@ -269,12 +246,8 @@ export function NotificationBell({
                       key={n.id}
                       className="border-b border-ca-ink/[0.06] last:border-b-0"
                     >
-                      {n.threadId ? (
-                        <Link
-                          href={`/classroom/${cohortSlug}/conversaciones/${n.threadId}`}
-                          onClick={() => setOpen(false)}
-                          className={base}
-                        >
+                      {n.href ? (
+                        <Link href={n.href} onClick={() => setOpen(false)} className={base}>
                           {content}
                         </Link>
                       ) : (

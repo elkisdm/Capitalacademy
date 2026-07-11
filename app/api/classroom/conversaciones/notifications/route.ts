@@ -7,8 +7,12 @@ import { uuidLike } from "@/lib/utils/zod";
 export const runtime = "nodejs";
 
 // ── GET /api/classroom/conversaciones/notifications ─────────────────
-// Últimas ~20 notificaciones del viewer + conteo de no-leídas.
-// El cliente RLS auto-scopea a auth.uid() (policy: user_id = auth.uid()).
+// Últimas ~20 notificaciones del viewer + conteo de no-leídas. Cubre foro
+// (thread_id) Y lección (lesson_id, T14/0067): por cada notificación calcula
+// `href`/`title` server-side (vía la ruta neutra `classroom/go/*`) para que
+// la campana no necesite conocer la cohorte del hilo/lección (evita 404
+// cross-programa/cross-cohorte). El cliente RLS auto-scopea a auth.uid()
+// (policy: user_id = auth.uid()).
 
 export async function GET() {
   const supabase = await createClient();
@@ -23,7 +27,7 @@ export async function GET() {
   const [{ data: rows }, { count: unread }] = await Promise.all([
     supabase
       .from("conversation_notifications")
-      .select("id, type, actor_id, thread_id, read_at, created_at")
+      .select("id, type, actor_id, thread_id, lesson_id, read_at, created_at")
       .order("created_at", { ascending: false })
       .limit(20),
     supabase
@@ -45,40 +49,71 @@ export async function GET() {
         .filter((id): id is string => Boolean(id)),
     ),
   ];
+  const lessonIds = [
+    ...new Set(
+      notifications
+        .map((n) => n.lesson_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 
-  const titleMap = new Map<string, string>();
+  const threadTitleMap = new Map<string, string>();
   if (threadIds.length > 0) {
     const { data: threads } = await supabase
       .from("conversation_threads")
       .select("id, title")
       .in("id", threadIds);
     for (const t of threads ?? []) {
-      titleMap.set(t.id, t.title);
+      threadTitleMap.set(t.id, t.title);
+    }
+  }
+
+  const lessonTitleMap = new Map<string, string>();
+  if (lessonIds.length > 0) {
+    const { data: lessons } = await supabase
+      .from("lessons")
+      .select("id, title")
+      .in("id", lessonIds);
+    for (const l of lessons ?? []) {
+      lessonTitleMap.set(l.id, l.title);
     }
   }
 
   return NextResponse.json({
-    notifications: notifications.map((n) => ({
-      id: n.id,
-      type: n.type,
-      actorName: n.actor_id
-        ? actorsMap.get(n.actor_id)?.full_name ?? "Usuario"
-        : "Usuario",
-      threadId: n.thread_id,
-      threadTitle: n.thread_id ? titleMap.get(n.thread_id) ?? null : null,
-      read: n.read_at !== null,
-      createdAt: n.created_at,
-    })),
+    notifications: notifications.map((n) => {
+      const href = n.thread_id
+        ? `/classroom/go/thread/${n.thread_id}`
+        : n.lesson_id
+          ? `/classroom/go/lesson/${n.lesson_id}`
+          : null;
+      const title = n.thread_id
+        ? (threadTitleMap.get(n.thread_id) ?? null)
+        : n.lesson_id
+          ? (lessonTitleMap.get(n.lesson_id) ?? null)
+          : null;
+      return {
+        id: n.id,
+        type: n.type,
+        actorName: n.actor_id
+          ? (actorsMap.get(n.actor_id)?.full_name ?? "Usuario")
+          : "Usuario",
+        title,
+        href,
+        read: n.read_at !== null,
+        createdAt: n.created_at,
+      };
+    }),
     unread: unread ?? 0,
   });
 }
 
 // ── POST /api/classroom/conversaciones/notifications ────────────────
-// Marca leídas: { id } (una) o { all: true } (todas las no-leídas).
-// RLS enforce user_id = auth.uid().
+// Marca leídas: { id } (una), { ids } (solo las visibles en el panel) o
+// { all: true } (todas las no-leídas). RLS enforce user_id = auth.uid().
 
 const postSchema = z.union([
   z.object({ id: uuidLike }),
+  z.object({ ids: z.array(uuidLike).min(1).max(100) }),
   z.object({ all: z.literal(true) }),
 ]);
 
@@ -114,6 +149,8 @@ export async function POST(req: Request) {
 
   if ("all" in parsed.data) {
     query = query.is("read_at", null);
+  } else if ("ids" in parsed.data) {
+    query = query.in("id", parsed.data.ids);
   } else {
     query = query.eq("id", parsed.data.id);
   }

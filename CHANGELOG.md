@@ -13,6 +13,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Aviso por correo cuando la grabación de una clase queda disponible (`23e5d0e`)
 - Los formularios del panel administrativo, el checkout y el classroom ahora usan controles propios de marca (selector de fecha, menú desplegable, casillas, radios y selector de archivo) en vez de los del navegador; el panel de asistencia de una clase queda más compacto con búsqueda y marcado en bloque, y el popover de notificaciones ya no se corta en pantallas angostas (`43626f6`)
 - El panel administrativo estrena diseño en lecciones, quizzes y entregables: el listado de lecciones ahora muestra miniatura, duración y estado del video, quizzes y entregables se presentan en una grilla con insignias de estado, y la gestión de un quiz se abre en una ventana emergente en vez de una pantalla aparte (`3c9eb40`)
+- Las secciones de los editores de lección y de sesiones de cohorte ahora se pueden colapsar, para llegar más rápido a lo que se quiere editar sin scrollear paneles largos
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
@@ -187,3 +188,20 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 - Corregidos links no clickeables, pluralización incorrecta, contadores inconsistentes y sidebar con items sin destino en el Classroom (`32d7f58`)
+
+### Added
+- Ahora puedes editar tus propios comentarios, tanto en una lección como en el foro de Conversaciones
+- Nuevas notificaciones (campana y correo) cuando alguien responde o comenta en una lección, además de las que ya existían en el foro
+- Los minutos y segundos que aparecen en un comentario de clase (por ejemplo "12:30") ahora son clicables y saltan directo a ese momento del video
+- La búsqueda del foro ahora encuentra hilos en todas las páginas, no solo en las ya cargadas
+- El equipo docente ahora puede moderar comentarios ajenos (eliminarlos) tanto en el foro como en los comentarios de una lección
+
+### Fixed
+- Los docentes ya pueden ver y responder los comentarios de sus propias lecciones; antes quedaban bloqueados si no tenían matrícula
+- Cambiar la reacción a un comentario o hilo del foro ahora se guarda de verdad: antes se veía el cambio en pantalla pero se perdía al recargar
+- Los enlaces de notificaciones (campana y correo) ya no dan error 404 en programas con más de una cohorte
+- Los errores al publicar, editar o borrar un comentario ahora se muestran en pantalla en vez de fallar en silencio
+
+### Security
+- Se cerraron agujeros de RLS en el foro de Conversaciones: un usuario ya no puede mover su propio hilo a otro programa ni fijarlo/bloquearlo sin ser parte del equipo
+- Se agregó un tope de menciones por comentario para evitar el envío masivo de notificaciones y correos

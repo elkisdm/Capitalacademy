@@ -3,7 +3,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { uuidLike } from "@/lib/utils/zod";
-import { getProgramThreads } from "@/lib/conversaciones/queries";
+import { getProgramThreads, type RecentThreadsCursor } from "@/lib/conversaciones/queries";
+import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 import { isValidCategory } from "@/lib/conversaciones/categories";
 
 export const runtime = "nodejs";
@@ -22,10 +23,12 @@ const threadPostSchema = z.object({
   category: z.string().optional(),
 });
 
-const sortSchema = z.enum(["recent", "top"]).optional();
+const sortSchema = z.enum(["recent", "top", "unanswered"]).optional();
 
-// ── GET /api/classroom/conversaciones?programId=xxx&sort=recent ────
-// Feed de conversaciones de un programa (ADR-0010).
+// ── GET /api/classroom/conversaciones?programId=xxx&sort=recent&q=&cursor= ──
+// Feed de conversaciones de un programa (ADR-0010). `cursor` (solo aplica a
+// sort 'recent') es `${isPinned}|${lastActivityAt}|${id}` del último hilo ya
+// cargado — keyset pagination (T12, hallazgo 15).
 
 export async function GET(req: Request) {
   const supabase = await createClient();
@@ -55,18 +58,39 @@ export async function GET(req: Request) {
     );
   }
 
-  const offsetParam = searchParams.get("offset");
-  const offset = offsetParam ? Number.parseInt(offsetParam, 10) : 0;
-  if (Number.isNaN(offset) || offset < 0) {
-    return NextResponse.json({ error: "offset inválido" }, { status: 422 });
+  const q = searchParams.get("q")?.trim() || undefined;
+
+  let cursor: RecentThreadsCursor | undefined;
+  const cursorParam = searchParams.get("cursor");
+  if (cursorParam) {
+    const parts = cursorParam.split("|");
+    const [isPinnedRaw, lastActivityAt, id] = parts;
+    const validPinned = isPinnedRaw === "true" || isPinnedRaw === "false";
+    if (
+      parts.length !== 3 ||
+      !validPinned ||
+      Number.isNaN(Date.parse(lastActivityAt)) ||
+      !uuidLike.safeParse(id).success
+    ) {
+      return NextResponse.json({ error: "cursor inválido" }, { status: 422 });
+    }
+    cursor = { isPinned: isPinnedRaw === "true", lastActivityAt, id };
   }
 
-  const threads = await getProgramThreads(programId, user.id, {
-    sort: sortParsed.data,
-    offset,
-  });
-
-  return NextResponse.json({ threads });
+  try {
+    const threads = await getProgramThreads(programId, user.id, {
+      sort: sortParsed.data,
+      q,
+      cursor,
+    });
+    return NextResponse.json({ threads });
+  } catch (err) {
+    console.error("conversaciones GET error", err);
+    return NextResponse.json(
+      { error: "Error al cargar las conversaciones" },
+      { status: 500 },
+    );
+  }
 }
 
 // ── POST /api/classroom/conversaciones ──────────────────────────────
@@ -117,7 +141,7 @@ export async function POST(req: Request) {
       category,
     })
     .select(
-      "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, author:profiles!conversation_threads_author_id_fkey(id, full_name, avatar_url)",
+      "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, author_id",
     )
     .single();
 
@@ -129,8 +153,17 @@ export async function POST(req: Request) {
     );
   }
 
+  // Autor resuelto por service-role (la policy de profiles está cerrada, 0045).
+  const authorsMap = await getPublicAuthorsMap([data.author_id]);
+  const author = authorsMap.get(data.author_id) ?? {
+    id: data.author_id,
+    full_name: "Usuario",
+    avatar_url: null,
+    is_staff: false,
+  };
+
   return NextResponse.json(
-    { thread: { ...data, reaction_count: 0, viewer_reacted: false } },
+    { thread: { ...data, author, reaction_count: 0, viewer_reacted: false } },
     { status: 201 },
   );
 }

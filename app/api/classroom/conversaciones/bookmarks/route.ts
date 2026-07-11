@@ -84,7 +84,8 @@ export async function POST(req: Request) {
     thread_id: threadId,
   });
 
-  if (error) {
+  // 23505 = ya existe (doble-tap concurrente): idempotente, no es un error.
+  if (error && error.code !== "23505") {
     console.error("conversaciones bookmarks INSERT error", error);
     return NextResponse.json(
       { error: "Error al procesar el guardado" },

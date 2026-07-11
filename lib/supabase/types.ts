@@ -448,6 +448,8 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
           parent_id: string | null
           thread_id: string
@@ -457,6 +459,8 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           parent_id?: string | null
           thread_id: string
@@ -466,6 +470,8 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           parent_id?: string | null
           thread_id?: string
@@ -501,6 +507,8 @@ export type Database = {
           comment_id: string | null
           created_at: string
           id: string
+          lesson_comment_id: string | null
+          lesson_id: string | null
           read_at: string | null
           thread_id: string | null
           type: string
@@ -511,6 +519,8 @@ export type Database = {
           comment_id?: string | null
           created_at?: string
           id?: string
+          lesson_comment_id?: string | null
+          lesson_id?: string | null
           read_at?: string | null
           thread_id?: string | null
           type: string
@@ -521,6 +531,8 @@ export type Database = {
           comment_id?: string | null
           created_at?: string
           id?: string
+          lesson_comment_id?: string | null
+          lesson_id?: string | null
           read_at?: string | null
           thread_id?: string | null
           type?: string
@@ -539,6 +551,20 @@ export type Database = {
             columns: ["comment_id"]
             isOneToOne: false
             referencedRelation: "conversation_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notifications_lesson_comment_id_fkey"
+            columns: ["lesson_comment_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notifications_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
           {
@@ -613,6 +639,7 @@ export type Database = {
           category: string
           comment_count: number
           created_at: string
+          edited_at: string | null
           id: string
           is_locked: boolean
           is_pinned: boolean
@@ -627,6 +654,7 @@ export type Database = {
           category?: string
           comment_count?: number
           created_at?: string
+          edited_at?: string | null
           id?: string
           is_locked?: boolean
           is_pinned?: boolean
@@ -641,6 +669,7 @@ export type Database = {
           category?: string
           comment_count?: number
           created_at?: string
+          edited_at?: string | null
           id?: string
           is_locked?: boolean
           is_pinned?: boolean
@@ -1148,6 +1177,8 @@ export type Database = {
           author_id: string
           content: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
           lesson_id: string
           parent_id: string | null
@@ -1157,6 +1188,8 @@ export type Database = {
           author_id: string
           content: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           lesson_id: string
           parent_id?: string | null
@@ -1166,6 +1199,8 @@ export type Database = {
           author_id?: string
           content?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           lesson_id?: string
           parent_id?: string | null

@@ -14,42 +14,27 @@ import {
 import { ThreadComposer, type ThreadListItemLike } from "./thread-composer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
+import { timeAgo } from "@/lib/utils/time-ago";
+import { getInitials } from "@/lib/utils/initials";
 
-// ── Time helper (copiado de comment-section.tsx) ───────────────
+// ── Excerpt sin markdown crudo ───────────────────────────────────
 
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = Math.max(0, now - then);
-
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return "hace un momento";
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `hace ${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `hace ${days} ${days === 1 ? "día" : "días"}`;
-
-  const months = Math.floor(days / 30);
-  if (months < 12) return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
-
-  const years = Math.floor(months / 12);
-  return `hace ${years} ${years === 1 ? "año" : "años"}`;
-}
-
-// ── Initials extractor (copiado de comment-section.tsx) ────────
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
+/** Quita la sintaxis Markdown más común para mostrar un preview de texto
+ *  plano (antes el excerpt mostraba `**negrita**`/`# título` crudos). */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/^>\s?/gm, "")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/\n{2,}/g, " ")
+    .replace(/\n/g, " ")
+    .trim();
 }
 
 // ── Avatar (patrón de comment-section.tsx) ──────────────────────
@@ -106,6 +91,16 @@ const SORT_TABS: Array<{ key: SortMode; label: string }> = [
   { key: "unanswered", label: "Sin responder" },
 ];
 
+type RecentCursor = { isPinned: boolean; lastActivityAt: string; id: string };
+
+function cursorFrom(t: ThreadListItem): RecentCursor {
+  return { isPinned: t.is_pinned, lastActivityAt: t.last_activity_at, id: t.id };
+}
+
+function encodeCursor(c: RecentCursor): string {
+  return `${c.isPinned}|${c.lastActivityAt}|${c.id}`;
+}
+
 type ThreadListProps = {
   programId: string;
   programName: string;
@@ -134,40 +129,93 @@ export function ThreadList({
 
   const [threads, setThreads] = useState<ThreadListItem[]>(initialThreads);
 
-  // Infinite scroll: `offset` = filas ya consumidas de la BD; `hasMore` se
-  // apaga cuando una página vuelve con < PAGE_SIZE. El filtrado client-side
-  // (categoría/búsqueda/orden/guardados) opera sobre la lista acumulada.
-  const [offset, setOffset] = useState(initialThreads.length);
+  // Estado (categoría/orden/búsqueda) reflejado en la URL para que sea
+  // compartible y respete el botón "atrás".
+  const catParam = searchParams.get("cat");
+  const activeCategory: string = catParam && isValidCategory(catParam) ? catParam : "all";
+  const sortParam = searchParams.get("sort");
+  const sort: SortMode =
+    sortParam === "top" || sortParam === "unanswered" ? sortParam : "recent";
+  const search = searchParams.get("q") ?? "";
+  const savedOnly = searchParams.get("saved") === "1";
+
+  // Orden y búsqueda son server-side (T12/T18): al cambiar `sort`/`q` se
+  // reemplaza la lista completa con un fetch al server (que busca/ordena
+  // sobre TODOS los hilos del programa, no solo los ya cargados). El
+  // infinite-scroll por keyset se mantiene SOLO para 'recent' sin búsqueda.
+  const [cursor, setCursor] = useState<RecentCursor | null>(
+    initialThreads.length > 0 ? cursorFrom(initialThreads[initialThreads.length - 1]) : null,
+  );
   const [hasMore, setHasMore] = useState(initialThreads.length >= PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refetching, setRefetching] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    setLoadingMore(true);
+  const fetchPage = useCallback(
+    async (opts: { sort: SortMode; q: string; cursor?: RecentCursor | null }) => {
+      const params = new URLSearchParams({ programId });
+      if (opts.sort !== "recent") params.set("sort", opts.sort);
+      if (opts.q) params.set("q", opts.q);
+      if (opts.sort === "recent" && opts.cursor) {
+        params.set("cursor", encodeCursor(opts.cursor));
+      }
+      const res = await fetch(`/api/classroom/conversaciones?${params.toString()}`);
+      if (!res.ok) throw new Error("Error al cargar conversaciones");
+      return (await res.json()) as { threads: ThreadListItem[] };
+    },
+    [programId],
+  );
+
+  const refetch = useCallback(async () => {
+    setRefetching(true);
+    setLoadError(null);
     try {
-      const res = await fetch(
-        `/api/classroom/conversaciones?programId=${encodeURIComponent(programId)}&offset=${offset}`,
-      );
-      if (!res.ok) throw new Error("Error al cargar más conversaciones");
-      const data = await res.json();
-      const next = (data.threads ?? []) as ThreadListItem[];
+      const data = await fetchPage({ sort, q: search });
+      setThreads(data.threads);
+      const last = data.threads[data.threads.length - 1];
+      setCursor(sort === "recent" && last ? cursorFrom(last) : null);
+      setHasMore(sort === "recent" && data.threads.length >= PAGE_SIZE);
+    } catch {
+      setLoadError("No se pudieron cargar las conversaciones.");
+    } finally {
+      setRefetching(false);
+    }
+  }, [fetchPage, sort, search]);
+
+  // Refetch server-side cuando cambia sort o búsqueda. Debounce solo mientras
+  // se está tipeando un término (evita 1 request por tecla).
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void refetch();
+    }, search ? 300 : 0);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sort, search]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || sort !== "recent") return;
+    setLoadingMore(true);
+    setLoadError(null);
+    try {
+      const data = await fetchPage({ sort: "recent", q: search, cursor });
       setThreads((prev) => {
         const seen = new Set(prev.map((t) => t.id));
-        return [...prev, ...next.filter((t) => !seen.has(t.id))];
+        return [...prev, ...data.threads.filter((t) => !seen.has(t.id))];
       });
-      setOffset((o) => o + next.length);
-      if (next.length < PAGE_SIZE) setHasMore(false);
+      const last = data.threads[data.threads.length - 1];
+      if (last) setCursor(cursorFrom(last));
+      if (data.threads.length < PAGE_SIZE) setHasMore(false);
     } catch {
-      setHasMore(false);
+      setLoadError("No se pudieron cargar más conversaciones.");
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, offset, programId]);
+  }, [loadingMore, hasMore, sort, search, cursor, fetchPage]);
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !hasMore) return;
+    if (!el || !hasMore || sort !== "recent") return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) loadMore();
@@ -176,18 +224,7 @@ export function ThreadList({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, loadMore]);
-
-  // Estado (categoría/orden/búsqueda) reflejado en la URL para que sea
-  // compartible y respete el botón "atrás". El filtrado sigue en cliente
-  // sobre los hilos ya cargados (patrón de users-list-client.tsx).
-  const catParam = searchParams.get("cat");
-  const activeCategory: string = catParam && isValidCategory(catParam) ? catParam : "all";
-  const sortParam = searchParams.get("sort");
-  const sort: SortMode =
-    sortParam === "top" || sortParam === "unanswered" ? sortParam : "recent";
-  const search = searchParams.get("q") ?? "";
-  const savedOnly = searchParams.get("saved") === "1";
+  }, [hasMore, sort, loadMore]);
 
   const updateParams = useCallback(
     (patch: Record<string, string | null>) => {
@@ -267,35 +304,16 @@ export function ThreadList({
     [threads],
   );
 
+  // El server ya devuelve la lista ordenada/buscada (sort/q); acá solo se
+  // aplican los filtros que siguen siendo client-side (categoría/guardados)
+  // sobre el set ya cargado.
   const visible = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    let list = threads.filter((t) => {
+    return threads.filter((t) => {
       if (savedOnly && !t.viewer_bookmarked) return false;
       if (activeCategory !== "all" && t.category !== activeCategory) return false;
-      if (q) {
-        const haystack = `${t.title} ${t.body}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
       return true;
     });
-
-    if (sort === "top") {
-      list = [...list].sort((a, b) => b.reaction_count - a.reaction_count);
-    } else if (sort === "unanswered") {
-      list = list
-        .filter((t) => t.comment_count === 0)
-        .sort(
-          (a, b) =>
-            new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime(),
-        );
-    } else {
-      list = [...list].sort((a, b) => {
-        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-        return new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
-      });
-    }
-    return list;
-  }, [threads, activeCategory, search, sort, savedOnly]);
+  }, [threads, activeCategory, savedOnly]);
 
   const hasFilters =
     activeCategory !== "all" || search.trim() !== "" || sort !== "recent" || savedOnly;
@@ -386,7 +404,23 @@ export function ThreadList({
         </div>
       </div>
 
-      {visible.length === 0 ? (
+      {loadError ? (
+        <div className="ca-card flex flex-col items-center justify-center gap-2 p-10 text-center">
+          <p className="text-[14px] font-bold text-red-600">{loadError}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void refetch()}
+            className="h-auto min-h-0 rounded-lg px-3 py-1.5 text-[12px] text-ca-violet"
+          >
+            Reintentar
+          </Button>
+        </div>
+      ) : refetching && visible.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={18} className="animate-spin text-ca-ink-soft" />
+        </div>
+      ) : visible.length === 0 ? (
         <div className="ca-card flex flex-col items-center justify-center p-16 text-center">
           {savedOnly ? (
             <>
@@ -414,13 +448,21 @@ export function ThreadList({
       ) : (
         <div className="flex flex-col gap-3">
           {visible.map((t, i) => (
-            <Link
+            <div
               key={t.id}
-              href={`/classroom/${cohortSlug}/conversaciones/${t.id}`}
-              className="ca-card ca-card-hoverable ca-fade-up ca-stagger flex flex-col gap-3 p-5"
+              className="ca-card ca-card-hoverable ca-fade-up ca-stagger relative flex flex-col gap-3 p-5"
               style={{ "--i": i } as React.CSSProperties}
             >
-              <div className="flex items-center gap-3">
+              {/* Stretched-link: cubre toda la card para navegar, sin anidar
+                  el botón de guardar (interactivo) dentro de un <a> (T18 —
+                  antes el bookmark quedaba anidado en el <Link>, HTML inválido). */}
+              <Link
+                href={`/classroom/${cohortSlug}/conversaciones/${t.id}`}
+                aria-label={t.title}
+                className="absolute inset-0 z-0"
+              />
+
+              <div className="pointer-events-none relative z-10 flex items-center gap-3">
                 <ThreadAvatar initials={getInitials(t.author.full_name)} avatarUrl={t.author.avatar_url} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
@@ -455,7 +497,7 @@ export function ThreadList({
                     aria-label={
                       t.viewer_bookmarked ? "Quitar de guardados" : "Guardar conversación"
                     }
-                    className={`h-auto min-h-0 rounded-full p-1.5 ${
+                    className={`pointer-events-auto relative z-20 h-auto min-h-0 rounded-full p-1.5 ${
                       t.viewer_bookmarked ? "text-ca-violet" : "text-ca-ink-soft"
                     }`}
                   >
@@ -468,14 +510,14 @@ export function ThreadList({
                 </div>
               </div>
 
-              <div>
+              <div className="pointer-events-none relative z-10">
                 <h3 className="text-[16px] font-bold leading-snug text-ca-ink">{t.title}</h3>
                 <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed text-ca-ink-soft">
-                  {t.body}
+                  {stripMarkdown(t.body)}
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 text-[12px] text-ca-ink-soft">
+              <div className="pointer-events-none relative z-10 flex flex-wrap items-center gap-2 text-[12px] text-ca-ink-soft">
                 <span>{timeAgo(t.last_activity_at)}</span>
                 <span>·</span>
                 <span>
@@ -494,14 +536,14 @@ export function ThreadList({
                   <span>❤️ {t.reaction_count}</span>
                 )}
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Sentinela de infinite scroll: al entrar en viewport carga la página
-          siguiente desde la BD. El observer se re-arma vía `hasMore`. */}
-      {hasMore && (
+      {/* Sentinela de infinite scroll (solo 'recent'): al entrar en viewport
+          carga la página siguiente desde la BD vía keyset cursor. */}
+      {hasMore && sort === "recent" && (
         <div ref={sentinelRef} className="flex items-center justify-center py-4">
           {loadingMore && (
             <span

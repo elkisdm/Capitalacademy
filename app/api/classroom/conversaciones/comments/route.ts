@@ -4,14 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { uuidLike } from "@/lib/utils/zod";
+import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 import { sendConversacionNotificationEmail } from "@/lib/email/conversacion-notification";
 
 export const runtime = "nodejs";
-
-/** Strip HTML tags to prevent storing malicious content. */
-function stripHtml(str: string): string {
-  return str.replace(/<[^>]*>/g, "");
-}
 
 const commentLimiter = createRateLimiter({ limit: 20, windowSeconds: 60 });
 
@@ -19,7 +15,12 @@ const commentPostSchema = z.object({
   threadId: uuidLike,
   body: z.string().trim().min(1, "El comentario no puede estar vacío").max(5000),
   parentId: uuidLike.optional(),
-  mentions: z.array(z.string()).optional(),
+  mentions: z.array(uuidLike).max(10).optional(),
+});
+
+const commentPatchSchema = z.object({
+  id: uuidLike,
+  body: z.string().trim().min(1, "El comentario no puede estar vacío").max(5000),
 });
 
 const BASE_URL = (
@@ -28,10 +29,37 @@ const BASE_URL = (
   "https://capitalacademy.cl"
 ).replace(/\/$/, "");
 
+const EMAIL_COOLDOWN_MS = 60 * 60 * 1000; // 1 hora
+
+/**
+ * Antes de enviar un correo de `type` para un destinatario+hilo, cuenta
+ * cuántas notificaciones de ese tipo tiene ese usuario para ese hilo en la
+ * última hora (incluye la fila recién insertada por el trigger de reply).
+ * Si ya había más de una, el correo se omite — el in-app queda intacto
+ * siempre (lo inserta el trigger de BD, no este código).
+ */
+async function withinEmailCooldown(
+  admin: ReturnType<typeof createAdminClient>,
+  params: { type: string; userId: string; threadId: string },
+): Promise<boolean> {
+  const since = new Date(Date.now() - EMAIL_COOLDOWN_MS).toISOString();
+  const { count } = await admin
+    .from("conversation_notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("type", params.type)
+    .eq("user_id", params.userId)
+    .eq("thread_id", params.threadId)
+    .gte("created_at", since);
+  return (count ?? 0) > 1;
+}
+
 /**
  * Notifica menciones (fila 'mention' en `conversation_notifications`) + emails
- * (al autor del hilo con 'reply' y a cada mencionado con 'mention'). Todo con
- * el ADMIN client porque la RLS de `conversation_notifications`/`profiles` no
+ * ('reply' al autor del hilo y al autor del comentario padre, 'mention' a cada
+ * mencionado). El in-app de 'reply' lo inserta el trigger de BD
+ * (`tg_conversation_reply_notification`, 0067) — este código solo resuelve
+ * destinatarios para el EMAIL y para deduplicar las menciones. Todo con el
+ * ADMIN client porque la RLS de `conversation_notifications`/`profiles` no
  * deja insertar/leer al authenticated. Best-effort: cualquier fallo se traga
  * (no debe romper la creación del comentario).
  */
@@ -39,28 +67,43 @@ async function notifyAndEmail(params: {
   threadId: string;
   commentId: string;
   threadAuthorId: string;
+  parentAuthorId: string | null;
   threadTitle: string;
   actorId: string;
   actorName: string;
   mentions: string[];
-  cohortSlug: string | null;
   programId: string;
 }) {
   const admin = createAdminClient();
 
-  const url = params.cohortSlug
-    ? `${BASE_URL}/classroom/${params.cohortSlug}/conversaciones/${params.threadId}`
-    : `${BASE_URL}/classroom`;
+  const url = `${BASE_URL}/classroom/go/thread/${params.threadId}`;
 
-  // Mencionados válidos: != autor, deduplicados, y que existan como perfil.
+  // Destinatarios de 'reply' (autor del hilo y autor del comentario padre, si
+  // aplica): el trigger de BD ya les insertó la notificación in-app; acá solo
+  // se resuelve a quién avisar por correo.
+  const replyRecipients = [
+    ...new Set(
+      [params.threadAuthorId, params.parentAuthorId].filter(
+        (id): id is string => Boolean(id) && id !== params.actorId,
+      ),
+    ),
+  ];
+
+  // Mencionados válidos: != autor, != destinatarios de 'reply' (dedupe —
+  // evita doble correo/notificación a quien ya recibe 'reply'), deduplicados,
+  // y con acceso al programa del hilo.
   const mentionCandidates = [
-    ...new Set(params.mentions.filter((id) => id && id !== params.actorId)),
+    ...new Set(
+      params.mentions.filter(
+        (id) => id && id !== params.actorId && !replyRecipients.includes(id),
+      ),
+    ),
   ];
 
   // Filtra a quienes tienen acceso al programa del hilo (mismo criterio que
   // /api/classroom/conversaciones/members): matrícula active/completed en
-  // alguna cohorte del programa, o staff transversal (admin/ops). Evita que
-  // un ID de otro tenant gatille notificación/email cross-tenant.
+  // alguna cohorte del programa, o staff (docente del programa o admin/ops).
+  // Evita que un ID de otro tenant gatille notificación/email cross-tenant.
   let validMentions: Array<{ id: string; full_name: string | null; email: string | null }> = [];
   if (mentionCandidates.length > 0) {
     const allowedIds = new Set<string>();
@@ -73,6 +116,23 @@ async function notifyAndEmail(params: {
       .in("student_id", mentionCandidates);
     for (const row of (enrollmentRows ?? []) as Array<{ student_id: string }>) {
       allowedIds.add(row.student_id);
+    }
+
+    const { data: cohorts } = await admin
+      .from("cohorts")
+      .select("id")
+      .eq("program_id", params.programId);
+    const cohortIds = (cohorts ?? []).map((c) => c.id);
+    if (cohortIds.length > 0) {
+      const { data: roleRows } = await admin
+        .from("cohort_roles")
+        .select("user_id")
+        .in("cohort_id", cohortIds)
+        .in("role", ["teacher", "assistant"])
+        .in("user_id", mentionCandidates);
+      for (const row of (roleRows ?? []) as Array<{ user_id: string }>) {
+        allowedIds.add(row.user_id);
+      }
     }
 
     const { data: staffRows } = await admin
@@ -112,23 +172,31 @@ async function notifyAndEmail(params: {
     );
   }
 
-  // Email al autor del hilo ('reply') si comenta otra persona.
   const emailJobs: Array<Promise<unknown>> = [];
 
-  if (params.threadAuthorId !== params.actorId) {
-    const { data: authorProfile } = await admin
+  // Email 'reply' (autor del hilo y/o del comentario padre), con cooldown de
+  // 1 hora por destinatario+hilo.
+  for (const recipientId of replyRecipients) {
+    const onCooldown = await withinEmailCooldown(admin, {
+      type: "reply",
+      userId: recipientId,
+      threadId: params.threadId,
+    });
+    if (onCooldown) continue;
+
+    const { data: recipientProfile } = await admin
       .from("profiles")
       .select("full_name, email")
-      .eq("id", params.threadAuthorId)
+      .eq("id", recipientId)
       .maybeSingle();
 
-    if (authorProfile?.email) {
+    if (recipientProfile?.email) {
       emailJobs.push(
         sendConversacionNotificationEmail({
-          to: authorProfile.email,
-          recipientName: authorProfile.full_name ?? "",
+          to: recipientProfile.email,
+          recipientName: recipientProfile.full_name ?? "",
           actorName: params.actorName,
-          threadTitle: params.threadTitle,
+          title: params.threadTitle,
           kind: "reply",
           url,
         }),
@@ -136,7 +204,8 @@ async function notifyAndEmail(params: {
     }
   }
 
-  // Email a cada mencionado ('mention').
+  // Email a cada mencionado ('mention'): sin cooldown, es una acción
+  // deliberada del autor.
   for (const m of validMentions) {
     if (!m.email) continue;
     emailJobs.push(
@@ -144,7 +213,7 @@ async function notifyAndEmail(params: {
         to: m.email,
         recipientName: m.full_name ?? "",
         actorName: params.actorName,
-        threadTitle: params.threadTitle,
+        title: params.threadTitle,
         kind: "mention",
         url,
       }),
@@ -187,7 +256,9 @@ export async function POST(req: Request) {
 
   const { threadId, parentId } = parsed.data;
   const mentions = parsed.data.mentions ?? [];
-  const commentBody = stripHtml(parsed.data.body);
+  // Contenido crudo: React escapa al render (sin dangerouslySetInnerHTML), no
+  // hace falta stripHtml.
+  const commentBody = parsed.data.body;
 
   const { data: thread, error: threadError } = await supabase
     .from("conversation_threads")
@@ -206,10 +277,11 @@ export async function POST(req: Request) {
     );
   }
 
+  let parentAuthorId: string | null = null;
   if (parentId) {
     const { data: parentComment, error: parentError } = await supabase
       .from("conversation_comments")
-      .select("id, parent_id")
+      .select("id, parent_id, author_id")
       .eq("id", parentId)
       .maybeSingle();
 
@@ -223,6 +295,8 @@ export async function POST(req: Request) {
         { status: 422 },
       );
     }
+
+    parentAuthorId = parentComment.author_id;
   }
 
   const { data, error } = await supabase
@@ -233,9 +307,7 @@ export async function POST(req: Request) {
       parent_id: parentId ?? null,
       body: commentBody,
     })
-    .select(
-      "id, body, parent_id, created_at, author:profiles!conversation_comments_author_id_fkey(id, full_name, avatar_url)",
-    )
+    .select("id, body, parent_id, created_at, edited_at")
     .single();
 
   if (error) {
@@ -246,29 +318,26 @@ export async function POST(req: Request) {
     );
   }
 
+  // Autor resuelto por service-role (la policy de profiles está cerrada, 0045).
+  const authorsMap = await getPublicAuthorsMap([user.id]);
+  const author = authorsMap.get(user.id) ?? {
+    id: user.id,
+    full_name: "Usuario",
+    avatar_url: null,
+    is_staff: false,
+  };
+
   // Menciones + emails (best-effort): no bloquea ni falla la respuesta.
   try {
-    const authorName =
-      (data.author as { full_name?: string | null } | null)?.full_name ?? "Alguien";
-
-    // Slug de una cohorte del programa para armar el enlace del email.
-    const { data: cohort } = await supabase
-      .from("cohorts")
-      .select("slug")
-      .eq("program_id", thread.program_id)
-      .not("slug", "is", null)
-      .limit(1)
-      .maybeSingle();
-
     await notifyAndEmail({
       threadId,
       commentId: data.id,
       threadAuthorId: thread.author_id,
+      parentAuthorId,
       threadTitle: thread.title,
       actorId: user.id,
-      actorName: authorName,
+      actorName: author.full_name,
       mentions,
-      cohortSlug: cohort?.slug ?? null,
       programId: thread.program_id,
     });
   } catch (err) {
@@ -276,13 +345,88 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json(
-    { comment: { ...data, reaction_count: 0, viewer_reacted: false } },
+    {
+      comment: {
+        ...data,
+        deleted: false,
+        author,
+        reaction_count: 0,
+        reactions: [],
+        viewer_reaction: null,
+      },
+    },
     { status: 201 },
   );
 }
 
+// ── PATCH /api/classroom/conversaciones/comments ────────────────────
+// Autor edita el body propio (RLS: conversation_comments_author_update).
+
+export async function PATCH(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Body invalido" }, { status: 400 });
+  }
+
+  const parsed = commentPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validación fallida", issues: parsed.error.issues },
+      { status: 422 },
+    );
+  }
+
+  const { id, body: newBody } = parsed.data;
+
+  const { data, error } = await supabase
+    .from("conversation_comments")
+    .update({ body: newBody, edited_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("id, body, parent_id, created_at, edited_at, author_id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("conversaciones comments PATCH error", error);
+    if (error.code === "42501" || error.code === "PGRST301") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+    }
+    return NextResponse.json(
+      { error: "Error al editar el comentario" },
+      { status: 500 },
+    );
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: "Comentario no encontrado" }, { status: 404 });
+  }
+
+  const authorsMap = await getPublicAuthorsMap([data.author_id]);
+  const author = authorsMap.get(data.author_id) ?? {
+    id: data.author_id,
+    full_name: "Usuario",
+    avatar_url: null,
+    is_staff: false,
+  };
+
+  return NextResponse.json({
+    comment: { ...data, deleted: false, author },
+  });
+}
+
 // ── DELETE /api/classroom/conversaciones/comments?id=xxx ────────────
-// RLS permite autor o staff.
+// Soft delete (deleted_at + body vacío): RLS permite autor o staff del
+// programa (conversation_comments_author_update / _staff_update).
 
 export async function DELETE(req: Request) {
   const supabase = await createClient();
@@ -304,17 +448,27 @@ export async function DELETE(req: Request) {
     );
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("conversation_comments")
-    .delete()
-    .eq("id", id);
+    .update({ deleted_at: new Date().toISOString(), body: "" })
+    .eq("id", id)
+    .select("id");
 
   if (error) {
     console.error("conversaciones comments DELETE error", error);
+    if (error.code === "42501" || error.code === "PGRST301") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+    }
     return NextResponse.json(
       { error: "Error al eliminar el comentario" },
       { status: 500 },
     );
+  }
+
+  // RLS filtra silenciosamente (0 filas, sin error) cuando el viewer no es
+  // autor ni staff del programa del hilo.
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "Comentario no encontrado" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

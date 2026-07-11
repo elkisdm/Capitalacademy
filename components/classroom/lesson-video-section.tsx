@@ -33,6 +33,9 @@ type LessonVideoSectionProps = {
   currentUserInitials: string;
   currentUserAvatarUrl?: string | null;
   hasTranscript?: boolean;
+  /** Docente/asistente/admin: habilita moderación de comentarios ajenos.
+   * Default false para no romper `clase/[sessionId]/page.tsx`. */
+  viewerIsStaff?: boolean;
 };
 
 export function LessonVideoSection({
@@ -52,6 +55,7 @@ export function LessonVideoSection({
   currentUserInitials,
   currentUserAvatarUrl,
   hasTranscript = false,
+  viewerIsStaff = false,
 }: LessonVideoSectionProps) {
   const { setCurrentTime, seekRef, openTranscriptRef } = useVideoSyncActions();
   const hasResources = resources.length > 0;
@@ -170,6 +174,8 @@ export function LessonVideoSection({
               currentUserName={currentUserName}
               currentUserInitials={currentUserInitials}
               currentUserAvatarUrl={currentUserAvatarUrl}
+              onSeek={(t) => seekRef.current?.(t)}
+              viewerIsStaff={viewerIsStaff}
             />
           )}
         </div>

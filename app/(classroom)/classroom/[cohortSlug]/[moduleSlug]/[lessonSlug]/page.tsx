@@ -259,6 +259,7 @@ export default async function LessonPage(
               currentUserInitials={userInitials}
               currentUserAvatarUrl={profile?.avatar_url ?? null}
               hasTranscript={!!transcriptVtt}
+              viewerIsStaff={access.isStaff}
             />
           ) : isTextLesson ? (
             <article className="ca-card p-6 md:p-8">

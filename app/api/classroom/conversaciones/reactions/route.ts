@@ -111,7 +111,10 @@ export async function POST(req: Request) {
       emoji,
     });
 
-    if (error) {
+    // 23505 = índice único (user_id, target) ya insertado por una request
+    // concurrente (doble-tap). Idempotente: seguimos y devolvemos el estado
+    // agregado actual en vez de fallar con 500.
+    if (error && error.code !== "23505") {
       console.error("conversaciones reactions INSERT error", error);
       return NextResponse.json(
         { error: "Error al procesar la reacción" },

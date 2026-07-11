@@ -4,41 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import type { TablesUpdate } from "@/lib/supabase/types";
 import { getThreadWithComments } from "@/lib/conversaciones/queries";
 import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
+import { isProgramStaff } from "@/lib/conversaciones/access";
 
 export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ threadId: string }> };
-
-/**
- * Resuelve si el usuario es staff de un programa: admin/ops global
- * (`profiles.system_role`/`role`) o teacher/assistant de alguna cohorte
- * de ese programa (`cohort_roles`). Espeja `is_program_staff()` de la BD.
- */
-async function isProgramStaff(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  programId: string,
-): Promise<boolean> {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, system_role")
-    .eq("id", userId)
-    .single();
-
-  const sysRole = profile?.system_role ?? profile?.role;
-  if (sysRole === "admin" || sysRole === "ops") return true;
-
-  const { data: cohortRole } = await supabase
-    .from("cohort_roles")
-    .select("id, cohorts!inner(program_id)")
-    .eq("user_id", userId)
-    .eq("cohorts.program_id", programId)
-    .in("role", ["teacher", "assistant"])
-    .limit(1)
-    .maybeSingle();
-
-  return Boolean(cohortRole);
-}
 
 const patchSchema = z
   .object({
@@ -51,7 +21,7 @@ const patchSchema = z
 
 // ── GET /api/classroom/conversaciones/[threadId] ────────────────────
 
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -63,7 +33,17 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const { threadId } = await params;
 
-  const data = await getThreadWithComments(threadId, user.id);
+  // `before` (cursor de "cargar más" comentarios, T12): created_at del
+  // comentario raíz más antiguo ya cargado en el cliente.
+  const { searchParams } = new URL(req.url);
+  const before = searchParams.get("before");
+  if (before && Number.isNaN(Date.parse(before))) {
+    return NextResponse.json({ error: "before inválido" }, { status: 422 });
+  }
+
+  const data = await getThreadWithComments(threadId, user.id, {
+    commentsBefore: before ?? undefined,
+  });
   if (!data) {
     return NextResponse.json({ error: "Conversación no encontrada" }, { status: 404 });
   }
@@ -132,13 +112,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (threadBody !== undefined) updates.body = threadBody;
   if (is_pinned !== undefined) updates.is_pinned = is_pinned;
   if (is_locked !== undefined) updates.is_locked = is_locked;
+  if (wantsContentEdit) updates.edited_at = new Date().toISOString();
 
   const { data: updated, error } = await supabase
     .from("conversation_threads")
     .update(updates)
     .eq("id", threadId)
     .select(
-      "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, author_id",
+      "id, title, body, category, is_pinned, is_locked, comment_count, last_activity_at, created_at, edited_at, author_id",
     )
     .single();
 
@@ -176,17 +157,28 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
   const { threadId } = await params;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("conversation_threads")
     .delete()
-    .eq("id", threadId);
+    .eq("id", threadId)
+    .select("id");
 
   if (error) {
     console.error("conversaciones DELETE error", error);
+    if (error.code === "42501" || error.code === "PGRST301") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+    }
     return NextResponse.json(
       { error: "Error al eliminar la conversación" },
       { status: 500 },
     );
+  }
+
+  // RLS filtra silenciosamente (0 filas, sin error) cuando el viewer no es
+  // autor ni staff: no distinguimos de "no existe" (no filtra existencia
+  // cross-tenant).
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "Conversación no encontrada" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

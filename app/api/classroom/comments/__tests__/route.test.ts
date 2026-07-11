@@ -33,7 +33,8 @@ const mockCheck = vi.fn();
 
 // ── Supabase query builder ───────────────────────────────────
 // Returns a chainable proxy that resolves to { data, error }
-// when awaited. Supports .from().select().eq().order().insert().single().delete()
+// when awaited. Supports .from().select().eq().order().insert().single()
+// .delete().limit().maybeSingle().update()
 
 function createQueryBuilder() {
   const make = (): unknown =>
@@ -49,6 +50,13 @@ function createQueryBuilder() {
                 error: mockState.queryError,
               });
           }
+          if (prop === "single" || prop === "maybeSingle") {
+            return () =>
+              Promise.resolve({
+                data: mockState.queryData,
+                error: mockState.queryError,
+              });
+          }
           if (
             [
               "from",
@@ -57,7 +65,8 @@ function createQueryBuilder() {
               "order",
               "insert",
               "delete",
-              "single",
+              "limit",
+              "update",
             ].includes(prop)
           ) {
             return (..._args: unknown[]) => make();
@@ -90,9 +99,34 @@ vi.mock("@/lib/rate-limit", () => ({
     ),
 }));
 
+vi.mock("@/lib/profiles/public-authors", () => ({
+  getPublicAuthorsMap: vi.fn(async (ids: Array<string | null | undefined>) => {
+    const map = new Map();
+    for (const id of ids) {
+      if (id) {
+        map.set(id, {
+          id,
+          full_name: "Autor Test",
+          avatar_url: null,
+          is_staff: false,
+        });
+      }
+    }
+    return map;
+  }),
+}));
+
+vi.mock("@/lib/profiles/program-staff", () => ({
+  getProgramStaffIds: vi.fn(async () => new Set<string>()),
+}));
+
+vi.mock("@/lib/notifications/lesson-comment", () => ({
+  notifyLessonComment: vi.fn(async () => {}),
+}));
+
 // ── Import handlers (AFTER mocks) ────────────────────────────
 
-const { GET, POST, DELETE } = await import(
+const { GET, POST, DELETE, PATCH } = await import(
   "@/app/api/classroom/comments/route"
 );
 
@@ -139,16 +173,42 @@ describe("GET /api/classroom/comments", () => {
   });
 
   it("returns comments array on success", async () => {
-    const mockComments = [
-      { id: VALID_UUID, content: "Hello", parent_id: null },
+    const mockRows = [
+      {
+        id: VALID_UUID,
+        content: "Hello",
+        parent_id: null,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: null,
+        deleted_at: null,
+        edited_at: null,
+        author_id: FAKE_USER.id,
+      },
     ];
-    mockState.queryData = mockComments;
+    mockState.queryData = mockRows;
 
     const res = await GET(makeRequest("GET", { lessonId: VALID_UUID }));
     expect(res.status).toBe(200);
 
     const json = await res.json();
-    expect(json.comments).toEqual(mockComments);
+    expect(json.hasMore).toBe(false);
+    expect(json.comments).toEqual([
+      {
+        id: VALID_UUID,
+        content: "Hello",
+        parent_id: null,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: null,
+        edited_at: null,
+        deleted: false,
+        profiles: {
+          id: FAKE_USER.id,
+          full_name: "Autor Test",
+          avatar_url: null,
+          is_staff: false,
+        },
+      },
+    ]);
   });
 });
 
@@ -208,6 +268,11 @@ describe("POST /api/classroom/comments", () => {
       id: VALID_UUID,
       content: "Great lesson!",
       parent_id: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: null,
+      deleted_at: null,
+      edited_at: null,
+      author_id: FAKE_USER.id,
     };
     mockState.queryData = createdComment;
 
@@ -215,11 +280,27 @@ describe("POST /api/classroom/comments", () => {
     expect(res.status).toBe(201);
 
     const json = await res.json();
-    expect(json.comment).toEqual(createdComment);
+    expect(json.comment).toEqual({
+      id: VALID_UUID,
+      content: "Great lesson!",
+      parent_id: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: null,
+      edited_at: null,
+      deleted: false,
+      profiles: {
+        id: FAKE_USER.id,
+        full_name: "Autor Test",
+        avatar_url: null,
+        is_staff: false,
+      },
+    });
   });
 });
 
 // ── DELETE ────────────────────────────────────────────────────
+// Soft delete: update({deleted_at, content:""}).eq(id).select("id").
+// 0 filas devueltas -> 404 (ajeno o inexistente).
 
 describe("DELETE /api/classroom/comments", () => {
   it("returns 401 when not authenticated", async () => {
@@ -249,10 +330,82 @@ describe("DELETE /api/classroom/comments", () => {
   });
 
   it("returns { ok: true } on success", async () => {
+    mockState.queryData = [{ id: VALID_UUID }];
+
     const res = await DELETE(makeRequest("DELETE", { id: VALID_UUID }));
     expect(res.status).toBe(200);
 
     const json = await res.json();
     expect(json.ok).toBe(true);
+  });
+
+  it("returns 404 when the update affects 0 rows (ajeno o inexistente)", async () => {
+    mockState.queryData = [];
+
+    const res = await DELETE(makeRequest("DELETE", { id: VALID_UUID }));
+    expect(res.status).toBe(404);
+
+    const json = await res.json();
+    expect(json.error).toBeDefined();
+  });
+});
+
+// ── PATCH ────────────────────────────────────────────────────
+// Edita el content propio y setea edited_at.
+
+describe("PATCH /api/classroom/comments", () => {
+  it("returns 401 when not authenticated", async () => {
+    mockState.user = null;
+
+    const res = await PATCH(
+      makeRequest("PATCH", undefined, { id: VALID_UUID, content: "x" }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 422 when content is empty", async () => {
+    const res = await PATCH(
+      makeRequest("PATCH", undefined, { id: VALID_UUID, content: "" }),
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 404 when nothing was updated (ajeno o inexistente)", async () => {
+    mockState.queryData = null;
+
+    const res = await PATCH(
+      makeRequest("PATCH", undefined, {
+        id: VALID_UUID,
+        content: "Updated content",
+      }),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("edits content and sets edited_at on success", async () => {
+    const editedAt = "2026-07-11T13:00:00.000Z";
+    mockState.queryData = {
+      id: VALID_UUID,
+      content: "Updated content",
+      parent_id: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: null,
+      deleted_at: null,
+      edited_at: editedAt,
+      author_id: FAKE_USER.id,
+      lesson_id: VALID_UUID,
+    };
+
+    const res = await PATCH(
+      makeRequest("PATCH", undefined, {
+        id: VALID_UUID,
+        content: "Updated content",
+      }),
+    );
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.comment.content).toBe("Updated content");
+    expect(json.comment.edited_at).toBe(editedAt);
   });
 });

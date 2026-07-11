@@ -224,7 +224,7 @@ function SidebarContent({
       <div className="flex items-center justify-between px-4 py-5">
         <Logo collapsed={collapsed} />
         {!collapsed && viewerId && cohortId && (
-          <NotificationBell viewerId={viewerId} cohortSlug={cohortId} />
+          <NotificationBell viewerId={viewerId} />
         )}
       </div>
 
@@ -494,7 +494,7 @@ export function ClassroomSidebar({
         <Logo />
         <div className="flex items-center gap-1">
           {viewerId && cohortId && (
-            <NotificationBell viewerId={viewerId} cohortSlug={cohortId} />
+            <NotificationBell viewerId={viewerId} />
           )}
           <Link href="/classroom/profile" prefetch={false} className="grid h-11 w-11 place-items-center">
             <Avatar initials={userInitials} avatarUrl={userAvatarUrl} size={34} accent="bg-ca-lime" />

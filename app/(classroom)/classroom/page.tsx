@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import {
   getCohortSlugById,
   getActiveEnrollmentsForUser,
@@ -11,7 +10,6 @@ import { getActiveEnv, getViewMode } from "@/lib/admin/active-env";
 import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
 
 export default async function ClassroomIndexPage() {
-  const supabase = await createClient();
   const {
     data: { user },
   } = await getAuthUser();
@@ -21,11 +19,7 @@ export default async function ClassroomIndexPage() {
   // Staff en preview: el classroom sigue el ENTORNO ACTIVO del switcher, no la
   // matrícula propia (un admin puede estar matriculado en otros programas). Un
   // alumno puro no tiene cookie de entorno → no entra aquí.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, system_role")
-    .eq("id", user.id)
-    .single();
+  const profile = await getViewerProfile(user.id);
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
   if (isStaff) {

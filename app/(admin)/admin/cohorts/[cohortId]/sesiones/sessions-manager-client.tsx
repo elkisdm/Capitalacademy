@@ -410,7 +410,7 @@ export function SessionsManagerClient({
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             {programName}
           </div>
           <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">
@@ -644,139 +644,159 @@ function SessionForm({
   const fieldCls = "text-[13px] font-medium";
   const labelCls =
     "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft";
+  const groupCls = "border-t border-ca-ink/[0.06] pt-5";
 
   return (
     <div className="ca-card mb-6 p-6">
-      <h2 className="mb-5 text-[18px] font-black text-ca-ink">
+      <h2 className="mb-1 text-[18px] font-black text-ca-ink">
         {isEditing ? "Editar sesión" : "Nueva sesión"}
       </h2>
+      <p className="mb-5 text-[12px] text-ca-ink-soft">
+        {isEditing
+          ? "Actualiza los datos de esta clase."
+          : "Completa los datos para programar la nueva clase."}
+      </p>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <label className={labelCls} htmlFor="session-title">
-            Título
-          </label>
-          <Input
-            id="session-title"
-            type="text"
-            value={form.title}
-            onChange={(e) => onChange("title", e.target.value)}
-            placeholder="Ej. Introducción a la inversión"
-            className={fieldCls}
-          />
-        </div>
-
-        <DatePicker
-          withTime
-          id="session-starts"
-          label="Inicio (hora Chile)"
-          value={form.starts_at}
-          onChange={(v) => onChange("starts_at", v)}
-        />
-
-        <DatePicker
-          withTime
-          id="session-ends"
-          label="Término (hora Chile)"
-          value={form.ends_at}
-          onChange={(v) => onChange("ends_at", v)}
-        />
-
-        <div>
-          <label className={labelCls} htmlFor="session-modality">
-            Modalidad
-          </label>
-          <Select
-            id="session-modality"
-            value={form.modality}
-            onChange={(e) => onChange("modality", e.target.value as Modality)}
-            className={fieldCls}
-          >
-            {(Object.keys(MODALITY_LABELS) as Modality[]).map((m) => (
-              <option key={m} value={m}>
-                {MODALITY_LABELS[m]}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div>
-          <label className={labelCls} htmlFor="session-teacher">
-            Docente
-          </label>
-          <Select
-            id="session-teacher"
-            value={form.teacher_id}
-            onChange={(e) => onChange("teacher_id", e.target.value)}
-            className={fieldCls}
-          >
-            <option value="">Sin docente</option>
-            {instructors.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.full_name}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        {modules.length > 0 && (
-          <div>
-            <label className={labelCls} htmlFor="session-module">
-              Módulo
+      <div className="flex flex-col gap-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className={labelCls} htmlFor="session-title">
+              Título
             </label>
-            <Select
-              id="session-module"
-              value={form.module_id}
-              onChange={(e) => onChange("module_id", e.target.value)}
+            <Input
+              id="session-title"
+              type="text"
+              value={form.title}
+              onChange={(e) => onChange("title", e.target.value)}
+              placeholder="Ej. Introducción a la inversión"
               className={fieldCls}
-            >
-              <option value="">Sin módulo</option>
-              {modules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {String(m.position).padStart(2, "0")} · {m.title}
-                </option>
-              ))}
-            </Select>
+            />
           </div>
-        )}
 
-        <div>
-          <label className={labelCls} htmlFor="session-audience">
-            Audiencia
-          </label>
-          <Select
-            id="session-audience"
-            value={form.audience}
-            onChange={(e) => onChange("audience", e.target.value as Audience)}
-            className={fieldCls}
-          >
-            {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((a) => (
-              <option key={a} value={a}>
-                {AUDIENCE_LABELS[a]}
-              </option>
-            ))}
-          </Select>
+          <div>
+            <label className={labelCls} htmlFor="session-starts">
+              Inicio (hora Chile)
+            </label>
+            <DatePicker
+              withTime
+              id="session-starts"
+              value={form.starts_at}
+              onChange={(v) => onChange("starts_at", v)}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls} htmlFor="session-ends">
+              Término (hora Chile)
+            </label>
+            <DatePicker
+              withTime
+              id="session-ends"
+              value={form.ends_at}
+              onChange={(v) => onChange("ends_at", v)}
+            />
+          </div>
         </div>
 
-        <div>
-          <label className={labelCls} htmlFor="session-status">
-            Estado
-          </label>
-          <Select
-            id="session-status"
-            value={form.status}
-            onChange={(e) => onChange("status", e.target.value as SessionStatus)}
-            className={fieldCls}
-          >
-            {(Object.keys(STATUS_LABELS) as SessionStatus[]).map((st) => (
-              <option key={st} value={st}>
-                {STATUS_LABELS[st]}
-              </option>
-            ))}
-          </Select>
+        <div className={groupCls}>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className={labelCls} htmlFor="session-modality">
+                Modalidad
+              </label>
+              <Select
+                id="session-modality"
+                value={form.modality}
+                onChange={(e) => onChange("modality", e.target.value as Modality)}
+                className={fieldCls}
+              >
+                {(Object.keys(MODALITY_LABELS) as Modality[]).map((m) => (
+                  <option key={m} value={m}>
+                    {MODALITY_LABELS[m]}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <label className={labelCls} htmlFor="session-teacher">
+                Docente
+              </label>
+              <Select
+                id="session-teacher"
+                value={form.teacher_id}
+                onChange={(e) => onChange("teacher_id", e.target.value)}
+                className={fieldCls}
+              >
+                <option value="">Sin docente</option>
+                {instructors.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.full_name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {modules.length > 0 && (
+              <div>
+                <label className={labelCls} htmlFor="session-module">
+                  Módulo
+                </label>
+                <Select
+                  id="session-module"
+                  value={form.module_id}
+                  onChange={(e) => onChange("module_id", e.target.value)}
+                  className={fieldCls}
+                >
+                  <option value="">Sin módulo</option>
+                  {modules.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {String(m.position).padStart(2, "0")} · {m.title}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <label className={labelCls} htmlFor="session-audience">
+                Audiencia
+              </label>
+              <Select
+                id="session-audience"
+                value={form.audience}
+                onChange={(e) => onChange("audience", e.target.value as Audience)}
+                className={fieldCls}
+              >
+                {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((a) => (
+                  <option key={a} value={a}>
+                    {AUDIENCE_LABELS[a]}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <label className={labelCls} htmlFor="session-status">
+                Estado
+              </label>
+              <Select
+                id="session-status"
+                value={form.status}
+                onChange={(e) => onChange("status", e.target.value as SessionStatus)}
+                className={fieldCls}
+              >
+                {(Object.keys(STATUS_LABELS) as SessionStatus[]).map((st) => (
+                  <option key={st} value={st}>
+                    {STATUS_LABELS[st]}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
         </div>
 
-        <div className="md:col-span-2">
+        <div className={groupCls}>
           <label className={labelCls} htmlFor="session-url">
             Enlace de reunión (opcional)
           </label>
@@ -792,12 +812,12 @@ function SessionForm({
       </div>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[13px] font-semibold text-[#8b6914]">
+        <div className="mt-5 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[13px] font-semibold text-[#8b6914]">
           {error}
         </div>
       )}
 
-      <div className="mt-5 flex items-center gap-3">
+      <div className="mt-6 flex items-center gap-3">
         <Button
           variant="lime"
           onClick={onSubmit}

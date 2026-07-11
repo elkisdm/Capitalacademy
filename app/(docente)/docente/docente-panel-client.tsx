@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { SessionResource, SessionResourceType } from "@/lib/classroom/types";
 import type { TeacherCohort, TeacherSession } from "@/lib/docente/queries";
 import { SessionAttendancePanel } from "@/components/admin/session-attendance-panel";
+import { SessionQrButton } from "@/components/admin/session-qr";
 import { SessionResourcesPanel } from "@/components/admin/session-resources-panel";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -103,12 +104,12 @@ function SessionRow({
       className="ca-card ca-card-hoverable ca-fade-up ca-stagger mb-4 overflow-hidden"
       style={{ "--i": index } as React.CSSProperties}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full flex-col gap-2 px-5 py-4 text-left sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div className="min-w-0">
+      <div className="flex w-full flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="min-w-0 flex-1 text-left"
+        >
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[11px] font-bold text-ca-ink-soft">
               {fmtRange(s.starts_at, s.ends_at)}
@@ -124,11 +125,18 @@ function SessionRow({
             {cohort?.programName ?? ""} · {cohort?.cohortName ?? ""} ·{" "}
             {MODALITY_LABELS[s.modality] ?? s.modality}
           </div>
+        </button>
+        <div className="flex shrink-0 items-center gap-3 self-start sm:self-auto">
+          <SessionQrButton sessionId={s.id} sessionTitle={s.title ?? "Clase en vivo"} />
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-[12px] font-bold text-ca-violet"
+          >
+            {expanded ? "Ocultar" : "Ver detalle"}
+          </button>
         </div>
-        <span className="shrink-0 text-[12px] font-bold text-ca-violet">
-          {expanded ? "Ocultar" : "Ver detalle"}
-        </span>
-      </button>
+      </div>
 
       <div
         className="grid transition-[grid-template-rows]"

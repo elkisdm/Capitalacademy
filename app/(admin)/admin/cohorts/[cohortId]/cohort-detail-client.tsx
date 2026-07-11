@@ -141,7 +141,7 @@ export function CohortDetailClient({
 
       <div className="mb-6">
         {program && (
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             {program.name}
           </div>
         )}

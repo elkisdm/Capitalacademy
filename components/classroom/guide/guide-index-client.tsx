@@ -103,7 +103,7 @@ export function GuideIndexClient({
             if (items.length === 0) return null;
             return (
               <section key={cat}>
-                <h2 className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                <h2 className="mb-3 font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                   {cat}
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

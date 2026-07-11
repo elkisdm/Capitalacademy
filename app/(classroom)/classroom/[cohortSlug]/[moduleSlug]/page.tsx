@@ -92,7 +92,7 @@ function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+        <span className="mb-1 flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
           <span>Lección {String(index + 1).padStart(2, "0")}</span>
           <span className="opacity-40">·</span>
           <span>{lesson.kind === "recorded" ? "Video" : lesson.kind === "live_in_person" ? "Presencial" : "Online"}</span>
@@ -192,7 +192,7 @@ function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession;
       <div className="flex flex-wrap items-start gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+            <span className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
               {fmtSessionDate(session.starts_at)}
             </span>
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColor}`}>
@@ -380,7 +380,7 @@ export default async function ModulePage(
               <div className="font-black leading-none tracking-[-0.04em]" style={{ fontSize: 120 }}>
                 {String(mod.position).padStart(2, "0")}
               </div>
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Módulo</div>
+              <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">Módulo</div>
             </div>
             <div>
               <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/65">
@@ -396,7 +396,7 @@ export default async function ModulePage(
       {mod.lessons.length > 0 && (
         <section className="mt-10">
           <div className="mb-4">
-            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Contenido</div>
+            <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Contenido</div>
             <h2 className="mt-1 text-[22px] font-black tracking-tight text-ca-ink">
               {mod.lessons.length} lecciones
             </h2>
@@ -420,7 +420,7 @@ export default async function ModulePage(
       {sessions.length > 0 && (
         <section className="mt-10">
           <div className="mb-4">
-            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               {mod.lessons.length > 0 ? "Clases en vivo" : "Contenido"}
             </div>
             <h2 className="mt-1 text-[22px] font-black tracking-tight text-ca-ink">
@@ -456,7 +456,7 @@ export default async function ModulePage(
       <section className="mt-10 grid gap-3 md:grid-cols-2">
         {prev ? (
           <Link href={`/classroom/${cohortSlug}/${prev.slug ?? prev.id}`} className="ca-card ca-card-hoverable p-5 text-left">
-            <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            <div className="flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
               Anterior
             </div>
@@ -467,7 +467,7 @@ export default async function ModulePage(
         ) : <div />}
         {next ? (
           <Link href={`/classroom/${cohortSlug}/${next.slug ?? next.id}`} className="ca-card ca-card-hoverable p-5 text-right">
-            <div className="flex items-center justify-end gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            <div className="flex items-center justify-end gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               Siguiente
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
             </div>

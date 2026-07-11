@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
 import { getActiveEnv, getEnvOptions, getViewMode, type EnvOption, type ViewMode } from "@/lib/admin/active-env";
 import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
+import { getCohortWithProgram } from "@/lib/classroom/queries";
+import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 
 export const metadata = {
   title: "Classroom",
@@ -24,11 +26,7 @@ export default async function ClassroomLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role, system_role, onboarding_completed_at, avatar_url")
-    .eq("id", user.id)
-    .single();
+  const profile = await getViewerProfile(user.id);
 
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
@@ -67,11 +65,10 @@ export default async function ClassroomLayout({
       : undefined;
 
   if (cohortSlugFromPath) {
-    const { data: cohortRow } = await supabase
-      .from("cohorts")
-      .select("slug, program_id, programs(name)")
-      .or(`slug.eq.${cohortSlugFromPath},id.eq.${cohortSlugFromPath}`)
-      .maybeSingle();
+    const resolvedCohortId = await resolveCohortSlug(cohortSlugFromPath);
+    const cohortRow = resolvedCohortId
+      ? await getCohortWithProgram(resolvedCohortId)
+      : null;
     cohortSlug = cohortRow?.slug ?? cohortSlugFromPath;
     cohortLabel =
       (cohortRow?.programs as { name: string } | null)?.name ?? undefined;

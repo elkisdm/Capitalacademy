@@ -117,7 +117,7 @@ function StatCell({
 }) {
   return (
     <div className="flex flex-col">
-      <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+      <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
         {label}
       </div>
       <div
@@ -229,7 +229,7 @@ export default function QuizResultFail({
 
           {/* Score */}
           <div className="text-right">
-            <div className="font-mono text-[9.5px] font-black uppercase tracking-[0.22em] text-ca-ink-soft">
+            <div className="font-sans text-[9.5px] font-black uppercase tracking-[0.22em] text-ca-ink-soft">
               Tu puntaje
             </div>
             <div
@@ -257,7 +257,7 @@ export default function QuizResultFail({
         <div className="ca-fade-up ca-stagger ca-card p-7" style={{ "--i": 1 } as React.CSSProperties}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
+              <div className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
                 Desempeño
               </div>
               <h3 className="mt-1 text-[18px] font-extrabold tracking-tight text-ca-ink">
@@ -338,7 +338,7 @@ export default function QuizResultFail({
                       </svg>
                       Incorrecta
                     </Badge>
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                    <span className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                       {w.topic}
                     </span>
                   </div>
@@ -349,7 +349,7 @@ export default function QuizResultFail({
                     {/* Your answer */}
                     <div className="flex items-start gap-2">
                       <span
-                        className="mt-0.5 font-mono text-[10px] font-black uppercase tracking-[0.2em]"
+                        className="mt-0.5 font-sans text-[10px] font-black uppercase tracking-[0.2em]"
                         style={{ color: "var(--color-ca-rose)" }}
                       >
                         TU
@@ -363,7 +363,7 @@ export default function QuizResultFail({
                         background: "var(--color-ca-lime-mist)",
                       }}
                     >
-                      <span className="mt-0.5 font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[#3f5a05]">
+                      <span className="mt-0.5 font-sans text-[10px] font-black uppercase tracking-[0.2em] text-[#3f5a05]">
                         OK
                       </span>
                       <span className="text-ca-ink">

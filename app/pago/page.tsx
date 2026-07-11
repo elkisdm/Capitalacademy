@@ -12,7 +12,7 @@ export const metadata = {
     "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria. Pago seguro online.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const FAQ = [
   {

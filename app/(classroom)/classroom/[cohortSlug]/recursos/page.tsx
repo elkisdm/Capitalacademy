@@ -117,7 +117,7 @@ export default async function RecursosPage(
               <div className="flex flex-col gap-6">
                 {lessonGroups.map((g) => (
                   <div key={g.module.id}>
-                    <h3 className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                    <h3 className="mb-2 font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                       Módulo {String(g.module.position).padStart(2, "0")} · {g.module.title}
                     </h3>
                     <div className="flex flex-col gap-4">

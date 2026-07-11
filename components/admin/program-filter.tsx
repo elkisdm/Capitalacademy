@@ -25,7 +25,7 @@ export function ProgramFilter({
     <div>
       <label
         htmlFor="program-filter"
-        className="mb-1 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
+        className="mb-1 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
       >
         Programa
       </label>

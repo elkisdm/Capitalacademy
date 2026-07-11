@@ -191,7 +191,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
           <div className="flex flex-col gap-6">
             {/* Cohort picker */}
             <div>
-              <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+              <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                 Cohorte
               </label>
               <div className="relative">
@@ -268,7 +268,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
 
             {/* Role selector */}
             <div>
-              <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+              <label className="mb-2 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                 Rol en la cohorte
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -308,7 +308,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
             )}
             {selectedRole === "teacher" && selectedCohortId && (
               <div>
-                <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Módulo asignado
                 </label>
                 {loadingModules ? (

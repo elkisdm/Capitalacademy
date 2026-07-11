@@ -268,7 +268,7 @@ function EvalRow({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
+    <h3 className="mb-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
       {children}
     </h3>
   );

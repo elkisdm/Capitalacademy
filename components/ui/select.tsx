@@ -38,11 +38,16 @@ export type SelectProps = {
 };
 
 const VIEWPORT_MARGIN = 16;
-// Estimado (no medido del DOM) del alto máximo del popover, misma técnica
-// que POPOVER_HEIGHT en date-picker.tsx: se usa solo para decidir si el
-// popover abre hacia arriba, y se aplica como max-height real con scroll
-// interno para que nunca lo supere de verdad.
+// Tope superior del alto del popover (= max-h-72 del listado). El alto real
+// aplicado es min(POPOVER_MAX_HEIGHT, espacio disponible), nunca un valor
+// inflado — así el listado (que ya hace scroll interno) prefiere abrirse
+// abajo con scroll antes que voltear y tapar contenido de arriba.
 const POPOVER_MAX_HEIGHT = 288;
+// Alto mínimo "usable" abajo del trigger para no voltear el popover hacia
+// arriba aunque no quepan los 288px completos (mismo criterio de flip que
+// date-picker.tsx, pero acotando el alto al espacio real en vez de asumir
+// siempre POPOVER_MAX_HEIGHT).
+const MIN_USABLE_HEIGHT = 180;
 const TYPEAHEAD_RESET_MS = 350;
 
 // Misma base visual que triggerBase en date-picker.tsx: el borde/fondo/padding
@@ -114,7 +119,9 @@ export function Select({
 
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(
+    null,
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const [query, setQuery] = useState("");
 
@@ -148,12 +155,24 @@ export function Select({
     const maxLeft = Math.max(window.innerWidth - width - VIEWPORT_MARGIN, VIEWPORT_MARGIN);
     const left = Math.min(Math.max(rect.left, VIEWPORT_MARGIN), maxLeft);
 
-    let top = rect.bottom + 4;
-    if (top + POPOVER_MAX_HEIGHT > window.innerHeight - VIEWPORT_MARGIN) {
-      top = rect.top - POPOVER_MAX_HEIGHT - 4;
+    // Espacio real disponible abajo/arriba del trigger. Abre hacia abajo
+    // siempre que haya espacio razonable ahí (o más que arriba); solo voltea
+    // hacia arriba cuando abajo es claramente insuficiente Y arriba hay más
+    // espacio.
+    const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_MARGIN;
+    const spaceAbove = rect.top - VIEWPORT_MARGIN;
+
+    let top: number;
+    let maxHeight: number;
+    if (spaceBelow >= MIN_USABLE_HEIGHT || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 4;
+      maxHeight = Math.min(POPOVER_MAX_HEIGHT, spaceBelow);
+    } else {
+      maxHeight = Math.min(POPOVER_MAX_HEIGHT, spaceAbove);
+      top = rect.top - maxHeight - 4;
     }
     top = Math.max(top, VIEWPORT_MARGIN);
-    setCoords({ top, left, width });
+    setCoords({ top, left, width, maxHeight });
   }, []);
 
   const openList = useCallback(() => {
@@ -366,7 +385,12 @@ export function Select({
           />
         </div>
       )}
-      <ul id={listboxId} role="listbox" className="max-h-72 overflow-y-auto p-1.5">
+      <ul
+        id={listboxId}
+        role="listbox"
+        style={{ maxHeight: coords?.maxHeight ?? POPOVER_MAX_HEIGHT }}
+        className="overflow-y-auto p-1.5"
+      >
         {filteredOptions.length === 0 && (
           <li className="px-2.5 py-2 text-sm text-ca-ink-soft">Sin resultados</li>
         )}

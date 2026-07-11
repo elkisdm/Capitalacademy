@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { resolveResourceUrls } from "./resource-urls";
 import type {
@@ -116,7 +117,7 @@ export async function getActiveEnrollmentsForUser(
   }));
 }
 
-export async function getCohortWithProgram(cohortId: string) {
+export const getCohortWithProgram = cache(async (cohortId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("cohorts")
@@ -124,7 +125,7 @@ export async function getCohortWithProgram(cohortId: string) {
     .eq("id", cohortId)
     .single();
   return data;
-}
+});
 
 export async function getModulesWithLessons(
   programId: string,

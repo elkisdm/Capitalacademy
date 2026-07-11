@@ -47,7 +47,7 @@ export default async function AdminCobrosPage({
   return (
     <div className="ca-fade-up mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-8">
       <header className="mb-7">
-        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-ink-soft)]">
+        <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ca-ink-soft)]">
           Operaciones
         </div>
         <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">

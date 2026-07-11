@@ -210,7 +210,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
             <div className="flex flex-col gap-5">
               {/* Name */}
               <div>
-                <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Nombre completo
                 </label>
                 <Input
@@ -226,7 +226,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
 
               {/* Email */}
               <div>
-                <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Email
                 </label>
                 <Input
@@ -247,7 +247,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
 
               {/* Phone */}
               <div>
-                <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Teléfono
                 </label>
                 <Input
@@ -262,7 +262,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
 
               {/* Role */}
               <div>
-                <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Rol de sistema
                 </label>
                 <Select
@@ -278,7 +278,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
               {/* Cohort selector — create only */}
               {mode === "create" && cohorts && cohorts.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                  <label className="mb-1.5 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                     Asignar a cohorte
                   </label>
                   <Select

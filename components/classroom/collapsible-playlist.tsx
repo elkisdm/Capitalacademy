@@ -275,7 +275,7 @@ export function CollapsiblePlaylist({
               {/* Drawer header */}
               <div className="flex items-center justify-between border-b border-ca-ink/[0.08] px-5 py-4">
                 <div>
-                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                  <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                     Mod. {String(modulePosition).padStart(2, "0")}
                   </div>
                   <div className="mt-0.5 text-[14px] font-extrabold leading-tight tracking-tight text-ca-ink">

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getFintoc } from "@fintoc/fintoc-js";
 import {
   checkoutFormSchema,
   type CheckoutFormInput,
@@ -181,6 +180,7 @@ export function CheckoutClient({ provider }: Props) {
     }
 
     try {
+      const { getFintoc } = await import("@fintoc/fintoc-js");
       const Fintoc = await getFintoc();
       if (!Fintoc) throw new Error("No se pudo cargar Fintoc.");
       widgetRef.current?.destroy();

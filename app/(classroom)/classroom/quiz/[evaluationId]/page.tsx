@@ -71,14 +71,14 @@ export default async function SharedQuizPage(
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
       <Link
         href="/classroom"
-        className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft hover:text-ca-ink"
+        className="inline-flex items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft hover:text-ca-ink"
       >
         <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
         Aula
       </Link>
-      <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+      <p className="mt-4 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
         {SCOPE_LABEL[ev.scope] ?? "Evaluación"}
       </p>
       <div className="mt-3">

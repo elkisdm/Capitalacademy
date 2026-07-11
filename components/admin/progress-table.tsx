@@ -89,7 +89,7 @@ function DrillDownModal({ student, modules, onClose }: {
           </div>
         </div>
 
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Lecciones por módulo
         </div>
         <div className="flex flex-col gap-3">

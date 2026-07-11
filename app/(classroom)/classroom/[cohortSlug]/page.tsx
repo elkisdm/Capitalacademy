@@ -82,7 +82,7 @@ function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons;
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+              <div className="mb-1 flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 <span>Módulo {String(mod.position).padStart(2, "0")}</span>
                 <span className="opacity-40">·</span>
                 <span>{contentCount} {contentCount === 1 ? "clase" : "clases"}</span>
@@ -382,7 +382,7 @@ export default async function CohortDashboardPage(
       {/* Section header */}
       <div className="flex items-end justify-between">
         <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalLessons} lecciones
           </div>
           <h2 className="mt-1 text-[26px] font-black tracking-tight text-ca-ink">
@@ -417,7 +417,7 @@ export default async function CohortDashboardPage(
         <div className="shape-circle absolute -bottom-8 right-24 h-24 w-24 bg-ca-lime opacity-20" />
         <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-lime">
+            <div className="flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-lime">
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
               </svg>

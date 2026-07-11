@@ -44,6 +44,29 @@ type Notification = {
 
 const ENDPOINT = "/api/classroom/conversaciones/notifications";
 
+// La campana se monta dos veces a la vez (sidebar desktop + header móvil),
+// y ambas disparan un fetch inicial casi simultáneo. Esta promesa in-flight
+// a nivel de módulo (compartida entre instancias) colapsa esos dos fetches
+// en uno solo dentro de una ventana corta. No afecta al canal realtime, que
+// sigue siendo por instancia.
+let inflight: Promise<{ notifications: Notification[]; unread: number }> | null = null;
+let inflightAt = 0;
+
+function fetchNotifications() {
+  const now = Date.now();
+  if (inflight && now - inflightAt < 1500) return inflight;
+  inflightAt = now;
+  inflight = fetch(ENDPOINT)
+    .then((res) => {
+      if (!res.ok) return Promise.reject(new Error("fetch failed"));
+      return res.json() as Promise<{ notifications: Notification[]; unread: number }>;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
+}
+
 // Ancho del panel y margen mínimo respecto al borde del viewport, usados
 // para calcular su posición `fixed` (ver comentario en `updatePosition`).
 const PANEL_WIDTH = 360;
@@ -79,12 +102,7 @@ export function NotificationBell({
 
   const refetch = useCallback(async () => {
     try {
-      const res = await fetch(ENDPOINT);
-      if (!res.ok) return;
-      const data = (await res.json()) as {
-        notifications: Notification[];
-        unread: number;
-      };
+      const data = await fetchNotifications();
       setNotifications(data.notifications);
       setUnread(data.unread);
     } catch {

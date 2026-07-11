@@ -52,9 +52,9 @@ export function AddLessonButton({ moduleId }: { moduleId: string }) {
     return (
       <Button
         type="button"
-        variant="outline"
+        variant="lime"
         onClick={() => setOpen(true)}
-        className="mt-2 border-dashed"
+        className="mt-2"
       >
         <Plus className="h-4 w-4" />
         Nueva lección
@@ -90,7 +90,7 @@ export function AddLessonButton({ moduleId }: { moduleId: string }) {
         </p>
       )}
       <div className="flex gap-2">
-        <Button type="button" onClick={handleCreate} disabled={saving || !title.trim()}>
+        <Button type="button" variant="lime" onClick={handleCreate} disabled={saving || !title.trim()}>
           {saving ? "Creando…" : "Crear lección"}
         </Button>
         <Button

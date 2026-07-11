@@ -89,7 +89,7 @@ function DrillDownModal({ student, onClose }: { student: StudentPanelRow; onClos
           </div>
         </div>
 
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Sesiones a las que faltó
         </div>
         {student.attendance.missed.length === 0 ? (
@@ -107,7 +107,7 @@ function DrillDownModal({ student, onClose }: { student: StudentPanelRow; onClos
           </div>
         )}
 
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Lecciones pendientes
         </div>
         {student.progress.pending.length === 0 ? (
@@ -123,7 +123,7 @@ function DrillDownModal({ student, onClose }: { student: StudentPanelRow; onClos
           </div>
         )}
 
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Evaluaciones pendientes
         </div>
         {student.evaluations.pending.length === 0 ? (

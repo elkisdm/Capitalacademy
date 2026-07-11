@@ -319,11 +319,11 @@ function ValidCertificate({
             <Icon name="check" size={24} stroke={3.5} style={{ color: "var(--color-ca-lime)" }} />
           </div>
           <div className="min-w-0">
-            <div className="font-mono text-[10px] font-black uppercase tracking-[0.22em] text-ca-ink">Estado</div>
+            <div className="font-sans text-[10px] font-black uppercase tracking-[0.22em] text-ca-ink">Estado</div>
             <div className="text-[22px] font-black leading-tight tracking-tight text-ca-ink">Certificado valido</div>
           </div>
           <div className="ml-auto hidden text-right sm:block">
-            <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Código</div>
+            <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Código</div>
             <code className="font-mono text-[14px] font-black tracking-wide text-ca-ink">{cert.verificationCode}</code>
           </div>
         </div>
@@ -331,7 +331,7 @@ function ValidCertificate({
         {/* Body */}
         <div className="grid gap-0 md:grid-cols-[1fr_auto]">
           <div className="p-6 md:p-8">
-            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Otorgado a</div>
+            <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Otorgado a</div>
             <h2 className="mt-1 text-[40px] font-black leading-[1] tracking-[-0.035em] text-ca-ink">
               {firstName}
               {lastName && (
@@ -354,7 +354,7 @@ function ValidCertificate({
                 ] as const
               ).map(([k, v]) => (
                 <div key={k}>
-                  <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">{k}</div>
+                  <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">{k}</div>
                   <div className="mt-0.5 text-[14px] font-extrabold tracking-tight text-ca-ink">{v}</div>
                 </div>
               ))}
@@ -438,14 +438,14 @@ function InvalidCode({ code }: { code: string }) {
             <Icon name="x" size={24} stroke={3.5} style={{ color: "#fff" }} />
           </div>
           <div className="min-w-0">
-            <div className="font-mono text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: "var(--color-ca-rose)" }}>
+            <div className="font-sans text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: "var(--color-ca-rose)" }}>
               Estado
             </div>
             <div className="text-[22px] font-black leading-tight tracking-tight text-ca-ink">No encontrado</div>
           </div>
           <div className="ml-auto hidden text-right sm:block">
-            <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Código</div>
-            <code className="font-mono text-[14px] font-black tracking-wide text-ca-ink">{code.toUpperCase()}</code>
+            <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.22em] text-ca-ink/70">Código</div>
+            <code className="font-sans text-[14px] font-black tracking-wide text-ca-ink">{code.toUpperCase()}</code>
           </div>
         </div>
 

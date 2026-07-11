@@ -358,7 +358,7 @@ export function CohortCalendarClient({
       ) : view === "list" ? (
         groups.map((g) => (
           <section key={g.key} className="flex flex-col gap-3">
-            <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            <h2 className="font-sans text-[11px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               {g.label}
             </h2>
             <div className="flex flex-col gap-3">
@@ -379,7 +379,7 @@ export function CohortCalendarClient({
 
           {selectedDay && (
             <section ref={dayDetailRef} className="flex flex-col gap-3">
-              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+              <h2 className="font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 {fmtFullDay(selectedDay)}
               </h2>
               {selectedSessions.length > 0 ? (

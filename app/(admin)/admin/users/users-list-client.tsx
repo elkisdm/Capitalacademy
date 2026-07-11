@@ -491,7 +491,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
     <>
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             Operaciones
           </div>
           <h1 className="mt-1 flex items-center gap-3 text-[34px] font-black tracking-[-0.025em] text-ca-ink">
@@ -580,16 +580,16 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
               <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="border-b border-ca-ink/[0.08]">
-                    <th className="px-5 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                    <th className="px-5 py-3 text-left font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                       Usuario
                     </th>
-                    <th className="px-5 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                    <th className="px-5 py-3 text-left font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                       Rol plataforma
                     </th>
-                    <th className="px-5 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                    <th className="px-5 py-3 text-left font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                       Cohortes activas
                     </th>
-                    <th className="px-5 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                    <th className="px-5 py-3 text-left font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                       Último acceso
                     </th>
                     <th className="w-12 px-3 py-3" />

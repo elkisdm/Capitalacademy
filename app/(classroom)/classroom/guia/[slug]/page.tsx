@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink, Lightbulb, HelpCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import { SupportCard } from "@/components/classroom/guide/support-card";
 import {
   getArticle,
@@ -34,11 +34,7 @@ export default async function GuideArticlePage(
   } = await getAuthUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, system_role")
-    .eq("id", user.id)
-    .single();
+  const profile = await getViewerProfile(user.id);
 
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
@@ -106,7 +102,7 @@ export default async function GuideArticlePage(
           <Icon className="h-6 w-6" />
         </div>
         <div>
-          <div className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+          <div className="font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
             {article.category}
           </div>
           <h1 className="text-[26px] font-black leading-tight tracking-tight text-ca-ink md:text-[32px]">
@@ -182,7 +178,7 @@ export default async function GuideArticlePage(
       {/* Relacionados */}
       {related.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+          <h2 className="mb-3 font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
             Sigue leyendo
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">

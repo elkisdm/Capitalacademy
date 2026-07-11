@@ -34,7 +34,7 @@ export function LessonsScopeFilter({
       <div>
         <label
           htmlFor="lessons-program"
-          className="mb-1 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
+          className="mb-1 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
         >
           Programa
         </label>
@@ -57,7 +57,7 @@ export function LessonsScopeFilter({
         <div>
           <label
             htmlFor="lessons-cohort"
-            className="mb-1 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
+            className="mb-1 block font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft"
           >
             Cohorte (clases en vivo)
           </label>

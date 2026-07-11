@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { MessageCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { getCohortWithProgram } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
@@ -20,7 +19,6 @@ export default async function ConversacionesPage(
   const cohortId = await resolveCohortSlug(cohortSlug);
   if (!cohortId) notFound();
 
-  const supabase = await createClient();
   const {
     data: { user },
   } = await getAuthUser();
@@ -36,11 +34,7 @@ export default async function ConversacionesPage(
 
   const threads = await getProgramThreads(program.id, user.id);
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url")
-    .eq("id", user.id)
-    .single();
+  const me = await getViewerProfile(user.id);
 
   const viewerName = me?.full_name ?? user.email ?? "Usuario";
   const viewerInitials = viewerName

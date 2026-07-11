@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import {
   getSessionForStudent,
   getLessonProgress,
@@ -87,45 +87,38 @@ export default async function ClassSessionPage(
   let videoBlock: React.ReactNode = null;
   if (hasVideo && recording) {
     const [
-      progress,
-      { data: resources },
-      { data: transcript },
-      { data: summary },
-      { data: chapters },
-      { count: commentCount },
-      { data: profile },
+      [progress, { data: resources }, { data: transcript }, { data: summary }, { data: chapters }, { count: commentCount }],
+      profile,
     ] = await Promise.all([
-      getLessonProgress(enrollmentId, recording.id),
-      supabase
-        .from("lesson_resources")
-        .select("*")
-        .eq("lesson_id", recording.id)
-        .order("position", { ascending: true }),
-      supabase
-        .from("lesson_transcripts")
-        .select("content_vtt, corrected_vtt")
-        .eq("lesson_id", recording.id)
-        .eq("status", "ready")
-        .maybeSingle(),
-      supabase
-        .from("lesson_summaries")
-        .select("key_points, summary_text, glossary, model_used, generated_at")
-        .eq("lesson_id", recording.id)
-        .maybeSingle(),
-      supabase
-        .from("lesson_chapters")
-        .select("position_seconds, title")
-        .eq("lesson_id", recording.id)
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("lesson_comments")
-        .select("id", { count: "exact", head: true })
-        .eq("lesson_id", recording.id),
-      supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", user.id)
-        .single(),
+      Promise.all([
+        getLessonProgress(enrollmentId, recording.id),
+        supabase
+          .from("lesson_resources")
+          .select("*")
+          .eq("lesson_id", recording.id)
+          .order("position", { ascending: true }),
+        supabase
+          .from("lesson_transcripts")
+          .select("content_vtt, corrected_vtt")
+          .eq("lesson_id", recording.id)
+          .eq("status", "ready")
+          .maybeSingle(),
+        supabase
+          .from("lesson_summaries")
+          .select("key_points, summary_text, glossary, model_used, generated_at")
+          .eq("lesson_id", recording.id)
+          .maybeSingle(),
+        supabase
+          .from("lesson_chapters")
+          .select("position_seconds, title")
+          .eq("lesson_id", recording.id)
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("lesson_comments")
+          .select("id", { count: "exact", head: true })
+          .eq("lesson_id", recording.id),
+      ]),
+      getViewerProfile(user.id),
     ]);
 
     const userName = profile?.full_name ?? user.email ?? "Usuario";
@@ -188,7 +181,7 @@ export default async function ClassSessionPage(
       {/* Header de la clase */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
             <span>{fmtSessionDate(session.starts_at)}</span>
             <span className="opacity-40">·</span>
             <span>{MODALITY_LABEL[session.modality] ?? session.modality}</span>
@@ -223,7 +216,7 @@ export default async function ClassSessionPage(
 
       {/* Repetición */}
       <section>
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Repetición
         </div>
         {hasVideo ? (
@@ -252,7 +245,7 @@ export default async function ClassSessionPage(
       {/* Material de la clase */}
       {session.resources.length > 0 && (
         <section className="mt-8">
-          <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             Material de la clase
           </div>
           <div className="flex flex-wrap gap-2">

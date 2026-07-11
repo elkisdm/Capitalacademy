@@ -41,7 +41,7 @@ export default async function AdminLessonsPage(props: {
   if (programOptions.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+        <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Operaciones · Contenido
         </div>
         <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
@@ -123,7 +123,7 @@ export default async function AdminLessonsPage(props: {
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               Operaciones · Contenido
             </div>
             <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
@@ -147,7 +147,7 @@ export default async function AdminLessonsPage(props: {
     <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             Operaciones · Contenido
           </div>
           <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
@@ -192,7 +192,7 @@ export default async function AdminLessonsPage(props: {
               </div>
 
               {/* Lecciones grabadas */}
-              <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+              <p className="mb-2 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 Lecciones grabadas
               </p>
               {lessons.length === 0 ? (
@@ -216,7 +216,7 @@ export default async function AdminLessonsPage(props: {
               {/* Clases en vivo (calendario) */}
               {selectedCohortId && (
                 <div className="mt-5">
-                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                  <p className="mb-2 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                     Clases en vivo (calendario)
                   </p>
                   <ModuleSessionsList

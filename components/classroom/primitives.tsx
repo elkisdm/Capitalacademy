@@ -173,7 +173,7 @@ export function LessonStatusIcon({ status, size = 28 }: { status: string; size?:
 
 export function Breadcrumb({ items }: { items: Array<{ label: string; href?: string; onClick?: () => void }> }) {
   return (
-    <nav className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+    <nav className="flex items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
       {items.map((it, i) => (
         <span key={i} className="flex items-center gap-1.5">
           {i > 0 && (

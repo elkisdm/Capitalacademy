@@ -176,7 +176,7 @@ function StatCell({
 }) {
   return (
     <div className="flex flex-col">
-      <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+      <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
         {label}
       </div>
       <div
@@ -282,7 +282,7 @@ export default function QuizResultPass({
 
           {/* Big score */}
           <div className="text-right">
-            <div className="font-mono text-[9.5px] font-black uppercase tracking-[0.22em] text-ca-ink opacity-60">
+            <div className="font-sans text-[9.5px] font-black uppercase tracking-[0.22em] text-ca-ink opacity-60">
               Tu puntaje
             </div>
             <div
@@ -316,7 +316,7 @@ export default function QuizResultPass({
             <div className="ca-fade-up ca-stagger ca-card p-7" style={{ "--i": 1 } as React.CSSProperties}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
+                  <div className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">
                     Desempeño
                   </div>
                   <h3 className="mt-1 text-[18px] font-extrabold tracking-tight text-ca-ink">
@@ -384,7 +384,7 @@ export default function QuizResultPass({
                     style={{ top: 28 }}
                   >
                     <div
-                      className="font-mono font-bold"
+                      className="font-sans font-bold"
                       style={{
                         fontSize: 5,
                         color: "var(--color-ca-ink-soft)",
@@ -552,7 +552,7 @@ export default function QuizResultPass({
               />
 
               <div className="relative">
-                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
+                <div className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
                   Siguiente paso
                 </div>
                 <h4 className="mt-1 text-[18px] font-black leading-tight tracking-tight">

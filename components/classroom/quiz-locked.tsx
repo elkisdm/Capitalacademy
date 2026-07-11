@@ -279,7 +279,7 @@ export function QuizLocked({
           />
           <div className="relative">
             <div
-              className="font-mono text-[10px] font-bold uppercase tracking-[0.22em]"
+              className="font-sans text-[10px] font-bold uppercase tracking-[0.22em]"
               style={{ color: "var(--color-ca-ink-soft)" }}
             >
               El quiz incluye
@@ -392,7 +392,7 @@ export function QuizLocked({
 
               <div className="min-w-0 flex-1">
                 <div
-                  className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]"
+                  className="flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.16em]"
                   style={{ color: "var(--color-ca-ink-soft)" }}
                 >
                   {l.module}

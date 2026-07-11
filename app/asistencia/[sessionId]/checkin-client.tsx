@@ -111,7 +111,7 @@ export function CheckinClient({
         <div className="p-6">
           <dl className="grid gap-3 text-[13px]">
             <div>
-              <dt className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+              <dt className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 Fecha y hora
               </dt>
               <dd className="mt-0.5 font-semibold capitalize text-ca-ink">
@@ -120,7 +120,7 @@ export function CheckinClient({
             </div>
             {cohortName && (
               <div>
-                <dt className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                <dt className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                   Cohorte
                 </dt>
                 <dd className="mt-0.5 font-semibold text-ca-ink">{cohortName}</dd>

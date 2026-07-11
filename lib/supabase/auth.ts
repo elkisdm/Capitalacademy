@@ -17,3 +17,23 @@ export const getAuthUser = cache(async () => {
   const supabase = await createClient();
   return supabase.auth.getUser();
 });
+
+/**
+ * Perfil propio (`profiles`) deduplicado por request vía React `cache()`.
+ *
+ * El layout del classroom y varias pages repetían el mismo
+ * `.from("profiles").select(...).eq("id", user.id)` dentro del mismo request.
+ * El select cubre el superset de columnas que consume cada consumidor
+ * (layout, home, quiz, clase, conversaciones, lección, guía). La page de
+ * edición de perfil (`classroom/profile`) selecciona campos adicionales y
+ * mantiene su propio query.
+ */
+export const getViewerProfile = cache(async (userId: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, role, system_role, onboarding_completed_at, avatar_url")
+    .eq("id", userId)
+    .single();
+  return data;
+});

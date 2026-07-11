@@ -1338,7 +1338,7 @@ export function VideoPlayer({
                       }}
                     >
                       <div
-                        className="px-3 py-1.5 font-mono text-[10px] font-bold uppercase text-white/45"
+                        className="px-3 py-1.5 font-sans text-[10px] font-bold uppercase text-white/45"
                         style={{ letterSpacing: "0.18em" }}
                       >
                         Calidad

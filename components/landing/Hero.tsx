@@ -28,7 +28,6 @@ export function Hero() {
             alt="Capital Academy"
             width={120}
             height={119}
-            priority
             className="mb-7 h-14 w-auto sm:h-16"
           />
 

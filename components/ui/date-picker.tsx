@@ -323,6 +323,11 @@ export function DatePicker({
 
   const hasError = Boolean(error);
 
+  // Hoisteado fuera del `.map` de celdas: mismo mes/año para las 42 celdas
+  // del calendario, evita instanciar 42 Intl.DateTimeFormat idénticos por
+  // render.
+  const currentMonthLabel = monthLabel(view.year, view.month);
+
   // El Select de minutos solo ofrece múltiplos de 5. Si el valor trae un
   // minuto legado (ej. `:23`, dato guardado antes con el input nativo), lo
   // inyecta como opción extra para este render en vez de redondearlo — el
@@ -367,7 +372,7 @@ export function DatePicker({
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
           </button>
           <h3 className="ml-1 text-[13px] font-black tracking-tight text-ca-ink">
-            {monthLabel(view.year, view.month)}
+            {currentMonthLabel}
           </h3>
         </div>
         <button
@@ -399,7 +404,7 @@ export function DatePicker({
               type="button"
               disabled={disabledDay}
               aria-selected={isSelected}
-              aria-label={`${cell.day} de ${monthLabel(view.year, view.month)}`}
+              aria-label={`${cell.day} de ${currentMonthLabel}`}
               onClick={() => selectDay(cell.key)}
               className={cn(
                 "m-0.5 grid h-8 place-items-center rounded-full text-[12px] font-bold transition-colors",

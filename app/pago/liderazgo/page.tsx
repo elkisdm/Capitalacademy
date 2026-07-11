@@ -10,8 +10,6 @@ export const metadata = {
     "Inscripción al Programa de Liderazgo y Gestión de Equipos Comerciales. Cupos limitados. Pago seguro online.",
 };
 
-export const dynamic = "force-dynamic";
-
 const FAQ = [
   {
     q: "¿Las clases quedan grabadas?",

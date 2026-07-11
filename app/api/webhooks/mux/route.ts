@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { correctTranscript } from "@/lib/classroom/correct-transcript";
+import { generateLessonSummary } from "@/lib/classroom/generate-summary";
+import { generateLessonChapters } from "@/lib/classroom/generate-chapters";
 import { sendCapacitacionFollowupEmail } from "@/lib/email/capacitacion-emails";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -400,6 +402,28 @@ export async function POST(req: Request) {
           correctTranscript(lesson.id).catch((err) =>
             console.error(
               "Mux webhook: auto-correction failed for lesson",
+              lesson.id,
+              err,
+            ),
+          );
+        }
+
+        // Auto-trigger glosario/resumen y capítulos (fire-and-forget). Mismo
+        // pipeline que la regeneración manual (/api/admin/generate-summary,
+        // /api/admin/generate-chapters); aplica por igual a lecciones
+        // pregrabadas y a la lección-repetición de una clase en vivo
+        // (class_sessions.lesson_id → lessons.kind='recorded', migración 0041).
+        if (contentText) {
+          generateLessonSummary(lesson.id).catch((err) =>
+            console.error(
+              "Mux webhook: auto-summary failed for lesson",
+              lesson.id,
+              err,
+            ),
+          );
+          generateLessonChapters(lesson.id).catch((err) =>
+            console.error(
+              "Mux webhook: auto-chapters failed for lesson",
               lesson.id,
               err,
             ),

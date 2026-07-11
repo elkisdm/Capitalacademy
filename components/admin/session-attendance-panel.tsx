@@ -111,11 +111,28 @@ export function SessionAttendancePanel({ sessionId }: { sessionId: string }) {
     const targets = visibleRows.filter((row) => row.attended !== attended);
     if (targets.length === 0) return;
     setBulk({ done: 0, total: targets.length });
-    for (const row of targets) {
-      await toggle(row);
-      setBulk((b) => (b ? { ...b, done: b.done + 1 } : b));
+    setError(null);
+    try {
+      const res = await fetch(`${base}/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentIds: targets.map((row) => row.studentId),
+          attended,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(data?.error ?? "No se pudo actualizar.");
+      }
+      setReport(await res.json());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo actualizar.");
+    } finally {
+      setBulk(null);
     }
-    setBulk(null);
   }
 
   const bulkBusy = bulk !== null;

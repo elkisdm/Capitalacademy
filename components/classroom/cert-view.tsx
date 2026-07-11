@@ -250,7 +250,7 @@ export function CertView({
                 {/* Main content */}
                 <div className="p-7">
                   <Logo />
-                  <div className="mt-6 font-mono text-[9px] font-bold uppercase tracking-[0.32em] text-ca-ink-soft">
+                  <div className="mt-6 font-sans text-[9px] font-bold uppercase tracking-[0.32em] text-ca-ink-soft">
                     Certificado de finalización
                   </div>
                   <div className="mt-1 text-[10px] font-semibold text-ca-ink-soft">Se otorga el presente a</div>
@@ -280,12 +280,12 @@ export function CertView({
                   {/* Signatures */}
                   <div className="mt-7 grid max-w-md grid-cols-2 gap-6">
                     <div>
-                      <div className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">Director Académico</div>
+                      <div className="font-sans text-[8px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">Director Académico</div>
                       <div className="mt-0.5 text-[14px] font-bold italic text-ca-ink">Andrés Balmaceda C.</div>
                       <div className="mt-0.5 h-px" style={{ background: "var(--color-ca-ink)" }} />
                     </div>
                     <div>
-                      <div className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">Head of Education</div>
+                      <div className="font-sans text-[8px] font-bold uppercase tracking-[0.2em] text-ca-ink-soft">Head of Education</div>
                       <div className="mt-0.5 text-[14px] font-bold italic text-ca-ink">Carol Maldonado</div>
                       <div className="mt-0.5 h-px" style={{ background: "var(--color-ca-ink)" }} />
                     </div>
@@ -295,7 +295,7 @@ export function CertView({
                 {/* Side panel */}
                 <div className="relative p-5" style={{ background: "var(--color-ca-ink)", color: "#fff", width: 168 }}>
                   <div className="shape-circle absolute -left-3 top-1/3 h-5 w-5" style={{ background: "var(--color-ca-lime)" }} />
-                  <div className="font-mono text-[8px] font-bold uppercase tracking-[0.22em] text-white/60">Validación</div>
+                  <div className="font-sans text-[8px] font-bold uppercase tracking-[0.22em] text-white/60">Validación</div>
                   <div className="mt-3 inline-block rounded-md bg-white p-1.5">
                     <VerifyQR code={verificationCode} size={96} />
                   </div>
@@ -341,7 +341,7 @@ export function CertView({
                 ] as const
               ).map(([k, v]) => (
                 <div key={k}>
-                  <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">{k}</div>
+                  <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">{k}</div>
                   <div className="mt-0.5 text-[13.5px] font-extrabold tracking-tight text-ca-ink">{v}</div>
                 </div>
               ))}
@@ -349,7 +349,7 @@ export function CertView({
 
             {/* Verification code block */}
             <div className="mt-5 rounded-xl p-3" style={{ background: "var(--color-ca-violet-mist)" }}>
-              <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--color-ca-violet-deep)" }}>
+              <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--color-ca-violet-deep)" }}>
                 Código de verificación
               </div>
               <div className="mt-1 flex items-center justify-between gap-2">

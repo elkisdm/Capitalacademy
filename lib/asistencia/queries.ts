@@ -137,6 +137,66 @@ export async function markManualAttendance(
   return { ok: true };
 }
 
+export type BulkResult = { ok: boolean; error?: string; report?: SessionAttendanceReport };
+
+/**
+ * Marca o quita, en un solo round-trip, la asistencia de varios alumnos a una
+ * sesión. Misma semántica que `markManualAttendance`/`unmarkAttendance` pero
+ * en lote: si `attended=true` valida matrícula activa de todos los
+ * `studentIds` con UNA sola consulta y hace upsert idempotente; si
+ * `attended=false` borra las filas de esos alumnos. Devuelve el reporte
+ * fresco de la sesión.
+ */
+export async function bulkSetAttendance(
+  sessionId: string,
+  studentIds: string[],
+  attended: boolean,
+  staffId: string,
+): Promise<BulkResult> {
+  const admin = createAdminClient();
+
+  const { data: session } = await admin
+    .from("class_sessions")
+    .select("id, cohort_id")
+    .eq("id", sessionId)
+    .single();
+  if (!session) return { ok: false, error: "Sesión no encontrada." };
+
+  if (attended) {
+    const { data: enrolled } = await admin
+      .from("enrollments")
+      .select("student_id")
+      .eq("cohort_id", session.cohort_id)
+      .eq("status", "active")
+      .in("student_id", studentIds);
+    const validIds = (enrolled ?? []).map((e) => e.student_id);
+    if (validIds.length > 0) {
+      const rows = validIds.map((studentId) => ({
+        session_id: sessionId,
+        student_id: studentId,
+        cohort_id: session.cohort_id,
+        method: "manual" as const,
+        marked_by: staffId,
+      }));
+      const { error } = await admin
+        .from("session_attendance")
+        .upsert(rows, { onConflict: "session_id,student_id", ignoreDuplicates: true });
+      if (error) return { ok: false, error: "No se pudo marcar la asistencia." };
+    }
+  } else {
+    const { error } = await admin
+      .from("session_attendance")
+      .delete()
+      .eq("session_id", sessionId)
+      .in("student_id", studentIds);
+    if (error) return { ok: false, error: "No se pudo quitar la asistencia." };
+  }
+
+  const report = await getSessionAttendance(sessionId);
+  if (!report) return { ok: false, error: "Sesión no encontrada." };
+  return { ok: true, report };
+}
+
 export type StudentAbsence = {
   studentId: string;
   cohortId: string;

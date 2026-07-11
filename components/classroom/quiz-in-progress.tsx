@@ -363,7 +363,7 @@ export function QuizInProgress({
           </button>
           <div className="leading-tight">
             <div
-              className="font-mono text-[10px] font-bold uppercase tracking-[0.22em]"
+              className="font-sans text-[10px] font-bold uppercase tracking-[0.22em]"
               style={{ color: "var(--color-ca-ink-soft)" }}
             >
               Quiz final

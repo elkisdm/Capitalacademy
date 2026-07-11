@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import ReactDOM from "react-dom";
 import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import {
   getLessonById,
   getLessonProgress,
@@ -116,51 +117,51 @@ export default async function LessonPage(
   const lessonContent = (lesson as Record<string, unknown>).content as string | null;
 
   const [
-    { data: resources },
-    { data: transcript },
-    { data: summary },
-    { data: chapters },
-    { count: commentCount },
-    { data: profile },
-    { data: lessonEvaluation },
+    [
+      { data: resources },
+      { data: transcript },
+      { data: summary },
+      { data: chapters },
+      { count: commentCount },
+      { data: lessonEvaluation },
+    ],
+    profile,
   ] = await Promise.all([
-    supabase
-      .from("lesson_resources")
-      .select("*")
-      .eq("lesson_id", lessonId)
-      .order("position", { ascending: true }),
-    supabase
-      .from("lesson_transcripts")
-      .select("content_vtt, corrected_vtt")
-      .eq("lesson_id", lessonId)
-      .eq("status", "ready")
-      .maybeSingle(),
-    supabase
-      .from("lesson_summaries")
-      .select("key_points, summary_text, glossary, model_used, generated_at")
-      .eq("lesson_id", lessonId)
-      .maybeSingle(),
-    supabase
-      .from("lesson_chapters")
-      .select("position_seconds, title")
-      .eq("lesson_id", lessonId)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("lesson_comments")
-      .select("id", { count: "exact", head: true })
-      .eq("lesson_id", lessonId),
-    supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("evaluations")
-      .select("id, title")
-      .eq("lesson_id", lessonId)
-      .eq("scope", "lesson")
-      .eq("is_active", true)
-      .maybeSingle(),
+    Promise.all([
+      supabase
+        .from("lesson_resources")
+        .select("*")
+        .eq("lesson_id", lessonId)
+        .order("position", { ascending: true }),
+      supabase
+        .from("lesson_transcripts")
+        .select("content_vtt, corrected_vtt")
+        .eq("lesson_id", lessonId)
+        .eq("status", "ready")
+        .maybeSingle(),
+      supabase
+        .from("lesson_summaries")
+        .select("key_points, summary_text, glossary, model_used, generated_at")
+        .eq("lesson_id", lessonId)
+        .maybeSingle(),
+      supabase
+        .from("lesson_chapters")
+        .select("position_seconds, title")
+        .eq("lesson_id", lessonId)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("lesson_comments")
+        .select("id", { count: "exact", head: true })
+        .eq("lesson_id", lessonId),
+      supabase
+        .from("evaluations")
+        .select("id, title")
+        .eq("lesson_id", lessonId)
+        .eq("scope", "lesson")
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]),
+    getViewerProfile(user.id),
   ]);
 
   const transcriptVtt = transcript?.content_vtt ?? null;
@@ -171,6 +172,16 @@ export default async function LessonPage(
   const hasVideo = !!(muxPlaybackId && videoDuration);
   // Clase de texto/diapositiva: sin video pero con contenido y/o material.
   const isTextLesson = !hasVideo && (!!lessonContent?.trim() || resolvedResources.length > 0);
+
+  // LCP: precarga el poster del video (mismo time=30 que usa el player en
+  // video-player.tsx) para que el navegador lo pida antes de hidratar el
+  // reproductor.
+  if (hasVideo) {
+    ReactDOM.preload(`https://image.mux.com/${muxPlaybackId}/thumbnail.webp?time=30`, {
+      as: "image",
+      fetchPriority: "high",
+    });
+  }
 
   const userName = profile?.full_name ?? user.email ?? "Usuario";
   const userInitials = userName
@@ -193,7 +204,7 @@ export default async function LessonPage(
       {/* Title block — above the video */}
       <div className="mb-4 flex flex-col gap-3 md:mb-5 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
             <span>Lección {String(idx + 1).padStart(2, "0")} de {siblingLessons.length}</span>
             <span className="opacity-40">·</span>
             <span>{fmtDuration(videoDuration)}</span>
@@ -254,7 +265,7 @@ export default async function LessonPage(
               {lessonContent?.trim() && <Markdown content={lessonContent} />}
               {resolvedResources.length > 0 && (
                 <div className={lessonContent?.trim() ? "mt-8 border-t border-ca-ink/[0.08] pt-6" : ""}>
-                  <h2 className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
+                  <h2 className="mb-3 font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                     Material de la clase
                   </h2>
                   <ResourceList resources={resolvedResources} />
@@ -292,7 +303,7 @@ export default async function LessonPage(
           <div className="mt-10 grid gap-3 md:grid-cols-2">
             {prevLesson ? (
               <Link href={`/classroom/${cohortSlug}/${moduleSlug}/${prevLesson.slug ?? prevLesson.id}`} className="ca-card ca-card-hoverable p-4 text-left">
-                <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <div className="flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                   Anterior
                 </div>
@@ -303,7 +314,7 @@ export default async function LessonPage(
             ) : <div />}
             {nextLesson ? (
               <Link href={`/classroom/${cohortSlug}/${moduleSlug}/${nextLesson.slug ?? nextLesson.id}`} className="ca-card ca-card-hoverable p-4 text-right">
-                <div className="flex items-center justify-end gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+                <div className="flex items-center justify-end gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Siguiente
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                 </div>
@@ -361,7 +372,7 @@ export default async function LessonPage(
                   {active && <span className="absolute inset-y-3 left-0 w-1 rounded-r bg-ca-violet" />}
                   <div className="shrink-0"><LessonStatusIcon status={st} size={28} /></div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+                    <div className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
                       Lec. {String(i + 1).padStart(2, "0")} · {fmtDuration(l.video_duration_seconds)}
                     </div>
                     <div className={`mt-0.5 text-[13px] font-bold leading-snug ${locked ? "text-ca-ink-soft" : "text-ca-ink"}`}>

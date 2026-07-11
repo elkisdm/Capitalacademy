@@ -9,6 +9,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 - Los formularios del panel administrativo, el checkout y el classroom ahora usan controles propios de marca (selector de fecha, menú desplegable, casillas, radios y selector de archivo) en vez de los del navegador; el panel de asistencia de una clase queda más compacto con búsqueda y marcado en bloque, y el popover de notificaciones ya no se corta en pantallas angostas (`43626f6`)
+- El panel administrativo estrena diseño en lecciones, quizzes y entregables: el listado de lecciones ahora muestra miniatura, duración y estado del video, quizzes y entregables se presentan en una grilla con insignias de estado, y la gestión de un quiz se abre en una ventana emergente en vez de una pantalla aparte (`3c9eb40`)
 
 ### Changed
 - El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)

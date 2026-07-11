@@ -94,7 +94,7 @@ export default async function AdminAlumnosPage({
         ]}
       />
 
-      <StudentTable students={students} />
+      <StudentTable key={params.cohort ?? "all"} students={students} />
     </div>
   );
 }

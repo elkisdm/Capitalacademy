@@ -6,10 +6,9 @@ import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 import { detectViewerKind, officeEmbedUrl } from "@/lib/classroom/resource-viewer";
 
-// Límite heurístico para el embed de Office Online: por encima de esto la
-// previsualización suele fallar o tardar demasiado, así que se degrada
-// directo a descarga en vez de mostrar un iframe que probablemente no cargue.
-const OFFICE_PREVIEW_MAX_BYTES = 10 * 1024 * 1024;
+// Tiempo máximo de espera para que cargue el embed de Office Online antes de
+// degradar a un estado de error con descarga como acción primaria.
+const OFFICE_PREVIEW_TIMEOUT_MS = 9000;
 
 export type ViewerResource = {
   title: string;
@@ -17,7 +16,6 @@ export type ViewerResource = {
   downloadUrl: string | null;
   storagePath: string | null;
   type: string;
-  fileSizeBytes?: number | null;
 };
 
 type DocumentViewerProps = {
@@ -99,33 +97,7 @@ function ViewerBody({ resource, kind }: { resource: ViewerResource; kind: Return
   }
 
   if (kind === "office" && resource.viewUrl) {
-    const tooBig =
-      typeof resource.fileSizeBytes === "number" && resource.fileSizeBytes > OFFICE_PREVIEW_MAX_BYTES;
-    if (tooBig) {
-      return (
-        <UnsupportedState
-          title="El archivo es muy grande para previsualizar"
-          downloadUrl={resource.downloadUrl}
-        />
-      );
-    }
-    return (
-      <div className="flex h-full flex-col">
-        <iframe
-          src={officeEmbedUrl(resource.viewUrl)}
-          className="h-full w-full border-0"
-          title={resource.title}
-        />
-        <p className="shrink-0 border-t border-ca-ink/[0.08] bg-ca-surface px-4 py-2 text-center text-[11px] text-ca-ink-soft">
-          Vista previa procesada por Microsoft Office Online.{" "}
-          {resource.downloadUrl && (
-            <a href={resource.downloadUrl} download className="font-bold text-ca-violet hover:underline">
-              ¿No se ve? Descárgalo.
-            </a>
-          )}
-        </p>
-      </div>
-    );
+    return <OfficePreview url={resource.viewUrl} title={resource.title} downloadUrl={resource.downloadUrl} />;
   }
 
   if (kind === "image" && resource.viewUrl) {
@@ -145,6 +117,53 @@ function UnsupportedState({ title, downloadUrl }: { title: string; downloadUrl: 
         <DownloadLink href={downloadUrl} variant="primary" />
       ) : (
         <p className="text-[13px] text-ca-ink-soft">Este recurso no está disponible.</p>
+      )}
+    </div>
+  );
+}
+
+function OfficePreview({ url, title, downloadUrl }: { url: string; title: string; downloadUrl: string | null }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+
+  // Si el iframe no avisa carga dentro del timeout, degrada a un estado de
+  // error claro en vez de dejar al alumno viendo un iframe en blanco.
+  useEffect(() => {
+    if (status !== "loading") return;
+    const timer = setTimeout(() => setStatus("error"), OFFICE_PREVIEW_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [status]);
+
+  if (status === "error") {
+    return (
+      <UnsupportedState
+        title="No pudimos mostrar la vista previa. Descarga el archivo para verlo."
+        downloadUrl={downloadUrl}
+      />
+    );
+  }
+
+  return (
+    <div className="relative flex h-full flex-col">
+      {status === "loading" && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-ca-bg-soft">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-ca-violet border-t-transparent" />
+        </div>
+      )}
+      <iframe
+        src={officeEmbedUrl(url)}
+        className="h-full w-full border-0"
+        title={title}
+        onLoad={() => setStatus("loaded")}
+      />
+      {status === "loaded" && (
+        <p className="shrink-0 border-t border-ca-ink/[0.08] bg-ca-surface px-4 py-2 text-center text-[11px] text-ca-ink-soft">
+          Vista previa procesada por Microsoft Office Online.{" "}
+          {downloadUrl && (
+            <a href={downloadUrl} download className="font-bold text-ca-violet hover:underline">
+              ¿No se ve? Descárgalo.
+            </a>
+          )}
+        </p>
       )}
     </div>
   );
@@ -185,6 +204,7 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
   // Carga el documento una vez por URL.
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     setStatus("loading");
     setPage(1);
     setNumPages(0);
@@ -195,7 +215,7 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
         if (!pdfjs.GlobalWorkerOptions.workerSrc) {
           pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
         }
-        const bytes = await fetch(url).then((r) => {
+        const bytes = await fetch(url, { signal: controller.signal }).then((r) => {
           if (!r.ok) throw new Error(`fetch pdf ${r.status}`);
           return r.arrayBuffer();
         });
@@ -209,6 +229,7 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
         setNumPages(doc.numPages);
         setStatus("ready");
       } catch (err) {
+        // Un abort() al cerrar/cambiar de recurso dispara un error esperado.
         console.error("pdf load error", err);
         if (!cancelled) setStatus("error");
       }
@@ -216,6 +237,7 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
 
     return () => {
       cancelled = true;
+      controller.abort();
       renderTaskRef.current?.cancel();
       docRef.current?.destroy();
       docRef.current = null;
@@ -230,28 +252,38 @@ function PdfCanvas({ url, downloadUrl }: { url: string; downloadUrl: string | nu
     (async () => {
       const doc = docRef.current;
       if (!doc) return;
-      const pdfPage = await doc.getPage(page);
-      if (cancelled) return;
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const context = canvas.getContext("2d");
-      if (!context) return;
-
-      const targetWidth = canvas.parentElement?.clientWidth ?? 800;
-      const unscaledViewport = pdfPage.getViewport({ scale: 1 });
-      const scale = targetWidth / unscaledViewport.width;
-      const viewport = pdfPage.getViewport({ scale });
-
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      const renderTask = pdfPage.render({ canvasContext: context, viewport });
-      renderTaskRef.current = renderTask;
       try {
+        const pdfPage = await doc.getPage(page);
+        if (cancelled) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        const targetWidth = canvas.parentElement?.clientWidth ?? 800;
+        const unscaledViewport = pdfPage.getViewport({ scale: 1 });
+        const scale = targetWidth / unscaledViewport.width;
+        const viewport = pdfPage.getViewport({ scale });
+
+        // Renderiza al tamaño físico de pixeles (dpr) pero mantiene el
+        // tamaño lógico en CSS, para nitidez en pantallas retina/HiDPI.
+        canvas.width = viewport.width * dpr;
+        canvas.height = viewport.height * dpr;
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        context.scale(dpr, dpr);
+
+        const renderTask = pdfPage.render({ canvasContext: context, viewport });
+        renderTaskRef.current = renderTask;
         await renderTask.promise;
       } catch (err) {
-        // Un cancel() dispara una excepción esperada; solo logueamos lo inesperado.
-        if (!cancelled) console.error("pdf render error", err);
+        // Un cancel()/destroy() dispara una excepción esperada; solo tratamos
+        // como error real (visible) lo que no venga de una cancelación.
+        if (!cancelled) {
+          console.error("pdf render error", err);
+          setStatus("error");
+        }
       }
     })();
 

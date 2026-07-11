@@ -550,7 +550,7 @@ export function SessionsManagerClient({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {isPast ? (
             <>
               {attendanceButton}
@@ -573,7 +573,10 @@ export function SessionsManagerClient({
           </Button>
           <Button
             variant="outline"
-            onClick={() => setDeleteTarget(s)}
+            onClick={() => {
+              setError(null);
+              setDeleteTarget(s);
+            }}
             aria-label="Eliminar sesión"
             disabled={saving}
             className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] text-ca-ink-soft hover:border-ca-amber hover:text-[#8b6914]"
@@ -762,6 +765,7 @@ export function SessionsManagerClient({
         session={deleteTarget}
         resourceCount={resources.filter((r) => r.session_id === deleteTarget?.id).length}
         deleting={saving}
+        error={error}
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />

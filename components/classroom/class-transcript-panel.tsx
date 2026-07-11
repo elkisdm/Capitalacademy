@@ -37,6 +37,15 @@ export function ClassTranscriptPanel({
 
   const close = useCallback(() => setOpen(false), []);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, close]);
+
   if (!open) return null;
 
   return (
@@ -67,13 +76,14 @@ export function ClassTranscriptPanel({
             </svg>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
           <TranscriptPanel
             key={transcriptKey}
             vttContent={transcriptVtt}
             correctedVtt={correctedVtt}
             currentTime={currentTime}
             onSeek={(time) => seekRef.current?.(time)}
+            fill
           />
         </div>
       </aside>

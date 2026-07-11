@@ -14,11 +14,11 @@ import {
 import type { CohortStudentProgress } from "@/lib/classroom/admin-queries";
 
 function progressTone(pct: number) {
-  if (pct >= 90) return { bg: "rgba(168,211,16,0.22)", fg: "#3f5a05", label: "completado" };
-  if (pct >= 70) return { bg: "rgba(168,211,16,0.16)", fg: "#3f5a05", label: "al día" };
-  if (pct >= 30) return { bg: "rgba(255,196,0,0.18)", fg: "#7a5000", label: "en progreso" };
-  if (pct > 0) return { bg: "rgba(20,22,58,0.05)", fg: "var(--color-ca-ink-soft)", label: "atrasado" };
-  return { bg: "rgba(20,22,58,0.05)", fg: "var(--color-ca-ink-soft)", label: "sin iniciar" };
+  if (pct >= 90) return { fg: "#3f5a05", label: "completado" };
+  if (pct >= 70) return { fg: "var(--color-ca-lime-deep)", label: "al día" };
+  if (pct >= 30) return { fg: "var(--color-ca-amber-text)", label: "en progreso" };
+  if (pct > 0) return { fg: "var(--color-ca-ink-soft)", label: "atrasado" };
+  return { fg: "var(--color-ca-ink-soft)", label: "sin iniciar" };
 }
 
 function UsersEmptyIcon({ className }: { className?: string }) {
@@ -121,7 +121,6 @@ function ProgressDetail({ student, onClose }: { student: CohortStudentProgress; 
 
 type ProgressTableProps = {
   students: CohortStudentProgress[];
-  modules: Array<{ id: string; title: string; position: number }>;
 };
 
 export function ProgressTable({ students }: ProgressTableProps) {
@@ -208,8 +207,12 @@ export function ProgressTable({ students }: ProgressTableProps) {
             )}
 
             <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-ca-ink-soft">
-              <span>Selecciona un alumno para ver el detalle</span>
-              <span className="opacity-30">·</span>
+              {filtered.length > 0 && (
+                <>
+                  <span>Selecciona un alumno para ver el detalle</span>
+                  <span className="opacity-30">·</span>
+                </>
+              )}
               {([
                 [90, "Completado"],
                 [70, "Al día"],

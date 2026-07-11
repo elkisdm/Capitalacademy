@@ -51,7 +51,7 @@ export function SessionAttendancePanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const base = `/api/admin/sessions/${sessionId}/attendance`;
 
@@ -116,7 +116,13 @@ export function SessionAttendancePanel({
   async function markAll(attended: boolean) {
     const targets = visibleRows.filter((row) => row.attended !== attended);
     if (targets.length === 0) return;
-    setBulk({ done: 0, total: targets.length });
+    if (!attended) {
+      const confirmed = window.confirm(
+        `¿Quitar la asistencia de ${targets.length} alumno${targets.length > 1 ? "s" : ""}?`,
+      );
+      if (!confirmed) return;
+    }
+    setBulkBusy(true);
     setError(null);
     try {
       const res = await fetch(`${base}/bulk`, {
@@ -137,11 +143,9 @@ export function SessionAttendancePanel({
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar.");
     } finally {
-      setBulk(null);
+      setBulkBusy(false);
     }
   }
-
-  const bulkBusy = bulk !== null;
 
   return (
     <div className={embedded ? "overflow-hidden" : "ca-card overflow-hidden"}>
@@ -157,7 +161,7 @@ export function SessionAttendancePanel({
         <div className="flex items-center gap-2">
           {bulkBusy && (
             <span className="text-[11px] text-ca-ink-soft">
-              {bulk.done}/{bulk.total}…
+              Guardando…
             </span>
           )}
           <Button
@@ -166,7 +170,7 @@ export function SessionAttendancePanel({
             onClick={() => void markAll(true)}
             disabled={loading || bulkBusy || visibleRows.length === 0}
           >
-            Marcar todos
+            {query.trim() ? "Marcar visibles" : "Marcar todos"}
           </Button>
           <Button
             variant="outline"
@@ -174,7 +178,7 @@ export function SessionAttendancePanel({
             onClick={() => void markAll(false)}
             disabled={loading || bulkBusy || visibleRows.length === 0}
           >
-            Limpiar
+            {query.trim() ? "Limpiar visibles" : "Limpiar"}
           </Button>
           <Button
             variant="outline"

@@ -18,6 +18,9 @@ type TranscriptPanelProps = {
   correctedVtt?: string | null;
   currentTime: number;
   onSeek: (time: number) => void;
+  /** Cuando es true, la lista ocupa el alto disponible del contenedor (drawer
+   * full-height) en vez del `max-h-[500px]` fijo usado en la vista inline. */
+  fill?: boolean;
 };
 
 function useDebounce<T>(value: T, ms: number): T {
@@ -105,6 +108,7 @@ export function TranscriptPanel({
   correctedVtt,
   currentTime,
   onSeek,
+  fill = false,
 }: TranscriptPanelProps) {
   const segments = useMemo(
     () => parseVTT(correctedVtt || vttContent),
@@ -249,7 +253,7 @@ export function TranscriptPanel({
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className={`flex flex-col overflow-hidden ${fill ? "h-full" : ""}`}
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >
@@ -280,7 +284,7 @@ export function TranscriptPanel({
         ref={scrollRef}
         onScroll={handleUserScroll}
         role="list"
-        className="max-h-[500px] overflow-y-auto"
+        className={fill ? "flex-1 min-h-0 overflow-y-auto" : "max-h-[500px] overflow-y-auto"}
       >
         {filtered.map((seg) => {
           const isActive = seg.index === activeIdx;

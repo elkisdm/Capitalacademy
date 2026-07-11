@@ -30,6 +30,7 @@ export function SessionDeleteDialog({
   session,
   resourceCount,
   deleting,
+  error,
   onClose,
   onConfirm,
 }: {
@@ -37,6 +38,7 @@ export function SessionDeleteDialog({
   session: ClassSession | null;
   resourceCount: number;
   deleting: boolean;
+  error?: string | null;
   onClose: () => void;
   onConfirm: () => void;
 }) {
@@ -108,6 +110,16 @@ export function SessionDeleteDialog({
         <p className="mt-4 text-[12px] font-bold text-ca-ink">
           Esta acción no se puede deshacer.
         </p>
+
+        {error && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-4 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[12px] font-semibold text-[#8b6914]"
+          >
+            {error}
+          </div>
+        )}
       </div>
 
       {/* Footer */}

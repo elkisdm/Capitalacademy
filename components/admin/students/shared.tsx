@@ -37,7 +37,7 @@ export function StatStrip({
       {items.map((item) => (
         <div
           key={item.label}
-          className="flex-1 border-t border-l border-ca-ink/[0.06] px-4 py-3 [&:nth-child(-n+2)]:border-t-0 lg:border-t-0 lg:first:border-l-0"
+          className="flex-1 border-t border-l border-ca-ink/[0.06] px-4 py-3 [&:nth-child(-n+2)]:border-t-0 [&:nth-child(odd)]:border-l-0 lg:border-t-0 lg:first:border-l-0 lg:[&:nth-child(odd):not(:first-child)]:border-l"
         >
           <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
             {item.label}
@@ -220,9 +220,11 @@ export function TwoPane({
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr] lg:items-start">
       <div>{list}</div>
       <div className="hidden lg:sticky lg:top-6 lg:block">
-        <div className="overflow-hidden rounded-2xl border border-ca-ink/[0.08] bg-white">
-          {detail ?? <DetailPlaceholder />}
-        </div>
+        {detail ? (
+          <div className="overflow-hidden rounded-2xl border border-ca-ink/[0.08] bg-white">{detail}</div>
+        ) : (
+          <DetailPlaceholder />
+        )}
       </div>
       <Dialog
         open={!!detail && !isDesktop}

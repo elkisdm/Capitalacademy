@@ -53,7 +53,6 @@ export function ClassMaterial({ resources }: ClassMaterialProps) {
                         downloadUrl: r.url,
                         storagePath: r.storage_path,
                         type: r.type,
-                        fileSizeBytes: null,
                       })
                     }
                     className="ca-btn-interactive rounded-full border border-ca-ink/[0.1] px-3 py-1 text-[11px] font-bold text-ca-ink hover:border-ca-violet hover:text-ca-violet"

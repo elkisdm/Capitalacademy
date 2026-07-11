@@ -71,7 +71,7 @@ export default async function AdminProgressPage({
     );
   }
 
-  const { cohort, program, modules, students } = report;
+  const { cohort, program, students } = report;
 
   const allPcts = students.flatMap((s) => s.module_progress.map((m) => m.percentage));
   const cohortAvg = allPcts.length > 0 ? Math.round(allPcts.reduce((a, b) => a + b, 0) / allPcts.length) : 0;
@@ -105,10 +105,7 @@ export default async function AdminProgressPage({
         ]}
       />
 
-      <ProgressTable
-        students={students}
-        modules={(modules ?? []) as Array<{ id: string; title: string; position: number }>}
-      />
+      <ProgressTable key={selectedCohortId ?? "none"} students={students} />
     </div>
   );
 }

@@ -99,18 +99,6 @@ export default async function CohortDashboardPage(
   }
 
   const totalModules = modules.length;
-  const completedModules = modules.filter((m) => {
-    const p = calculateModuleProgress(m.lessons);
-    return p.percentage === 100 && p.total_with_video > 0;
-  }).length;
-  const overallPct = totalModules > 0
-    ? Math.round(modules.reduce((s, m) => s + calculateModuleProgress(m.lessons).percentage, 0) / totalModules)
-    : 0;
-
-  const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0);
-  // "Contenido" del programa = lecciones grabadas + clases en vivo agendadas.
-  const totalContent = totalLessons + totalSessions;
-  const completedLessons = modules.reduce((s, m) => s + calculateModuleProgress(m.lessons).completed_lessons, 0);
 
   const currentModule = modules.find((m) => {
     const p = calculateModuleProgress(m.lessons);
@@ -135,6 +123,9 @@ export default async function CohortDashboardPage(
       : null;
 
   // Por módulo: filas del acordeón (grabadas o en vivo) + métricas de progreso.
+  // Numerador y denominador comparten universo (grabadas + sesiones): una clase
+  // en vivo PASADA cuenta como completada por tiempo, igual que el check verde
+  // que ya muestra su fila en el acordeón.
   const moduleRowsData = new Map<string, {
     rows: ClassRowData[];
     contentCount: number;
@@ -147,6 +138,7 @@ export default async function CohortDashboardPage(
       .slice()
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
     const contentCount = mod.lessons.length + moduleSessions.length;
+    const pastSessions = moduleSessions.filter((s) => new Date(s.ends_at) < now).length;
 
     const lessonRows: ClassRowData[] = mod.lessons.map((lesson) => {
       const lessonStatus = getLessonStatus(lesson);
@@ -177,18 +169,34 @@ export default async function CohortDashboardPage(
 
     const progress = calculateModuleProgress(mod.lessons);
     const isLocked = mod.lessons.length > 0 && mod.lessons.every((l) => l.unlock_at && new Date(l.unlock_at) > new Date());
-    const hasProgress = progress.percentage > 0;
-    const isCompleted = progress.percentage === 100 && progress.total_with_video > 0;
+    const completedCount = progress.completed_lessons + pastSessions;
+    const pct = contentCount > 0 ? Math.round((100 * completedCount) / contentCount) : 0;
+    const isCompleted = completedCount === contentCount && contentCount > 0;
+    const hasProgress = completedCount > 0;
     const moduleStatus = isCompleted ? "completed" : hasProgress ? "in_progress" : isLocked ? "locked" : "available";
 
     moduleRowsData.set(mod.id, {
       rows,
       contentCount,
-      completed: progress.completed_lessons,
-      pct: progress.percentage,
+      completed: completedCount,
+      pct,
       moduleStatus,
     });
   }
+
+  const completedModules = Array.from(moduleRowsData.values()).filter(
+    (d) => d.moduleStatus === "completed",
+  ).length;
+  const overallPct = totalModules > 0
+    ? Math.round(
+        Array.from(moduleRowsData.values()).reduce((s, d) => s + d.pct, 0) / totalModules,
+      )
+    : 0;
+
+  const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0);
+  // "Contenido" del programa = lecciones grabadas + clases en vivo agendadas.
+  const totalContent = totalLessons + totalSessions;
+  const completedLessons = Array.from(moduleRowsData.values()).reduce((s, d) => s + d.completed, 0);
 
   return (
     <div className="ca-fade-up mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">

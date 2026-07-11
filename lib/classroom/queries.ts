@@ -164,31 +164,20 @@ export async function getModulesWithLessons(
   if (lessonIds.length > 0) {
     // Sin matrícula (staff en modo previsualización) no hay progreso personal:
     // se omite la consulta y los módulos se muestran con progreso vacío.
-    const admin = createAdminClient();
-    const [{ data: progress }, { data: resources }, { data: recLinks }] =
-      await Promise.all([
-        enrollmentId
-          ? supabase
-              .from("video_progress")
-              .select("*")
-              .eq("enrollment_id", enrollmentId)
-              .in("lesson_id", lessonIds)
-          : Promise.resolve({ data: null }),
-        supabase
-          .from("lesson_resources")
-          .select("*")
-          .in("lesson_id", lessonIds)
-          .order("position", { ascending: true }),
-        // Reverse-lookup de exclusión: DEBE cubrir TODAS las cohortes del programa (la
-        // RLS de class_sessions solo deja ver la cohorte propia y ocultaba las
-        // repeticiones de otras cohortes → se colaban como lección suelta). Admin SOLO
-        // para este set de ids a excluir (solo columna lesson_id, acotado a lessonIds;
-        // sin PII).
-        admin
-          .from("class_sessions")
-          .select("lesson_id")
-          .in("lesson_id", lessonIds),
-      ]);
+    const [{ data: progress }, { data: resources }] = await Promise.all([
+      enrollmentId
+        ? supabase
+            .from("video_progress")
+            .select("*")
+            .eq("enrollment_id", enrollmentId)
+            .in("lesson_id", lessonIds)
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("lesson_resources")
+        .select("*")
+        .in("lesson_id", lessonIds)
+        .order("position", { ascending: true }),
+    ]);
 
     if (progress) {
       progressMap = new Map(progress.map((p) => [p.lesson_id, p as VideoProgress]));
@@ -200,11 +189,29 @@ export async function getModulesWithLessons(
         resourcesMap.set(r.lesson_id, existing);
       }
     }
-    recordingLessonIds = new Set(
-      ((recLinks ?? []) as Array<{ lesson_id: string | null }>)
-        .map((r) => r.lesson_id)
-        .filter((id): id is string => Boolean(id)),
-    );
+
+    // Reverse-lookup de exclusión: DEBE cubrir TODAS las cohortes del programa (la
+    // RLS de class_sessions solo deja ver la cohorte propia y ocultaba las
+    // repeticiones de otras cohortes → se colaban como lección suelta). Admin SOLO
+    // para este set de ids a excluir (solo columna lesson_id, acotado a lessonIds;
+    // sin PII). createAdminClient() lanza sincrónicamente si falta
+    // SUPABASE_SERVICE_ROLE_KEY: si falla la creación del client o el query, se
+    // degrada a un set vacío (las repeticiones reaparecen como lección suelta)
+    // en vez de tumbar todo el temario con un 500.
+    try {
+      const admin = createAdminClient();
+      const { data: recLinks } = await admin
+        .from("class_sessions")
+        .select("lesson_id")
+        .in("lesson_id", lessonIds);
+      recordingLessonIds = new Set(
+        ((recLinks ?? []) as Array<{ lesson_id: string | null }>)
+          .map((r) => r.lesson_id)
+          .filter((id): id is string => Boolean(id)),
+      );
+    } catch (err) {
+      console.error("getModulesWithLessons: fallo reverse-lookup de repeticiones", err);
+    }
   }
 
   return modules.map((mod) => ({
@@ -239,6 +246,7 @@ export async function getModuleSessionsForCohort(
     .select("*")
     .eq("cohort_id", cohortId)
     .eq("module_id", moduleId)
+    .neq("status", "cancelled")
     .order("starts_at", { ascending: true });
 
   const sessions = (data ?? []) as unknown as ClassSession[];

@@ -125,7 +125,7 @@ export function LessonReorderList({
         return (
           <div
             key={lesson.id}
-            className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-3 transition hover:-translate-y-0.5 hover:border-ca-violet/30 hover:shadow-[0_8px_24px_rgba(20,22,58,0.08)]"
+            className="flex flex-wrap items-center gap-4 rounded-xl border border-ca-ink/[0.08] bg-ca-surface p-3 transition hover:-translate-y-0.5 hover:border-ca-violet/30 hover:shadow-[0_8px_24px_rgba(20,22,58,0.08)]"
           >
             <div className="flex flex-col">
               <Button
@@ -169,16 +169,16 @@ export function LessonReorderList({
                   <VideoOff className="h-6 w-6" />
                 </div>
               )}
-              {lesson.durationSeconds && (
+              {lesson.durationSeconds ? (
                 <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                   {fmtDuration(lesson.durationSeconds)}
                 </span>
-              )}
+              ) : null}
             </div>
 
             <div className="min-w-0 flex-1">
               <p className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
-                Lección {lesson.position}
+                Lección {index + 1}
               </p>
               <Link
                 href={`/admin/lessons/${lesson.id}`}

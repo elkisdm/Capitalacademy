@@ -6,6 +6,8 @@ import { formatRut, cleanRut, isValidRut } from "@/lib/utils/rut";
 import { formatPhone } from "@/lib/utils/phone";
 import { normalizeUrl } from "@/lib/utils/url";
 import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
+import { Input, Textarea } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 /** Etiquetas legibles por campo, para mostrar errores de validación útiles. */
 const FIELD_LABELS: Record<string, string> = {
@@ -337,18 +339,12 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
               <label htmlFor="fullName" className="mb-1.5 block text-[12px] font-bold text-ca-ink">
                 Nombre completo
               </label>
-              <input
+              <Input
                 id="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Tu nombre y apellido"
-                className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-                style={{
-                  background: "var(--color-ca-bg)",
-                  borderColor: "rgba(20,22,58,0.12)",
-                  color: "var(--color-ca-ink)",
-                }}
               />
             </div>
 
@@ -358,19 +354,13 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                 <label htmlFor="phone" className="mb-1.5 block text-[12px] font-bold text-ca-ink">
                   Teléfono
                 </label>
-                <input
+                <Input
                   id="phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   onBlur={() => phone.trim() && setPhone(formatPhone(phone))}
                   placeholder="+56 9 1234 5678"
-                  className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-                  style={{
-                    background: "var(--color-ca-bg)",
-                    borderColor: "rgba(20,22,58,0.12)",
-                    color: "var(--color-ca-ink)",
-                  }}
                 />
               </div>
 
@@ -379,23 +369,21 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                   RUT
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="rut"
                     type="text"
                     value={rut}
                     onChange={(e) => handleRutChange(e.target.value)}
                     placeholder="12.345.678-9"
-                    className="w-full rounded-xl border px-4 py-3 pr-10 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
+                    className="pr-10"
                     style={{
-                      background: "var(--color-ca-bg)",
                       borderColor: rutTouched
                         ? rutValid
                           ? "rgba(63,90,5,0.4)"
                           : rutClean.length >= 8
                             ? "rgba(225,29,72,0.4)"
-                            : "rgba(20,22,58,0.12)"
-                        : "rgba(20,22,58,0.12)",
-                      color: "var(--color-ca-ink)",
+                            : undefined
+                        : undefined,
                     }}
                   />
                   {rutTouched && rutClean.length >= 8 && (
@@ -440,18 +428,12 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                 <label htmlFor="company" className="mb-1.5 block text-[12px] font-bold text-ca-ink">
                   Empresa
                 </label>
-                <input
+                <Input
                   id="company"
                   type="text"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="Nombre de tu empresa"
-                  className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-                  style={{
-                    background: "var(--color-ca-bg)",
-                    borderColor: "rgba(20,22,58,0.12)",
-                    color: "var(--color-ca-ink)",
-                  }}
                 />
               </div>
 
@@ -459,18 +441,12 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                 <label htmlFor="jobTitle" className="mb-1.5 block text-[12px] font-bold text-ca-ink">
                   Cargo
                 </label>
-                <input
+                <Input
                   id="jobTitle"
                   type="text"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
                   placeholder="Tu cargo actual"
-                  className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-                  style={{
-                    background: "var(--color-ca-bg)",
-                    borderColor: "rgba(20,22,58,0.12)",
-                    color: "var(--color-ca-ink)",
-                  }}
                 />
               </div>
             </div>
@@ -480,19 +456,13 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
               <label htmlFor="linkedin" className="mb-1.5 block text-[12px] font-bold text-ca-ink">
                 LinkedIn
               </label>
-              <input
+              <Input
                 id="linkedin"
                 type="url"
                 value={linkedinUrl}
                 onChange={(e) => setLinkedinUrl(e.target.value)}
                 onBlur={() => linkedinUrl.trim() && setLinkedinUrl(normalizeUrl(linkedinUrl))}
                 placeholder="https://linkedin.com/in/tu-perfil"
-                className="w-full rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-                style={{
-                  background: "var(--color-ca-bg)",
-                  borderColor: "rgba(20,22,58,0.12)",
-                  color: "var(--color-ca-ink)",
-                }}
               />
             </div>
 
@@ -509,7 +479,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                   {bio.length}/{BIO_MAX}
                 </span>
               </label>
-              <textarea
+              <Textarea
                 id="bio"
                 value={bio}
                 onChange={(e) => {
@@ -517,12 +487,7 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
                 }}
                 rows={3}
                 placeholder="Cuéntanos brevemente sobre ti y tu experiencia profesional..."
-                className="w-full resize-none rounded-xl border px-4 py-3 text-[14px] font-medium outline-none transition-colors focus:border-[var(--color-ca-violet)] focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-                style={{
-                  background: "var(--color-ca-bg)",
-                  borderColor: "rgba(20,22,58,0.12)",
-                  color: "var(--color-ca-ink)",
-                }}
+                className="resize-none"
               />
             </div>
           </div>
@@ -543,26 +508,23 @@ export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }:
           </div>
 
           <div className="flex w-full items-center gap-3 sm:w-auto">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={handleSkip}
               disabled={!requiredDone || submitting}
-              className="rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-              style={{
-                borderColor: "rgba(20,22,58,0.14)",
-                color: "var(--color-ca-ink)",
-              }}
+              className="h-auto px-5 py-2.5 text-[13px]"
             >
               Completar después
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleSubmit}
               disabled={!requiredDone || submitting}
-              className="ca-btn-primary flex-1 px-6 py-2.5 text-[13px] font-bold disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+              className="h-auto flex-1 px-6 py-2.5 text-[13px] sm:flex-none"
             >
               {submitting ? "Guardando..." : "Completar y entrar al classroom"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

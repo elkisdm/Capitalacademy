@@ -247,7 +247,7 @@ export async function POST(req: Request) {
         thumbnail_url: thumbnailUrl,
         // El asset quedó listo: limpia cualquier error de procesamiento previo.
         mux_error: null,
-      } as never)
+      })
       .eq("mux_upload_id", upload_id)
       .select("id");
 
@@ -290,12 +290,12 @@ export async function POST(req: Request) {
     if (uploadId) {
       await supabase
         .from("lessons")
-        .update({ mux_error: reason } as never)
+        .update({ mux_error: reason })
         .eq("mux_upload_id", uploadId);
     } else {
       await supabase
         .from("lessons")
-        .update({ mux_error: reason } as never)
+        .update({ mux_error: reason })
         .eq("mux_asset_id", event.data.id);
     }
   }
@@ -335,10 +335,22 @@ export async function POST(req: Request) {
 
       if (lesson) {
         // Store the track ID on the lesson
-        await supabase
+        const { error: trackUpdateError } = await supabase
           .from("lessons")
           .update({ mux_track_id: trackId })
           .eq("id", lesson.id);
+
+        if (trackUpdateError) {
+          console.error(
+            "Mux webhook: failed to store mux_track_id for lesson",
+            lesson.id,
+            trackUpdateError,
+          );
+          return NextResponse.json(
+            { error: "DB update failed" },
+            { status: 500 },
+          );
+        }
 
         // Fetch transcript text and VTT from Mux
         let contentText: string | null = null;
@@ -357,17 +369,31 @@ export async function POST(req: Request) {
         }
 
         // Upsert into lesson_transcripts
-        await supabase.from("lesson_transcripts").upsert(
-          {
-            lesson_id: lesson.id,
-            status: "ready",
-            language: language_code ?? "es",
-            generated_at: new Date().toISOString(),
-            content_text: contentText,
-            content_vtt: contentVtt,
-          },
-          { onConflict: "lesson_id,language" },
-        );
+        const { error: transcriptUpsertError } = await supabase
+          .from("lesson_transcripts")
+          .upsert(
+            {
+              lesson_id: lesson.id,
+              status: "ready",
+              language: language_code ?? "es",
+              generated_at: new Date().toISOString(),
+              content_text: contentText,
+              content_vtt: contentVtt,
+            },
+            { onConflict: "lesson_id,language" },
+          );
+
+        if (transcriptUpsertError) {
+          console.error(
+            "Mux webhook: failed to upsert lesson_transcripts for lesson",
+            lesson.id,
+            transcriptUpsertError,
+          );
+          return NextResponse.json(
+            { error: "DB update failed" },
+            { status: 500 },
+          );
+        }
 
         // Auto-trigger transcript correction (fire-and-forget)
         if (contentVtt) {

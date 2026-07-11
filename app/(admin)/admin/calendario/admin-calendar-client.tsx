@@ -3,8 +3,21 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
+import { Badge } from "@/components/ui/badge";
 
 const TZ = "America/Santiago";
+
+const MODALITY_LABELS: Record<string, string> = {
+  live_online: "Online",
+  live_in_person: "Presencial",
+  recorded: "Grabada",
+};
+
+const MODALITY_TONE: Record<string, "violet" | "neutral" | "amber"> = {
+  live_online: "violet",
+  live_in_person: "neutral",
+  recorded: "amber",
+};
 
 function dayKeyOf(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -70,8 +83,11 @@ export function AdminCalendarClient({
   return (
     <div className="ca-fade-up mx-auto flex w-full max-w-[1000px] flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
       <div>
-        <h1 className="text-[34px] font-black tracking-[-0.025em] text-ca-ink">Calendario</h1>
-        <p className="mt-1 text-ca-ink-soft">{programName}</p>
+        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          Operaciones
+        </div>
+        <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Calendario</h1>
+        <p className="mt-1 text-[14px] font-semibold text-ca-ink-soft">{programName}</p>
       </div>
 
       {sessions.length === 0 ? (
@@ -92,13 +108,12 @@ export function AdminCalendarClient({
 
           {selectedDay && (
             <section className="flex flex-col gap-3">
-              <h2 className="font-mono text-[11px] font-bold uppercase capitalize tracking-[0.18em] text-ca-ink-soft">
+              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 {fmtFullDay(selectedDay)}
               </h2>
               {selectedSessions.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {selectedSessions.map((s) => {
-                    const isOnline = s.modality === "live_online";
                     const isCancelled = s.status === "cancelled";
                     return (
                       <button
@@ -109,13 +124,12 @@ export function AdminCalendarClient({
                           isCancelled ? "opacity-65" : ""
                         }`}
                       >
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
-                            isOnline ? "bg-ca-violet/10 text-ca-violet" : "bg-ca-ink/[0.06] text-ca-ink"
-                          }`}
+                        <Badge
+                          tone={MODALITY_TONE[s.modality] ?? "neutral"}
+                          className="text-[10px] font-bold uppercase tracking-[0.12em]"
                         >
-                          {isOnline ? "Online" : "Presencial"}
-                        </span>
+                          {MODALITY_LABELS[s.modality] ?? s.modality}
+                        </Badge>
                         <span className="font-mono text-[11px] font-bold text-ca-ink-soft">
                           {fmtTime(s.starts_at)}
                         </span>

@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { ImagePlus, Eye, Pencil, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Markdown } from "@/components/ui/markdown";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/field";
 
 const BUCKET = "lesson-content";
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -98,10 +100,12 @@ export function LessonContentEditor({
     <div>
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="inline-flex rounded-lg border border-ca-ink/[0.08] p-0.5">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setTab("edit")}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors"
+            className="h-auto min-h-0 rounded-md px-3 py-1"
             style={{
               background: tab === "edit" ? "var(--color-ca-violet)" : "transparent",
               color: tab === "edit" ? "#fff" : "var(--color-ca-ink-soft)",
@@ -109,11 +113,13 @@ export function LessonContentEditor({
           >
             <Pencil className="h-3.5 w-3.5" />
             Editar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setTab("preview")}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors"
+            className="h-auto min-h-0 rounded-md px-3 py-1"
             style={{
               background: tab === "preview" ? "var(--color-ca-violet)" : "transparent",
               color: tab === "preview" ? "#fff" : "var(--color-ca-ink-soft)",
@@ -121,18 +127,19 @@ export function LessonContentEditor({
           >
             <Eye className="h-3.5 w-3.5" />
             Vista previa
-          </button>
+          </Button>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="inline-flex items-center gap-1.5 rounded-md border border-ca-ink/[0.08] px-3 py-1.5 text-xs font-medium text-ca-ink-soft hover:border-ca-violet hover:text-ca-violet disabled:opacity-50"
         >
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
           {uploading ? "Subiendo…" : "Insertar imagen"}
-        </button>
+        </Button>
         <input
           ref={fileRef}
           type="file"
@@ -146,12 +153,12 @@ export function LessonContentEditor({
       </div>
 
       {tab === "edit" ? (
-        <textarea
+        <Textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={12}
-          className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 font-mono text-[13px] leading-relaxed focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
+          className="font-mono text-[13px] leading-relaxed"
           placeholder={"Escribe la clase en Markdown.\n\n# Título\n\nUna **explicación** con listas:\n- Punto uno\n- Punto dos\n\nUsa “Insertar imagen” para intercalar diapositivas o capturas."}
         />
       ) : (

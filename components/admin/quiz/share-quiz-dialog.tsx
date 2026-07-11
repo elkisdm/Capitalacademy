@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import QRCode from "qrcode";
-import { useFocusTrap } from "@/lib/utils/use-focus-trap";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 import { LoaderIcon } from "./icons";
 
 /**
@@ -27,22 +28,11 @@ export function ShareQuizDialog({
   const [mounted, setMounted] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const trapRef = useFocusTrap(open);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
-
-  // Cerrar con Escape mientras el diálogo esté abierto.
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
 
   // El enlace usa el origin actual (mismo dominio que el admin), derivado en
   // render para no depender de una env de URL pública ni de estado extra.
@@ -82,96 +72,89 @@ export function ShareQuizDialog({
     .replace(/^-+|-+$/g, "")
     .slice(0, 40) || "evaluacion";
 
-  if (!open || !mounted) return null;
-
-  return createPortal(
-    <>
-      <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
-      <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
-        <div
-          ref={trapRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="share-quiz-title"
-          style={{ overscrollBehavior: "contain" }}
-          className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="share-quiz-title"
+      className="max-w-[440px] overflow-hidden p-0"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between border-b px-6 py-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+        <div className="pr-3">
+          <h2 id="share-quiz-title" className="text-[17px] font-black tracking-tight text-ca-ink">Compartir evaluación</h2>
+          <p className="mt-0.5 text-[12.5px] text-ca-ink-soft">{title}</p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="!h-8 !w-8 shrink-0 rounded-full p-0 text-ca-ink-soft"
         >
-          {/* Header */}
-          <div className="flex items-start justify-between border-b px-6 py-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
-            <div className="pr-3">
-              <h2 id="share-quiz-title" className="text-[17px] font-black tracking-tight text-ca-ink">Compartir evaluación</h2>
-              <p className="mt-0.5 text-[12.5px] text-ca-ink-soft">{title}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
-              aria-label="Cerrar"
+          <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </Button>
+      </div>
+
+      <div className="flex flex-col items-center gap-4 px-6 py-6">
+        {!isActive && (
+          <div className="w-full rounded-xl bg-amber-50 px-3.5 py-2.5 text-[12.5px] font-semibold text-amber-800">
+            Esta evaluación está en borrador. Los alumnos verán el enlace, pero no podrán
+            rendirla hasta que la actives.
+          </div>
+        )}
+
+        {/* QR */}
+        <div className="grid h-[224px] w-[224px] place-items-center rounded-2xl border border-ca-ink/[0.08] bg-white p-3">
+          {qrDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={qrDataUrl} alt="Código QR de la evaluación" width={200} height={200} />
+          ) : (
+            <LoaderIcon />
+          )}
+        </div>
+
+        {qrDataUrl && (
+          <a
+            href={qrDataUrl}
+            download={`qr-${slug}.png`}
+            className="text-[12.5px] font-bold text-ca-violet hover:underline"
+          >
+            Descargar QR (PNG)
+          </a>
+        )}
+
+        {/* Enlace */}
+        <div className="w-full">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
+            Enlace para alumnos
+          </label>
+          <div className="flex items-stretch gap-2">
+            <Input
+              readOnly
+              aria-label="Enlace para alumnos"
+              value={url}
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-w-0 flex-1 bg-ca-bg-soft text-[12.5px]"
+            />
+            <Button
+              type="button"
+              variant="lime"
+              onClick={copyLink}
+              className="h-auto shrink-0 px-4 py-2.5 text-[12.5px]"
             >
-              <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+              {copied ? "Copiado" : "Copiar"}
+            </Button>
           </div>
-
-          <div className="flex flex-col items-center gap-4 px-6 py-6">
-            {!isActive && (
-              <div className="w-full rounded-xl bg-amber-50 px-3.5 py-2.5 text-[12.5px] font-semibold text-amber-800">
-                Esta evaluación está en borrador. Los alumnos verán el enlace, pero no podrán
-                rendirla hasta que la actives.
-              </div>
-            )}
-
-            {/* QR */}
-            <div className="grid h-[224px] w-[224px] place-items-center rounded-2xl border border-ca-ink/[0.08] bg-white p-3">
-              {qrDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrDataUrl} alt="Código QR de la evaluación" width={200} height={200} />
-              ) : (
-                <LoaderIcon />
-              )}
-            </div>
-
-            {qrDataUrl && (
-              <a
-                href={qrDataUrl}
-                download={`qr-${slug}.png`}
-                className="text-[12.5px] font-bold text-ca-violet hover:underline"
-              >
-                Descargar QR (PNG)
-              </a>
-            )}
-
-            {/* Enlace */}
-            <div className="w-full">
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
-                Enlace para alumnos
-              </label>
-              <div className="flex items-stretch gap-2">
-                <input
-                  readOnly
-                  aria-label="Enlace para alumnos"
-                  value={url}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="min-w-0 flex-1 rounded-xl border border-ca-ink/[0.08] bg-ca-bg-soft px-3 py-2.5 text-[12.5px] text-ca-ink outline-none"
-                />
-                <button
-                  onClick={copyLink}
-                  className="shrink-0 rounded-xl px-4 py-2.5 text-[12.5px] font-bold text-ca-ink transition-colors"
-                  style={{ background: "var(--color-ca-lime)" }}
-                >
-                  {copied ? "Copiado" : "Copiar"}
-                </button>
-              </div>
-              <p className="mt-2 text-[11.5px] leading-snug text-ca-ink-soft">
-                Al abrirlo, el alumno inicia sesión (si hace falta) y vuelve directo a la
-                evaluación. Requiere matrícula activa en el programa.
-              </p>
-            </div>
-          </div>
+          <p className="mt-2 text-[11.5px] leading-snug text-ca-ink-soft">
+            Al abrirlo, el alumno inicia sesión (si hace falta) y vuelve directo a la
+            evaluación. Requiere matrícula activa en el programa.
+          </p>
         </div>
       </div>
-    </>,
-    document.body,
+    </Dialog>
   );
 }

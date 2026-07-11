@@ -62,7 +62,7 @@ export async function requireStaff(): Promise<AuthResult> {
 
   if (
     !profile ||
-    !["ops", "admin", "teacher"].includes(profile.system_role)
+    !["ops", "admin"].includes(profile.system_role)
   ) {
     return {
       error: NextResponse.json(

@@ -5,6 +5,7 @@ import type { Tab, QuizManagerProps } from "./types";
 import { TabBar } from "./tab-bar";
 import { EvaluacionesTab } from "./evaluaciones-tab";
 import { CertificadosTab } from "./certificados-tab";
+import { Select } from "@/components/ui/field";
 
 export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
   const [selectedProgram, setSelectedProgram] = useState(
@@ -39,20 +40,20 @@ export function QuizManager({ programs, initialProgramId }: QuizManagerProps) {
           <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
             Programa
           </label>
-          <select
+          <Select
             value={selectedProgram}
             onChange={(e) => {
               setSelectedProgram(e.target.value);
               setTab("evaluaciones");
             }}
-            className="rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] font-semibold text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
+            className="w-auto font-semibold"
           >
             {programs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 

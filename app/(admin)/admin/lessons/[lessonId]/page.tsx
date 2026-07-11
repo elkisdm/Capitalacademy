@@ -136,7 +136,7 @@ export default async function AdminLessonPage(
                 <p className="mt-1 text-xs text-ca-ink-soft/60">
                   Asset: {(lesson as Record<string, unknown>).mux_asset_id as string}
                 </p>
-                <p className="mt-3 text-sm font-medium text-ca-lime-deep">
+                <p className="mt-3 text-sm font-medium text-ca-lime-text">
                   Video listo y disponible para alumnos
                 </p>
               </div>

@@ -764,6 +764,7 @@ export type Database = {
           id: string
           max_file_size_bytes: number
           open_notified_at: string | null
+          open_notified_count: number
           opens_at: string
           program_id: string
           title: string
@@ -779,6 +780,7 @@ export type Database = {
           id?: string
           max_file_size_bytes?: number
           open_notified_at?: string | null
+          open_notified_count?: number
           opens_at: string
           program_id: string
           title: string
@@ -794,6 +796,7 @@ export type Database = {
           id?: string
           max_file_size_bytes?: number
           open_notified_at?: string | null
+          open_notified_count?: number
           opens_at?: string
           program_id?: string
           title?: string
@@ -2105,6 +2108,10 @@ export type Database = {
       }
       has_cohort_access: { Args: { p_cohort_id: string }; Returns: boolean }
       has_program_access: { Args: { p_program_id: string }; Returns: boolean }
+      increment_coupon_redemptions: {
+        Args: { p_coupon_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_cohort_staff: { Args: { p_cohort_id: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }

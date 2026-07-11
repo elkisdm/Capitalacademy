@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /** Marca una lección sin video como completada (POST /api/classroom/progress). */
 export function MarkCompleteButton({
@@ -36,21 +37,22 @@ export function MarkCompleteButton({
   if (completed) {
     return (
       <div className="ca-scale-in inline-flex items-center gap-2 rounded-2xl bg-ca-lime/15 px-5 py-3 text-[13.5px] font-bold text-ca-ink">
-        <Check className="ca-check-pop h-4 w-4 text-ca-lime-deep" />
+        <Check className="ca-check-pop h-4 w-4 text-ca-lime-text" />
         Clase completada
       </div>
     );
   }
 
   return (
-    <button
+    <Button
       type="button"
       onClick={markDone}
       disabled={loading}
-      className="ca-btn-interactive inline-flex items-center gap-2 rounded-2xl bg-ca-ink px-5 py-3 text-[13.5px] font-bold text-white disabled:opacity-60 disabled:pointer-events-none"
+      variant="ghost"
+      className="h-auto min-h-0 gap-2 rounded-2xl bg-ca-ink px-5 py-3 text-[13.5px] text-white hover:bg-ca-ink/90 disabled:opacity-60"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
       Marcar como completada
-    </button>
+    </Button>
   );
 }

@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { UploadCloud } from "lucide-react";
 import { QuizStart } from "./quiz-start";
 import { QuizLocked } from "./quiz-locked";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Pantallas de llegada (QuizStart / QuizLocked) van eager. Las que aparecen tras
 // una acción del alumno —siempre con un fetch de por medio (iniciar/enviar)— se
@@ -363,20 +365,13 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
 
   if (gate.status === "unconfigured") {
     return (
-      <Centered>
-        <h1 className="text-[22px] font-black tracking-tight text-ca-ink">
-          Aún no hay evaluación disponible
-        </h1>
-        <p className="max-w-md text-[14px] font-medium leading-relaxed text-ca-ink-soft">
-          Tu programa todavía no tiene un quiz final configurado. Te avisaremos cuando esté listo.
-        </p>
-        <button
-          onClick={goWorkshop}
-          className="ca-btn-interactive mt-2 inline-flex items-center gap-2 rounded-full border border-ca-outline-strong px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
-        >
-          Volver al programa
-        </button>
-      </Centered>
+      <div className="ca-fade-up flex h-full min-h-[60vh] w-full items-center justify-center px-6 py-16">
+        <EmptyState
+          icon={UploadCloud}
+          title="Próximamente"
+          description="Tu evaluación final aún no está disponible. Cuando el equipo la publique, aparecerá aquí."
+        />
+      </div>
     );
   }
 

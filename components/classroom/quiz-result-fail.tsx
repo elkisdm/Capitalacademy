@@ -10,6 +10,8 @@ import {
   ArrowRight,
   AlertTriangle,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -263,12 +265,12 @@ export default function QuizResultFail({
                 necesitas {neededCorrect}
               </h3>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-ca-violet-mist px-3 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.16em] text-ca-violet-deep">
+            <Badge tone="violet" className="px-3 py-1.5 text-[11.5px] uppercase tracking-[0.16em]">
               <RefreshCw size={11} strokeWidth={2.5} />
               {noAttemptsLeft
                 ? "Sin intentos"
                 : `Quedan ${attemptsRemaining} intento${attemptsRemaining !== 1 ? "s" : ""}`}
-            </span>
+            </Badge>
           </div>
 
           <div className="mb-4 mt-12">
@@ -321,13 +323,7 @@ export default function QuizResultFail({
               {wrongAnswers.map((w, i) => (
                 <div key={i} className="px-6 py-5">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.16em]"
-                      style={{
-                        background: "#fdebef",
-                        color: "var(--color-ca-rose)",
-                      }}
-                    >
+                    <Badge tone="rose" size="sm" className="uppercase tracking-[0.16em]">
                       <svg
                         width={11}
                         height={11}
@@ -341,7 +337,7 @@ export default function QuizResultFail({
                         <path d="M18 6L6 18M6 6l12 12" />
                       </svg>
                       Incorrecta
-                    </span>
+                    </Badge>
                     <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                       {w.topic}
                     </span>
@@ -394,13 +390,14 @@ export default function QuizResultFail({
                 Te recomendamos volver a las lecciones donde te equivocaste
                 antes de intentar de nuevo.
               </p>
-              <button
+              <Button
                 onClick={onReviewLessons}
-                className="ca-btn-interactive mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-ca-ink px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-white"
+                variant="ghost"
+                className="mt-4 h-11 min-h-0 gap-2 bg-ca-ink px-5 text-[12.5px] uppercase tracking-[0.08em] text-white hover:bg-ca-ink/90"
               >
                 <Play size={15} strokeWidth={2} />
                 Repasar lecciones
-              </button>
+              </Button>
             </div>
 
             {/* Retry dark card */}
@@ -426,14 +423,15 @@ export default function QuizResultFail({
                 <p className="mt-1 text-[12.5px] font-medium leading-relaxed text-white/[0.78]">
                   Puedes reintentar cuando quieras. No hay tiempo limite.
                 </p>
-                <button
+                <Button
                   onClick={onRetry}
                   disabled={noAttemptsLeft}
-                  className="ca-btn-interactive ca-btn-lime mt-4 inline-flex h-11 items-center gap-2 px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
+                  variant="lime"
+                  className="mt-4 h-11 min-h-0 gap-2 px-5 text-[12.5px] uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Reintentar quiz
                   <ArrowRight size={15} strokeWidth={2} />
-                </button>
+                </Button>
               </div>
             </div>
 

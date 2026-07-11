@@ -123,6 +123,9 @@ export async function selectRandomQuestions(
   programId: string,
   limit: number,
 ): Promise<QuizQuestionPublic[]> {
+  // as never: el RPC "get_random_quiz_questions" no existe en la base (no hay
+  // migración que lo cree) — no está en los tipos generados. La llamada
+  // siempre cae al fallback en JS de abajo; se deja documentado el gap.
   const { data: rpcData, error: rpcError } = await admin.rpc(
     "get_random_quiz_questions" as never,
     { p_program_id: programId, p_limit: limit } as never,

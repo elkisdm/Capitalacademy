@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -465,16 +467,10 @@ export function QuizInProgress({
                   className="h-10 w-px"
                   style={{ background: "var(--color-ca-outline)" }}
                 />
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                  style={{
-                    background: "var(--color-ca-violet-mist)",
-                    color: "var(--color-ca-violet-deep)",
-                  }}
-                >
+                <Badge tone="violet" className="uppercase tracking-[0.16em]">
                   <Icon name="bookmark" size={11} stroke={2.5} />
                   Pregunta {currentIdx + 1}
-                </span>
+                </Badge>
               </div>
             </div>
 
@@ -507,19 +503,15 @@ export function QuizInProgress({
             className="mt-6 flex items-center justify-between gap-4 border-t pt-5"
             style={{ borderColor: "var(--color-ca-outline)" }}
           >
-            <button
+            <Button
               onClick={goPrev}
               disabled={isFirst}
-              className="ca-btn-interactive inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40"
-              style={{
-                background: "transparent",
-                color: "var(--color-ca-ink)",
-                border: "1px solid var(--color-ca-outline-strong)",
-              }}
+              variant="outline"
+              className="h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
             >
               <Icon name="arrowLeft" size={15} stroke={2} />
               Anterior
-            </button>
+            </Button>
 
             <ProgressDots
               total={total}
@@ -528,14 +520,15 @@ export function QuizInProgress({
               onDotClick={setCurrentIdx}
             />
 
-            <button
+            <Button
               onClick={goNext}
               disabled={!selectedLetter}
-              className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40"
+              variant="lime"
+              className="h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
             >
               {isLast ? "Enviar respuestas" : "Siguiente"}
               <Icon name="arrowRight" size={15} stroke={2} />
-            </button>
+            </Button>
           </div>
 
           {/* Bottom hint */}

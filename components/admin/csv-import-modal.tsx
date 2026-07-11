@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
-import { useFocusTrap } from "@/lib/utils/use-focus-trap";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
 import Papa from "papaparse";
 // XLSX is imported dynamically in parseFile only when handling .xlsx/.xls files
 
@@ -171,7 +172,6 @@ function StatusDot({ estado }: { estado: ParsedRow["estado"] }) {
 }
 
 export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: CsvImportModalProps) {
-  const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(0);
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -180,20 +180,6 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
   const [dragOver, setDragOver] = useState(false);
   const [selectedCohortId, setSelectedCohortId] = useState(cohorts[0]?.id ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const trapRef = useFocusTrap(open);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
 
   const reset = useCallback(() => {
     setStep(0);
@@ -403,23 +389,13 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
     window.open("/api/admin/users/template", "_blank");
   };
 
-  if (!open || !mounted) return null;
-
-  return createPortal(
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[60] bg-black/50"
-        onClick={handleClose}
-      />
-
-      {/* Modal */}
-      <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
-        <div
-          ref={trapRef}
-          className="flex max-h-[90vh] w-full max-w-[720px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      aria-label="Importar usuarios"
+      className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden p-0"
+    >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
             <div>
@@ -430,13 +406,15 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                 <StepIndicator current={step} />
               </div>
             </div>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleClose}
               aria-label="Cerrar"
-              className="grid h-9 w-9 place-items-center rounded-full text-ca-ink-soft transition-colors hover:bg-ca-bg-soft hover:text-ca-ink"
+              className="h-9 w-9 p-0 text-ca-ink-soft hover:text-ca-ink"
             >
               <CloseIcon />
-            </button>
+            </Button>
           </div>
 
           {/* Content */}
@@ -449,17 +427,15 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                   <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
                     Cohorte destino
                   </label>
-                  <select
+                  <Select
                     value={selectedCohortId}
                     onChange={(e) => setSelectedCohortId(e.target.value)}
                     aria-label="Cohorte destino"
-                    className="w-full rounded-xl border bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-[var(--color-ca-violet)]"
-                    style={{ borderColor: "rgba(20,22,58,0.12)" }}
                   >
                     {cohorts.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 {/* Drop zone */}
@@ -492,16 +468,17 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                     <span className="rounded bg-ca-bg-soft px-1.5 py-0.5 font-mono text-[10px] font-bold text-ca-ink-soft">XLSX</span>
                     <span className="text-ca-ink-soft">o haz clic para seleccionar</span>
                   </p>
-                  <button
+                  <Button
                     type="button"
-                    className="ca-btn-primary mt-5 px-5 py-2.5 text-[13px] font-bold"
+                    variant="primary"
+                    className="mt-5"
                     onClick={(e) => {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
                   >
                     Seleccionar archivo
-                  </button>
+                  </Button>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -512,14 +489,16 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
                 </div>
 
                 {/* Template link */}
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={(e) => { e.stopPropagation(); downloadTemplate(); }}
-                  className="mt-4 inline-flex items-center gap-2 text-[12px] font-bold transition-colors hover:text-ca-violet-deep"
-                  style={{ color: "var(--color-ca-violet)" }}
+                  className="mt-4 gap-2 text-ca-violet hover:bg-transparent hover:text-ca-violet-deep"
                 >
                   <DownloadIcon />
                   Descargar plantilla
-                </button>
+                </Button>
               </div>
             )}
 
@@ -720,59 +699,48 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
           >
             <div>
               {step === 1 && (
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => { setStep(0); setRows([]); setFileName(""); }}
-                  className="inline-flex items-center gap-2 text-[13px] font-bold text-ca-ink-soft transition-colors hover:text-ca-ink"
+                  className="gap-2 text-ca-ink-soft hover:bg-transparent hover:text-ca-ink"
                 >
                   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 12H5M12 19l-7-7 7-7" />
                   </svg>
                   Volver
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex items-center gap-3">
               {step < 2 && (
-                <button
-                  onClick={handleClose}
-                  className="rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors hover:bg-ca-bg-soft"
-                  style={{ borderColor: "rgba(20,22,58,0.14)", color: "var(--color-ca-ink)" }}
-                >
+                <Button type="button" variant="outline" onClick={handleClose}>
                   Cancelar
-                </button>
+                </Button>
               )}
               {step === 1 && (
-                <button
+                <Button
+                  type="button"
+                  variant="primary"
                   onClick={handleImport}
                   disabled={selectedCount === 0 || importing}
-                  className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {importing ? "Importando…" : `Importar ${selectedCount} usuarios`}
-                </button>
+                </Button>
               )}
               {step === 2 && (
                 <>
-                  <button
-                    onClick={handleClose}
-                    className="rounded-full border px-5 py-2.5 text-[13px] font-bold transition-colors hover:bg-ca-bg-soft"
-                    style={{ borderColor: "rgba(20,22,58,0.14)", color: "var(--color-ca-ink)" }}
-                  >
+                  <Button type="button" variant="outline" onClick={handleClose}>
                     Cerrar
-                  </button>
-                  <button
-                    disabled
-                    title="Próximamente"
-                    className="ca-btn-primary px-5 py-2.5 text-[13px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  </Button>
+                  <Button type="button" variant="primary" disabled title="Próximamente">
                     Reenviar invitaciones
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </>,
-    document.body,
+    </Dialog>
   );
 }

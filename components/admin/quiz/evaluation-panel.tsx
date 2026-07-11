@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/admin/toast";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { Evaluation, QuizQuestion } from "./types";
 import { AddQuestionForm } from "./add-question-form";
 import { QuestionCard } from "./question-card";
@@ -179,15 +181,9 @@ export function EvaluationPanel({
         {/* Estado + acciones (fijo, sobre las pestañas) */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ca-bg-soft px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-              style={{
-                background: evaluation.is_active ? "rgba(168,211,16,0.22)" : "rgba(20,22,58,0.08)",
-                color: evaluation.is_active ? "#3f5a05" : "var(--color-ca-ink-soft)",
-              }}
-            >
+            <Badge tone={evaluation.is_active ? "lime" : "neutral"}>
               {evaluation.is_active ? "Activa" : "Borrador"}
-            </span>
+            </Badge>
             <span className="text-[13px] font-semibold text-ca-ink">
               {questions.length} {questions.length === 1 ? "pregunta" : "preguntas"}
             </span>
@@ -195,10 +191,11 @@ export function EvaluationPanel({
             <span className="text-[12px] text-ca-ink-soft">· {evaluation.max_attempts} intentos</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShareOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-[12px] font-bold text-ca-ink transition-colors"
-              style={{ borderColor: "rgba(20,22,58,0.14)" }}
+              className="h-auto gap-1.5 px-3.5 py-2 text-[12px]"
             >
               <svg aria-hidden="true" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3" />
@@ -207,19 +204,16 @@ export function EvaluationPanel({
                 <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
               </svg>
               Compartir
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant={evaluation.is_active ? "outline" : "lime"}
               onClick={toggleActive}
               disabled={busy}
-              className="rounded-xl border px-4 py-2 text-[12px] font-bold transition-colors disabled:opacity-40"
-              style={{
-                borderColor: evaluation.is_active ? "rgba(20,22,58,0.14)" : "var(--color-ca-lime-deep)",
-                color: evaluation.is_active ? "var(--color-ca-ink-soft)" : "#3f5a05",
-                background: evaluation.is_active ? "transparent" : "rgba(168,211,16,0.12)",
-              }}
+              className="h-auto px-4 py-2 text-[12px]"
             >
               {evaluation.is_active ? "Desactivar" : "Activar para alumnos"}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -257,24 +251,26 @@ export function EvaluationPanel({
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
-                <button
+                <Button
+                  type="button"
+                  variant="lime"
                   onClick={() => setShowAddForm(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors"
-                  style={{ background: "var(--color-ca-lime)" }}
+                  className="h-auto gap-1.5 px-4 py-2.5 text-[13px]"
                 >
                   + Agregar pregunta
-                </button>
+                </Button>
                 {evaluation.scope === "final" && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="primary"
                     onClick={handleGenerate}
                     disabled={generating}
                     title="Regenera el pool del final desde las transcripciones del programa (reemplaza las preguntas IA existentes)"
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white transition-colors disabled:opacity-60"
-                    style={{ background: "var(--color-ca-violet)" }}
+                    className="h-auto gap-2 px-4 py-2.5 text-[13px] disabled:opacity-60"
                   >
                     {generating ? <LoaderIcon /> : <SparklesIcon />}
                     {generating ? "Generando…" : "Generar con IA"}
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -301,14 +297,17 @@ export function EvaluationPanel({
             <EvaluationSettings evaluation={evaluation} onEvaluationChange={onEvaluationChange} />
             {onDeleted && (
               <div className="flex justify-end border-t pt-4" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleDeleteEvaluation}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 text-[12px] font-bold text-red-600 transition-colors hover:text-red-700 disabled:opacity-40"
+                  className="h-auto gap-1.5 px-0 py-0 text-[12px] font-bold text-red-600 hover:bg-transparent hover:text-red-700"
                 >
                   <TrashIcon />
                   Eliminar evaluación
-                </button>
+                </Button>
               </div>
             )}
           </div>

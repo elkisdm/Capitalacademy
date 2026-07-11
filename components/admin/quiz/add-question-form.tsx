@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/admin/toast";
+import { Button } from "@/components/ui/button";
 import type { QuizQuestion } from "./types";
 import { LoaderIcon, PlusIcon } from "./icons";
 import { QuestionEditor } from "./question-editor";
@@ -61,13 +62,15 @@ export function AddQuestionForm({
     return (
       <>
         <ToastContainer />
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 rounded-xl border-2 border-dashed border-ca-ink/[0.10] px-4 py-3 text-[13px] font-bold text-ca-ink-soft transition-colors hover:border-ca-violet/30 hover:text-ca-violet"
+          className="h-auto justify-start gap-2 rounded-xl border-2 border-dashed border-ca-ink/[0.10] px-4 py-3 text-[13px] font-bold text-ca-ink-soft hover:border-ca-violet/30 hover:bg-transparent hover:text-ca-violet"
         >
           <PlusIcon />
           Agregar pregunta manual
-        </button>
+        </Button>
       </>
     );
   }
@@ -83,25 +86,28 @@ export function AddQuestionForm({
           <QuestionEditor draft={draft} onChange={setDraft} />
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              type="button"
+              variant="lime"
               onClick={handleSubmit}
               disabled={saving || !!error}
               title={error ?? undefined}
-              className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors disabled:opacity-40"
-              style={{ background: "var(--color-ca-lime)" }}
+              className="h-auto gap-2 px-5 py-2.5 text-[13px]"
             >
               {saving ? <LoaderIcon /> : <PlusIcon />}
               {saving ? "Guardando…" : "Agregar pregunta"}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => {
                 reset();
                 setOpen(false);
               }}
-              className="rounded-xl px-4 py-2.5 text-[13px] font-semibold text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+              className="h-auto px-4 py-2.5 text-[13px] font-semibold text-ca-ink-soft"
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       </div>

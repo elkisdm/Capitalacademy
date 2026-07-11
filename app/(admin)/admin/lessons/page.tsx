@@ -41,7 +41,10 @@ export default async function AdminLessonsPage(props: {
   if (programOptions.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-        <h1 className="text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
+        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          Operaciones · Contenido
+        </div>
+        <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
         <p className="mb-4 mt-4 text-ca-ink-soft">No hay programas configurados.</p>
       </div>
     );
@@ -119,7 +122,12 @@ export default async function AdminLessonsPage(props: {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
+          <div>
+            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+              Operaciones · Contenido
+            </div>
+            <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
+          </div>
           <AddModuleButton programs={programOptions} />
         </div>
         {scopeFilter}
@@ -138,7 +146,15 @@ export default async function AdminLessonsPage(props: {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:py-8">
       <div className="mb-5 flex items-center justify-between gap-4">
-        <h1 className="text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
+        <div>
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            Operaciones · Contenido
+          </div>
+          <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Gestión de lecciones</h1>
+          <p className="mt-1 text-[14px] text-ca-ink-soft">
+            Módulos, lecciones grabadas y clases en vivo por programa
+          </p>
+        </div>
         <AddModuleButton programs={programOptions} />
       </div>
       <div className="mb-8">{scopeFilter}</div>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isValidRut } from "@/lib/utils/rut";
 import { normalizeUrl } from "@/lib/utils/url";
+import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
@@ -47,7 +48,7 @@ const profileUpdateSchema = z.object({
   emergency_contact_phone: nullableText(40),
   birthday: z.preprocess(
     (v) => (v == null || v === "" ? null : v),
-    z.string().nullable(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "fecha inválida").nullable(),
   ),
 });
 
@@ -97,7 +98,9 @@ export async function PATCH(req: Request) {
 
   const { error } = await supabase
     .from("profiles")
-    .update(updateData as never)
+    // updateData se arma dinámicamente (bracket notation por columna) desde el
+    // schema, por lo que TS no puede verificar la forma estáticamente.
+    .update(updateData as Database["public"]["Tables"]["profiles"]["Update"])
     .eq("id", user.id);
 
   if (error) {

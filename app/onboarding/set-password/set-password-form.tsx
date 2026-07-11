@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
+import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 const REQUIREMENTS = [
   { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
@@ -222,13 +224,13 @@ export function SetPasswordForm({
                   Contraseña
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="password"
                     type={showPwd ? "text" : "password"}
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-lg border px-4 py-3 pr-12 text-sm outline-none transition-shadow focus:ring-2"
+                    className="rounded-lg pr-12"
                     style={{
                       borderColor: "#e5e5ea",
                       color: "#14163a",
@@ -292,13 +294,13 @@ export function SetPasswordForm({
                   Confirmar contraseña
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="confirm"
                     type={showConfirm ? "text" : "password"}
                     autoComplete="new-password"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    className="w-full rounded-lg border px-4 py-3 pr-12 text-sm outline-none transition-shadow focus:ring-2"
+                    className="rounded-lg pr-12"
                     style={{
                       borderColor: "#e5e5ea",
                       color: "#14163a",
@@ -327,14 +329,14 @@ export function SetPasswordForm({
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={!canSubmit}
-                className="w-full rounded-lg px-4 py-3 text-sm font-bold text-white transition-opacity disabled:opacity-40"
+                className="h-auto w-full rounded-lg px-4 py-3 text-sm"
                 style={{ background: brand.accent }}
               >
                 {saving ? "Guardando…" : "Crear contraseña"}
-              </button>
+              </Button>
             </form>
           </>
         )}

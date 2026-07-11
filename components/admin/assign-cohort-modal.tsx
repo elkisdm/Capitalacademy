@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useFocusTrap } from "@/lib/utils/use-focus-trap";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
 import type { CohortRole } from "./user-primitives";
 
 type CohortOption = {
@@ -80,7 +82,6 @@ const INPUT_CLASS =
   "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
 
 export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: AssignCohortModalProps) {
-  const trapRef = useFocusTrap(open);
   const [selectedCohortId, setSelectedCohortId] = useState("");
   const [selectedRole, setSelectedRole] = useState<CohortRole>("student");
   const [selectedModuleId, setSelectedModuleId] = useState("");
@@ -119,20 +120,20 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
       .finally(() => setLoadingModules(false));
   }, [selectedRole, selectedCohortId]);
 
+  // Cuando el combobox de cohorte está abierto, Escape debe cerrar solo el
+  // combobox (no todo el modal). Se intercepta en fase de captura para
+  // adelantarse al listener de Escape del <Dialog>.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !cohortDropdownOpen) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (cohortDropdownOpen) {
-          setCohortDropdownOpen(false);
-        } else {
-          onClose();
-        }
+        e.stopPropagation();
+        setCohortDropdownOpen(false);
       }
     };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, cohortDropdownOpen, onClose]);
+    document.addEventListener("keydown", handleKey, true);
+    return () => document.removeEventListener("keydown", handleKey, true);
+  }, [open, cohortDropdownOpen]);
 
   const filteredCohorts = cohorts.filter(
     (c) =>
@@ -163,14 +164,13 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div
-      className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
-      style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-label="Asignar a cohorte"
+      className="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden p-0"
     >
-      <div ref={trapRef} className="ca-card relative flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-ca-ink/[0.08] px-6 py-5">
           <div>
@@ -181,9 +181,9 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
               {user?.full_name}
             </p>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
+          <Button type="button" variant="ghost" onClick={onClose} aria-label="Cerrar" className="h-10 w-10 p-0">
             <CloseIcon />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -316,10 +316,9 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
                     Cargando módulos…
                   </div>
                 ) : localModules.length > 0 ? (
-                  <select
+                  <Select
                     value={selectedModuleId}
                     onChange={(e) => setSelectedModuleId(e.target.value)}
-                    className={INPUT_CLASS}
                   >
                     <option value="">Todos los módulos</option>
                     {localModules.map((m) => (
@@ -327,7 +326,7 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
                         M{String(m.position).padStart(2, "0")} — {m.title}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 ) : (
                   <div className="rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] text-ca-ink-soft">
                     Sin módulos configurados para este programa
@@ -370,21 +369,18 @@ export function AssignCohortModal({ open, user, cohorts, onClose, onAssign }: As
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-ca-ink/[0.08] px-6 py-4" style={{ background: "var(--color-ca-bg-soft)" }}>
-          <button
-            onClick={onClose}
-            className="rounded-full border border-ca-ink/[0.14] px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-white"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleAssign}
             disabled={saving || !selectedCohortId || !!hasSameRole}
-            className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:opacity-50"
           >
             {saving ? "Asignando…" : "Asignar"}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

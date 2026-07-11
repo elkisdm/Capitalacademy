@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { getActiveEnv, getEnvOptions, resolveProgramScope } from "@/lib/admin/active-env";
 import { getStudentPanelReport } from "@/lib/admin/student-panel-queries";
 import { StudentTable } from "./student-table";
@@ -10,8 +10,7 @@ export default async function AdminAlumnosPage({
 }: {
   searchParams: Promise<{ cohort?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuthUser();
   if (!user) redirect("/login");
 
   const envOptions = await getEnvOptions();

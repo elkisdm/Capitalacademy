@@ -12,6 +12,7 @@ import { AssignCohortModal } from "@/components/admin/assign-cohort-modal";
 import { DeactivateModal } from "@/components/admin/deactivate-modal";
 import { BrandShapes } from "@/components/classroom/primitives";
 import { useToast } from "@/components/admin/toast";
+import { Button } from "@/components/ui/button";
 import {
   ArrowLeftIcon,
   PencilIcon,
@@ -178,13 +179,16 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
 
   return (
     <>
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => router.push("/admin/users")}
-        className="mb-6 inline-flex items-center gap-2 text-[13px] font-bold text-ca-ink-soft transition-colors hover:text-ca-ink"
+        className="mb-6 gap-2 text-ca-ink-soft hover:bg-transparent hover:text-ca-ink"
       >
         <ArrowLeftIcon />
         Volver a usuarios
-      </button>
+      </Button>
 
       <div className="ca-card relative mb-6 overflow-hidden p-6 md:p-8">
         <BrandShapes variant="corner-violet" />
@@ -250,33 +254,34 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
 
           <div className="flex items-center gap-2">
             {user.onboarding_completed_at === null && (
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleSendInvitation}
                 disabled={sendingInvitation}
-                className="inline-flex items-center gap-2 rounded-full border border-ca-ink/[0.14] px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-ca-bg-soft disabled:opacity-50"
+                className="gap-2"
               >
                 <MailIcon />
                 {sendingInvitation ? "Enviando…" : "Reenviar invitación"}
-              </button>
+              </Button>
             )}
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-ca-ink/[0.14] px-4 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-ca-bg-soft"
-            >
+            <Button type="button" variant="outline" onClick={() => setDrawerOpen(true)} className="gap-2">
               <PencilIcon />
               Editar perfil
-            </button>
+            </Button>
             <div className="relative">
-              <button
+              <Button
                 ref={actionsBtnRef}
+                type="button"
+                variant="outline"
                 aria-label="Más acciones"
                 aria-haspopup="menu"
                 aria-expanded={actionsOpen}
                 onClick={() => setActionsOpen(!actionsOpen)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-ca-ink/[0.14] transition-colors hover:bg-ca-bg-soft"
+                className="h-10 w-10 p-0"
               >
                 <DotsIcon />
-              </button>
+              </Button>
               {actionsOpen && mounted && menuPos && createPortal(
                 <>
                   {/* Invisible backdrop */}
@@ -286,11 +291,12 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                   />
                   {/* Menu */}
                   <div
-                    className="fixed z-[55] w-56 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white shadow-lg"
+                    className="ca-scale-in fixed z-[55] w-56 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white shadow-lg"
                     style={{
                       top: menuPos.top != null ? menuPos.top : undefined,
                       bottom: menuPos.bottom != null ? menuPos.bottom : undefined,
                       left: menuPos.left,
+                      transformOrigin: menuPos.top != null ? "top right" : "bottom right",
                     }}
                   >
                     <button
@@ -376,13 +382,10 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
             <h2 className="text-[18px] font-black tracking-tight text-ca-ink">
               Participación en cohortes
             </h2>
-            <button
-              onClick={() => setAssignModalOpen(true)}
-              className="ca-btn-primary inline-flex items-center gap-2 px-4 py-2 text-[12px] font-bold"
-            >
+            <Button type="button" variant="primary" size="sm" onClick={() => setAssignModalOpen(true)} className="gap-2">
               <PlusIcon />
               Asignar a cohorte
-            </button>
+            </Button>
           </div>
 
           {user.cohort_roles.length === 0 ? (
@@ -399,13 +402,10 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
               <p className="mt-1 text-[12px] text-ca-ink-soft">
                 Este usuario no participa en ninguna cohorte actualmente.
               </p>
-              <button
-                onClick={() => setAssignModalOpen(true)}
-                className="ca-btn-primary mt-5 inline-flex items-center gap-2 px-5 py-2.5 text-[12px] font-bold"
-              >
+              <Button type="button" variant="primary" size="sm" onClick={() => setAssignModalOpen(true)} className="mt-5 gap-2">
                 <PlusIcon />
                 Asignar a cohorte
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -460,14 +460,16 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                   </Link>
 
                   <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => handleRemoveRole(cr.cohort_id, cr.role)}
                       aria-label={`Remover rol en ${cr.cohort_name}`}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-ca-ink-soft transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="h-8 w-8 rounded-lg p-0 hover:bg-red-50 hover:text-red-600"
                       title="Remover"
                     >
                       <TrashIcon />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}

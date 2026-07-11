@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { SessionResource, SessionResourceType } from "@/lib/classroom/types";
 import { PlusIcon, TrashIcon } from "@/components/admin/icons";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/field";
 
 const RESOURCE_TYPE_LABELS: Record<SessionResourceType, string> = {
   link: "Enlace",
@@ -59,8 +61,7 @@ export function SessionResourcesPanel({
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
+  const fieldCls = "text-[13px] font-medium";
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setError(null);
@@ -174,14 +175,15 @@ export function SessionResourcesPanel({
               <span className="shrink-0 rounded-full bg-ca-bg-soft px-2 py-0.5 text-[10px] font-bold text-ca-ink-soft">
                 {RESOURCE_TYPE_LABELS[r.type]}
               </span>
-              <button
+              <Button
+                variant="outline"
                 onClick={() => handleRemove(r.id)}
                 aria-label="Eliminar recurso"
                 disabled={removingId === r.id}
-                className="shrink-0 rounded-lg border border-ca-ink/[0.1] p-2 text-ca-ink-soft transition-colors hover:border-ca-amber hover:text-[#8b6914] disabled:opacity-50"
+                className="!h-auto !w-auto shrink-0 rounded-lg p-2 text-ca-ink-soft hover:border-ca-amber hover:text-[#8b6914]"
               >
                 <TrashIcon />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -193,20 +195,22 @@ export function SessionResourcesPanel({
 
       {/* Toggle subir archivo / enlace */}
       <div className="mb-3 flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setMode("file")}
-          className={`rounded-lg px-3 py-1.5 text-[12px] font-bold transition-colors ${mode === "file" ? "bg-ca-violet text-white" : "bg-ca-bg-soft text-ca-ink-soft hover:text-ca-ink"}`}
+          className={`!h-auto rounded-lg px-3 py-1.5 text-[12px] ${mode === "file" ? "bg-ca-violet text-white hover:!bg-ca-violet hover:!text-white" : "bg-ca-bg-soft text-ca-ink-soft hover:!text-ca-ink"}`}
         >
           Subir archivo
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setMode("link")}
-          className={`rounded-lg px-3 py-1.5 text-[12px] font-bold transition-colors ${mode === "link" ? "bg-ca-violet text-white" : "bg-ca-bg-soft text-ca-ink-soft hover:text-ca-ink"}`}
+          className={`!h-auto rounded-lg px-3 py-1.5 text-[12px] ${mode === "link" ? "bg-ca-violet text-white hover:!bg-ca-violet hover:!text-white" : "bg-ca-bg-soft text-ca-ink-soft hover:!text-ca-ink"}`}
         >
           Enlace externo
-        </button>
+        </Button>
       </div>
 
       <div className="grid gap-3 md:grid-cols-[1fr_140px]">
@@ -214,31 +218,31 @@ export function SessionResourcesPanel({
           <label htmlFor="resource-title" className="sr-only">
             Título del recurso
           </label>
-          <input
+          <Input
             id="resource-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título del recurso (ej. Presentación clase 1)"
-            className={inputCls}
+            className={fieldCls}
           />
         </div>
         <div>
           <label htmlFor="resource-type" className="sr-only">
             Tipo de recurso
           </label>
-          <select
+          <Select
             id="resource-type"
             value={type}
             onChange={(e) => setType(e.target.value as SessionResourceType)}
-            className={inputCls}
+            className={fieldCls}
           >
             {(Object.keys(RESOURCE_TYPE_LABELS) as SessionResourceType[]).map((t) => (
               <option key={t} value={t}>
                 {RESOURCE_TYPE_LABELS[t]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="md:col-span-2">
           {mode === "link" ? (
@@ -246,13 +250,13 @@ export function SessionResourcesPanel({
               <label htmlFor="resource-url" className="sr-only">
                 Enlace del material
               </label>
-              <input
+              <Input
                 id="resource-url"
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://… (enlace al material)"
-                className={inputCls}
+                className={fieldCls}
               />
             </>
           ) : (
@@ -260,12 +264,12 @@ export function SessionResourcesPanel({
               <label htmlFor="resource-file" className="sr-only">
                 Archivo (máx. 50 MB)
               </label>
-              <input
+              <Input
                 id="resource-file"
                 ref={fileInputRef}
                 type="file"
                 onChange={onFileChange}
-                className="w-full rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2 text-[13px] text-ca-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-ca-violet/10 file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-ca-violet"
+                className="py-2 text-[13px] text-ca-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-ca-violet/10 file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-ca-violet"
               />
               {file && (
                 <p className="mt-1 text-[11px] text-ca-ink-soft">
@@ -283,14 +287,15 @@ export function SessionResourcesPanel({
         </div>
       )}
 
-      <button
+      <Button
+        variant="outline"
         onClick={handleAdd}
         disabled={adding}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-ca-violet px-5 py-2.5 text-[13px] font-bold text-ca-violet transition-colors hover:bg-ca-violet hover:text-white disabled:opacity-60"
+        className="!h-auto mt-4 gap-2 rounded-xl border-ca-violet px-5 py-2.5 text-[13px] text-ca-violet hover:bg-ca-violet hover:text-white"
       >
         <PlusIcon />
         {adding ? (mode === "file" ? "Subiendo…" : "Agregando…") : "Agregar material"}
-      </button>
+      </Button>
     </div>
   );
 }

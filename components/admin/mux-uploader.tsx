@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { createUpload } from "@mux/upchunk";
+import { Button } from "@/components/ui/button";
 
 type MuxUploaderProps = {
   lessonId: string;
@@ -139,13 +140,14 @@ export function MuxUploader({ lessonId, onUploadComplete }: MuxUploaderProps) {
           </svg>
         </div>
         <h3 className="mt-4 text-[18px] font-extrabold tracking-tight text-ca-ink">{errorMessage}</h3>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setState("idle")}
-          className="mt-4 text-[12px] font-bold uppercase tracking-[0.14em] text-ca-violet"
+          className="mt-4 h-auto min-h-0 p-0 text-[12px] font-bold uppercase tracking-[0.14em] text-ca-violet hover:bg-transparent"
         >
           Intentar de nuevo
-        </button>
+        </Button>
       </div>
     );
   }

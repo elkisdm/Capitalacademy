@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { Select } from "@/components/ui/field";
 
 type CohortOption = {
   id: string;
@@ -31,11 +32,11 @@ export function CohortFilter({
       >
         Cohorte
       </label>
-      <select
+      <Select
         id="cohort-filter-select"
         value={selectedId ?? ""}
         onChange={handleChange}
-        className="w-full max-w-sm rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
+        className="max-w-sm"
       >
         <option value="">Todas las cohortes</option>
         {cohorts.map((c) => (
@@ -43,7 +44,7 @@ export function CohortFilter({
             {c.name} ({c.code})
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

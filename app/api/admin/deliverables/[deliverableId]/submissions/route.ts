@@ -35,11 +35,14 @@ export async function GET(_req: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
   }
 
+  // Incluye "completed" además de "active": un alumno puede terminar su
+  // cohorte (o el programa) después de entregar, y su entrega no debe
+  // desaparecer del roster.
   const { data: enrollments } = await admin
     .from("enrollments")
     .select("student_id, profiles(id, email, full_name), cohorts!inner(program_id)")
     .eq("cohorts.program_id", deliverable.program_id)
-    .eq("status", "active");
+    .in("status", ["active", "completed"]);
 
   const studentsById = new Map<
     string,
@@ -74,9 +77,28 @@ export async function GET(_req: Request, { params }: Ctx) {
     filesByStudent.set(s.student_id, arr);
   }
 
+  // Entregas cuyo student_id no aparece en la matrícula (active/completed) del
+  // programa: se resuelven aparte para que no desaparezcan del roster, y se
+  // marcan con `enrolled: false` para distinguirlas en la UI.
+  const orphanIds = [...filesByStudent.keys()].filter((id) => !studentsById.has(id));
+  if (orphanIds.length > 0) {
+    const { data: orphanProfiles } = await admin
+      .from("profiles")
+      .select("id, email, full_name")
+      .in("id", orphanIds);
+    for (const p of orphanProfiles ?? []) {
+      studentsById.set(p.id, p);
+    }
+  }
+
   const roster = [...studentsById.values()].map((student) => {
     const files = filesByStudent.get(student.id) ?? [];
-    return { student, files, submitted: files.length > 0 };
+    return {
+      student,
+      files,
+      submitted: files.length > 0,
+      enrolled: !orphanIds.includes(student.id),
+    };
   });
 
   return NextResponse.json({ deliverable, roster });

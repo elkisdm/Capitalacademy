@@ -61,7 +61,7 @@ const STATUS_CONFIG: Record<
   completed: {
     icon: CheckCircleIcon,
     label: "Completada",
-    color: "text-ca-lime-deep",
+    color: "text-ca-lime-text",
   },
   in_progress: { icon: PlayIcon, label: "En progreso", color: "text-ca-violet" },
   available: { icon: CircleIcon, label: "Disponible", color: "text-ca-ink-soft" },

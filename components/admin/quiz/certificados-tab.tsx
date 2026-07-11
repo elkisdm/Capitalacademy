@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/admin/toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 import type { Certificate } from "./types";
 import { formatDate } from "./types";
 import { CheckCircleIcon, DownloadIcon, LoaderIcon, PlusIcon } from "./icons";
@@ -79,13 +81,15 @@ export function CertificadosTab({ programId }: { programId: string }) {
         <span className="font-mono text-[13px] font-bold text-ca-ink">
           {certificates.length} {certificates.length === 1 ? "certificado" : "certificados"} emitidos
         </span>
-        <button
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => setShowIssueForm(!showIssueForm)}
-          className="flex items-center gap-2 rounded-xl border-2 border-ca-violet/20 px-4 py-2 text-[13px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/5"
+          className="h-auto gap-2 rounded-xl border-2 border-ca-violet/20 px-4 py-2 text-[13px] font-bold text-ca-violet hover:bg-ca-violet/5"
         >
           <PlusIcon />
           Emitir manualmente
-        </button>
+        </Button>
       </div>
 
       {/* Issue form */}
@@ -97,32 +101,35 @@ export function CertificadosTab({ programId }: { programId: string }) {
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
                 ID de enrollment
               </label>
-              <input
+              <Input
                 aria-label="ID de enrollment"
                 value={enrollmentId}
                 onChange={(e) => setEnrollmentId(e.target.value)}
                 placeholder="ej: abc123-def456…"
-                className="w-full rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] font-mono text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
+                className="font-mono"
               />
             </div>
-            <button
+            <Button
+              type="button"
+              variant="lime"
               onClick={handleIssue}
               disabled={issuing || !enrollmentId.trim()}
-              className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors disabled:opacity-40"
-              style={{ background: "var(--color-ca-lime)" }}
+              className="h-auto gap-2 px-5 py-2.5 text-[13px]"
             >
               {issuing ? <LoaderIcon /> : <CheckCircleIcon />}
               {issuing ? "Emitiendo…" : "Emitir"}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => {
                 setShowIssueForm(false);
                 setEnrollmentId("");
               }}
-              className="rounded-xl px-4 py-2.5 text-[13px] font-semibold text-ca-ink-soft hover:bg-ca-bg-soft"
+              className="h-auto px-4 py-2.5 text-[13px] font-semibold text-ca-ink-soft"
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       )}

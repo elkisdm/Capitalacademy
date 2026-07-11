@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Pencil, Users, X } from "lucide-react";
 import { useToast } from "@/components/admin/toast";
 import { CATEGORY_LABELS, FILE_CATEGORIES } from "@/lib/deliverables/file-types";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog } from "@/components/ui/dialog";
+import { Input, Textarea, Select } from "@/components/ui/field";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Deliverable = {
   id: string;
@@ -23,6 +28,7 @@ type RosterEntry = {
   student: { id: string; email: string; full_name: string | null };
   files: RosterFile[];
   submitted: boolean;
+  enrolled: boolean;
 };
 
 const MAX_SIZE = 50 * 1024 * 1024;
@@ -80,6 +86,7 @@ export function DeliverablesManager({
       : (programs[0]?.id ?? ""),
   );
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -89,25 +96,35 @@ export function DeliverablesManager({
   const [rosterFor, setRosterFor] = useState<Deliverable | null>(null);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
+  const rosterRequestId = useRef(0);
   const { toast, ToastContainer } = useToast();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     if (!selectedProgram) return;
     setLoading(true);
+    setLoadError(null);
     try {
-      const res = await fetch(`/api/admin/deliverables?programId=${selectedProgram}`);
+      const res = await fetch(`/api/admin/deliverables?programId=${selectedProgram}`, { signal });
       if (res.ok) {
         const { deliverables: rows } = await res.json();
         setDeliverables(rows ?? []);
+      } else {
+        setLoadError("No se pudieron cargar los entregables.");
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setLoadError("No se pudieron cargar los entregables.");
       }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [selectedProgram]);
 
   useEffect(() => {
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   const resetForm = () => {
@@ -165,7 +182,7 @@ export function DeliverablesManager({
         {
           method: editingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editingId ? payload : payload),
+          body: JSON.stringify(payload),
         },
       );
       if (!res.ok) {
@@ -176,6 +193,8 @@ export function DeliverablesManager({
       toast(editingId ? "Entregable actualizado." : "Entregable creado.", "success");
       resetForm();
       await load();
+    } catch {
+      toast("Error de red al guardar el entregable.", "error");
     } finally {
       setSaving(false);
     }
@@ -199,15 +218,18 @@ export function DeliverablesManager({
 
   const openRoster = async (d: Deliverable) => {
     setRosterFor(d);
+    setRoster([]);
     setRosterLoading(true);
+    const requestId = ++rosterRequestId.current;
     try {
       const res = await fetch(`/api/admin/deliverables/${d.id}/submissions`);
+      if (requestId !== rosterRequestId.current) return;
       if (res.ok) {
         const { roster: rows } = await res.json();
         setRoster(rows ?? []);
       }
     } finally {
-      setRosterLoading(false);
+      if (requestId === rosterRequestId.current) setRosterLoading(false);
     }
   };
 
@@ -229,27 +251,34 @@ export function DeliverablesManager({
           <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
             Programa
           </label>
-          <select
+          <Select
             value={selectedProgram}
             onChange={(e) => {
               setSelectedProgram(e.target.value);
               resetForm();
             }}
-            className="rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] font-semibold text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
+            className="w-auto font-semibold"
           >
             {programs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 
       {loading ? (
-        <p className="text-sm text-ca-ink-soft">Cargando…</p>
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
+          {loadError && (
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{loadError}</p>
+          )}
           {deliverables.length === 0 && !isCreating && (
             <p className="text-sm text-ca-ink-soft">Aún no hay entregables para este programa.</p>
           )}
@@ -273,31 +302,37 @@ export function DeliverablesManager({
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => openRoster(d)}
                   aria-label={`Ver entregas de ${d.title}`}
-                  className="rounded p-1.5 text-ca-ink-soft hover:bg-ca-bg-soft hover:text-ca-violet"
+                  className="!h-auto !w-auto rounded p-1.5"
                 >
                   <Users className="h-4 w-4" />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => startEdit(d)}
                   aria-label={`Editar ${d.title}`}
-                  className="rounded p-1.5 text-ca-ink-soft hover:bg-ca-bg-soft hover:text-ca-violet"
+                  className="!h-auto !w-auto rounded p-1.5"
                 >
                   <Pencil className="h-4 w-4" />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleDelete(d.id)}
                   disabled={deletingId === d.id}
                   aria-label={`Eliminar ${d.title}`}
-                  className="rounded p-1.5 text-ca-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                  className="!h-auto !w-auto rounded p-1.5 hover:bg-red-50 hover:text-red-500"
                 >
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -306,12 +341,11 @@ export function DeliverablesManager({
             <div className="space-y-3 rounded-xl border border-ca-violet/20 bg-ca-violet/[0.04] p-4">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Título</label>
-                <input
+                <Input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="Ej: Guión de venta"
-                  className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
                 />
               </div>
 
@@ -319,31 +353,28 @@ export function DeliverablesManager({
                 <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                   Descripción (opcional)
                 </label>
-                <textarea
+                <Textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={2}
-                  className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Se abre</label>
-                  <input
+                  <Input
                     type="datetime-local"
                     value={form.opensAt}
                     onChange={(e) => setForm((f) => ({ ...f, opensAt: e.target.value }))}
-                    className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Fecha límite</label>
-                  <input
+                  <Input
                     type="datetime-local"
                     value={form.dueAt}
                     onChange={(e) => setForm((f) => ({ ...f, dueAt: e.target.value }))}
-                    className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
                   />
                 </div>
               </div>
@@ -379,7 +410,7 @@ export function DeliverablesManager({
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                     Tamaño máx. (MB)
                   </label>
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={50}
@@ -387,7 +418,6 @@ export function DeliverablesManager({
                     onChange={(e) =>
                       setForm((f) => ({ ...f, maxFileSizeMb: Number(e.target.value) || 1 }))
                     }
-                    className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
                   />
                 </div>
                 <div className="flex items-end pb-2">
@@ -403,61 +433,65 @@ export function DeliverablesManager({
               </div>
 
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={handleSubmit}
                   disabled={saving || !canSubmit}
-                  className="rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
                 >
                   {saving ? "Guardando…" : editingId ? "Guardar cambios" : "Crear entregable"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded-md px-4 py-2 text-sm text-ca-ink-soft hover:bg-ca-bg-soft"
-                >
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
                   Cancelar
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setIsCreating(true)}
-              className="flex items-center gap-2 rounded-md border border-dashed border-ca-ink/[0.08] px-4 py-2 text-sm text-ca-ink-soft hover:border-ca-violet/40 hover:text-ca-violet"
+              className="w-fit rounded-md border-dashed"
             >
               <Plus className="h-4 w-4" />
               Nuevo entregable
-            </button>
+            </Button>
           )}
         </div>
       )}
 
-      {rosterFor && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setRosterFor(null)}
-        >
-          <div
-            className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Dialog
+        open={rosterFor !== null}
+        onClose={() => setRosterFor(null)}
+        className="max-h-[80vh] max-w-2xl overflow-y-auto"
+        aria-label="Entregas de los alumnos"
+      >
+        {rosterFor && (
+          <>
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="text-[15px] font-bold text-ca-ink">{rosterFor.title}</p>
                 <p className="text-[12px] text-ca-ink-soft">Entregas de los alumnos</p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setRosterFor(null)}
                 aria-label="Cerrar"
-                className="rounded p-1 text-ca-ink-soft hover:bg-ca-bg-soft"
+                className="!h-auto !w-auto rounded p-1"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
             {rosterLoading ? (
-              <p className="text-sm text-ca-ink-soft">Cargando…</p>
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
             ) : roster.length === 0 ? (
               <p className="text-sm text-ca-ink-soft">No hay alumnos matriculados en este programa.</p>
             ) : (
@@ -488,22 +522,19 @@ export function DeliverablesManager({
                         </div>
                       )}
                     </div>
-                    <span
-                      className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold ${
-                        entry.submitted
-                          ? "bg-green-50 text-green-600"
-                          : "bg-ca-bg-soft text-ca-ink-soft"
-                      }`}
-                    >
-                      {entry.submitted ? "Entregado" : "Pendiente"}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {!entry.enrolled && <Badge tone="amber">Sin matrícula</Badge>}
+                      <Badge tone={entry.submitted ? "lime" : "neutral"}>
+                        {entry.submitted ? "Entregado" : "Pendiente"}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Dialog>
     </div>
   );
 }

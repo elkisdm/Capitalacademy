@@ -16,6 +16,16 @@
 
 const local = (name: string) => `/imagery/${name}.webp`;
 
+/**
+ * Placeholder de color plano (rect SVG en el bg de la marca, #f3f3f3) para
+ * `next/image`. Evita el flash blanco/hueco vacío mientras cargan las
+ * imágenes locales (no son import estático, así que Next no genera
+ * blurDataURL automático). Ver components/landing/Programas.tsx y
+ * DetalleProgramas.tsx.
+ */
+export const IMG_PLACEHOLDER =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjEwIiBmaWxsPSIjZjNmM2YzIi8+PC9zdmc+";
+
 export const IMG = {
   hero: {
     src: "/team/paola-vicuna.webp",

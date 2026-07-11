@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Save, Trash2, Check, AlertTriangle } from "lucide-react";
 import { LessonContentEditor } from "@/components/admin/lesson-content-editor";
 import { CoverImageField } from "@/components/admin/cover-image-field";
+import { Button } from "@/components/ui/button";
+import { Input, Select, Textarea } from "@/components/ui/field";
 
 type LessonKind = "live_in_person" | "live_online" | "recorded";
 
@@ -101,23 +103,19 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
     }
   };
 
-  const inputCls =
-    "w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30";
-
   return (
     <div className="space-y-4">
       <div>
         <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Título</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
 
       <div>
         <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Descripción</label>
-        <textarea
+        <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className={inputCls}
           placeholder="Breve descripción de la lección (opcional)"
         />
       </div>
@@ -134,23 +132,22 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Tipo</label>
-          <select value={kind} onChange={(e) => setKind(e.target.value as LessonKind)} className={inputCls}>
+          <Select value={kind} onChange={(e) => setKind(e.target.value as LessonKind)}>
             {KIND_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
             Apertura por calendario
           </label>
-          <input
+          <Input
             type="datetime-local"
             value={unlockAt}
             onChange={(e) => setUnlockAt(e.target.value)}
-            className={inputCls}
           />
           <p className="mt-1 text-[11px] text-ca-ink-soft">
             Vacío = disponible siempre. Con fecha, queda bloqueada hasta ese momento.
@@ -166,45 +163,33 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
       )}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-ca-ink/[0.08] pt-4">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
-        >
+        <Button type="button" onClick={handleSave} disabled={saving || !title.trim()}>
           {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           {saving ? "Guardando…" : saved ? "Guardado" : "Guardar cambios"}
-        </button>
+        </Button>
 
         <div className="ml-auto">
           {confirmDelete ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-ca-ink-soft">¿Eliminar lección?</span>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="rounded-md bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
-              >
+              <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
                 {deleting ? "Eliminando…" : "Sí, eliminar"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                className="rounded-md px-3 py-2 text-sm text-ca-ink-soft hover:bg-ca-bg-soft"
-              >
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
                 Cancelar
-              </button>
+              </Button>
             </div>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setConfirmDelete(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm text-red-500 hover:bg-red-50"
+              className="border-red-200 text-red-500 hover:bg-red-50"
             >
               <Trash2 className="h-4 w-4" />
               Eliminar
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -24,8 +24,18 @@ const patchSchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
     description: z.string().trim().max(2000).nullable().optional(),
-    opensAt: z.string().trim().min(1).optional(),
-    dueAt: z.string().trim().min(1).optional(),
+    opensAt: z
+      .string()
+      .trim()
+      .min(1)
+      .refine((v) => !Number.isNaN(Date.parse(v)), "fecha inválida")
+      .optional(),
+    dueAt: z
+      .string()
+      .trim()
+      .min(1)
+      .refine((v) => !Number.isNaN(Date.parse(v)), "fecha inválida")
+      .optional(),
     allowedFileTypes: z.array(categoryEnum).min(1).optional(),
     maxFileSizeBytes: z.number().int().positive().max(MAX_SIZE).optional(),
     allowMultiple: z.boolean().optional(),

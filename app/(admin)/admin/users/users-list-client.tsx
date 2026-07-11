@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { AdminUserListItem, CohortPickerItem } from "@/lib/admin/user-queries";
@@ -16,6 +16,9 @@ import { DeactivateModal } from "@/components/admin/deactivate-modal";
 import { CsvImportModal } from "@/components/admin/csv-import-modal";
 import { Avatar } from "@/components/classroom/primitives";
 import { useToast } from "@/components/admin/toast";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
 import {
   SearchIcon,
   PlusIcon,
@@ -41,24 +44,13 @@ type MenuPosition = {
   left: number;
 };
 
-function EmptyState() {
+function UsersEmptyIcon({ className }: { className?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20">
-      <div
-        className="shape-circle mb-4 grid h-16 w-16 place-items-center"
-        style={{ background: "rgba(94,23,235,0.08)" }}
-      >
-        <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="var(--color-ca-violet)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-        </svg>
-      </div>
-      <p className="text-[15px] font-bold text-ca-ink">Sin resultados</p>
-      <p className="mt-1 text-[13px] text-ca-ink-soft">
-        No se encontraron usuarios con los filtros aplicados
-      </p>
-    </div>
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+    </svg>
   );
 }
 
@@ -192,11 +184,12 @@ function KebabMenu({
           />
           {/* Menu */}
           <div
-            className="fixed z-[55] w-52 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white py-1 shadow-lg"
+            className="ca-scale-in fixed z-[55] w-52 overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white py-1 shadow-lg"
             style={{
               top: pos.top != null ? pos.top : undefined,
               bottom: pos.bottom != null ? pos.bottom : undefined,
               left: pos.left,
+              transformOrigin: pos.top != null ? "top right" : "bottom right",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -511,20 +504,14 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setCsvImportOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-ca-ink px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-ca-ink/90"
-          >
+          <Button type="button" variant="outline" onClick={() => setCsvImportOpen(true)}>
             <UploadIcon />
             Importar CSV
-          </button>
-          <button
-            onClick={handleOpenCreate}
-            className="ca-btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold"
-          >
+          </Button>
+          <Button type="button" variant="primary" onClick={handleOpenCreate}>
             <PlusIcon />
             Nuevo usuario
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -579,7 +566,12 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
         </div>
 
         {filtered.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            icon={UsersEmptyIcon}
+            title="Sin resultados"
+            description="No se encontraron usuarios con los filtros aplicados"
+            className="border-0 shadow-none"
+          />
         ) : (
           <>
             {/* Desktop table */}
@@ -603,7 +595,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                   </tr>
                 </thead>
                 <tbody>
-                  {paginated.map((u) => {
+                  {paginated.map((u, i) => {
                     const initials = getInitials(u.full_name, u.email);
                     const cohortBadges: CohortBadge[] = u.cohort_roles.map((cr) => ({
                       name: cr.cohort_name,
@@ -614,7 +606,8 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                       <tr
                         key={u.id}
                         onClick={() => handleRowClick(u.id)}
-                        className="group cursor-pointer border-b border-ca-ink/[0.04] transition-colors hover:bg-ca-bg-soft/60"
+                        className="ca-fade-up ca-stagger group cursor-pointer border-b border-ca-ink/[0.04] transition-colors hover:bg-ca-bg-soft/60"
+                        style={{ "--i": i } as CSSProperties}
                       >
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
@@ -633,12 +626,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                           <div className="flex items-center gap-2">
                             <PlatformBadge role={u.system_role} />
                             {u.onboarding_completed_at === null && (
-                              <span
-                                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                                style={{ background: "rgba(217,119,6,0.12)", color: "#92400e" }}
-                              >
-                                Pendiente
-                              </span>
+                              <Badge tone="amber" size="sm">Pendiente</Badge>
                             )}
                           </div>
                         </td>
@@ -680,7 +668,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
 
             {/* Mobile card list */}
             <div className="md:hidden flex flex-col gap-3 px-4 py-4">
-              {paginated.map((u) => {
+              {paginated.map((u, i) => {
                 const initials = getInitials(u.full_name, u.email);
                 const cohortBadges: CohortBadge[] = u.cohort_roles.map((cr) => ({
                   name: cr.cohort_name,
@@ -691,7 +679,8 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                   <div
                     key={u.id}
                     onClick={() => handleRowClick(u.id)}
-                    className="ca-card group relative cursor-pointer p-4 transition-colors hover:bg-ca-bg-soft/60"
+                    className="ca-fade-up ca-stagger ca-card group relative cursor-pointer p-4 transition-colors hover:bg-ca-bg-soft/60"
+                    style={{ "--i": i } as CSSProperties}
                   >
                     <div className="absolute right-3 top-3">
                       <KebabMenu
@@ -722,12 +711,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
                         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                           <PlatformBadge role={u.system_role} />
                           {u.onboarding_completed_at === null && (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                              style={{ background: "rgba(217,119,6,0.12)", color: "#92400e" }}
-                            >
-                              Pendiente
-                            </span>
+                            <Badge tone="amber" size="sm">Pendiente</Badge>
                           )}
                         </div>
                       </div>

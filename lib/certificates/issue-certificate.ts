@@ -169,7 +169,7 @@ export async function issueCertificate(
     if (emailResult.success) {
       await supabase
         .from("certificates")
-        .update({ emailed_at: new Date().toISOString() } as never)
+        .update({ emailed_at: new Date().toISOString() })
         .eq("id", certificate.id);
     }
   }

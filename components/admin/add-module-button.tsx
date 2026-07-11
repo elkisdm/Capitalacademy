@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/field";
 
 type ProgramOption = { id: string; name: string };
 
@@ -41,21 +43,14 @@ export function AddModuleButton({ programs }: { programs: ProgramOption[] }) {
     }
   };
 
-  const inputCls =
-    "w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30";
-
   if (programs.length === 0) return null;
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep"
-      >
+      <Button type="button" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" />
         Nuevo módulo
-      </button>
+      </Button>
     );
   }
 
@@ -64,30 +59,24 @@ export function AddModuleButton({ programs }: { programs: ProgramOption[] }) {
       <div className="grid gap-3 sm:grid-cols-[1fr_120px_1fr]">
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Programa</label>
-          <select value={programId} onChange={(e) => setProgramId(e.target.value)} className={inputCls}>
+          <Select value={programId} onChange={(e) => setProgramId(e.target.value)}>
             {programs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Código</label>
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="M1"
-            className={inputCls}
-          />
+          <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="M1" />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Título</label>
-          <input
+          <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título del módulo"
-            className={inputCls}
           />
         </div>
       </div>
@@ -98,24 +87,23 @@ export function AddModuleButton({ programs }: { programs: ProgramOption[] }) {
         </p>
       )}
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
           onClick={handleCreate}
           disabled={saving || !programId || !code.trim() || !title.trim()}
-          className="rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
         >
           {saving ? "Creando…" : "Crear módulo"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => {
             setOpen(false);
             setError(null);
           }}
-          className="rounded-md px-4 py-2 text-sm text-ca-ink-soft hover:bg-ca-bg-soft"
         >
           Cancelar
-        </button>
+        </Button>
       </div>
     </div>
   );

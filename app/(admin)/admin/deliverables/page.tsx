@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { DeliverablesManager } from "@/components/admin/deliverables/deliverables-manager";
 import { getActiveEnv } from "@/lib/admin/active-env";
 
@@ -7,7 +8,7 @@ export default async function DeliverablesPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
   if (!user) redirect("/login");
 
   const { data: programs } = await supabase

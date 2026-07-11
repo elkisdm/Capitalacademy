@@ -17,9 +17,15 @@ import { Cierre } from "@/components/landing/Cierre";
 import { Footer } from "@/components/landing/Footer";
 import { WhatsappFAB } from "@/components/landing/WhatsappFAB";
 import { StickyCTAMobile } from "@/components/landing/StickyCTAMobile";
+import { getDiplomadoNextCohortDate } from "@/lib/landing/cohort";
+
+// ISR: la fecha de la próxima cohorte se lee de `cohorts` (ver
+// lib/landing/cohort.ts) y se revalida cada hora en vez de quedar
+// congelada en el build.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Capital Academy | Escuela de negocios inmobiliarios de Capital Inteligente",
+  title: { absolute: "Capital Academy | Escuela de negocios inmobiliarios de Capital Inteligente" },
   description:
     "Programas de formación ejecutiva para asesores, líderes y emprendedores de la industria inmobiliaria. Conoce Capital Academy, la escuela de negocios de Capital Inteligente.",
   alternates: { canonical: "/" },
@@ -32,7 +38,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const diplomadoNextCohortDate = await getDiplomadoNextCohortDate();
+  const diplomadoNextStart = diplomadoNextCohortDate ?? "Próxima cohorte abierta";
+
   return (
     <>
       <Header />
@@ -44,15 +53,15 @@ export default function Home() {
         <QueEs />
         <NuevoEstandar />
         <Pilares />
-        <Programas />
+        <Programas diplomadoNextStart={diplomadoNextStart} />
         <CareerPath />
         <Stats />
-        <DetalleProgramas />
-        <Comparador />
+        <DetalleProgramas diplomadoNextStart={diplomadoNextStart} />
+        <Comparador diplomadoNextStart={diplomadoNextStart} />
         <Instructor />
         <PorQueElegir />
         <SeccionContacto />
-        <FAQSection />
+        <FAQSection diplomadoNextCohortDate={diplomadoNextCohortDate} />
         <Cierre />
       </main>
       <Footer />

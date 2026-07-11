@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { QuestionInput, type RunnerQuestion, type AnswerValue } from "./question-input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type Config = {
   questionsPerAttempt: number | null;
@@ -165,18 +167,19 @@ export function EvaluationRunner({
           )}
         </div>
         {state.passed && (
-          <p className="mt-2 inline-flex rounded-full px-3 py-1 text-[12px] font-bold" style={{ background: "rgba(168,211,16,0.2)", color: "#3f5a05" }}>
+          <Badge tone="lime" className="mt-2 px-3 py-1 text-[12px]">
             ✓ Aprobada
-          </p>
+          </Badge>
         )}
         {!exhausted ? (
-          <button
+          <Button
             onClick={start}
             disabled={busy}
-            className="ca-btn-interactive ca-btn-lime mt-4 inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:opacity-50"
+            variant="lime"
+            className="mt-4 h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
           >
             {state.hasInProgress ? "Continuar evaluación" : state.attemptsUsed > 0 ? "Volver a intentar" : "Comenzar evaluación"}
-          </button>
+          </Button>
         ) : (
           <p className="mt-4 text-[13px] font-semibold text-ca-ink-soft">
             Usaste todos tus intentos. {state.bestScore !== null && `Tu mejor nota fue ${state.bestScore}%.`}
@@ -210,13 +213,14 @@ export function EvaluationRunner({
           ))}
         </div>
         <div className="mt-5 flex items-center gap-3">
-          <button
+          <Button
             onClick={submit}
             disabled={busy}
-            className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:opacity-50"
+            variant="lime"
+            className="h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
           >
             {busy ? "Enviando…" : "Enviar respuestas"}
-          </button>
+          </Button>
           {!allAnswered && (
             <span className="text-[12px] font-medium text-ca-ink-soft">
               Puedes enviar; lo no respondido cuenta como incorrecto.
@@ -274,9 +278,14 @@ export function EvaluationRunner({
       </div>
 
       {result.attemptsRemaining > 0 && (
-        <button onClick={start} disabled={busy} className="ca-btn-interactive mt-5 inline-flex rounded-full px-4 py-2 text-[13px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/[0.06] disabled:pointer-events-none disabled:opacity-50">
+        <Button
+          onClick={start}
+          disabled={busy}
+          variant="ghost"
+          className="mt-5 h-auto min-h-0 px-4 py-2 text-[13px] text-ca-violet hover:bg-ca-violet/[0.06]"
+        >
           Volver a intentar ({result.attemptsRemaining} {result.attemptsRemaining === 1 ? "intento" : "intentos"} restantes)
-        </button>
+        </Button>
       )}
     </Shell>
   );

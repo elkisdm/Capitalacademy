@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useFocusTrap } from "@/lib/utils/use-focus-trap";
+import { useState } from "react";
 import { Avatar } from "@/components/classroom/primitives";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import type { CohortStudentProgress } from "@/lib/classroom/admin-queries";
 
 function progressTone(pct: number) {
   if (pct >= 90) return { bg: "rgba(168,211,16,0.22)", fg: "#3f5a05", label: "completado" };
   if (pct >= 70) return { bg: "rgba(168,211,16,0.16)", fg: "#3f5a05", label: "al día" };
   if (pct >= 30) return { bg: "rgba(255,196,0,0.18)", fg: "#7a5000", label: "en progreso" };
-  if (pct > 0) return { bg: "rgba(225,29,72,0.12)", fg: "#9f1b3e", label: "atrasado" };
+  if (pct > 0) return { bg: "rgba(20,22,58,0.05)", fg: "var(--color-ca-ink-soft)", label: "atrasado" };
   return { bg: "rgba(20,22,58,0.05)", fg: "var(--color-ca-ink-soft)", label: "sin iniciar" };
 }
 
@@ -37,113 +38,105 @@ function DrillDownModal({ student, modules, onClose }: {
   modules: Array<{ id: string; title: string; position: number }>;
   onClose: () => void;
 }) {
-  const trapRef = useFocusTrap(true);
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
   return (
-    <div
-      className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
-      style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
+    <Dialog
+      open
+      onClose={onClose}
+      aria-labelledby="drilldown-title"
+      className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden p-0"
     >
-      <div
-        ref={trapRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="drilldown-title"
-        className="ca-card relative flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden"
-      >
-        <div className="relative flex items-start justify-between border-b border-ca-ink/[0.08] p-6">
-          <div className="flex items-center gap-4">
-            <Avatar initials={student.initials} size={56} accent="bg-ca-lime" />
-            <div>
-              <h3 id="drilldown-title" className="text-[22px] font-black tracking-tight text-ca-ink">{student.full_name}</h3>
-              <div className="font-mono text-[11px] font-semibold text-ca-ink-soft">{student.email}</div>
+      <div className="relative flex items-start justify-between border-b border-ca-ink/[0.08] p-6">
+        <div className="flex items-center gap-4">
+          <Avatar initials={student.initials} size={56} accent="bg-ca-lime" />
+          <div>
+            <h3 id="drilldown-title" className="text-[22px] font-black tracking-tight text-ca-ink">{student.full_name}</h3>
+            <div className="font-mono text-[11px] font-semibold text-ca-ink-soft">{student.email}</div>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="h-10 w-10 rounded-full p-0"
+        >
+          <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </Button>
+      </div>
+
+      <div className="relative flex-1 overflow-y-auto p-6">
+        <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="ca-card p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Progreso global</div>
+            <div className="mt-1 font-mono text-[28px] font-black text-ca-ink">{student.overall_percentage}%</div>
+          </div>
+          <div className="ca-card p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Módulos completos</div>
+            <div className="mt-1 font-mono text-[28px] font-black" style={{ color: "var(--color-ca-lime-deep)" }}>
+              {student.module_progress.filter((m) => m.percentage >= 90).length}
+              <span className="text-[14px] opacity-50">/{student.module_progress.length}</span>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
-            <svg aria-hidden="true" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="ca-card p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Última actividad</div>
+            <div className="mt-1 font-mono text-[16px] font-black text-ca-ink">
+              {student.last_seen
+                ? new Date(student.last_seen).toLocaleDateString("es-CL", { day: "numeric", month: "short" })
+                : "Sin actividad"}
+            </div>
+          </div>
         </div>
 
-        <div className="relative flex-1 overflow-y-auto p-6">
-          <div className="mb-6 grid grid-cols-3 gap-4">
-            <div className="ca-card p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Progreso global</div>
-              <div className="mt-1 font-mono text-[28px] font-black text-ca-ink">{student.overall_percentage}%</div>
-            </div>
-            <div className="ca-card p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Módulos completos</div>
-              <div className="mt-1 font-mono text-[28px] font-black" style={{ color: "var(--color-ca-lime-deep)" }}>
-                {student.module_progress.filter((m) => m.percentage >= 90).length}
-                <span className="text-[14px] opacity-50">/{student.module_progress.length}</span>
-              </div>
-            </div>
-            <div className="ca-card p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">Última actividad</div>
-              <div className="mt-1 font-mono text-[16px] font-black text-ca-ink">
-                {student.last_seen
-                  ? new Date(student.last_seen).toLocaleDateString("es-CL", { day: "numeric", month: "short" })
-                  : "Sin actividad"}
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-            Lecciones por módulo
-          </div>
-          <div className="flex flex-col gap-3">
-            {student.module_progress.map((mp) => {
-              const tone = progressTone(mp.percentage);
-              return (
-                <div key={mp.module_id} className="ca-card p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="font-mono text-[12px] font-bold text-ca-ink-soft">
-                      M{String(mp.module_position).padStart(2, "0")}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[14px] font-extrabold tracking-tight text-ca-ink">{mp.module_title}</div>
-                      <div className="text-[11px] font-semibold text-ca-ink-soft">
-                        {mp.completed_lessons} de {mp.total_lessons} lecciones
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono text-[18px] font-black" style={{ color: tone.fg }}>{mp.percentage}%</div>
-                      <div className="text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: tone.fg, opacity: 0.8 }}>{tone.label}</div>
+        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+          Lecciones por módulo
+        </div>
+        <div className="flex flex-col gap-3">
+          {student.module_progress.map((mp) => {
+            const tone = progressTone(mp.percentage);
+            return (
+              <div key={mp.module_id} className="ca-card p-4">
+                <div className="flex items-center gap-3">
+                  <div className="font-mono text-[12px] font-bold text-ca-ink-soft">
+                    M{String(mp.module_position).padStart(2, "0")}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-extrabold tracking-tight text-ca-ink">{mp.module_title}</div>
+                    <div className="text-[11px] font-semibold text-ca-ink-soft">
+                      {mp.completed_lessons} de {mp.total_lessons} lecciones
                     </div>
                   </div>
-                  <div className="mt-3 flex gap-1">
-                    {Array.from({ length: mp.total_lessons }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="h-2 flex-1 rounded-full"
-                        style={{
-                          background: idx < mp.completed_lessons
-                            ? "var(--color-ca-lime-deep)"
-                            : "var(--color-ca-outline, rgba(20,22,58,0.08))",
-                        }}
-                      />
-                    ))}
+                  <div className="text-right">
+                    <div className="font-mono text-[18px] font-black" style={{ color: tone.fg }}>{mp.percentage}%</div>
+                    <div className="text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: tone.fg, opacity: 0.8 }}>{tone.label}</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="relative flex items-center justify-between gap-3 border-t border-ca-ink/[0.08] bg-ca-bg-soft px-6 py-4">
-          <div className="text-[11px] font-semibold text-ca-ink-soft">
-            Datos en vivo · se actualiza con cada reproducción
-          </div>
+                <div className="mt-3 flex gap-1">
+                  {Array.from({ length: mp.total_lessons }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="h-2 flex-1 rounded-full"
+                      style={{
+                        background: idx < mp.completed_lessons
+                          ? "var(--color-ca-lime-deep)"
+                          : "var(--color-ca-outline, rgba(20,22,58,0.08))",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </div>
+
+      <div className="relative flex items-center justify-between gap-3 border-t border-ca-ink/[0.08] bg-ca-bg-soft px-6 py-4">
+        <div className="text-[11px] font-semibold text-ca-ink-soft">
+          Datos en vivo · se actualiza con cada reproducción
+        </div>
+      </div>
+    </Dialog>
   );
 }
 
@@ -182,7 +175,7 @@ export function ProgressTable({ students, modules }: ProgressTableProps) {
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
-            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-bold uppercase tracking-[0.1em] transition-colors"
+            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ca-violet/40"
             style={{
               background: filter === f.id ? "var(--color-ca-ink)" : "transparent",
               color: filter === f.id ? "#fff" : "var(--color-ca-ink-soft)",
@@ -225,10 +218,10 @@ export function ProgressTable({ students, modules }: ProgressTableProps) {
                   Alumno
                 </th>
                 {modules.map((m) => (
-                  <th key={m.id} className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft" style={{ minWidth: 140 }}>
+                  <th key={m.id} className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft" style={{ minWidth: 140, maxWidth: 140 }}>
                     <div className="font-mono">M{String(m.position).padStart(2, "0")}</div>
-                    <div className="mt-0.5 text-[10px] normal-case tracking-normal text-ca-ink">
-                      {m.title.length > 20 ? m.title.slice(0, 20) + "…" : m.title}
+                    <div className="mt-0.5 truncate text-[10px] normal-case tracking-normal text-ca-ink" title={m.title}>
+                      {m.title}
                     </div>
                   </th>
                 ))}
@@ -260,9 +253,7 @@ export function ProgressTable({ students, modules }: ProgressTableProps) {
                       style={{
                         color: s.overall_percentage >= 70
                           ? "var(--color-ca-lime-deep)"
-                          : s.overall_percentage >= 30
-                            ? "var(--color-ca-ink)"
-                            : "#9f1b3e",
+                          : "var(--color-ca-ink)",
                       }}
                     >
                       {s.overall_percentage}%

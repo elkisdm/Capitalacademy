@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isValidRut } from "@/lib/utils/rut";
 import { normalizeUrl } from "@/lib/utils/url";
+import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,7 @@ const completeProfileSchema = z.object({
   emergency_contact_phone: optionalText(40),
   birthday: z.preprocess(
     (v) => (v == null || v === "" ? undefined : v),
-    z.string().optional(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "fecha inválida").optional(),
   ),
 });
 
@@ -84,7 +85,7 @@ export async function PATCH(req: Request) {
 
   const emptyToNull = (v: string | undefined) => (v && v.length > 0 ? v : null);
 
-  const updateData: Record<string, unknown> = {
+  const updateData: Database["public"]["Tables"]["profiles"]["Update"] = {
     full_name,
     phone,
     rut,
@@ -101,7 +102,7 @@ export async function PATCH(req: Request) {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .update(updateData as never)
+    .update(updateData)
     .eq("id", user.id)
     .select("id, full_name, phone, avatar_url, onboarding_completed_at")
     .single();

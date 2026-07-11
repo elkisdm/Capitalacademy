@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -349,16 +350,10 @@ export function QuizLocked({
               {totalLessons - completedLessons} pendientes
             </div>
           </div>
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
-            style={{
-              background: "var(--color-ca-violet-mist)",
-              color: "var(--color-ca-violet-deep)",
-            }}
-          >
+          <Badge tone="violet" className="uppercase tracking-[0.16em]">
             <Icon name="clock" size={11} stroke={2.5} />
             {estimatedLabel} min restantes
-          </span>
+          </Badge>
         </div>
 
         <ul>
@@ -402,15 +397,9 @@ export function QuizLocked({
                 >
                   {l.module}
                   {l.current && (
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.16em]"
-                      style={{
-                        background: "var(--color-ca-violet-mist)",
-                        color: "var(--color-ca-violet-deep)",
-                      }}
-                    >
+                    <Badge tone="violet" size="sm" className="uppercase tracking-[0.16em]">
                       En progreso
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <div

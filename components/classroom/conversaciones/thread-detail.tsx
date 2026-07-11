@@ -9,6 +9,8 @@ import { categoryLabel } from "@/lib/conversaciones/categories";
 import { linkify } from "@/lib/conversaciones/linkify";
 import { createClient } from "@/lib/supabase/client";
 import { ReactionButton } from "./reaction-button";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/field";
 
 // ── Miembros (typeahead de menciones) ──────────────────────────
 
@@ -294,7 +296,7 @@ function CommentInput({
     <div className="flex gap-3">
       <Avatar initials={initials} avatarUrl={avatarUrl} isCurrentUser size={compact ? 28 : 32} />
       <div className="relative flex-1">
-        <textarea
+        <Textarea
           ref={inputRef}
           value={value}
           onChange={handleChange}
@@ -304,7 +306,7 @@ function CommentInput({
           placeholder={placeholder}
           aria-label={placeholder}
           rows={focused ? 3 : 1}
-          className={`w-full resize-none rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13px] text-ca-ink placeholder:text-ca-ink-soft/60 transition-all focus:border-ca-violet focus:outline-none ${
+          className={`resize-none rounded-lg px-3 py-2 text-[13px] transition-all ${
             focused ? "min-h-[72px]" : "min-h-[38px]"
           }`}
         />
@@ -340,19 +342,23 @@ function CommentInput({
 
         {focused && (
           <div className="mt-2 flex items-center justify-end gap-2">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleCancel}
-              className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+              className="h-auto min-h-0 rounded-lg px-3 py-1.5 text-[12px]"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
               onClick={handleSubmit}
               disabled={!value.trim()}
-              className="rounded-lg bg-ca-violet px-4 py-1.5 text-[12px] font-semibold text-white transition-all hover:bg-ca-violet-deep disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-auto min-h-0 rounded-lg px-4 py-1.5 text-[12px]"
             >
               Comentar
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -419,26 +425,30 @@ function ReplyItem({
 
       {isOwn && (
         <div className="relative" ref={menuRef}>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setShowMenu(!showMenu)}
-            className="mt-0.5 rounded p-1 text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
+            className="mt-0.5 h-auto min-h-0 rounded p-1 text-ca-ink-soft opacity-0 group-hover:opacity-100"
             aria-label="Opciones del comentario"
             aria-haspopup="menu"
             aria-expanded={showMenu}
           >
             <DotsIcon size={14} />
-          </button>
+          </Button>
           {showMenu && (
             <div className="absolute right-0 top-7 z-10 min-w-[120px] rounded-lg border border-ca-ink/[0.08] bg-ca-surface py-1 shadow-lg">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => {
                   onDelete(reply.id);
                   setShowMenu(false);
                 }}
-                className="w-full px-3 py-1.5 text-left text-[12px] text-red-600 transition-colors hover:bg-red-50"
+                className="h-auto min-h-0 w-full justify-start rounded-none px-3 py-1.5 text-[12px] text-red-600 hover:bg-red-50"
               >
                 Eliminar
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -520,38 +530,44 @@ function CommentItem({
               viewerReaction={comment.viewer_reaction}
             />
             {!locked && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setShowReplyInput(!showReplyInput)}
-                className="text-[12px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
+                className="h-auto min-h-0 rounded p-0 text-[12px] text-ca-ink-soft hover:bg-transparent hover:text-ca-violet"
               >
                 Responder
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         {isOwn && (
           <div className="relative" ref={menuRef}>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setShowMenu(!showMenu)}
-              className="mt-1 rounded p-1 text-ca-ink-soft opacity-0 transition-all hover:bg-ca-bg-soft group-hover:opacity-100"
+              className="mt-1 h-auto min-h-0 rounded p-1 text-ca-ink-soft opacity-0 group-hover:opacity-100"
               aria-label="Opciones del comentario"
               aria-haspopup="menu"
               aria-expanded={showMenu}
             >
               <DotsIcon size={16} />
-            </button>
+            </Button>
             {showMenu && (
               <div className="absolute right-0 top-8 z-10 min-w-[120px] rounded-lg border border-ca-ink/[0.08] bg-ca-surface py-1 shadow-lg">
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={() => {
                     onDelete(comment.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-1.5 text-left text-[12px] text-red-600 transition-colors hover:bg-red-50"
+                  className="h-auto min-h-0 w-full justify-start rounded-none px-3 py-1.5 text-[12px] text-red-600 hover:bg-red-50"
                 >
                   Eliminar
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -561,13 +577,15 @@ function CommentItem({
       {replies.length > 0 && (
         <div className="ml-[44px] mt-3 border-l-2 border-ca-violet/20 pl-4">
           {replies.length > 2 && !showReplies && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setShowReplies(true)}
-              className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold text-ca-violet transition-colors hover:text-ca-violet-deep"
+              className="mb-3 h-auto min-h-0 gap-1.5 rounded p-0 text-[12px] text-ca-violet hover:bg-transparent hover:text-ca-violet-deep"
             >
               <ChevronDownIcon size={14} />
               {replies.length} respuestas
-            </button>
+            </Button>
           )}
 
           {(showReplies ? replies : replies.slice(0, 2)).map((reply) => (
@@ -581,12 +599,14 @@ function CommentItem({
           ))}
 
           {replies.length > 2 && showReplies && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setShowReplies(false)}
-              className="mt-2 text-[12px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
+              className="mt-2 h-auto min-h-0 rounded p-0 text-[12px] text-ca-ink-soft hover:bg-transparent hover:text-ca-violet"
             >
               Ocultar respuestas
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -955,16 +975,17 @@ export function ThreadDetail({
               </span>
             )}
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleToggleBookmark}
               disabled={bookmarking}
               aria-pressed={bookmarked}
               aria-label={bookmarked ? "Quitar de guardados" : "Guardar conversación"}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors disabled:cursor-not-allowed ${
+              className={`h-auto min-h-0 gap-1.5 rounded-full px-2.5 py-1 text-[12px] ${
                 bookmarked
                   ? "bg-ca-violet/[0.1] text-ca-violet"
-                  : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                  : "text-ca-ink-soft"
               }`}
             >
               <Bookmark
@@ -973,47 +994,55 @@ export function ThreadDetail({
                 strokeWidth={bookmarked ? 0 : 1.75}
               />
               {bookmarked ? "Guardado" : "Guardar"}
-            </button>
+            </Button>
 
             {canManageThread && (
               <div className="relative" ref={threadMenuRef}>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={() => setShowThreadMenu(!showThreadMenu)}
-                  className="rounded p-1.5 text-ca-ink-soft transition-colors hover:bg-ca-bg-soft"
+                  className="h-auto min-h-0 rounded p-1.5 text-ca-ink-soft"
                   aria-label="Opciones de la conversación"
                   aria-haspopup="menu"
                   aria-expanded={showThreadMenu}
                 >
                   <DotsIcon size={18} />
-                </button>
+                </Button>
                 {showThreadMenu && (
                   <div className="absolute right-0 top-9 z-10 min-w-[170px] rounded-lg border border-ca-ink/[0.08] bg-ca-surface py-1 shadow-lg">
                     {isStaff && (
                       <>
-                        <button
+                        <Button
+                          type="button"
+                          variant="ghost"
                           onClick={handleTogglePinned}
                           disabled={moderating}
-                          className="w-full px-3 py-1.5 text-left text-[12px] text-ca-ink transition-colors hover:bg-ca-bg-soft disabled:opacity-50"
+                          className="h-auto min-h-0 w-full justify-start rounded-none px-3 py-1.5 text-[12px] text-ca-ink"
                         >
                           {isPinned ? "Quitar fijado" : "📌 Fijar"}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
                           onClick={handleToggleLocked}
                           disabled={moderating}
-                          className="w-full px-3 py-1.5 text-left text-[12px] text-ca-ink transition-colors hover:bg-ca-bg-soft disabled:opacity-50"
+                          className="h-auto min-h-0 w-full justify-start rounded-none px-3 py-1.5 text-[12px] text-ca-ink"
                         >
                           {isLocked ? "🔓 Reabrir" : "🔒 Cerrar"}
-                        </button>
+                        </Button>
                       </>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={handleDeleteThread}
                       disabled={deleting}
-                      className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[12px] text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                      className="h-auto min-h-0 w-full justify-start gap-1.5 rounded-none px-3 py-1.5 text-[12px] text-red-600 hover:bg-red-50"
                     >
                       {deleting && <Loader2 size={12} className="animate-spin" />}
                       Eliminar
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1043,17 +1072,18 @@ export function ThreadDetail({
         </h2>
 
         {hasNewComments && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => {
               setHasNewComments(false);
               router.refresh();
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ca-violet/[0.1] px-3 py-1.5 text-[12px] font-semibold text-ca-violet transition-colors hover:bg-ca-violet/[0.16]"
+            className="h-auto min-h-0 gap-1.5 rounded-full bg-ca-violet/[0.1] px-3 py-1.5 text-[12px] text-ca-violet hover:bg-ca-violet/[0.16]"
           >
             <RefreshCw size={13} />
             Hay comentarios nuevos
-          </button>
+          </Button>
         )}
 
         {isLocked ? (

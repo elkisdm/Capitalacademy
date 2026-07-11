@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
@@ -77,7 +78,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
 
-  const updates: Record<string, unknown> = {};
+  const updates: Database["public"]["Tables"]["evaluations"]["Update"] = {};
   if (v.title !== undefined) updates.title = v.title;
   if (v.description !== undefined) updates.description = v.description;
   if (v.passingGradePct !== undefined) updates.passing_grade_pct = v.passingGradePct;
@@ -106,7 +107,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const { data: updated, error } = await admin
     .from("evaluations")
-    .update(updates as never)
+    .update(updates)
     .eq("id", evaluationId)
     .select()
     .single();

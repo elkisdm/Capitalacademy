@@ -53,6 +53,7 @@ export default async function ClassroomLayout({
   // Prioridad: ruta URL > (staff) entorno activo > matrícula más reciente.
   let cohortSlug: string | undefined;
   let cohortLabel: string | undefined;
+  let programId: string | undefined;
 
   const hdrs = await headers();
   const pathname = hdrs.get("x-pathname") ?? "";
@@ -68,12 +69,13 @@ export default async function ClassroomLayout({
   if (cohortSlugFromPath) {
     const { data: cohortRow } = await supabase
       .from("cohorts")
-      .select("slug, programs(name)")
+      .select("slug, program_id, programs(name)")
       .or(`slug.eq.${cohortSlugFromPath},id.eq.${cohortSlugFromPath}`)
       .maybeSingle();
     cohortSlug = cohortRow?.slug ?? cohortSlugFromPath;
     cohortLabel =
       (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
+    programId = cohortRow?.program_id ?? undefined;
   } else {
     // Sin slug en la ruta (dashboard /classroom): staff sigue el entorno activo;
     // el alumno (o staff sin entorno) cae a su matrícula más reciente.
@@ -92,13 +94,30 @@ export default async function ClassroomLayout({
     if (target) {
       const { data: cohortRow } = await supabase
         .from("cohorts")
-        .select("slug, programs(name)")
+        .select("slug, program_id, programs(name)")
         .or(`slug.eq.${target},id.eq.${target}`)
         .maybeSingle();
       cohortSlug = cohortRow?.slug ?? target;
       cohortLabel =
         (cohortRow?.programs as { name: string } | null)?.name ?? undefined;
+      programId = cohortRow?.program_id ?? undefined;
     }
+  }
+
+  // Evaluación final publicada para el programa de la cohorte activa: oculta
+  // el item "Quiz final" del sidebar cuando no hay ninguna configurada (evita
+  // llevar a la pantalla "Próximamente"). Misma condición que /api/classroom/quiz.
+  let hasFinalEvaluation = false;
+  if (programId) {
+    const { data: finalEval } = await supabase
+      .from("evaluations")
+      .select("id")
+      .eq("program_id", programId)
+      .eq("scope", "final")
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+    hasFinalEvaluation = !!finalEval;
   }
 
   // Controles de staff (selector de entorno + modo de vista). Solo se cargan
@@ -141,9 +160,10 @@ export default async function ClassroomLayout({
         activeEnv={activeEnv}
         viewerId={user.id}
         isTeacher={isTeacher}
+        hasFinalEvaluation={hasFinalEvaluation}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        <div className="ca-fade-up">{children}</div>
+        {children}
       </main>
     </div>
   );

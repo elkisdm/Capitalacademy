@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useFocusTrap } from "@/lib/utils/use-focus-trap";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/classroom/primitives";
 
 type DeactivateModalProps = {
@@ -35,21 +36,11 @@ function CloseIcon() {
 }
 
 export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateModalProps) {
-  const trapRef = useFocusTrap(open);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (open) setConfirming(false);
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
 
   const handleConfirm = async () => {
     if (!user) return;
@@ -61,14 +52,15 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
     }
   };
 
-  if (!open || !user) return null;
+  if (!user) return null;
 
   return (
-    <div
-      className="ca-fade-up fixed inset-0 z-50 grid place-items-center p-6"
-      style={{ background: "rgba(15, 19, 64, 0.45)", backdropFilter: "blur(6px)" }}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-label="Desactivar usuario"
+      className="w-full max-w-[460px] overflow-hidden overscroll-contain p-0"
     >
-      <div ref={trapRef} style={{ overscrollBehavior: "contain" }} className="ca-card relative w-full max-w-[460px] overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6">
           <div
@@ -77,9 +69,9 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
           >
             <AlertIcon />
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="grid h-10 w-10 place-items-center rounded-full hover:bg-ca-bg-soft">
+          <Button type="button" variant="ghost" onClick={onClose} aria-label="Cerrar" className="h-10 w-10 p-0">
             <CloseIcon />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -142,25 +134,13 @@ export function DeactivateModal({ open, user, onClose, onConfirm }: DeactivateMo
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-ca-ink/[0.08] px-6 py-4" style={{ background: "var(--color-ca-bg-soft)" }}>
-          <button
-            onClick={onClose}
-            className="rounded-full border border-ca-ink/[0.14] px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-white"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={confirming}
-            className="rounded-full px-6 py-2.5 text-[13px] font-bold text-white transition-all disabled:opacity-50"
-            style={{
-              background: "#e11d48",
-              boxShadow: "0 4px 12px rgba(225,29,72,0.25)",
-            }}
-          >
+          </Button>
+          <Button type="button" variant="destructive" onClick={handleConfirm} disabled={confirming}>
             {confirming ? "Desactivando…" : "Desactivar"}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

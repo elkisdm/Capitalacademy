@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 
 // Origen resuelto en cliente: en prod es capitalacademy.cl, en preview/dev el
 // deploy correspondiente. Fallback a prod para el render SSR (el modal solo se
@@ -28,30 +30,32 @@ export function SessionQrButton({
 
   return (
     <>
-      <button
+      <Button
+        variant="outline"
         onClick={() => setOpen(true)}
         aria-label="QR de asistencia"
-        className="inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+        className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
       >
         <QrGlyph />
         QR
-      </button>
-      {open && (
-        <QrModal
-          sessionId={sessionId}
-          sessionTitle={sessionTitle}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      </Button>
+      <QrModal
+        open={open}
+        sessionId={sessionId}
+        sessionTitle={sessionTitle}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }
 
 function QrModal({
+  open,
   sessionId,
   sessionTitle,
   onClose,
 }: {
+  open: boolean;
   sessionId: string;
   sessionTitle: string;
   onClose: () => void;
@@ -59,18 +63,6 @@ function QrModal({
   const url = `${checkinBase()}/asistencia/${sessionId}`;
   const [svg, setSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  // A11y: cerrar con Escape y mover el foco al abrir (patrón de los otros
-  // modales del repo, p.ej. deactivate-modal).
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   useEffect(() => {
     let alive = true;
@@ -132,89 +124,86 @@ function QrModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-      onClick={onClose}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="session-qr-title"
+      className="w-full max-w-[380px] overflow-hidden p-0"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="session-qr-title"
-        className="ca-card w-full max-w-[380px] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3 px-5 py-4">
-          <div className="min-w-0">
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ca-ink-soft">
-              QR de asistencia
-            </div>
-            <h3
-              id="session-qr-title"
-              className="mt-0.5 truncate text-[15px] font-extrabold text-ca-ink"
-            >
-              {sessionTitle}
-            </h3>
+      <div className="flex items-start justify-between gap-3 px-5 py-4">
+        <div className="min-w-0">
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ca-ink-soft">
+            QR de asistencia
           </div>
-          <button
-            ref={closeRef}
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-ca-ink-soft hover:text-ca-ink"
+          <h3
+            id="session-qr-title"
+            className="mt-0.5 truncate text-[15px] font-extrabold text-ca-ink"
           >
-            ×
-          </button>
+            {sessionTitle}
+          </h3>
         </div>
-
-        <div className="grid place-items-center px-5 pb-2">
-          <div className="rounded-2xl bg-white p-4 shadow-inner">
-            {svg ? (
-              <div
-                style={{ width: 220, height: 220 }}
-                dangerouslySetInnerHTML={{ __html: svg }}
-              />
-            ) : (
-              <div
-                style={{ width: 220, height: 220 }}
-                className="grid place-items-center text-[12px] text-ca-ink-soft"
-              >
-                Generando…
-              </div>
-            )}
-          </div>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 max-w-full truncate text-[11px] font-medium text-ca-violet hover:underline"
-          >
-            {url}
-          </a>
-        </div>
-
-        <div className="flex flex-wrap gap-2 px-5 py-4">
-          <button
-            onClick={copyLink}
-            className="inline-flex flex-1 items-center justify-center rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
-          >
-            {copied ? "¡Copiado!" : "Copiar enlace"}
-          </button>
-          <button
-            onClick={downloadSvg}
-            disabled={!svg}
-            className="inline-flex flex-1 items-center justify-center rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet disabled:opacity-50"
-          >
-            Descargar SVG
-          </button>
-          <button
-            onClick={print}
-            disabled={!svg}
-            className="ca-btn-lime inline-flex flex-1 items-center justify-center rounded-xl px-3 py-2 text-[12px] font-bold uppercase tracking-[0.06em] disabled:opacity-50"
-          >
-            Imprimir
-          </button>
-        </div>
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="!h-auto !w-auto shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-ca-ink-soft hover:!bg-transparent hover:text-ca-ink"
+        >
+          ×
+        </Button>
       </div>
-    </div>
+
+      <div className="grid place-items-center px-5 pb-2">
+        <div className="rounded-2xl bg-white p-4 shadow-inner">
+          {svg ? (
+            <div
+              style={{ width: 220, height: 220 }}
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />
+          ) : (
+            <div
+              style={{ width: 220, height: 220 }}
+              className="grid place-items-center text-[12px] text-ca-ink-soft"
+            >
+              Generando…
+            </div>
+          )}
+        </div>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 max-w-full truncate text-[11px] font-medium text-ca-violet hover:underline"
+        >
+          {url}
+        </a>
+      </div>
+
+      <div className="flex flex-wrap gap-2 px-5 py-4">
+        <Button
+          variant="outline"
+          onClick={copyLink}
+          className="!h-auto flex-1 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
+        >
+          {copied ? "¡Copiado!" : "Copiar enlace"}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={downloadSvg}
+          disabled={!svg}
+          className="!h-auto flex-1 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
+        >
+          Descargar SVG
+        </Button>
+        <Button
+          variant="lime"
+          onClick={print}
+          disabled={!svg}
+          className="!h-auto flex-1 rounded-xl px-3 py-2 text-[12px] uppercase tracking-[0.06em]"
+        >
+          Imprimir
+        </Button>
+      </div>
+    </Dialog>
   );
 }
 

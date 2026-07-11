@@ -4,6 +4,7 @@ import { sendSessionReminderEmail } from "@/lib/email/session-reminder";
 import { sendCapacitacionReminderEmail } from "@/lib/email/capacitacion-emails";
 import { sendAttendanceWarningEmail } from "@/lib/email/attendance-warning";
 import { getStudentsAtAbsenceThreshold } from "@/lib/asistencia/queries";
+import { authorizeCron } from "@/lib/api/cron-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,6 +29,11 @@ const REMINDER_WINDOWS: Array<{ kind: "24h" | "1h"; leadMs: number }> = [
 ];
 // Ancho de cada ventana. Debe ser >= al período del cron para no perder envíos.
 const WINDOW_SLACK_MS = 35 * 60 * 1000; // 35 min
+// Techo del catch-up: cuánto downtime real del cron se cubre hacia atrás.
+// Acotado (no "desde ahora") para que una sesión creada con <24h de antelación
+// no reciba el recordatorio '24h' (con copy hard-coded "mañana") cuando en
+// realidad es en horas.
+const CATCHUP_MS = 3 * 60 * 60 * 1000; // 3 horas
 
 // Alerta de inasistencia: se avisa al alumno al llegar a 2 clases en vivo sin
 // registro (por debajo del máximo tolerado de 3), UNA vez por alumno+cohorte.
@@ -49,17 +55,6 @@ type SessionRow = {
   audience: string;
 };
 
-function authorize(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false; // sin secret configurado, denegar por defecto.
-  const auth = req.headers.get("authorization");
-  if (auth && auth === `Bearer ${secret}`) return true;
-  // Soporte para schedulers que no permiten headers (query param).
-  const url = new URL(req.url);
-  if (url.searchParams.get("secret") === secret) return true;
-  return false;
-}
-
 async function processWindow(
   admin: ReturnType<typeof createAdminClient>,
   kind: "24h" | "1h",
@@ -67,8 +62,16 @@ async function processWindow(
   now: number,
 ): Promise<{ kind: string; sessions: number; emails: number; errors: string[] }> {
   const errors: string[] = [];
-  const from = new Date(now + leadMs).toISOString();
   const to = new Date(now + leadMs + WINDOW_SLACK_MS).toISOString();
+  // Catch-up: si el cron se saltó una o más corridas (>35 min de downtime),
+  // la ventana estricta [now+lead, now+lead+slack) puede quedar atrás del
+  // starts_at de una sesión sin haberla recordado nunca. Barremos desde
+  // (now+lead-CATCHUP_MS), no desde "ahora", hasta el mismo límite superior;
+  // así se cubre downtime realista sin ensanchar la ventana '24h' a "en algún
+  // momento hoy" para sesiones creadas con poca antelación. La sesión solo se
+  // procesa si de verdad le falta el recordatorio (ver `alreadySent` más
+  // abajo, que ya excluye 'failed' para permitir reintento).
+  const catchupFrom = new Date(now + leadMs - CATCHUP_MS).toISOString();
 
   const { data: sessionsData, error: sessErr } = await admin
     .from("class_sessions")
@@ -78,7 +81,7 @@ async function processWindow(
     .eq("status", "scheduled")
     // Las grabadas no son eventos en vivo: no se recuerdan.
     .neq("modality", "recorded")
-    .gte("starts_at", from)
+    .gte("starts_at", catchupFrom)
     .lt("starts_at", to);
 
   if (sessErr) {
@@ -90,12 +93,16 @@ async function processWindow(
   if (sessions.length === 0) return { kind, sessions: 0, emails: 0, errors };
 
   // Idempotencia: descartar sesiones que YA tienen recordatorio de esta ventana.
+  // Excluye status='failed': un envío fallido no debe bloquear el reintento en
+  // la próxima corrida (el unique de 0026 sigue protegiendo contra duplicados
+  // cuando el envío sí tuvo éxito o se marcó 'skipped').
   const sessionIds = sessions.map((s) => s.id);
   const { data: existing } = await admin
     .from("session_reminders")
     .select("session_id")
     .eq("kind", kind)
     .eq("channel", CHANNEL)
+    .neq("status", "failed")
     .in("session_id", sessionIds);
   const alreadySent = new Set(
     ((existing ?? []) as Array<{ session_id: string }>).map((r) => r.session_id),
@@ -150,11 +157,26 @@ async function processWindow(
       recipients_count: 0,
     });
     if (reserveErr) {
-      // 23505 = unique_violation: ya reservado por otra corrida. No es error real.
-      if (!String(reserveErr.code).includes("23505")) {
+      if (String(reserveErr.code).includes("23505")) {
+        // 23505 = unique_violation: ya existe una fila para este slot. Puede
+        // ser una corrida concurrente (status 'sent'/'skipped', dejar en paz)
+        // o un intento previo fallido (status 'failed', reintentable): la
+        // única forma de distinguirlos es re-reservar con un update
+        // condicional que solo toma la fila si sigue en 'failed'.
+        const { data: retried } = await admin
+          .from("session_reminders")
+          .update({ status: "sent", recipients_count: 0, error: null })
+          .eq("session_id", session.id)
+          .eq("kind", kind)
+          .eq("channel", CHANNEL)
+          .eq("status", "failed")
+          .select("session_id")
+          .maybeSingle();
+        if (!retried) continue; // no era reintentable: otra corrida ya tiene el slot.
+      } else {
         errors.push(`reserve ${session.id} (${kind}): ${reserveErr.message}`);
+        continue;
       }
-      continue;
     }
 
     // Alumnos con matrícula activa del cohorte. Si la sesión es exclusiva de
@@ -255,11 +277,14 @@ async function processAbsenceAlerts(
   const rows = await getStudentsAtAbsenceThreshold(ABSENCE_ALERT_THRESHOLD);
   if (rows.length === 0) return { evaluated: 0, sent: 0, errors };
 
-  // Descartar pares (alumno, cohorte) que YA tienen alerta enviada.
+  // Descartar pares (alumno, cohorte) que YA tienen alerta enviada. Excluye
+  // status='failed': un envío fallido no debe bloquear el reintento en la
+  // próxima corrida.
   const { data: existing } = await admin
     .from("attendance_alerts")
     .select("student_id, cohort_id")
     .eq("kind", ABSENCE_ALERT_KIND)
+    .neq("status", "failed")
     .in(
       "student_id",
       rows.map((r) => r.studentId),
@@ -283,11 +308,26 @@ async function processAbsenceAlerts(
       status: "sent",
     });
     if (reserveErr) {
-      // 23505 = unique_violation: ya reservado por otra corrida. No es error real.
-      if (!String(reserveErr.code).includes("23505")) {
+      if (String(reserveErr.code).includes("23505")) {
+        // 23505 = unique_violation: ya existe una fila para este slot. Puede
+        // ser una corrida concurrente (status 'sent', dejar en paz) o un
+        // intento previo fallido (status 'failed', reintentable): la única
+        // forma de distinguirlos es re-reservar con un update condicional
+        // que solo toma la fila si sigue en 'failed'.
+        const { data: retried } = await admin
+          .from("attendance_alerts")
+          .update({ status: "sent", absences_count: row.absences, error: null })
+          .eq("student_id", row.studentId)
+          .eq("cohort_id", row.cohortId)
+          .eq("kind", ABSENCE_ALERT_KIND)
+          .eq("status", "failed")
+          .select("student_id")
+          .maybeSingle();
+        if (!retried) continue; // no era reintentable: otra corrida ya tiene el slot.
+      } else {
         errors.push(`reserve absence ${row.studentId}/${row.cohortId}: ${reserveErr.message}`);
+        continue;
       }
-      continue;
     }
 
     const res = await sendAttendanceWarningEmail({
@@ -316,7 +356,7 @@ async function processAbsenceAlerts(
 }
 
 export async function GET(req: Request) {
-  if (!authorize(req)) {
+  if (!authorizeCron(req)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

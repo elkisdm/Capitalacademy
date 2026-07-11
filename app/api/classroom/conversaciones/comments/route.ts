@@ -44,6 +44,7 @@ async function notifyAndEmail(params: {
   actorName: string;
   mentions: string[];
   cohortSlug: string | null;
+  programId: string;
 }) {
   const admin = createAdminClient();
 
@@ -56,17 +57,46 @@ async function notifyAndEmail(params: {
     ...new Set(params.mentions.filter((id) => id && id !== params.actorId)),
   ];
 
+  // Filtra a quienes tienen acceso al programa del hilo (mismo criterio que
+  // /api/classroom/conversaciones/members): matrícula active/completed en
+  // alguna cohorte del programa, o staff transversal (admin/ops). Evita que
+  // un ID de otro tenant gatille notificación/email cross-tenant.
   let validMentions: Array<{ id: string; full_name: string | null; email: string | null }> = [];
   if (mentionCandidates.length > 0) {
-    const { data } = await admin
+    const allowedIds = new Set<string>();
+
+    const { data: enrollmentRows } = await admin
+      .from("enrollments")
+      .select("student_id, cohorts!inner(program_id)")
+      .eq("cohorts.program_id", params.programId)
+      .in("status", ["active", "completed"])
+      .in("student_id", mentionCandidates);
+    for (const row of (enrollmentRows ?? []) as Array<{ student_id: string }>) {
+      allowedIds.add(row.student_id);
+    }
+
+    const { data: staffRows } = await admin
       .from("profiles")
-      .select("id, full_name, email")
-      .in("id", mentionCandidates);
-    validMentions = (data ?? []) as Array<{
-      id: string;
-      full_name: string | null;
-      email: string | null;
-    }>;
+      .select("id")
+      .in("id", mentionCandidates)
+      .or("system_role.in.(admin,ops),role.in.(admin,ops)");
+    for (const row of (staffRows ?? []) as Array<{ id: string }>) {
+      allowedIds.add(row.id);
+    }
+
+    const allowedMentions = mentionCandidates.filter((id) => allowedIds.has(id));
+
+    if (allowedMentions.length > 0) {
+      const { data } = await admin
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", allowedMentions);
+      validMentions = (data ?? []) as Array<{
+        id: string;
+        full_name: string | null;
+        email: string | null;
+      }>;
+    }
   }
 
   // Notificaciones 'mention' (una por mencionado válido).
@@ -239,6 +269,7 @@ export async function POST(req: Request) {
       actorName: authorName,
       mentions,
       cohortSlug: cohort?.slug ?? null,
+      programId: thread.program_id,
     });
   } catch (err) {
     console.error("conversaciones comments notify error", err);

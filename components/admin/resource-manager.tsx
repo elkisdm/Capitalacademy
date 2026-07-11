@@ -12,6 +12,9 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
 
 type Resource = {
   id: string;
@@ -239,18 +242,19 @@ export function ResourceManager({
               </p>
               <p className="truncate text-xs text-ca-ink-soft">{sub}</p>
             </div>
-            <span className="shrink-0 rounded bg-ca-bg-soft px-1.5 py-0.5 text-xs text-ca-ink-soft">
+            <Badge tone="neutral" size="sm" className="shrink-0">
               {resource.type}
-            </span>
-            <button
+            </Badge>
+            <Button
               type="button"
+              variant="ghost"
               aria-label={`Eliminar ${resource.title}`}
               onClick={() => handleDelete(resource.id)}
               disabled={deletingId === resource.id}
-              className="shrink-0 rounded p-1 text-ca-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+              className="h-auto min-h-0 shrink-0 rounded p-1 text-ca-ink-soft hover:bg-red-50 hover:text-red-500"
             >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         );
       })}
@@ -259,48 +263,41 @@ export function ResourceManager({
         <div className="space-y-3 rounded-lg border border-ca-accent/20 bg-ca-accent/10 p-4">
           {/* Toggle: subir archivo vs link externo */}
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
+              variant={mode === "file" ? "primary" : "outline"}
+              size="sm"
               onClick={() => {
                 setMode("file");
                 setError(null);
               }}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
-                mode === "file"
-                  ? "bg-ca-violet text-white"
-                  : "bg-white text-ca-ink-soft hover:bg-ca-bg-soft"
-              }`}
             >
               <Upload className="h-3.5 w-3.5" />
               Subir archivo
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant={mode === "link" ? "primary" : "outline"}
+              size="sm"
               onClick={() => {
                 setMode("link");
                 setError(null);
               }}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
-                mode === "link"
-                  ? "bg-ca-violet text-white"
-                  : "bg-white text-ca-ink-soft hover:bg-ca-bg-soft"
-              }`}
             >
               <LinkIcon className="h-3.5 w-3.5" />
               Link externo
-            </button>
+            </Button>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
               Título
             </label>
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ej: Guía de cierre de ventas"
-              className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
             />
           </div>
 
@@ -309,17 +306,13 @@ export function ResourceManager({
               <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                 Tipo
               </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
-              >
+              <Select value={type} onChange={(e) => setType(e.target.value)}>
                 {TYPE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               {mode === "link" ? (
@@ -327,12 +320,11 @@ export function ResourceManager({
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                     URL
                   </label>
-                  <input
+                  <Input
                     type="url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
                   />
                 </>
               ) : (
@@ -340,11 +332,11 @@ export function ResourceManager({
                   <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
                     Archivo (máx. 50 MB)
                   </label>
-                  <input
+                  <Input
                     ref={fileInputRef}
                     type="file"
                     onChange={handleFileChange}
-                    className="w-full rounded-md border border-ca-ink/[0.08] px-3 py-1.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-ca-violet/10 file:px-2 file:py-1 file:text-xs file:text-ca-violet"
+                    className="py-1.5 file:mr-3 file:rounded file:border-0 file:bg-ca-violet/10 file:px-2 file:py-1 file:text-xs file:text-ca-violet"
                   />
                 </>
               )}
@@ -359,36 +351,28 @@ export function ResourceManager({
           {error && <p className="text-xs text-red-500">{error}</p>}
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={saving || !canSubmit}
-              className="rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
-            >
+            <Button type="button" onClick={handleAdd} disabled={saving || !canSubmit}>
               {saving
                 ? mode === "file"
                   ? "Subiendo…"
                   : "Guardando…"
                 : "Agregar"}
-            </button>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-md px-4 py-2 text-sm text-ca-ink-soft hover:bg-ca-bg-soft"
-            >
+            </Button>
+            <Button type="button" variant="ghost" onClick={resetForm}>
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 rounded-md border border-dashed border-ca-ink/[0.08] px-4 py-2 text-sm text-ca-ink-soft hover:border-ca-violet/40 hover:text-ca-violet"
+          className="border-dashed"
         >
           <Plus className="h-4 w-4" />
           Agregar recurso
-        </button>
+        </Button>
       )}
     </div>
   );

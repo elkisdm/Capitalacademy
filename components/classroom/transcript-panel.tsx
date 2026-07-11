@@ -10,6 +10,8 @@ import {
 } from "react";
 import { parseVTT, type TranscriptSegment } from "@/lib/classroom/parse-vtt";
 import { fmtTimestamp } from "@/lib/classroom/format";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 
 type TranscriptPanelProps = {
   vttContent: string;
@@ -257,13 +259,13 @@ export function TranscriptPanel({
           <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ca-ink-soft">
             <SearchIcon size={14} />
           </div>
-          <input
+          <Input
             type="text"
             value={searchRaw}
             onChange={(e) => setSearchRaw(e.target.value)}
             placeholder="Buscar en transcripción…"
             aria-label="Buscar en la transcripción"
-            className="w-full rounded-xl border border-ca-ink/[0.08] bg-ca-bg-soft py-2 pl-9 pr-3 text-[13px] text-ca-ink outline-none transition-colors placeholder:text-ca-ink-soft/60 focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20"
+            className="rounded-xl border-ca-ink/[0.08] bg-ca-bg-soft py-2 pl-9 pr-3 text-[13px] focus:border-ca-violet/30 focus:ring-1 focus:ring-ca-violet/20"
           />
         </div>
         {search && (
@@ -317,16 +319,18 @@ export function TranscriptPanel({
               </button>
 
               {/* Copy button */}
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCopy(seg.text, seg.index);
                 }}
-                className="absolute right-3 top-3 grid h-6 w-6 shrink-0 place-items-center rounded-md opacity-0 transition-opacity hover:bg-ca-ink/[0.06] group-hover:opacity-100"
+                className="absolute right-3 top-3 h-6 min-h-0 w-6 rounded-md p-0 opacity-0 group-hover:opacity-100"
                 aria-label="Copiar segmento"
               >
                 {isCopied ? (
-                  <span className="text-ca-lime-deep">
+                  <span className="text-ca-lime-text">
                     <CheckIcon size={12} />
                   </span>
                 ) : (
@@ -334,7 +338,7 @@ export function TranscriptPanel({
                     <CopyIcon size={12} />
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
           );
         })}

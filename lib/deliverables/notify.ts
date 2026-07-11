@@ -66,5 +66,12 @@ export async function notifyDeliverableOpen(deliverableId: string): Promise<Noti
     if (res.success) sent++;
   }
 
+  // Bitácora del conteo real de envíos (0060): permite detectar/reintentar
+  // envíos parciales si el proceso muriera a mitad del loop de arriba.
+  await admin
+    .from("deliverables")
+    .update({ open_notified_count: sent })
+    .eq("id", deliverableId);
+
   return { skipped: false, sent };
 }

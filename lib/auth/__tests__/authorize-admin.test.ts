@@ -91,11 +91,11 @@ describe("requireStaff", () => {
     expect(result.error!.status).toBe(403);
   });
 
-  it("allows role 'teacher'", async () => {
+  it("returns 403 when user has role 'teacher'", async () => {
     setupMocks({ id: "user-1" }, "teacher");
     const result = await requireStaff();
-    expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(result).toHaveProperty("error");
+    expect(result.error!.status).toBe(403);
   });
 
   it("allows role 'ops'", async () => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SmilePlus } from "lucide-react";
 import { REACTION_EMOJIS } from "@/lib/conversaciones/reactions";
+import { Button } from "@/components/ui/button";
 
 type ReactionCount = { emoji: string; count: number };
 
@@ -124,37 +125,39 @@ export function ReactionButton({
       {reactions.map((r) => {
         const mine = viewerReaction === r.emoji;
         return (
-          <button
+          <Button
             key={r.emoji}
             type="button"
+            variant="ghost"
             onClick={() => react(r.emoji)}
             disabled={pending}
             aria-pressed={mine}
             aria-label={`${emojiLabel(r.emoji)} (${r.count})`}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold transition-colors disabled:cursor-not-allowed ${
+            className={`h-auto min-h-0 gap-1 rounded-full px-2 py-1 text-[12px] ${
               mine
                 ? "bg-ca-violet/[0.1] text-ca-violet ring-1 ring-ca-violet/30"
-                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                : "text-ca-ink-soft"
             }`}
           >
             <span aria-hidden>{r.emoji}</span>
             {r.count}
-          </button>
+          </Button>
         );
       })}
 
       <div className="relative" ref={pickerRef}>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setPickerOpen((o) => !o)}
           disabled={pending}
           aria-label="Agregar reacción"
           aria-haspopup="menu"
           aria-expanded={pickerOpen}
-          className="inline-flex items-center rounded-full px-1.5 py-1 text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:cursor-not-allowed"
+          className="h-auto min-h-0 rounded-full px-1.5 py-1 text-ca-ink-soft"
         >
           <SmilePlus size={15} strokeWidth={1.75} />
-        </button>
+        </Button>
 
         {pickerOpen && (
           <div
@@ -165,20 +168,21 @@ export function ReactionButton({
             {REACTION_EMOJIS.map((emoji) => {
               const mine = viewerReaction === emoji;
               return (
-                <button
+                <Button
                   key={emoji}
                   type="button"
+                  variant="ghost"
                   role="menuitem"
                   onClick={() => react(emoji)}
                   disabled={pending}
                   aria-pressed={mine}
                   aria-label={`${mine ? "Quitar" : "Reaccionar con"} ${emojiLabel(emoji)}`}
-                  className={`grid h-8 w-8 place-items-center rounded-full text-[16px] transition-transform hover:scale-125 disabled:cursor-not-allowed ${
-                    mine ? "bg-ca-violet/[0.12]" : "hover:bg-ca-bg-soft"
+                  className={`h-8 min-h-0 w-8 place-items-center rounded-full p-0 text-[16px] hover:scale-125 ${
+                    mine ? "bg-ca-violet/[0.12]" : ""
                   }`}
                 >
                   <span aria-hidden>{emoji}</span>
-                </button>
+                </Button>
               );
             })}
           </div>

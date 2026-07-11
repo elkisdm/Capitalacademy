@@ -95,6 +95,20 @@ export function ProgressBar({
   );
 }
 
+// Normaliza a máximo 2 iniciales en mayúscula: primera letra de las dos
+// primeras palabras si hay varias, o las 2 primeras letras si es una sola
+// palabra (1 sola letra si la palabra tiene solo 1 carácter).
+function normalizeInitials(initials: string): string {
+  const words = initials.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+  return "";
+}
+
 export function Avatar({
   initials,
   avatarUrl,
@@ -114,7 +128,7 @@ export function Avatar({
       {avatarUrl ? (
         <Image src={avatarUrl} alt="" width={size} height={size} className="h-full w-full rounded-full object-cover" />
       ) : (
-        initials
+        normalizeInitials(initials)
       )}
       <span
         className={`shape-circle absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 border-2 border-ca-surface ${accent}`}

@@ -69,7 +69,10 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
     modules: 2,
     modality: "Híbrida (online + presencial)",
     certificate: "Diploma certificado",
-    nextStart: "Sábado 20 de junio",
+    // Fallback estático: se usa solo si la landing no logra resolver la
+    // próxima cohorte desde `cohorts` (ver lib/landing/cohort.ts). Nunca debe
+    // ser una fecha fija — de lo contrario vuelve a vencer con el tiempo.
+    nextStart: "Próxima cohorte abierta",
     cohortSize: "Cupos limitados",
     audience: [
       "Brokers y asesores inmobiliarios",

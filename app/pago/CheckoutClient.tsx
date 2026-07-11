@@ -21,6 +21,8 @@ import {
   COMUNIDAD_WHATSAPP_URL,
   DIPLOMADO_REGULAR_PRICE_CLP,
 } from "@/lib/landing/constants";
+import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 type Props = { provider: PaymentProvider };
 type Status = "idle" | "submitting" | "loading-widget" | "ready" | "error";
@@ -245,23 +247,21 @@ export function CheckoutClient({ provider }: Props) {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Nombre" error={errors.firstname?.message}>
-            <input
+            <Input
               type="text"
               autoComplete="given-name"
               {...register("firstname")}
-              className={inputCls}
             />
           </Field>
           <Field label="Apellido" error={errors.lastname?.message}>
-            <input
+            <Input
               type="text"
               autoComplete="family-name"
               {...register("lastname")}
-              className={inputCls}
             />
           </Field>
           <Field label="RUT" error={errors.rut?.message} className="sm:col-span-2">
-            <input
+            <Input
               type="text"
               inputMode="text"
               placeholder="12.345.678-9"
@@ -276,24 +276,21 @@ export function CheckoutClient({ provider }: Props) {
                   shouldValidate: true,
                 })
               }
-              className={inputCls}
             />
           </Field>
           <Field label="Email" error={errors.email?.message} className="sm:col-span-2">
-            <input
+            <Input
               type="email"
               autoComplete="email"
               {...register("email")}
-              className={inputCls}
             />
           </Field>
           <Field label="Teléfono" error={errors.phone?.message} className="sm:col-span-2">
-            <input
+            <Input
               type="tel"
               autoComplete="tel"
               placeholder="+56 9 1234 5678"
               {...register("phone")}
-              className={inputCls}
             />
           </Field>
         </div>
@@ -365,31 +362,33 @@ export function CheckoutClient({ provider }: Props) {
             ¿Tienes un cupón?
           </label>
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={couponInput}
               onChange={(e) => setCouponInput(e.target.value)}
               placeholder="Código de cupón"
               disabled={!!coupon || couponLoading}
-              className={`${inputCls} flex-1 disabled:opacity-60`}
+              className="h-11 flex-1"
             />
             {coupon ? (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={removeCoupon}
-                className="h-11 shrink-0 rounded-lg border border-[rgba(20,22,58,0.12)] bg-white px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-violet)]/40 hover:text-[var(--color-ca-violet)]"
+                className="h-11 shrink-0 rounded-lg px-4 text-xs uppercase tracking-wider"
               >
                 Quitar
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={applyCoupon}
                 disabled={couponLoading || !couponInput.trim()}
-                className="h-11 shrink-0 rounded-lg border border-[var(--color-ca-violet)]/30 bg-[var(--color-ca-violet)]/[0.06] px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-ca-violet)] transition-colors hover:bg-[var(--color-ca-violet)]/[0.12] disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-11 shrink-0 rounded-lg border-[var(--color-ca-violet)]/30 bg-[var(--color-ca-violet)]/[0.06] px-4 text-xs uppercase tracking-wider text-[var(--color-ca-violet)] hover:bg-[var(--color-ca-violet)]/[0.12]"
               >
                 {couponLoading ? "…" : "Aplicar"}
-              </button>
+              </Button>
             )}
           </div>
           {couponError && (
@@ -464,13 +463,13 @@ export function CheckoutClient({ provider }: Props) {
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={isBusy}
-          className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all duration-200 hover:bg-[var(--color-ca-violet-deep)] hover:shadow-[0_16px_40px_rgba(94,23,235,0.45)] hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          className="h-12 w-full text-sm uppercase tracking-[0.15em] shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all duration-200 hover:shadow-[0_16px_40px_rgba(94,23,235,0.45)] hover:-translate-y-0.5 active:scale-[0.98] disabled:hover:translate-y-0"
         >
           {isBusy ? "Procesando…" : "Pagar inscripción"}
-        </button>
+        </Button>
 
         <p className="mt-3 text-center text-[11px] text-[var(--color-ca-ink-soft)]/80">
           Al continuar autorizas el cobro y aceptas las condiciones del Diplomado.
@@ -518,9 +517,6 @@ export function CheckoutClient({ provider }: Props) {
     </form>
   );
 }
-
-const inputCls =
-  "w-full h-11 rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-3 text-sm text-[var(--color-ca-ink)] outline-none transition-colors placeholder:text-[var(--color-ca-ink-soft)]/60 hover:border-[var(--color-ca-violet)]/40 focus:border-[var(--color-ca-violet)] focus:bg-white focus:ring-2 focus:ring-[var(--color-ca-violet)]/20";
 
 function Field({
   label,

@@ -34,12 +34,10 @@ export default async function EntregablesPage(
   if (!cohort) notFound();
   const program = cohort.programs as { id: string; name: string };
 
-  const nowIso = new Date().toISOString();
   const { data: deliverableRows } = await supabase
     .from("deliverables")
     .select("*")
     .eq("program_id", program.id)
-    .lte("opens_at", nowIso)
     .order("due_at", { ascending: true });
   const deliverables = deliverableRows ?? [];
 

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/admin/toast";
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/field";
 import type { Evaluation } from "./types";
 import { LoaderIcon, CheckCircleIcon } from "./icons";
 
@@ -126,8 +128,6 @@ export function EvaluationSettings({
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
   const labelCls = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft";
   const hintCls = "mt-1 text-[11px] text-ca-ink-soft";
 
@@ -137,57 +137,53 @@ export function EvaluationSettings({
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className={labelCls} htmlFor="eval-title">Título</label>
-          <input
+          <Input
             id="eval-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            className={inputCls}
           />
         </div>
 
         <div className="md:col-span-2">
           <label className={labelCls} htmlFor="eval-desc">Descripción (opcional)</label>
-          <textarea
+          <Textarea
             id="eval-desc"
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             rows={2}
-            className={inputCls}
           />
         </div>
 
         <div>
           <label className={labelCls} htmlFor="eval-attempts">N.º de intentos</label>
-          <input
+          <Input
             id="eval-attempts"
             type="number"
             min={1}
             max={50}
             value={form.maxAttempts}
             onChange={(e) => set("maxAttempts", e.target.value)}
-            className={inputCls}
           />
           <p className={hintCls}>Cuántas veces puede rendir el alumno.</p>
         </div>
 
         <div>
           <label className={labelCls} htmlFor="eval-passing">% para aprobar</label>
-          <input
+          <Input
             id="eval-passing"
             type="number"
             min={1}
             max={100}
             value={form.passingGradePct}
             onChange={(e) => set("passingGradePct", e.target.value)}
-            className={inputCls}
           />
           <p className={hintCls}>Nota mínima para aprobar la evaluación.</p>
         </div>
 
         <div>
           <label className={labelCls} htmlFor="eval-perattempt">Preguntas por intento</label>
-          <input
+          <Input
             id="eval-perattempt"
             type="number"
             min={1}
@@ -195,14 +191,13 @@ export function EvaluationSettings({
             value={form.questionsPerAttempt}
             onChange={(e) => set("questionsPerAttempt", e.target.value)}
             placeholder="Todas"
-            className={inputCls}
           />
           <p className={hintCls}>Vacío = todas las preguntas del pool.</p>
         </div>
 
         <div>
           <label className={labelCls} htmlFor="eval-time">Límite de tiempo (min)</label>
-          <input
+          <Input
             id="eval-time"
             type="number"
             min={1}
@@ -210,7 +205,6 @@ export function EvaluationSettings({
             value={form.timeLimitMinutes}
             onChange={(e) => set("timeLimitMinutes", e.target.value)}
             placeholder="Sin límite"
-            className={inputCls}
           />
           <p className={hintCls}>Vacío = sin límite de tiempo.</p>
         </div>
@@ -218,14 +212,13 @@ export function EvaluationSettings({
         {isFinal && (
           <div>
             <label className={labelCls} htmlFor="eval-completion">% de avance mínimo</label>
-            <input
+            <Input
               id="eval-completion"
               type="number"
               min={1}
               max={100}
               value={form.minCompletionPct}
               onChange={(e) => set("minCompletionPct", e.target.value)}
-              className={inputCls}
             />
             <p className={hintCls}>Avance del programa requerido para habilitar el final.</p>
           </div>
@@ -239,15 +232,16 @@ export function EvaluationSettings({
       )}
 
       <div className="mt-5 flex items-center gap-3">
-        <button
+        <Button
+          type="button"
+          variant="lime"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors disabled:opacity-40"
-          style={{ background: "var(--color-ca-lime)" }}
+          className="h-auto gap-2 px-5 py-2.5 text-[13px]"
         >
           {saving ? <LoaderIcon /> : <CheckCircleIcon />}
           Guardar ajustes
-        </button>
+        </Button>
       </div>
     </>
   );

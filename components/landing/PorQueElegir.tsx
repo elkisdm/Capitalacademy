@@ -28,7 +28,7 @@ export function PorQueElegir() {
   return (
     <section
       id="por-que"
-      className="relative overflow-hidden bg-[var(--color-ca-bg)] py-24 sm:py-28"
+      className="relative scroll-mt-24 overflow-hidden bg-[var(--color-ca-bg)] py-24 sm:py-28"
     >
       <div className="relative z-10 mx-auto max-w-6xl px-6">
         <div className="grid gap-12 lg:grid-cols-[1fr_1.05fr] lg:items-center">

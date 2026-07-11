@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Select } from "@/components/ui/field";
 
 type Option = { id: string; name: string };
 
@@ -37,19 +38,19 @@ export function LessonsScopeFilter({
         >
           Programa
         </label>
-        <select
+        <Select
           id="lessons-program"
           value={selectedProgramId}
           // Al cambiar de programa la cohorte se resetea (otra cohorte distinta).
           onChange={(e) => go(e.target.value, null)}
-          className="w-full max-w-xs rounded-md border border-ca-ink/[0.12] bg-white px-3 py-2 text-sm font-semibold text-ca-ink focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
+          className="w-full max-w-xs font-semibold"
         >
           {programs.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {cohorts.length > 0 && (
@@ -60,18 +61,18 @@ export function LessonsScopeFilter({
           >
             Cohorte (clases en vivo)
           </label>
-          <select
+          <Select
             id="lessons-cohort"
             value={selectedCohortId ?? ""}
             onChange={(e) => go(selectedProgramId, e.target.value || null)}
-            className="w-full max-w-xs rounded-md border border-ca-ink/[0.12] bg-white px-3 py-2 text-sm font-semibold text-ca-ink focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30"
+            className="w-full max-w-xs font-semibold"
           >
             {cohorts.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
     </div>

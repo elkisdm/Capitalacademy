@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useToast } from "@/components/admin/toast";
 import { MuxUploader } from "@/components/admin/mux-uploader";
 import { LoaderIcon } from "@/components/admin/quiz/icons";
+import { Button } from "@/components/ui/button";
 
 type RecordingState = {
   lessonId: string | null;
@@ -209,14 +210,15 @@ export function SessionRecordingPanel({
               {fmtDuration(rec.video_duration_seconds)} · disponible para el
               alumno en la pantalla de la clase.
             </p>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={remove}
               disabled={busy}
-              className="mt-3 text-[12px] font-bold uppercase tracking-[0.14em] text-red-500 transition-colors hover:text-red-600 disabled:opacity-40"
+              className="!h-auto !w-auto mt-3 !px-0 !py-0 text-[12px] uppercase tracking-[0.14em] text-red-500 hover:!bg-transparent hover:text-red-600"
             >
               Quitar repetición
-            </button>
+            </Button>
           </div>
         </div>
       </>
@@ -240,14 +242,13 @@ export function SessionRecordingPanel({
           <p className="mt-1 text-[13px] text-ca-ink-soft">
             {rec?.mux_error}
           </p>
-          <button
+          <Button
             type="button"
             onClick={() => setRetrying(true)}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition-colors"
-            style={{ background: "var(--color-ca-violet)" }}
+            className="!h-auto mt-4 gap-2 rounded-xl px-5 py-2.5 text-[13px]"
           >
             Reintentar subida
-          </button>
+          </Button>
         </div>
       </>
     );
@@ -282,17 +283,18 @@ export function SessionRecordingPanel({
                 Está tardando más de lo normal. Puedes seguir trabajando; se
                 marcará lista cuando termine.
               </p>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => {
                   setPollExhausted(false);
                   void load({ silent: true });
                 }}
                 disabled={busy}
-                className="mt-3 text-[12px] font-bold uppercase tracking-[0.14em] text-ca-violet disabled:opacity-40"
+                className="!h-auto !w-auto mt-3 !px-0 !py-0 text-[12px] uppercase tracking-[0.14em] text-ca-violet hover:!bg-transparent"
               >
                 Reintentar
-              </button>
+              </Button>
             </>
           ) : (
             <p className="mt-1 text-[13px] text-ca-ink-soft">
@@ -327,15 +329,15 @@ export function SessionRecordingPanel({
           Sube la grabación a Mux para que el alumno pueda verla después de la
           sesión.
         </p>
-        <button
+        <Button
+          variant="lime"
           onClick={prepare}
           disabled={busy}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors disabled:opacity-40"
-          style={{ background: "var(--color-ca-lime)" }}
+          className="!h-auto mt-4 gap-2 rounded-xl px-5 py-2.5 text-[13px]"
         >
           {busy ? <LoaderIcon /> : null}
           Preparar y subir repetición
-        </button>
+        </Button>
       </div>
     </>
   );

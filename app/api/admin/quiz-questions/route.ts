@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
+import type { Database } from "@/lib/supabase/types";
 import {
   questionPayloadSchema,
   payloadToDbFields,
@@ -166,7 +167,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "questionId es requerido" }, { status: 422 });
   }
 
-  const updates: Record<string, unknown> = {};
+  const updates: Database["public"]["Tables"]["quiz_questions"]["Update"] = {};
 
   // Si viene un payload de pregunta completo (con questionType), se revalida por
   // tipo y se reemplazan tipo/opciones/respuesta de forma coherente.
@@ -194,7 +195,7 @@ export async function PATCH(req: Request) {
 
   const { data: updated, error } = await admin
     .from("quiz_questions")
-    .update(updates as never)
+    .update(updates)
     .eq("id", questionId)
     .select()
     .single();

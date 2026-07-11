@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -78,7 +80,7 @@ export function ForgotPasswordForm() {
         >
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
@@ -90,14 +92,13 @@ export function ForgotPasswordForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
-          className="w-full rounded-xl border border-ca-ink/[0.12] bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet focus:ring-2 focus:ring-ca-violet/20"
         />
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading}
-        className="ca-btn-primary mt-2 flex items-center justify-center gap-2 py-3 text-[13px] font-bold uppercase tracking-[0.08em] disabled:opacity-50"
+        className="mt-2 w-full py-3 text-[13px] uppercase tracking-[0.08em]"
       >
         {loading ? (
           <>
@@ -107,7 +108,7 @@ export function ForgotPasswordForm() {
         ) : (
           "Enviar enlace de recuperación"
         )}
-      </button>
+      </Button>
 
       <Link
         href="/login"

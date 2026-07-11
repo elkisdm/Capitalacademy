@@ -70,7 +70,7 @@ export default async function AdminLayout({
         activeEnv={activeEnv}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        <div className="ca-fade-up">{children}</div>
+        {children}
       </main>
     </div>
   );

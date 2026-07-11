@@ -903,9 +903,19 @@ export function VideoPlayer({
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        {/* Loading overlay before ready */}
+        {/* Loading overlay before ready — mantiene visible el poster debajo,
+            oscurecido con un gradiente encima (no bg-black/40 + backgroundImage:
+            el background-image se pinta sobre el background-color y el tinte
+            no se ve). El gradient-over-image sí compone en el mismo layer. */}
         {!ready && (
-          <div className="absolute inset-0 z-10 grid place-items-center bg-black">
+          <div
+            className="absolute inset-0 z-10 grid place-items-center"
+            style={{
+              backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url(${posterUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <div
               className="vp-spinner h-12 w-12 rounded-full"
               style={{

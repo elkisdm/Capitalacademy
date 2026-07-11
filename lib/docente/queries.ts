@@ -7,6 +7,7 @@
  * así que un docente nunca ve sesiones de cohortes ajenas.
  */
 
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ClassSession, SessionResource } from "@/lib/classroom/types";
 
@@ -19,7 +20,7 @@ export type TeacherCohort = {
 };
 
 /** Cohortes donde el usuario es teacher o assistant (cohort_roles). */
-export async function getTeacherCohorts(userId: string): Promise<TeacherCohort[]> {
+export const getTeacherCohorts = cache(async (userId: string): Promise<TeacherCohort[]> => {
   const admin = createAdminClient();
 
   const { data } = await admin
@@ -48,6 +49,18 @@ export async function getTeacherCohorts(userId: string): Promise<TeacherCohort[]
       programId: r.cohorts!.programs!.id,
       programName: r.cohorts!.programs!.name,
     }));
+});
+
+/** Nº de alumnos activos matriculados en las cohortes del docente (conteo, sin filas). */
+export async function getTeacherStudentCount(cohortIds: string[]): Promise<number> {
+  if (cohortIds.length === 0) return 0;
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("enrollments")
+    .select("id", { count: "exact", head: true })
+    .in("cohort_id", cohortIds)
+    .eq("status", "active");
+  return count ?? 0;
 }
 
 export type TeacherSession = ClassSession & { resources: SessionResource[] };

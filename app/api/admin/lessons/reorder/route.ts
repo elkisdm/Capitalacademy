@@ -34,10 +34,10 @@ export async function POST(req: Request) {
   // El reorden corre como un RPC atómico (offset temporal) vía service_role;
   // la autorización ya la garantizó authorizeAdmin arriba.
   const admin = createAdminClient();
-  const { error } = await admin.rpc("reorder_lessons" as never, {
+  const { error } = await admin.rpc("reorder_lessons", {
     p_module_id: moduleId,
     p_ordered_ids: orderedIds,
-  } as never);
+  });
 
   if (error) {
     console.error("reorder lessons error", error);

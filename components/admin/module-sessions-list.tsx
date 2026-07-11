@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Calendar, AlertTriangle, Paperclip, ChevronDown, Pencil } from "lucide-react";
 import { ResourceManager } from "./resource-manager";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
 
 type SessionResource = {
   id: string;
@@ -125,11 +127,13 @@ export function ModuleSessionsList({
                 </p>
               </div>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setExpandedId(expanded ? null : s.id)}
                 aria-expanded={expanded}
-                className="flex shrink-0 items-center gap-1.5 rounded-md border border-ca-ink/[0.12] px-2.5 py-1.5 text-xs font-medium text-ca-ink-soft transition-colors hover:border-ca-violet hover:text-ca-violet"
+                className="shrink-0"
                 title="Material de la clase"
               >
                 <Paperclip className="h-3.5 w-3.5" />
@@ -137,15 +141,15 @@ export function ModuleSessionsList({
                 <ChevronDown
                   className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
                 />
-              </button>
+              </Button>
 
               {siblingModules.length > 0 && (
-                <select
+                <Select
                   aria-label="Mover clase a módulo"
                   defaultValue=""
                   disabled={saving}
                   onChange={(e) => moveToModule(s.id, e.target.value)}
-                  className="shrink-0 rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
+                  className="w-auto shrink-0 px-2 py-1 text-xs"
                 >
                   <option value="">Mover a…</option>
                   {siblingModules.map((m) => (
@@ -153,7 +157,7 @@ export function ModuleSessionsList({
                       {m.title}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
 
               <Link

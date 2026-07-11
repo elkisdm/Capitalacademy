@@ -108,7 +108,7 @@ function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons;
                 size={32}
               />
               <div className="min-w-0 leading-tight">
-                <div className="truncate text-[12px] font-bold text-ca-ink">{mod.teacher.full_name}</div>
+                <div className="truncate text-[12px] font-bold text-ca-ink" title={mod.teacher.full_name}>{mod.teacher.full_name}</div>
                 <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">Profesor</div>
               </div>
             </div>
@@ -125,7 +125,7 @@ function ModuleCard({ mod, cohortSlug, liveSessions }: { mod: ModuleWithLessons;
             ) : (
               <div>
                 <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-ca-ink-soft">
-                  <span>{progress.completed_lessons} de {contentCount} clases</span>
+                  <span>{progress.completed_lessons} de {contentCount} {contentCount === 1 ? "clase" : "clases"}</span>
                   <span className={`font-mono font-bold ${isCompleted ? "text-[#3f5a05]" : "text-ca-ink"}`}>
                     {progress.percentage}%
                   </span>
@@ -259,7 +259,7 @@ export default async function CohortDashboardPage(
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z" /><path d="M4 17a3 3 0 013-3h12" /></svg>
-                {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} clases
+                {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
               </span>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -397,7 +397,11 @@ export default async function CohortDashboardPage(
           palabra ni se desborde el botón. */}
       <div className="grid gap-5 xl:grid-cols-2">
         {modules.map((mod, i) => (
-          <div key={mod.id} className="ca-fade-up ca-stagger" style={{ "--i": i } as React.CSSProperties}>
+          <div
+            key={mod.id}
+            className={`ca-fade-up ca-stagger${totalModules % 2 === 1 && i === totalModules - 1 ? " xl:col-span-2" : ""}`}
+            style={{ "--i": i } as React.CSSProperties}
+          >
             <ModuleCard
               mod={mod}
               cohortSlug={cohortSlug}
@@ -423,11 +427,11 @@ export default async function CohortDashboardPage(
               Certificado ejecutivo Capital Academy
             </h3>
             <p className="mt-2 text-[13px] leading-relaxed text-white/60">
-              Completa las {totalContent} clases para obtener tu certificado.
+              Completa las {totalContent} {totalContent === 1 ? "clase" : "clases"} para obtener tu certificado.
             </p>
             <div className="mt-4">
               <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold">
-                <span className="text-white/60">{completedLessons} de {totalContent} clases</span>
+                <span className="text-white/60">{completedLessons} de {totalContent} {totalContent === 1 ? "clase" : "clases"}</span>
                 <span className="font-mono font-bold text-ca-lime">{totalContent > 0 ? Math.round((completedLessons / totalContent) * 100) : 0}%</span>
               </div>
               <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-white/10">

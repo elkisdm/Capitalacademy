@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/supabase/auth";
-import { getTeacherCohorts, getTeacherSessions } from "@/lib/docente/queries";
+import {
+  getTeacherCohorts,
+  getTeacherSessions,
+  getTeacherStudentCount,
+} from "@/lib/docente/queries";
 import { DocentePanelClient } from "./docente-panel-client";
 
 export const metadata = {
@@ -18,13 +22,14 @@ export default async function DocentePage() {
     getTeacherCohorts(user.id),
     getTeacherSessions(user.id),
   ]);
+  const studentCount = await getTeacherStudentCount(cohorts.map((c) => c.cohortId));
 
   const nowIso = new Date().toISOString();
   const upcomingSessions = sessions
-    .filter((s) => s.starts_at >= nowIso)
+    .filter((s) => s.ends_at >= nowIso)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   const pastSessions = sessions
-    .filter((s) => s.starts_at < nowIso)
+    .filter((s) => s.ends_at < nowIso)
     .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
 
   // Un programa por cohorte (el docente puede tener varias cohortes del mismo
@@ -49,6 +54,7 @@ export default async function DocentePage() {
       programs={Array.from(programsById.values())}
       upcomingSessions={upcomingSessions}
       pastSessions={pastSessions}
+      stats={{ nextSession: upcomingSessions[0] ?? null, studentCount }}
     />
   );
 }

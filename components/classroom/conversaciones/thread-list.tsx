@@ -12,6 +12,8 @@ import {
   isValidCategory,
 } from "@/lib/conversaciones/categories";
 import { ThreadComposer, type ThreadListItemLike } from "./thread-composer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 
 // ── Time helper (copiado de comment-section.tsx) ───────────────
 
@@ -304,70 +306,74 @@ export function ThreadList({
 
       {/* Chips de categoría */}
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar por categoría">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setCategory("all")}
           aria-pressed={activeCategory === "all"}
-          className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+          className={`h-auto min-h-0 rounded-full px-3 py-1.5 text-[12px] ${
             activeCategory === "all"
               ? "bg-ca-violet/[0.1] text-ca-violet"
-              : "text-ca-ink-soft hover:bg-ca-bg-soft"
+              : "text-ca-ink-soft"
           }`}
         >
           Todas
-        </button>
+        </Button>
         {CONVERSATION_CATEGORIES.map((c) => (
-          <button
+          <Button
             key={c.key}
             type="button"
+            variant="ghost"
             onClick={() => setCategory(c.key)}
             aria-pressed={activeCategory === c.key}
-            className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+            className={`h-auto min-h-0 rounded-full px-3 py-1.5 text-[12px] ${
               activeCategory === c.key
                 ? "bg-ca-violet/[0.1] text-ca-violet"
-                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                : "text-ca-ink-soft"
             }`}
           >
             {c.label}
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* Búsqueda + orden */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <input
+        <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar…"
           aria-label="Buscar conversaciones"
           autoComplete="off"
-          className="w-full rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13px] text-ca-ink placeholder:text-ca-ink-soft/60 outline-none transition-colors focus:border-ca-violet sm:max-w-xs"
+          className="rounded-lg px-3 py-2 text-[13px] sm:max-w-xs"
         />
         <div className="flex flex-wrap items-center gap-1.5">
           {SORT_TABS.map((tab) => (
-            <button
+            <Button
               key={tab.key}
               type="button"
+              variant="ghost"
               onClick={() => setSort(tab.key)}
               aria-pressed={sort === tab.key}
-              className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+              className={`h-auto min-h-0 rounded-full px-3 py-1.5 text-[12px] ${
                 sort === tab.key
                   ? "bg-ca-violet/[0.1] text-ca-violet"
-                  : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                  : "text-ca-ink-soft"
               }`}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setSavedOnly(!savedOnly)}
             aria-pressed={savedOnly}
-            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+            className={`h-auto min-h-0 gap-1 rounded-full px-3 py-1.5 text-[12px] ${
               savedOnly
                 ? "bg-ca-violet/[0.1] text-ca-violet"
-                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                : "text-ca-ink-soft"
             }`}
           >
             <Bookmark
@@ -376,7 +382,7 @@ export function ThreadList({
               strokeWidth={savedOnly ? 0 : 1.75}
             />
             Guardados
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -407,11 +413,12 @@ export function ThreadList({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {visible.map((t) => (
+          {visible.map((t, i) => (
             <Link
               key={t.id}
               href={`/classroom/${cohortSlug}/conversaciones/${t.id}`}
-              className="ca-card ca-card-hoverable flex flex-col gap-3 p-5"
+              className="ca-card ca-card-hoverable ca-fade-up ca-stagger flex flex-col gap-3 p-5"
+              style={{ "--i": i } as React.CSSProperties}
             >
               <div className="flex items-center gap-3">
                 <ThreadAvatar initials={getInitials(t.author.full_name)} avatarUrl={t.author.avatar_url} />
@@ -436,8 +443,9 @@ export function ThreadList({
                       🔒 Cerrado
                     </span>
                   )}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -447,10 +455,8 @@ export function ThreadList({
                     aria-label={
                       t.viewer_bookmarked ? "Quitar de guardados" : "Guardar conversación"
                     }
-                    className={`rounded-full p-1.5 transition-colors ${
-                      t.viewer_bookmarked
-                        ? "text-ca-violet"
-                        : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                    className={`h-auto min-h-0 rounded-full p-1.5 ${
+                      t.viewer_bookmarked ? "text-ca-violet" : "text-ca-ink-soft"
                     }`}
                   >
                     <Bookmark
@@ -458,7 +464,7 @@ export function ThreadList({
                       fill={t.viewer_bookmarked ? "currentColor" : "none"}
                       strokeWidth={t.viewer_bookmarked ? 0 : 1.75}
                     />
-                  </button>
+                  </Button>
                 </div>
               </div>
 

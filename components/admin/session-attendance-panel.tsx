@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type AttendanceRow = {
   studentId: string;
@@ -97,20 +98,21 @@ export function SessionAttendancePanel({ sessionId }: { sessionId: string }) {
             {report ? `${report.present} de ${report.total} presentes` : "Asistencia de la clase"}
           </h3>
         </div>
-        <button
+        <Button
+          variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet disabled:opacity-50"
+          className="!h-auto rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
         >
           {loading ? "Cargando…" : "Actualizar"}
-        </button>
+        </Button>
       </div>
 
       {error && (
         <div
           role="status"
           aria-live="polite"
-          className="mx-5 mb-3 rounded-lg bg-ca-rose/10 px-3 py-2 text-[12px] font-semibold text-ca-rose"
+          className="mx-5 mb-3 rounded-lg bg-ca-rose/10 px-3 py-2 text-[12px] font-semibold text-ca-rose-text"
         >
           {error}
         </div>
@@ -147,13 +149,14 @@ export function SessionAttendancePanel({ sessionId }: { sessionId: string }) {
                   )}
                 </div>
               </div>
-              <button
+              <Button
+                variant={row.attended ? "outline" : "lime"}
                 onClick={() => void toggle(row)}
                 disabled={pending === row.studentId}
                 className={
                   row.attended
-                    ? "shrink-0 rounded-lg border border-ca-ink/[0.12] px-3 py-1.5 text-[12px] font-bold text-ca-ink-soft transition-colors hover:border-ca-rose hover:text-ca-rose disabled:opacity-50"
-                    : "ca-btn-lime shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.04em] disabled:opacity-50"
+                    ? "!h-auto shrink-0 rounded-lg px-3 py-1.5 text-[12px] text-ca-ink-soft hover:border-ca-rose hover:text-ca-rose-text"
+                    : "!h-auto shrink-0 rounded-lg px-3 py-1.5 text-[12px] uppercase tracking-[0.04em]"
                 }
               >
                 {pending === row.studentId
@@ -161,7 +164,7 @@ export function SessionAttendancePanel({ sessionId }: { sessionId: string }) {
                   : row.attended
                     ? "Quitar"
                     : "Marcar"}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

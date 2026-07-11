@@ -7,7 +7,7 @@ import {
   getActiveEnrollmentsForUser,
 } from "@/lib/classroom/queries";
 import { getBrandByProgramId } from "@/lib/programs/registry";
-import { getActiveEnv } from "@/lib/admin/active-env";
+import { getActiveEnv, getViewMode } from "@/lib/admin/active-env";
 import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
 
 export default async function ClassroomIndexPage() {
@@ -29,8 +29,13 @@ export default async function ClassroomIndexPage() {
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
   if (isStaff) {
-    const previewSlug = await getActiveEnvCohortSlug(await getActiveEnv());
-    if (previewSlug) redirect(`/classroom/${previewSlug}`);
+    const viewMode = await getViewMode();
+    if (viewMode === "student") {
+      const previewSlug = await getActiveEnvCohortSlug(await getActiveEnv());
+      if (previewSlug) redirect(`/classroom/${previewSlug}`);
+    } else {
+      redirect("/admin");
+    }
   }
 
   const programs = await getActiveEnrollmentsForUser(user.id);

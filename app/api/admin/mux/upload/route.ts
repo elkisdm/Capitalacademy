@@ -74,7 +74,7 @@ export async function POST(req: Request) {
   // Limpia cualquier error previo: esta es una subida nueva para la lección.
   await supabase
     .from("lessons")
-    .update({ mux_upload_id: upload.id, mux_error: null } as never)
+    .update({ mux_upload_id: upload.id, mux_error: null })
     .eq("id", lessonId);
 
   return NextResponse.json({

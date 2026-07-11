@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
@@ -157,16 +160,10 @@ export function QuizStart({
 
       <div className="ca-fade-up relative mx-auto max-w-[820px] px-10 py-14">
         {/* Eyebrow pill */}
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.16em]"
-          style={{
-            background: "var(--color-ca-violet-mist)",
-            color: "var(--color-ca-violet-deep)",
-          }}
-        >
+        <Badge tone="violet" className="uppercase tracking-[0.16em]">
           <Icon name="trophy" size={11} stroke={2.5} />
           Quiz final · desbloqueado
-        </span>
+        </Badge>
 
         <h1
           className="mt-4 text-[44px] font-black leading-[1] tracking-[-0.03em]"
@@ -274,27 +271,24 @@ export function QuizStart({
 
         {/* CTA */}
         <div className="mt-8 flex items-center justify-between gap-4">
-          <button
+          <Button
             onClick={onBack}
-            className="ca-btn-interactive inline-flex items-center gap-2 rounded-full px-6 text-[13px] font-bold uppercase tracking-[0.08em]"
-            style={{
-              height: 52,
-              background: "transparent",
-              color: "var(--color-ca-ink)",
-              border: "1px solid var(--color-ca-outline-strong)",
-            }}
+            variant="outline"
+            className="h-auto min-h-0 gap-2 px-6 text-[13px] uppercase tracking-[0.08em]"
+            style={{ height: 52 }}
           >
             <Icon name="arrowLeft" size={18} stroke={2} />
             Volver al workshop
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onStart}
-            className="ca-btn-interactive ca-btn-lime inline-flex items-center gap-2 rounded-full px-7 text-[14px] font-bold uppercase tracking-[0.08em]"
+            variant="lime"
+            className="h-auto min-h-0 gap-2 px-7 text-[14px] uppercase tracking-[0.08em]"
             style={{ height: 56 }}
           >
             Comenzar quiz
             <Icon name="arrowRight" size={18} stroke={2} />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

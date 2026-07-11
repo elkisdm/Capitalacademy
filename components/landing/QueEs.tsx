@@ -5,7 +5,7 @@ export function QueEs() {
   return (
     <section
       id="que-es"
-      className="relative overflow-hidden bg-[var(--color-ca-violet-soft)] py-24 sm:py-28"
+      className="relative scroll-mt-24 overflow-hidden bg-[var(--color-ca-violet-soft)] py-24 sm:py-28"
     >
       {/* Decorativo: lo movemos a la esquina inferior derecha y opacity baja para que no pise el copy */}
       <div

@@ -1,22 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyDeliverableOpen } from "@/lib/deliverables/notify";
+import { authorizeCron } from "@/lib/api/cron-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 // Evita que Next intente cachear/estatizar la ruta del cron.
 export const dynamic = "force-dynamic";
-
-function authorize(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false; // sin secret configurado, denegar por defecto.
-  const auth = req.headers.get("authorization");
-  if (auth && auth === `Bearer ${secret}`) return true;
-  // Soporte para schedulers que no permiten headers (query param).
-  const url = new URL(req.url);
-  if (url.searchParams.get("secret") === secret) return true;
-  return false;
-}
 
 // ---------------------------------------------------------------------------
 // GET/POST  /api/cron/deliverable-openings
@@ -27,7 +17,7 @@ function authorize(req: Request): boolean {
 // ---------------------------------------------------------------------------
 
 export async function GET(req: Request) {
-  if (!authorize(req)) {
+  if (!authorizeCron(req)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

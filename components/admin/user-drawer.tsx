@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/field";
 import type { PlatformRole } from "./user-primitives";
 
 type UserData = {
@@ -42,9 +44,6 @@ const ROLE_OPTIONS: { value: PlatformRole; label: string }[] = [
   { value: "ops", label: "Operaciones" },
   { value: "admin", label: "Administrador" },
 ];
-
-const INPUT_CLASS =
-  "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-4 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
 
 export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserDrawerProps) {
   const [name, setName] = useState("");
@@ -193,13 +192,15 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                 : "Actualiza la información del usuario"}
             </p>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={onClose}
             aria-label="Cerrar"
-            className="grid h-10 w-10 place-items-center rounded-full transition-colors hover:bg-ca-bg-soft"
+            className="h-10 w-10 p-0"
           >
             <CloseIcon />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -211,7 +212,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                 <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Nombre completo
                 </label>
-                <input
+                <Input
                   ref={nameRef}
                   type="text"
                   value={name}
@@ -219,7 +220,6 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                   placeholder="Ej: María González"
                   autoComplete="off"
                   name="ca-user-fullname"
-                  className={INPUT_CLASS}
                 />
               </div>
 
@@ -228,14 +228,14 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                 <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Email
                 </label>
-                <input
+                <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="usuario@ejemplo.com"
                   autoComplete="off"
                   name="ca-user-email-address"
-                  className={`${INPUT_CLASS} ${error ? "border-red-500 focus:border-red-500" : ""}`}
+                  error={!!error}
                 />
                 {error && (
                   <p className="mt-1.5 text-[11px] font-semibold text-red-600">
@@ -249,14 +249,13 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                 <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Teléfono
                 </label>
-                <input
+                <Input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+56 9 1234 5678"
                   autoComplete="tel"
                   name="ca-user-phone-number"
-                  className={INPUT_CLASS}
                 />
               </div>
 
@@ -265,15 +264,14 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                 <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                   Rol de sistema
                 </label>
-                <select
+                <Select
                   value={role}
                   onChange={(e) => setRole(e.target.value as PlatformRole)}
-                  className={INPUT_CLASS}
                 >
                   {ROLE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {/* Cohort selector — create only */}
@@ -282,10 +280,9 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                   <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
                     Asignar a cohorte
                   </label>
-                  <select
+                  <Select
                     value={selectedCohortId}
                     onChange={(e) => setSelectedCohortId(e.target.value)}
-                    className={INPUT_CLASS}
                   >
                     <option value="">Sin asignar (solo crear cuenta)</option>
                     {cohorts
@@ -295,7 +292,7 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
                           {c.program_name} — {c.name}
                         </option>
                       ))}
-                  </select>
+                  </Select>
                   <p className="mt-1 text-[11px] text-ca-ink-soft">
                     El usuario será asignado como alumno a esta cohorte
                   </p>
@@ -322,23 +319,21 @@ export function UserDrawer({ open, mode, user, cohorts, onClose, onSave }: UserD
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-ca-ink/[0.08] px-6 py-4" style={{ background: "var(--color-ca-bg-soft)" }}>
-          <button
-            onClick={onClose}
-            className="rounded-full border border-ca-ink/[0.14] px-5 py-2.5 text-[13px] font-bold text-ca-ink transition-colors hover:bg-white"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleSubmit}
             disabled={saving || !name.trim() || !email.trim()}
-            className="ca-btn-primary px-6 py-2.5 text-[13px] font-bold disabled:opacity-50"
           >
             {saving
               ? "Guardando…"
               : mode === "create"
                 ? "Crear usuario"
                 : "Guardar cambios"}
-          </button>
+          </Button>
         </div>
       </div>
     </>,

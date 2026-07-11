@@ -12,6 +12,8 @@ import {
   ArrowRight,
   Share2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -321,9 +323,9 @@ export default function QuizResultPass({
                     {correctCount} de {totalQuestions} respuestas correctas
                   </h3>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-ca-lime-mist px-3 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.16em] text-[#3f5a05]">
+                <Badge tone="lime" className="px-3 py-1.5 text-[11.5px] uppercase tracking-[0.16em]">
                   <Check size={11} strokeWidth={3} /> Aprobado
-                </span>
+                </Badge>
               </div>
 
               <div className="mb-4 mt-12">
@@ -414,18 +416,16 @@ export default function QuizResultPass({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div
-                    className="ca-check-pop inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.2em]"
-                    style={{
-                      background: "var(--color-ca-lime-mist)",
-                      color: "#3f5a05",
-                    }}
+                  <Badge
+                    tone="lime"
+                    size="sm"
+                    className="ca-check-pop text-[9.5px] uppercase tracking-[0.2em]"
                   >
                     <Check size={10} strokeWidth={3} />
                     {certificateReady
                       ? "Certificado generado"
                       : "Generando certificado…"}
-                  </div>
+                  </Badge>
                   <h4 className="mt-2 text-[17px] font-extrabold leading-tight tracking-tight text-ca-ink">
                     {programTitle}
                   </h4>
@@ -436,28 +436,31 @@ export default function QuizResultPass({
                   )}
 
                   <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
                       onClick={onDownloadCert}
                       disabled={!certificateReady}
-                      className="ca-btn-interactive ca-btn-lime inline-flex h-11 items-center gap-2 px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
+                      variant="lime"
+                      className="h-11 min-h-0 gap-2 px-5 text-[12.5px] uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Download size={15} strokeWidth={2} />
                       Descargar PDF
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={onViewCert}
-                      className="ca-btn-interactive inline-flex h-11 items-center gap-2 rounded-full border border-ca-outline-strong px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+                      variant="outline"
+                      className="h-11 min-h-0 gap-2 px-5 text-[12.5px] uppercase tracking-[0.08em]"
                     >
                       <Eye size={15} strokeWidth={2} />
                       Ver en el classroom
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={onShareLinkedIn}
-                      className="ca-btn-interactive inline-flex h-11 items-center gap-2 rounded-full border border-ca-outline-strong px-5 text-[12.5px] font-bold uppercase tracking-[0.08em] text-ca-ink"
+                      variant="outline"
+                      className="h-11 min-h-0 gap-2 px-5 text-[12.5px] uppercase tracking-[0.08em]"
                     >
                       <Share2 size={15} strokeWidth={2} />
                       Compartir
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

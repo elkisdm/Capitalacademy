@@ -153,7 +153,7 @@ export async function POST(
       kind: "recorded",
       position,
       slug,
-    } as never)
+    })
     .select("id")
     .single<{ id: string }>();
 
@@ -167,7 +167,7 @@ export async function POST(
 
   const { error: linkError } = await admin
     .from("class_sessions")
-    .update({ lesson_id: lesson.id } as never)
+    .update({ lesson_id: lesson.id })
     .eq("id", parsedId.data);
 
   if (linkError) {
@@ -215,7 +215,7 @@ export async function DELETE(
   // Primero desenlaza para liberar el unique index, luego borra la lección.
   const { error: unlinkError } = await admin
     .from("class_sessions")
-    .update({ lesson_id: null } as never)
+    .update({ lesson_id: null })
     .eq("id", parsedId.data);
 
   if (unlinkError) {

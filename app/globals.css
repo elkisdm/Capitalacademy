@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--color-ca-bg);
   --color-foreground: var(--foreground);
@@ -28,6 +26,11 @@
   --color-ca-amber: #f5a524;
   --color-ca-outline: rgba(20, 22, 58, 0.08);
   --color-ca-outline-strong: rgba(20, 22, 58, 0.18);
+
+  /* Accessible text tones — variantes AA de lime/amber/rose para texto sobre fondo claro */
+  --color-ca-lime-text: #3f5a05;
+  --color-ca-amber-text: #8b6914;
+  --color-ca-rose-text: #a11d47;
 
   /* Surfaces — light first (alineado con manual) */
   --color-ca-bg: #f3f3f3;
@@ -67,12 +70,16 @@
   --color-outline: rgba(20, 22, 58, 0.14);
   --color-outline-variant: rgba(20, 22, 58, 0.08);
 
-  /* Brand legacy aliases */
-  --color-aqua: var(--color-ca-lime);
-  --color-aqua-light: var(--color-ca-lime-soft);
-  --color-aqua-dark: var(--color-ca-violet);
-  --color-magenta: var(--color-ca-violet);
-  --color-magenta-light: var(--color-ca-violet-soft);
+  /* Escala tipográfica — SOLO tokens aditivos (no colisionan con la escala
+     estándar de Tailwind v4). Definir --text-xs/sm/base/lg/xl/2xl/3xl en
+     @theme REDEFINE las utilidades estándar de Tailwind (usadas en ~430
+     lugares), no solo agrega nuevas: por eso esos nombres NO van acá. */
+  --text-2xs: 10px;
+  --text-2xs--line-height: 14px;
+  --text-md: 15px;
+  --text-md--line-height: 22px;
+  --text-display: 44px;
+  --text-display--line-height: 50px;
 
   /* shadcn-compatible tokens */
   --color-ring: var(--ring);
@@ -292,6 +299,7 @@
 @keyframes ca-slide-in-right { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
 @keyframes ca-slide-in-left { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
 @keyframes ca-scale-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes ca-scale-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.94); } }
 @keyframes ca-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 @keyframes vp-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 .vp-spinner { animation: vp-spin 1.1s linear infinite; }
@@ -304,6 +312,7 @@
 .ca-slide-in-right { animation: ca-slide-in-right var(--dur-slow) var(--ease-decel) both; }
 .ca-slide-in-left { animation: ca-slide-in-left var(--dur-slow) var(--ease-decel) both; }
 .ca-scale-in { animation: ca-scale-in var(--dur-base) var(--ease-spring) both; }
+.ca-scale-out { animation: ca-scale-out var(--dur-fast) var(--ease-standard) both; }
 
 /* Shimmer skeleton */
 .ca-shimmer {

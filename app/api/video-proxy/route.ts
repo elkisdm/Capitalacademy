@@ -54,6 +54,7 @@ export async function GET(req: Request) {
     .select("id, cohorts!inner(program_id)")
     .eq("student_id", user.id)
     .eq("cohorts.program_id", programModule.program_id)
+    .in("status", ["active", "completed"])
     .limit(1)
     .maybeSingle();
 

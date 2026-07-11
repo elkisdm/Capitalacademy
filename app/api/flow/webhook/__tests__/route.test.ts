@@ -63,8 +63,7 @@ vi.mock("@/lib/email/payment-confirmation", () => ({
 }));
 
 vi.mock("@/lib/classroom/enroll-from-payment", () => ({
-  enrollDiplomadoBuyer: (...args: unknown[]) =>
-    mockEnrollDiplomadoBuyer(...args),
+  enrollBuyer: (...args: unknown[]) => mockEnrollDiplomadoBuyer(...args),
 }));
 
 const { POST } = await import("@/app/api/flow/webhook/route");
@@ -153,6 +152,7 @@ describe("POST /api/flow/webhook", () => {
       email: "juan@test.com",
       firstname: "Juan",
       lastname: "Pérez",
+      plan: "contado",
     });
   });
 
@@ -263,7 +263,34 @@ describe("POST /api/flow/webhook", () => {
     expect(res.status).toBe(401);
   });
 
-  it("does not enroll for non-Diplomado plans", async () => {
+  it("does not enroll for unrecognized plans", async () => {
+    mockFetchFlowPaymentStatus.mockResolvedValue({
+      ok: true,
+      data: { status: 2, flowOrder: "F-UNK", amount: 360000 },
+    });
+    mockMapFlowStatus.mockReturnValue("succeeded");
+    mockSelectPayment.mockResolvedValue({
+      data: {
+        id: "pay-unk",
+        firstname: "María",
+        lastname: "González",
+        email: "maria@test.com",
+        rut: "12345678-9",
+        phone: "+56912345678",
+        amount_clp: 360000,
+        paid_at: null,
+        plan: "unknown-plan",
+        coupon_code: null,
+        discount_clp: null,
+      },
+    });
+
+    const res = await POST(makeFormRequest("token=unknown-plan-token"));
+    expect(res.status).toBe(200);
+    expect(mockEnrollDiplomadoBuyer).not.toHaveBeenCalled();
+  });
+
+  it("enrolls buyer for Programa de Liderazgo plans (lid-*)", async () => {
     mockFetchFlowPaymentStatus.mockResolvedValue({
       ok: true,
       data: { status: 2, flowOrder: "F-LID", amount: 360000 },
@@ -279,7 +306,7 @@ describe("POST /api/flow/webhook", () => {
         phone: "+56912345678",
         amount_clp: 360000,
         paid_at: null,
-        plan: "liderazgo-contado",
+        plan: "lid-contado",
         coupon_code: null,
         discount_clp: null,
       },
@@ -287,7 +314,12 @@ describe("POST /api/flow/webhook", () => {
 
     const res = await POST(makeFormRequest("token=liderazgo-token"));
     expect(res.status).toBe(200);
-    expect(mockEnrollDiplomadoBuyer).not.toHaveBeenCalled();
+    expect(mockEnrollDiplomadoBuyer).toHaveBeenCalledWith({
+      email: "maria@test.com",
+      firstname: "María",
+      lastname: "González",
+      plan: "lid-contado",
+    });
   });
 
   it("handles failed payment status without sending emails", async () => {

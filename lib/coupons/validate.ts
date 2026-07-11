@@ -11,7 +11,8 @@ export function normalizeCouponCode(raw: string): string {
 
 /**
  * Busca el cupón por código y verifica que esté vigente, activo y con cupos.
- * NO incrementa redemptions: eso lo hace el webhook al confirmarse el pago.
+ * NO incrementa redemptions: eso lo hace el webhook de Flow (RPC
+ * `increment_coupon_redemptions`) al confirmarse el pago por primera vez.
  */
 export async function lookupCoupon(rawCode: string): Promise<CouponLookupResult> {
   const code = normalizeCouponCode(rawCode);

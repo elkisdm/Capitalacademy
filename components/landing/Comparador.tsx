@@ -70,11 +70,15 @@ const rows: { label: string; key: RowKey; icon: React.ReactNode }[] = [
   { label: "Próxima cohorte", key: "nextStart", icon: RowIcons.cohort },
 ];
 
-export function Comparador() {
+export function Comparador({
+  diplomadoNextStart,
+}: {
+  diplomadoNextStart: string;
+}) {
   return (
     <section
       id="comparar"
-      className="relative bg-[var(--color-ca-bg)] py-24 sm:py-28"
+      className="relative scroll-mt-24 bg-[var(--color-ca-bg)] py-24 sm:py-28"
     >
       <div className="relative z-10 mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-3xl text-center">
@@ -182,7 +186,7 @@ export function Comparador() {
                             <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-ca-lime-deep)]" />
                           </span>
                           <span className="text-[12px] font-bold text-[var(--color-ca-ink)]">
-                            {p.nextStart}
+                            {p.id === "diplomado" ? diplomadoNextStart : p.nextStart}
                           </span>
                         </span>
                       );
@@ -291,7 +295,7 @@ export function Comparador() {
                           <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(20,22,58,0.08)] bg-[var(--color-ca-bg)] px-3 py-1">
                             <span className="h-2 w-2 rounded-full bg-[var(--color-ca-lime-deep)]" />
                             <span className="text-[12px] font-bold text-[var(--color-ca-ink)]">
-                              {p.nextStart}
+                              {p.id === "diplomado" ? diplomadoNextStart : p.nextStart}
                             </span>
                           </span>
                         );

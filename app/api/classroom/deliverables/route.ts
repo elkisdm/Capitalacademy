@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { uuidLike } from "@/lib/utils/zod";
-import { DELIVERABLES_BUCKET } from "@/lib/deliverables/storage";
+import { DELIVERABLES_BUCKET, resolveDeliverableUrls } from "@/lib/deliverables/storage";
+import { extensionAllowed } from "@/lib/deliverables/file-types";
 
 export const runtime = "nodejs";
 
@@ -62,26 +63,38 @@ export async function POST(req: Request) {
 
   const { data: deliverable } = await admin
     .from("deliverables")
-    .select("allow_multiple")
+    .select("allow_multiple, max_file_size_bytes, allowed_file_types")
     .eq("id", deliverableId)
     .single();
   if (!deliverable) {
     return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
   }
 
-  // Si no admite múltiples archivos, se reemplazará la entrega previa, pero
-  // solo tras un insert exitoso: así la RLS que gatea la ventana (opens_at/
-  // due_at) en el insert también protege el borrado, en vez de ejecutarse
-  // antes con service-role y destruir una entrega on-time por fuera de la
-  // ventana.
-  let previous: { id: string; storage_path: string }[] | null = null;
-  if (!deliverable.allow_multiple) {
-    const { data } = await admin
-      .from("deliverable_submissions")
-      .select("id, storage_path")
-      .eq("deliverable_id", deliverableId)
-      .eq("student_id", user.id);
-    previous = data;
+  // El tamaño y tipo ya se validan en upload-url, pero un cliente puede
+  // llamar este POST directo saltándose esa ruta: se revalida acá. Se
+  // prefiere el tamaño REAL del objeto en Storage (uploadedSize) sobre el
+  // declarado por el cliente (fileSizeBytes): este último es bypassable
+  // (un POST directo puede declarar 1 byte para un archivo real de 500MB).
+  const uploadedSize = typeof obj.metadata?.size === "number" ? obj.metadata.size : null;
+  const effectiveSize = uploadedSize ?? fileSizeBytes;
+  if (effectiveSize != null && effectiveSize > deliverable.max_file_size_bytes) {
+    return NextResponse.json(
+      { error: "El archivo supera el tamaño máximo permitido" },
+      { status: 422 },
+    );
+  }
+  // La extensión se valida tanto sobre el filename de display (client-supplied)
+  // como sobre el nombre real del objeto subido a Storage (`name`), para que
+  // un cliente no declare un filename con extensión permitida mientras el
+  // archivo real subido tiene otra.
+  if (
+    !extensionAllowed(filename, deliverable.allowed_file_types) ||
+    !extensionAllowed(name, deliverable.allowed_file_types)
+  ) {
+    return NextResponse.json(
+      { error: "Tipo de archivo no permitido para este entregable" },
+      { status: 422 },
+    );
   }
 
   // Insert con cliente de usuario: la RLS refuerza propiedad + ventana como
@@ -95,8 +108,7 @@ export async function POST(req: Request) {
       storage_path: storagePath,
       filename,
       content_type: contentType ?? null,
-      file_size_bytes:
-        fileSizeBytes ?? (typeof obj.metadata?.size === "number" ? obj.metadata.size : null),
+      file_size_bytes: effectiveSize,
     })
     .select()
     .single();
@@ -109,14 +121,39 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Error al guardar la entrega" }, { status: 500 });
   }
 
-  if (previous && previous.length > 0) {
-    const previousIds = previous.map((p) => p.id);
-    const previousPaths = previous.map((p) => p.storage_path);
-    await admin.storage.from(DELIVERABLES_BUCKET).remove(previousPaths);
-    await admin.from("deliverable_submissions").delete().in("id", previousIds);
+  // Si no admite múltiples archivos, se colapsa cualquier otra fila del par
+  // (deliverable_id, student_id) tras el insert exitoso: así la RLS que
+  // gatea la ventana (opens_at/due_at) en el insert también protege el
+  // borrado, en vez de ejecutarse antes con service-role y destruir una
+  // entrega on-time por fuera de la ventana. No hay unique constraint sobre
+  // (deliverable_id, student_id), así que dos POST concurrentes del mismo
+  // alumno pueden insertar ambos antes de que cualquiera borre: borrar
+  // "todas menos la mía" en ambas corridas dejaría CERO filas (A borra B, B
+  // borra A). Por eso se borra solo lo ESTRICTAMENTE más viejo que `created`
+  // (uploaded_at, con desempate determinista por id), así siempre sobrevive
+  // exactamente una fila — la más nueva — sin importar el orden de llegada.
+  if (!deliverable.allow_multiple) {
+    const { data: pairRows } = await admin
+      .from("deliverable_submissions")
+      .select("id, storage_path, uploaded_at")
+      .eq("deliverable_id", deliverableId)
+      .eq("student_id", user.id)
+      .neq("id", created.id);
+    const stale = (pairRows ?? []).filter(
+      (p) =>
+        p.uploaded_at < created.uploaded_at ||
+        (p.uploaded_at === created.uploaded_at && p.id < created.id),
+    );
+    if (stale.length > 0) {
+      const staleIds = stale.map((p) => p.id);
+      const stalePaths = stale.map((p) => p.storage_path);
+      await admin.storage.from(DELIVERABLES_BUCKET).remove(stalePaths);
+      await admin.from("deliverable_submissions").delete().in("id", staleIds);
+    }
   }
 
-  return NextResponse.json(created, { status: 201 });
+  const [withUrl] = await resolveDeliverableUrls([created]);
+  return NextResponse.json(withUrl, { status: 201 });
 }
 
 // ---------------------------------------------------------------------------
@@ -134,8 +171,8 @@ export async function DELETE(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ error: "id es requerido" }, { status: 422 });
+  if (!id || !uuidLike.safeParse(id).success) {
+    return NextResponse.json({ error: "id inválido" }, { status: 422 });
   }
 
   const supabase = await createClient();

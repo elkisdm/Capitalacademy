@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Video, VideoOff, ChevronUp, ChevronDown, AlertTriangle, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
 
 type LessonItem = {
   id: string;
@@ -13,6 +16,12 @@ type LessonItem = {
 };
 
 type SiblingModule = { id: string; title: string };
+
+const KIND_LABELS: Record<string, string> = {
+  recorded: "Grabada",
+  live_online: "En vivo online",
+  live_in_person: "Presencial",
+};
 
 export function LessonReorderList({
   moduleId,
@@ -103,24 +112,26 @@ export function LessonReorderList({
           className="flex items-center gap-3 rounded-lg border border-ca-ink/[0.08] bg-ca-surface p-4"
         >
           <div className="flex flex-col">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => move(index, -1)}
               disabled={saving || index === 0}
               aria-label="Subir"
-              className="rounded p-0.5 text-ca-ink-soft hover:bg-ca-bg-soft hover:text-ca-violet disabled:opacity-30"
+              className="h-auto min-h-0 rounded p-0.5 text-ca-ink-soft hover:text-ca-violet disabled:opacity-30"
             >
               <ChevronUp className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => move(index, 1)}
               disabled={saving || index === items.length - 1}
               aria-label="Bajar"
-              className="rounded p-0.5 text-ca-ink-soft hover:bg-ca-bg-soft hover:text-ca-violet disabled:opacity-30"
+              className="h-auto min-h-0 rounded p-0.5 text-ca-ink-soft hover:text-ca-violet disabled:opacity-30"
             >
               <ChevronDown className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
 
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ca-bg-soft text-xs font-semibold text-ca-ink-soft">
@@ -129,20 +140,20 @@ export function LessonReorderList({
 
           <Link href={`/admin/lessons/${lesson.id}`} className="min-w-0 flex-1 hover:text-ca-violet">
             <p className="truncate font-medium text-ca-ink">{lesson.title}</p>
-            <p className="text-xs text-ca-ink-soft">{lesson.kind}</p>
+            <p className="text-xs text-ca-ink-soft">{KIND_LABELS[lesson.kind] ?? lesson.kind}</p>
           </Link>
 
           <div className="flex shrink-0 items-center gap-2 pl-1">
             {lesson.hasVideo ? (
-              <span className="flex items-center gap-1 rounded-full bg-ca-lime-mist px-2 py-0.5 text-xs font-medium text-ca-lime-deep">
+              <Badge tone="lime" size="sm">
                 <Video className="h-3 w-3" />
                 Video
-              </span>
+              </Badge>
             ) : (
-              <span className="flex items-center gap-1 rounded-full bg-ca-bg-soft px-2 py-0.5 text-xs text-ca-ink-soft">
+              <Badge tone="neutral" size="sm">
                 <VideoOff className="h-3 w-3" />
                 Sin video
-              </span>
+              </Badge>
             )}
 
             <Link
@@ -155,12 +166,12 @@ export function LessonReorderList({
             </Link>
 
             {siblingModules.length > 0 && (
-              <select
+              <Select
                 aria-label="Mover a módulo"
                 defaultValue=""
                 disabled={saving}
                 onChange={(e) => moveToModule(lesson.id, e.target.value)}
-                className="rounded-md border border-ca-ink/[0.12] bg-white px-2 py-1 text-xs text-ca-ink-soft focus:border-ca-violet focus:outline-none disabled:opacity-50"
+                className="w-auto px-2 py-1 text-xs"
               >
                 <option value="">Mover a…</option>
                 {siblingModules.map((m) => (
@@ -168,7 +179,7 @@ export function LessonReorderList({
                     {m.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </div>
         </div>

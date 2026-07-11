@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
-import { getBaseUrl } from "@/lib/api/base-url";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = getPublicBaseUrl();
 
   const { data: linkData, error: linkError } =
     await admin.auth.admin.generateLink({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -177,9 +178,11 @@ export function SummaryCard({
       style={{ background: "rgba(94,23,235,0.03)" }}
     >
       {/* Header — always visible */}
-      <button
+      <Button
+        type="button"
+        variant="ghost"
         onClick={toggle}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4"
+        className="h-auto min-h-0 w-full justify-between gap-3 rounded-none px-5 py-4 hover:bg-transparent"
         aria-expanded={expanded}
       >
         <div className="flex flex-col items-start gap-1.5">
@@ -197,7 +200,7 @@ export function SummaryCard({
         <span className="shrink-0 text-ca-ink-soft">
           <ChevronIcon size={18} direction={expanded ? "up" : "down"} />
         </span>
-      </button>
+      </Button>
 
       {/* Collapsible body — CSS grid-rows trick for smooth animation */}
       <div
@@ -271,10 +274,12 @@ export function SummaryCard({
                 <SectionLabel>Capítulos</SectionLabel>
                 <div className="space-y-1">
                   {chapters.map((ch, i) => (
-                    <button
+                    <Button
                       key={i}
+                      type="button"
+                      variant="ghost"
                       onClick={() => onSeek(ch.position_seconds)}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-ca-bg-soft"
+                      className="h-auto min-h-0 w-full justify-start gap-3 rounded-xl px-3 py-2 text-left"
                     >
                       <span className="shrink-0 rounded-md bg-ca-violet/[0.08] px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums text-ca-violet">
                         {fmtChapterTime(ch.position_seconds)}
@@ -282,7 +287,7 @@ export function SummaryCard({
                       <span className="text-[13px] font-semibold text-ca-ink">
                         {ch.title}
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>

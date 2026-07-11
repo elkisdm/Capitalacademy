@@ -4,6 +4,7 @@ import {
   themeStyles,
   type ProgramMeta,
 } from "@/lib/landing/programs";
+import { IMG_PLACEHOLDER } from "@/lib/landing/images";
 import { Syllabus } from "./Syllabus";
 
 function MetaItem({
@@ -84,7 +85,13 @@ const Icons = {
   ),
 };
 
-function ProgramaDetalle({ d }: { d: ProgramMeta }) {
+function ProgramaDetalle({
+  d,
+  nextStart,
+}: {
+  d: ProgramMeta;
+  nextStart: string;
+}) {
   const t = themeStyles[d.theme];
   const reverse = d.theme === "violet";
 
@@ -107,6 +114,7 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
                 alt={d.heroImage.alt}
                 fill
                 sizes="(min-width: 1024px) 480px, 100vw"
+                placeholder={IMG_PLACEHOLDER}
                 className="object-cover"
               />
             </div>
@@ -124,7 +132,7 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
                     Próxima cohorte
                   </p>
                   <p className="text-sm font-bold text-[var(--color-ca-ink)]">
-                    {d.nextStart} <span className="font-semibold text-[var(--color-ca-ink-soft)]">· {d.cohortSize}</span>
+                    {nextStart} <span className="font-semibold text-[var(--color-ca-ink-soft)]">· {d.cohortSize}</span>
                   </p>
                 </div>
               </div>
@@ -237,7 +245,7 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
                   {d.socialProof.map((s) => (
                     <div key={s.label} className="flex flex-col">
-                      <span className="text-2xl font-black leading-none tracking-[-0.02em] text-[var(--color-ca-ink)] sm:text-3xl">
+                      <span className="break-words text-2xl font-black leading-none tracking-[-0.02em] text-[var(--color-ca-ink)] sm:text-3xl">
                         {s.value}
                       </span>
                       <span className="mt-1.5 text-[11px] font-semibold leading-snug text-[var(--color-ca-ink-soft)]">
@@ -367,11 +375,19 @@ function ProgramaDetalle({ d }: { d: ProgramMeta }) {
   );
 }
 
-export function DetalleProgramas() {
+export function DetalleProgramas({
+  diplomadoNextStart,
+}: {
+  diplomadoNextStart: string;
+}) {
   return (
     <>
       {PROGRAMS_LIST.map((d) => (
-        <ProgramaDetalle key={d.id} d={d} />
+        <ProgramaDetalle
+          key={d.id}
+          d={d}
+          nextStart={d.id === "diplomado" ? diplomadoNextStart : d.nextStart}
+        />
       ))}
     </>
   );

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
+import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 function EyeIcon() {
   return (
@@ -77,7 +79,7 @@ export function LoginForm({
         >
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
@@ -89,7 +91,6 @@ export function LoginForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
-          className="w-full rounded-xl border border-ca-ink/[0.12] bg-ca-bg px-4 py-3 text-[14px] font-medium text-ca-ink outline-none transition-[border-color,box-shadow] duration-[150ms] focus:border-ca-violet focus:ring-2 focus:ring-ca-violet/20"
         />
       </div>
 
@@ -101,7 +102,7 @@ export function LoginForm({
           Contraseña
         </label>
         <div className="relative">
-          <input
+          <Input
             id="password"
             type={showPwd ? "text" : "password"}
             required
@@ -109,7 +110,7 @@ export function LoginForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full rounded-xl border border-ca-ink/[0.12] bg-ca-bg px-4 py-3 pr-12 text-[14px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet focus:ring-2 focus:ring-ca-violet/20"
+            className="pr-12"
           />
           <button
             type="button"
@@ -131,10 +132,10 @@ export function LoginForm({
         </Link>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading}
-        className="ca-btn-primary ca-btn-interactive mt-2 flex items-center justify-center gap-2 py-3 text-[13px] font-bold uppercase tracking-[0.08em] disabled:pointer-events-none disabled:opacity-50"
+        className="mt-2 w-full py-3 text-[13px] uppercase tracking-[0.08em]"
         style={accent ? { background: accent } : undefined}
       >
         {loading ? (
@@ -145,7 +146,7 @@ export function LoginForm({
         ) : (
           "Iniciar sesión"
         )}
-      </button>
+      </Button>
     </form>
   );
 }

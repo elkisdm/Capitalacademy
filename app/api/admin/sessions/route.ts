@@ -151,9 +151,7 @@ export async function POST(req: Request) {
 
   const { data, error } = await admin
     .from("class_sessions")
-    // Los tipos generados no incluyen aún title/teacher_id/audience (migraciones
-    // 0022/0024 sin regenerar); el cast evita falsos errores de tipo.
-    .insert(insertRow as never)
+    .insert(insertRow)
     .select("*")
     .single();
 

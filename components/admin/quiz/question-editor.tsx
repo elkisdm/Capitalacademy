@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/field";
 import type { QuestionType } from "./types";
 import {
   type QuestionDraft,
@@ -94,13 +96,12 @@ export function QuestionEditor({
         <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
           Pregunta
         </label>
-        <textarea
+        <Textarea
           aria-label="Pregunta"
           value={draft.questionText}
           onChange={(e) => set({ questionText: e.target.value })}
           rows={2}
           placeholder="Escribe la pregunta…"
-          className="w-full rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[14px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
         />
       </div>
 
@@ -146,21 +147,23 @@ export function QuestionEditor({
                       key
                     )}
                   </button>
-                  <input
+                  <Input
                     value={draft.options[key] ?? ""}
                     onChange={(e) => setOption(key, e.target.value)}
                     placeholder={`Opción ${key}`}
-                    className="min-w-0 flex-1 rounded-xl border border-ca-ink/[0.08] bg-white px-3 py-2 text-[13px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
+                    className="min-w-0 flex-1"
                   />
                   {draft.optionKeys.length > MIN_OPTIONS && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => removeOption(key)}
                       aria-label={`Eliminar opción ${key}`}
-                      className="shrink-0 rounded-lg p-1.5 text-ca-ink-soft transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="!h-auto !w-auto shrink-0 rounded-lg p-1.5 text-ca-ink-soft hover:bg-red-50 hover:text-red-600"
                     >
                       <TrashIcon />
-                    </button>
+                    </Button>
                   )}
                 </div>
               );
@@ -173,14 +176,16 @@ export function QuestionEditor({
                 : "Marca todas las respuestas correctas"}
             </p>
             {draft.optionKeys.length < MAX_OPTIONS && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={addOption}
-                className="flex items-center gap-1 text-[12px] font-bold text-ca-violet hover:underline"
+                className="h-auto gap-1 px-0 py-0 text-[12px] font-bold text-ca-violet hover:bg-transparent hover:underline"
               >
                 <PlusIcon />
                 Agregar opción
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -222,33 +227,37 @@ export function QuestionEditor({
           <div className="grid gap-2">
             {draft.shortAnswers.map((ans, i) => (
               <div key={i} className="flex items-center gap-2">
-                <input
+                <Input
                   value={ans}
                   onChange={(e) => setShort(i, e.target.value)}
                   placeholder={i === 0 ? "Respuesta correcta" : "Sinónimo / variante aceptada"}
-                  className="min-w-0 flex-1 rounded-xl border border-ca-ink/[0.08] bg-white px-3 py-2 text-[13px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
+                  className="min-w-0 flex-1"
                 />
                 {draft.shortAnswers.length > 1 && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => set({ shortAnswers: draft.shortAnswers.filter((_, j) => j !== i) })}
                     aria-label="Eliminar respuesta"
-                    className="shrink-0 rounded-lg p-1.5 text-ca-ink-soft transition-colors hover:bg-red-50 hover:text-red-600"
+                    className="!h-auto !w-auto shrink-0 rounded-lg p-1.5 text-ca-ink-soft hover:bg-red-50 hover:text-red-600"
                   >
                     <TrashIcon />
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => set({ shortAnswers: [...draft.shortAnswers, ""] })}
-            className="mt-2 flex items-center gap-1 text-[12px] font-bold text-ca-violet hover:underline"
+            className="mt-2 h-auto gap-1 px-0 py-0 text-[12px] font-bold text-ca-violet hover:bg-transparent hover:underline"
           >
             <PlusIcon />
             Agregar variante aceptada
-          </button>
+          </Button>
           <p className="mt-1.5 text-[11px] text-ca-ink-soft">
             Se corrige por coincidencia exacta ignorando mayúsculas, espacios y tildes.
           </p>
@@ -260,13 +269,12 @@ export function QuestionEditor({
         <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
           Explicación (opcional)
         </label>
-        <textarea
+        <Textarea
           aria-label="Explicación (opcional)"
           value={draft.explanation}
           onChange={(e) => set({ explanation: e.target.value })}
           rows={2}
           placeholder="Por qué esta es la respuesta correcta…"
-          className="w-full rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-2.5 text-[13px] text-ca-ink outline-none transition-colors focus:border-ca-violet/40"
         />
       </div>
     </div>

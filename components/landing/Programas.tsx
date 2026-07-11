@@ -1,11 +1,16 @@
 import Image from "next/image";
 import { PROGRAMS_LIST } from "@/lib/landing/programs";
+import { IMG_PLACEHOLDER } from "@/lib/landing/images";
 
-export function Programas() {
+export function Programas({
+  diplomadoNextStart,
+}: {
+  diplomadoNextStart: string;
+}) {
   return (
     <section
       id="programas"
-      className="relative overflow-hidden bg-[var(--color-ca-bg)] py-24 sm:py-28"
+      className="relative scroll-mt-24 overflow-hidden bg-[var(--color-ca-bg)] py-24 sm:py-28"
     >
       <div className="relative z-10 mx-auto max-w-6xl px-6">
         <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-end">
@@ -45,6 +50,7 @@ export function Programas() {
                   alt={p.cardImage.alt}
                   fill
                   sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+                  placeholder={IMG_PLACEHOLDER}
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
                 {p.discountLabel && (
@@ -86,7 +92,7 @@ export function Programas() {
                       <path d="M3 10h18M8 3v4M16 3v4" />
                     </svg>
                     <span className="font-semibold text-[var(--color-ca-ink)]">
-                      {p.nextStart}
+                      {p.id === "diplomado" ? diplomadoNextStart : p.nextStart}
                     </span>
                     <span className="ml-auto text-[var(--color-ca-ink-soft)]">
                       · {p.cohortSize}

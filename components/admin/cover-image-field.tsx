@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Trash2, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type CoverImageFieldProps = {
   target: "module" | "lesson";
@@ -91,25 +92,28 @@ export function CoverImageField({ target, id, initialUrl }: CoverImageFieldProps
               if (file) upload(file);
             }}
           />
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-md border border-ca-ink/[0.08] px-3 py-1.5 text-xs font-medium text-ca-ink-soft hover:bg-ca-bg-soft disabled:opacity-50"
           >
             <ImagePlus className="h-3.5 w-3.5" />
             {busy ? "Subiendo…" : url ? "Cambiar" : "Subir"}
-          </button>
+          </Button>
           {url && (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={remove}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50"
+              className="border-red-200 text-red-500 hover:bg-red-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Quitar
-            </button>
+            </Button>
           )}
         </div>
       </div>

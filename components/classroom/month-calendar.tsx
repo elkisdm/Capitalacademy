@@ -51,13 +51,14 @@ function timeLabel(iso: string, tz: string): string {
   }).format(new Date(iso));
 }
 
-/** Etiqueta "junio de 2026" sin que la TZ desplace el mes (se formatea en UTC). */
+/** Etiqueta "Junio de 2026" sin que la TZ desplace el mes (se formatea en UTC). */
 function monthLabel(year: number, month: number): string {
-  return new Intl.DateTimeFormat("es-CL", {
+  const s = new Intl.DateTimeFormat("es-CL", {
     timeZone: "UTC",
     month: "long",
     year: "numeric",
   }).format(new Date(Date.UTC(year, month, 15)));
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function isOnline(modality: string): boolean {
@@ -181,7 +182,7 @@ export function MonthCalendar<T extends CalendarEvent>({
           >
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
           </button>
-          <h3 className="ml-1 text-[15px] font-black capitalize tracking-tight text-ca-ink md:text-[17px]">
+          <h3 className="ml-1 text-[15px] font-black tracking-tight text-ca-ink md:text-[17px]">
             {monthLabel(view.year, view.month)}
           </h3>
         </div>
@@ -265,16 +266,18 @@ export function MonthCalendar<T extends CalendarEvent>({
                         type="button"
                         onClick={() => onSessionClick?.(s)}
                         title={s.title ?? "Sesión"}
-                        className={`pointer-events-auto flex items-center gap-1 truncate rounded-md px-1.5 py-0.5 text-left text-[10px] font-bold leading-tight transition-opacity hover:opacity-80 ${
+                        className={`pointer-events-auto flex items-start gap-1 rounded-md px-1.5 py-0.5 text-left text-[10px] font-bold leading-tight transition-opacity hover:opacity-80 ${
                           online
                             ? "bg-ca-violet/10 text-ca-violet"
                             : "bg-ca-ink/[0.06] text-ca-ink"
                         }`}
                       >
-                        <span className="font-mono text-[9px] opacity-70">
+                        <span className="shrink-0 font-mono text-[9px] opacity-70">
                           {timeLabel(s.starts_at, timeZone)}
                         </span>
-                        <span className="truncate">{s.title ?? "Sesión"}</span>
+                        <span className="line-clamp-2 min-w-0 flex-1 break-words">
+                          {s.title ?? "Sesión"}
+                        </span>
                       </button>
                     );
                   })}

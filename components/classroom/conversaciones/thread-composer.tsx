@@ -6,6 +6,8 @@ import {
   CONVERSATION_CATEGORIES,
   type ConversationCategoryKey,
 } from "@/lib/conversaciones/categories";
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/field";
 
 // Forma mínima de un thread recién creado (respuesta cruda del insert de la
 // API, sin embed de autor ni conteos de reacciones — eso lo completa quien
@@ -75,7 +77,7 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="ca-card w-full px-5 py-4 text-left text-[14px] font-semibold text-ca-ink-soft transition-colors hover:border-ca-violet/30 hover:text-ca-ink"
+        className="ca-card ca-card-hoverable w-full px-5 py-4 text-left text-[14px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-ink"
       >
         Inicia una conversación…
       </button>
@@ -84,60 +86,63 @@ export function ThreadComposer({ programId, onCreated }: ThreadComposerProps) {
 
   return (
     <div className="ca-card flex flex-col gap-3 p-5">
-      <input
+      <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Título"
         aria-label="Título de la conversación"
         maxLength={200}
         autoFocus
-        className="w-full rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[15px] font-bold text-ca-ink placeholder:font-normal placeholder:text-ca-ink-soft/60 focus:border-ca-violet focus:outline-none"
+        className="rounded-lg px-3 py-2 text-[15px] font-bold placeholder:font-normal"
       />
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Categoría de la conversación">
         {CONVERSATION_CATEGORIES.map((c) => (
-          <button
+          <Button
             key={c.key}
             type="button"
+            variant="ghost"
             onClick={() => setCategory(c.key)}
             aria-pressed={category === c.key}
-            className={`rounded-full px-3 py-1 text-[12px] font-semibold transition-colors ${
+            className={`h-auto min-h-0 rounded-full px-3 py-1 text-[12px] ${
               category === c.key
                 ? "bg-ca-violet/[0.1] text-ca-violet"
-                : "text-ca-ink-soft hover:bg-ca-bg-soft"
+                : "text-ca-ink-soft"
             }`}
           >
             {c.label}
-          </button>
+          </Button>
         ))}
       </div>
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Comparte algo con la comunidad…"
         aria-label="Mensaje de la conversación"
         rows={4}
         maxLength={10000}
-        className="w-full resize-none rounded-lg border border-ca-ink/[0.12] bg-ca-surface px-3 py-2 text-[13.5px] leading-relaxed text-ca-ink placeholder:text-ca-ink-soft/60 focus:border-ca-violet focus:outline-none"
+        className="resize-none rounded-lg px-3 py-2 text-[13.5px] leading-relaxed"
       />
       {error && <p className="text-[12px] text-red-600">{error}</p>}
       <div className="flex items-center justify-end gap-2">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={handleCancel}
           disabled={submitting}
-          className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-ca-ink-soft transition-colors hover:bg-ca-bg-soft disabled:opacity-50"
+          className="h-auto min-h-0 rounded-lg px-3 py-1.5 text-[12px]"
         >
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="primary"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-ca-violet px-4 py-1.5 text-[12px] font-semibold text-white transition-all hover:bg-ca-violet-deep disabled:cursor-not-allowed disabled:opacity-40"
+          className="h-auto min-h-0 rounded-lg px-4 py-1.5 text-[12px]"
         >
           {submitting && <Loader2 size={14} className="animate-spin" />}
           Publicar
-        </button>
+        </Button>
       </div>
     </div>
   );

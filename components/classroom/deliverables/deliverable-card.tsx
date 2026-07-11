@@ -136,10 +136,10 @@ export function DeliverableCard({
       }
       const created = await res.json();
       setFiles((prev) =>
-        deliverable.allow_multiple
-          ? [...prev, { ...created, signedUrl: null }]
-          : [{ ...created, signedUrl: null }],
+        deliverable.allow_multiple ? [...prev, created] : [created],
       );
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setUploading(false);
     }
@@ -147,11 +147,16 @@ export function DeliverableCard({
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
+    setError(null);
     try {
       const res = await fetch(`/api/classroom/deliverables?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         setFiles((prev) => prev.filter((f) => f.id !== id));
+      } else {
+        setError("No se pudo eliminar el archivo.");
       }
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setDeletingId(null);
     }

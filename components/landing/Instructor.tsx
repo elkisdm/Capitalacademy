@@ -5,7 +5,7 @@ export function Instructor() {
   return (
     <section
       id="docentes"
-      className="relative overflow-hidden bg-[var(--color-ca-bg)] py-24 sm:py-28"
+      className="relative scroll-mt-24 overflow-hidden bg-[var(--color-ca-bg)] py-24 sm:py-28"
     >
       <div
         aria-hidden

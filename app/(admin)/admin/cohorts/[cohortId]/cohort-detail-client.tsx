@@ -10,6 +10,8 @@ import {
   type CohortRole,
 } from "@/components/admin/user-primitives";
 import { SegmentToggle } from "@/components/admin/segment-toggle";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 import type { CohortMember } from "@/lib/admin/user-queries";
 import Link from "next/link";
 import {
@@ -128,13 +130,14 @@ export function CohortDetailClient({
 
   return (
     <div>
-      <button
+      <Button
+        variant="ghost"
         onClick={() => router.back()}
-        className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-ca-ink-soft transition-colors hover:text-ca-violet"
+        className="mb-5 !h-auto !w-auto gap-1.5 rounded-full !px-0 !py-0 text-[13px] font-bold text-ca-ink-soft hover:!bg-transparent hover:text-ca-violet"
       >
         <ArrowLeftIcon />
         Volver
-      </button>
+      </Button>
 
       <div className="mb-6">
         {program && (
@@ -265,7 +268,7 @@ function ParticipantesTab({
     <div>
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="ca-card relative overflow-hidden p-5">
+          <div key={s.label} className="ca-card ca-card-hoverable relative overflow-hidden p-5">
             <div
               className="shape-circle absolute -right-4 -top-4 h-16 w-16 opacity-[0.08]"
               style={{ background: s.color }}
@@ -288,18 +291,18 @@ function ParticipantesTab({
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ca-ink-soft">
             <SearchIcon />
           </span>
-          <input
+          <Input
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar por nombre o email…"
             aria-label="Buscar participante por nombre o email"
-            className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
+            className="pl-10 pr-4 text-[13px] font-medium"
           />
         </div>
       </div>
 
-      <div className="ca-card divide-y divide-ca-ink/[0.08] overflow-hidden">
+      <div className="ca-card ca-card-hoverable divide-y divide-ca-ink/[0.08] overflow-hidden">
         <RoleSection
           role="teacher"
           members={filteredTeachers}
@@ -444,7 +447,7 @@ function InfoTab({
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <div className="ca-card p-6">
+      <div className="ca-card ca-card-hoverable p-6">
         <h3 className="mb-4 text-[16px] font-black text-ca-ink">
           Detalles del programa
         </h3>
@@ -483,7 +486,7 @@ function InfoTab({
         </div>
       </div>
 
-      <div className="ca-card p-6">
+      <div className="ca-card ca-card-hoverable p-6">
         <h3 className="mb-4 text-[16px] font-black text-ca-ink">
           Acciones rápidas
         </h3>
@@ -536,7 +539,7 @@ function ProgresoTab() {
   const router = useRouter();
 
   return (
-    <div className="ca-card flex flex-col items-center justify-center p-12 text-center">
+    <div className="ca-card ca-card-hoverable flex flex-col items-center justify-center p-12 text-center">
       <div
         className="mb-4 grid h-16 w-16 place-items-center rounded-2xl"
         style={{ background: "var(--color-ca-bg-soft)" }}
@@ -550,12 +553,12 @@ function ProgresoTab() {
         El reporte detallado de avance por alumno y módulo vive en la sección
         dedicada de progreso de la cohorte.
       </p>
-      <button
+      <Button
         onClick={() => router.push("/admin/progress")}
-        className="ca-btn-primary mt-6 px-6 py-2.5 text-[13px] font-bold"
+        className="!h-auto mt-6 px-6 py-2.5 text-[13px]"
       >
         Ir a Progreso cohorte
-      </button>
+      </Button>
     </div>
   );
 }

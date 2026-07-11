@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Input, Textarea, Select } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 type Estado =
   | { tag: "idle" }
@@ -88,13 +90,14 @@ export function Formulario() {
           Pronto nuestro equipo se comunicará contigo para entregarte más
           información.
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setEstado({ tag: "idle" })}
-          className="mt-8 inline-flex h-11 items-center rounded-full border border-[var(--color-ca-ink)]/15 px-6 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-ca-ink)] hover:bg-[var(--color-ca-bg)]"
+          className="mt-8 uppercase tracking-[0.18em]"
         >
           Enviar otra solicitud
-        </button>
+        </Button>
       </div>
     );
   }
@@ -159,13 +162,14 @@ export function Formulario() {
         </p>
       )}
 
-      <button
+      <Button
         type="submit"
+        size="lg"
         disabled={pending}
-        className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-8 text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="mt-8 w-full uppercase tracking-[0.15em] sm:w-auto"
       >
         {pending ? "Enviando…" : "Solicitar información"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -193,8 +197,6 @@ function Field({
   spellCheck?: boolean;
   autoCapitalize?: string;
 }) {
-  const base =
-    "w-full rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-4 py-3 text-sm text-[var(--color-ca-ink)] placeholder:text-[var(--color-ca-ink-soft)]/60 transition-colors focus:border-[var(--color-ca-violet)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-ca-violet)]/20";
   return (
     <label className={textarea ? "sm:col-span-2 block" : "block"}>
       <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ca-ink-soft)]">
@@ -202,16 +204,15 @@ function Field({
         {required && <span className="ml-1 text-[var(--color-ca-violet)]">*</span>}
       </span>
       {textarea ? (
-        <textarea
+        <Textarea
           name={name}
           required={required}
           placeholder={placeholder}
           rows={4}
           autoComplete={autoComplete}
-          className={base}
         />
       ) : (
-        <input
+        <Input
           type={type}
           name={name}
           required={required}
@@ -220,7 +221,6 @@ function Field({
           inputMode={inputMode}
           spellCheck={spellCheck}
           autoCapitalize={autoCapitalize}
-          className={base}
         />
       )}
     </label>
@@ -244,12 +244,7 @@ function SelectField({
         {label}
         {required && <span className="ml-1 text-[var(--color-ca-violet)]">*</span>}
       </span>
-      <select
-        name={name}
-        required={required}
-        defaultValue=""
-        className="w-full rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-4 py-3 text-sm text-[var(--color-ca-ink)] transition-colors focus:border-[var(--color-ca-violet)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-ca-violet)]/20"
-      >
+      <Select name={name} required={required} defaultValue="">
         <option value="" disabled>
           Selecciona una opción
         </option>
@@ -258,7 +253,7 @@ function SelectField({
             {o.label}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   );
 }

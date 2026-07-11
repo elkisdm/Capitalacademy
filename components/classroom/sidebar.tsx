@@ -117,6 +117,10 @@ function NavItemButton({
 }) {
   const navRef = useRef<HTMLSpanElement>(null);
 
+  useEffect(() => {
+    if (active) navRef.current?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   const content = (
     <span
       ref={navRef}
@@ -346,6 +350,7 @@ export function ClassroomSidebar({
   activeEnv = null,
   viewerId,
   isTeacher = false,
+  hasFinalEvaluation = false,
 }: {
   userInitials: string;
   userName: string;
@@ -360,6 +365,8 @@ export function ClassroomSidebar({
   viewerId?: string;
   /** El usuario es docente/asistente de al menos una cohorte (cohort_roles). */
   isTeacher?: boolean;
+  /** Hay una evaluación final publicada (activa) para el programa de la cohorte activa. */
+  hasFinalEvaluation?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -409,12 +416,14 @@ export function ClassroomSidebar({
         { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },
         { icon: "upload", label: "Entregables", href: `/classroom/${cohortId}/entregables`, section: "learn" as const },
         { icon: "chat", label: "Conversaciones", href: `/classroom/${cohortId}/conversaciones`, section: "learn" as const },
-        { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
+        ...(hasFinalEvaluation ? [
+          { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
+        ] : []),
       ] : []),
       // Docente/asistente (cohort_roles): entrada al panel dedicado. Se oculta
       // en la vista admin (showOpsNav) para no duplicar con la nav de staff.
       ...(isTeacher && !showOpsNav ? [
-        { icon: "users", label: "Panel docente", href: "/docente", section: "learn" as const },
+        { icon: "users", label: "Panel del profesor", href: "/docente", section: "learn" as const },
       ] : []),
     ] : []),
     ...(showOpsNav ? [

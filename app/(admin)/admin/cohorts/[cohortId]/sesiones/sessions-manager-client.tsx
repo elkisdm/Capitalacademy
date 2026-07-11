@@ -21,6 +21,8 @@ import {
   TrashIcon,
   CalendarIcon,
 } from "@/components/admin/icons";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/field";
 
 const TZ = "America/Santiago";
 
@@ -272,8 +274,6 @@ export function SessionsManagerClient({
       setSessions(json.sessions ?? []);
     } catch {
       setError("No se pudo recargar la lista de sesiones.");
-    } finally {
-      router.refresh();
     }
   }
 
@@ -398,13 +398,14 @@ export function SessionsManagerClient({
 
   return (
     <div>
-      <button
+      <Button
+        variant="ghost"
         onClick={() => router.back()}
-        className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-ca-ink-soft transition-colors hover:text-ca-violet"
+        className="mb-5 !h-auto !w-auto gap-1.5 rounded-full !px-0 !py-0 text-[13px] font-bold text-ca-ink-soft hover:!bg-transparent hover:text-ca-violet"
       >
         <ArrowLeftIcon />
         Volver
-      </button>
+      </Button>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -421,32 +422,34 @@ export function SessionsManagerClient({
             <span className="text-[11px] text-ca-ink-soft">{cohort.name}</span>
           </div>
         </div>
-        <button
+        <Button
           onClick={openCreate}
-          className="ca-btn-primary inline-flex items-center gap-2 self-start px-5 py-2.5 text-[13px] font-bold sm:self-auto"
+          className="!h-auto gap-2 self-start px-5 py-2.5 text-[13px] sm:self-auto"
         >
           <PlusIcon />
           Nueva sesión
-        </button>
+        </Button>
       </div>
 
       <div className="mb-5 flex items-center gap-1 self-start rounded-2xl bg-ca-bg-soft p-1">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setView("list")}
-          className={`rounded-xl px-4 py-2 text-[13px] font-bold transition-colors ${
-            view === "list" ? "bg-white text-ca-ink shadow-sm" : "text-ca-ink-soft hover:text-ca-ink"
+          className={`!h-auto rounded-xl px-4 py-2 text-[13px] hover:!bg-transparent ${
+            view === "list" ? "bg-white text-ca-ink shadow-sm hover:!bg-white" : "text-ca-ink-soft hover:!text-ca-ink"
           }`}
         >
           Lista
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => setView("month")}
-          className={`rounded-xl px-4 py-2 text-[13px] font-bold transition-colors ${
-            view === "month" ? "bg-white text-ca-ink shadow-sm" : "text-ca-ink-soft hover:text-ca-ink"
+          className={`!h-auto rounded-xl px-4 py-2 text-[13px] hover:!bg-transparent ${
+            view === "month" ? "bg-white text-ca-ink shadow-sm hover:!bg-white" : "text-ca-ink-soft hover:!text-ca-ink"
           }`}
         >
           Mes
-        </button>
+        </Button>
       </div>
 
       {error && !showForm && (
@@ -584,23 +587,25 @@ export function SessionsManagerClient({
                     sessionId={s.id}
                     sessionTitle={s.title ?? "Clase en vivo"}
                   />
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => openEdit(s)}
                     aria-label="Editar sesión"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+                    className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] hover:border-ca-violet hover:text-ca-violet"
                   >
                     <PencilIcon />
                     Editar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => handleDelete(s)}
                     aria-label="Eliminar sesión"
                     disabled={saving}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink-soft transition-colors hover:border-ca-amber hover:text-[#8b6914] disabled:opacity-50"
+                    className="!h-auto gap-1.5 rounded-xl px-3 py-2 text-[12px] text-ca-ink-soft hover:border-ca-amber hover:text-[#8b6914]"
                   >
                     <TrashIcon />
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -632,8 +637,7 @@ function SessionForm({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
-  const inputCls =
-    "w-full rounded-xl border border-ca-ink/[0.14] bg-white px-3 py-2.5 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet";
+  const fieldCls = "text-[13px] font-medium";
   const labelCls =
     "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft";
 
@@ -648,13 +652,13 @@ function SessionForm({
           <label className={labelCls} htmlFor="session-title">
             Título
           </label>
-          <input
+          <Input
             id="session-title"
             type="text"
             value={form.title}
             onChange={(e) => onChange("title", e.target.value)}
             placeholder="Ej. Introducción a la inversión"
-            className={inputCls}
+            className={fieldCls}
           />
         </div>
 
@@ -662,12 +666,12 @@ function SessionForm({
           <label className={labelCls} htmlFor="session-starts">
             Inicio (hora Chile)
           </label>
-          <input
+          <Input
             id="session-starts"
             type="datetime-local"
             value={form.starts_at}
             onChange={(e) => onChange("starts_at", e.target.value)}
-            className={inputCls}
+            className={fieldCls}
           />
         </div>
 
@@ -675,12 +679,12 @@ function SessionForm({
           <label className={labelCls} htmlFor="session-ends">
             Término (hora Chile)
           </label>
-          <input
+          <Input
             id="session-ends"
             type="datetime-local"
             value={form.ends_at}
             onChange={(e) => onChange("ends_at", e.target.value)}
-            className={inputCls}
+            className={fieldCls}
           />
         </div>
 
@@ -688,29 +692,29 @@ function SessionForm({
           <label className={labelCls} htmlFor="session-modality">
             Modalidad
           </label>
-          <select
+          <Select
             id="session-modality"
             value={form.modality}
             onChange={(e) => onChange("modality", e.target.value as Modality)}
-            className={inputCls}
+            className={fieldCls}
           >
             {(Object.keys(MODALITY_LABELS) as Modality[]).map((m) => (
               <option key={m} value={m}>
                 {MODALITY_LABELS[m]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label className={labelCls} htmlFor="session-teacher">
             Docente
           </label>
-          <select
+          <Select
             id="session-teacher"
             value={form.teacher_id}
             onChange={(e) => onChange("teacher_id", e.target.value)}
-            className={inputCls}
+            className={fieldCls}
           >
             <option value="">Sin docente</option>
             {instructors.map((i) => (
@@ -718,7 +722,7 @@ function SessionForm({
                 {i.full_name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {modules.length > 0 && (
@@ -726,11 +730,11 @@ function SessionForm({
             <label className={labelCls} htmlFor="session-module">
               Módulo
             </label>
-            <select
+            <Select
               id="session-module"
               value={form.module_id}
               onChange={(e) => onChange("module_id", e.target.value)}
-              className={inputCls}
+              className={fieldCls}
             >
               <option value="">Sin módulo</option>
               {modules.map((m) => (
@@ -738,7 +742,7 @@ function SessionForm({
                   {String(m.position).padStart(2, "0")} · {m.title}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
 
@@ -746,49 +750,49 @@ function SessionForm({
           <label className={labelCls} htmlFor="session-audience">
             Audiencia
           </label>
-          <select
+          <Select
             id="session-audience"
             value={form.audience}
             onChange={(e) => onChange("audience", e.target.value as Audience)}
-            className={inputCls}
+            className={fieldCls}
           >
             {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((a) => (
               <option key={a} value={a}>
                 {AUDIENCE_LABELS[a]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label className={labelCls} htmlFor="session-status">
             Estado
           </label>
-          <select
+          <Select
             id="session-status"
             value={form.status}
             onChange={(e) => onChange("status", e.target.value as SessionStatus)}
-            className={inputCls}
+            className={fieldCls}
           >
             {(Object.keys(STATUS_LABELS) as SessionStatus[]).map((st) => (
               <option key={st} value={st}>
                 {STATUS_LABELS[st]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="md:col-span-2">
           <label className={labelCls} htmlFor="session-url">
             Enlace de reunión (opcional)
           </label>
-          <input
+          <Input
             id="session-url"
             type="url"
             value={form.meeting_url}
             onChange={(e) => onChange("meeting_url", e.target.value)}
             placeholder="https://meet.google.com/…"
-            className={inputCls}
+            className={fieldCls}
           />
         </div>
       </div>
@@ -800,20 +804,21 @@ function SessionForm({
       )}
 
       <div className="mt-5 flex items-center gap-3">
-        <button
+        <Button
           onClick={onSubmit}
           disabled={saving}
-          className="ca-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold disabled:opacity-60"
+          className="!h-auto gap-2 px-5 py-2.5 text-[13px]"
         >
           {saving ? "Guardando…" : isEditing ? "Guardar cambios" : "Crear sesión"}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl border border-ca-ink/[0.1] px-5 py-2.5 text-[13px] font-bold text-ca-ink-soft transition-colors hover:text-ca-ink disabled:opacity-60"
+          className="!h-auto gap-2 rounded-xl px-5 py-2.5 text-[13px] text-ca-ink-soft hover:text-ca-ink"
         >
           Cancelar
-        </button>
+        </Button>
       </div>
     </div>
   );

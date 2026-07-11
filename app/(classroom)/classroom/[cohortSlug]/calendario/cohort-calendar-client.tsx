@@ -178,6 +178,7 @@ function SessionRow({ s, now }: { s: ScheduleSession; now: number | null }) {
         </div>
 
         <h3
+          title={s.title ?? "Sesión"}
           className={`truncate text-[16px] font-extrabold leading-tight tracking-tight text-ca-ink ${
             isCancelled ? "line-through" : ""
           }`}
@@ -378,7 +379,7 @@ export function CohortCalendarClient({
 
           {selectedDay && (
             <section ref={dayDetailRef} className="flex flex-col gap-3">
-              <h2 className="font-mono text-[11px] font-bold uppercase capitalize tracking-[0.18em] text-ca-ink-soft">
+              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
                 {fmtFullDay(selectedDay)}
               </h2>
               {selectedSessions.length > 0 ? (

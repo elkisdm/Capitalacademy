@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import type {
   ClassSession,
   SessionInstructor,
@@ -19,57 +20,59 @@ export default async function AdminCohortSessionsPage(
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthUser();
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("system_role")
-    .eq("id", user.id)
-    .single();
+  const [
+    { data: profile },
+    { data: cohort },
+    { data: sessionsData },
+    { data: instructorsData },
+  ] = await Promise.all([
+    supabase.from("profiles").select("system_role").eq("id", user.id).single(),
+    supabase
+      .from("cohorts")
+      .select("id, name, code, programs(id, name)")
+      .eq("id", cohortId)
+      .single(),
+    supabase
+      .from("class_sessions")
+      .select("*")
+      .eq("cohort_id", cohortId)
+      .order("starts_at", { ascending: true }),
+    supabase
+      .from("instructors")
+      .select("id, full_name, photo_url")
+      .eq("is_active", true)
+      .order("full_name", { ascending: true }),
+  ]);
 
   if (!profile || !["ops", "admin"].includes(profile.system_role)) {
     redirect("/classroom");
   }
 
-  const { data: cohort } = await supabase
-    .from("cohorts")
-    .select("id, name, code, programs(id, name)")
-    .eq("id", cohortId)
-    .single();
-
   if (!cohort) notFound();
 
-  const { data: sessionsData } = await supabase
-    .from("class_sessions")
-    .select("*")
-    .eq("cohort_id", cohortId)
-    .order("starts_at", { ascending: true });
-
-  const { data: instructorsData } = await supabase
-    .from("instructors")
-    .select("id, full_name, photo_url")
-    .eq("is_active", true)
-    .order("full_name", { ascending: true });
-
   const sessionIds = (sessionsData ?? []).map((s) => s.id);
-  const { data: resourcesData } = sessionIds.length
-    ? await supabase
-        .from("session_resources")
-        .select("id, session_id, title, type, url, storage_path, position")
-        .in("session_id", sessionIds)
-        .order("position", { ascending: true })
-    : { data: [] };
-
   const programId = (cohort.programs as { id: string; name: string } | null)?.id;
-  const { data: modulesData } = programId
-    ? await supabase
-        .from("program_modules")
-        .select("id, title, position")
-        .eq("program_id", programId)
-        .order("position", { ascending: true })
-    : { data: [] };
+
+  const [{ data: resourcesData }, { data: modulesData }] = await Promise.all([
+    sessionIds.length
+      ? supabase
+          .from("session_resources")
+          .select("id, session_id, title, type, url, storage_path, position")
+          .in("session_id", sessionIds)
+          .order("position", { ascending: true })
+      : Promise.resolve({ data: [] as SessionResource[] }),
+    programId
+      ? supabase
+          .from("program_modules")
+          .select("id, title, position")
+          .eq("program_id", programId)
+          .order("position", { ascending: true })
+      : Promise.resolve({ data: [] as { id: string; title: string; position: number }[] }),
+  ]);
 
   const sessions = (sessionsData ?? []) as unknown as ClassSession[];
   const instructors = (instructorsData ?? []) as SessionInstructor[];

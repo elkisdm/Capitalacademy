@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { QuizQuestion } from "./types";
 import { CheckCircleIcon, ChevronIcon, LoaderIcon, TrashIcon } from "./icons";
 import { QuestionEditor } from "./question-editor";
@@ -68,37 +70,39 @@ export function QuestionCard({
     <div className="overflow-hidden rounded-xl border border-ca-ink/[0.08] bg-white">
       {/* Fila compacta (siempre): clic para expandir */}
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setExpanded((v) => !v)}
-          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          className="h-auto min-w-0 flex-1 justify-start gap-2.5 rounded-none bg-transparent p-0 text-left font-normal hover:bg-transparent"
           aria-expanded={expanded}
         >
           <span className="font-mono text-[12px] font-bold text-ca-ink-soft">
             #{String(index + 1).padStart(2, "0")}
           </span>
-          <span className="shrink-0 rounded-full bg-ca-bg-soft px-2 py-0.5 text-[10px] font-bold text-ca-ink-soft">
+          <Badge tone="neutral" size="sm" className="shrink-0">
             {QUESTION_TYPE_LABELS[question.question_type] ?? question.question_type}
-          </span>
+          </Badge>
           <span className="truncate text-[13px] font-semibold text-ca-ink">
             {question.question_text}
           </span>
-        </button>
+        </Button>
         <div className="flex shrink-0 items-center gap-2">
           {question.is_generated && (
-            <span
-              className="hidden rounded-full px-2 py-0.5 text-[10px] font-bold sm:inline"
-              style={{ background: "rgba(94,23,235,0.10)", color: "var(--color-ca-violet)" }}
-            >
+            <Badge tone="violet" size="sm" className="hidden sm:inline-flex">
               IA
-            </span>
+            </Badge>
           )}
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setExpanded((v) => !v)}
             aria-label={expanded ? "Colapsar" : "Expandir"}
-            className="text-ca-ink-soft"
+            className="!h-auto !w-auto rounded-full p-1 text-ca-ink-soft"
           >
             <ChevronIcon open={expanded} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -107,27 +111,24 @@ export function QuestionCard({
         {/* Sub-header: badges + editar */}
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-              style={{
-                background: question.is_generated ? "rgba(94,23,235,0.10)" : "rgba(20,22,58,0.06)",
-                color: question.is_generated ? "var(--color-ca-violet)" : "var(--color-ca-ink-soft)",
-              }}
-            >
+            <Badge tone={question.is_generated ? "violet" : "neutral"} size="sm">
               {question.is_generated ? "IA" : "Manual"}
-            </span>
+            </Badge>
             {question.lessons?.title && (
-              <span className="rounded-full bg-ca-bg-soft px-2 py-0.5 text-[10px] font-semibold text-ca-ink-soft">
+              <Badge tone="neutral" size="sm">
                 {question.lessons.title}
-              </span>
+              </Badge>
             )}
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => (editing ? setEditing(false) : startEdit())}
-            className="shrink-0 text-[12px] font-bold text-ca-violet hover:underline"
+            className="h-auto shrink-0 px-0 py-0 text-[12px] font-bold text-ca-violet hover:bg-transparent hover:underline"
           >
             {editing ? "Cancelar" : "Editar"}
-          </button>
+          </Button>
         </div>
 
         {editing ? (
@@ -189,13 +190,16 @@ export function QuestionCard({
 
             {/* Explicación */}
             <div className="mt-3">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowExplanation(!showExplanation)}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-ca-ink-soft hover:text-ca-ink"
+                className="h-auto gap-1.5 px-0 py-0 text-[12px] font-semibold text-ca-ink-soft hover:bg-transparent hover:text-ca-ink"
               >
                 <ChevronIcon open={showExplanation} />
                 Explicación
-              </button>
+              </Button>
               {showExplanation && (
                 <p className="mt-2 text-[13px] leading-relaxed text-ca-ink-soft">
                   {question.explanation || "Sin explicación"}
@@ -208,24 +212,27 @@ export function QuestionCard({
         {/* Acciones */}
         {editing && (
           <div className="mt-4 flex items-center gap-2">
-            <button
+            <Button
+              type="button"
+              variant="lime"
               onClick={handleSave}
               disabled={saving || !!error}
               title={error ?? undefined}
-              className="flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-bold text-ca-ink transition-colors disabled:opacity-40"
-              style={{ background: "var(--color-ca-lime)" }}
+              className="h-auto gap-2 px-4 py-2 text-[13px]"
             >
               {saving ? <LoaderIcon /> : <CheckCircleIcon />}
               Guardar
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleDelete}
               disabled={deleting}
-              className="flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-bold text-red-600/70 transition-colors hover:bg-red-50 disabled:opacity-40"
+              className="h-auto gap-2 px-4 py-2 text-[13px] font-bold text-red-600/70 hover:bg-red-50 hover:text-red-600"
             >
               {deleting ? <LoaderIcon /> : <TrashIcon />}
               Eliminar
-            </button>
+            </Button>
           </div>
         )}
         </div>

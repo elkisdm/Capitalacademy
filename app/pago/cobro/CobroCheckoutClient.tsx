@@ -12,6 +12,8 @@ import {
   resolveCobroAmount,
   type CobroPlan,
 } from "@/lib/cobro/plans";
+import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 const cobroFormSchema = checkoutFormSchema.pick({
   firstname: true,
@@ -187,19 +189,17 @@ export function CobroCheckoutClient({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Nombre" error={errors.firstname?.message}>
-            <input
+            <Input
               type="text"
               autoComplete="given-name"
               {...register("firstname")}
-              className={inputCls}
             />
           </Field>
           <Field label="Apellido" error={errors.lastname?.message}>
-            <input
+            <Input
               type="text"
               autoComplete="family-name"
               {...register("lastname")}
-              className={inputCls}
             />
           </Field>
           <Field
@@ -207,7 +207,7 @@ export function CobroCheckoutClient({
             error={errors.rut?.message}
             className="sm:col-span-2"
           >
-            <input
+            <Input
               type="text"
               inputMode="text"
               placeholder="12.345.678-9"
@@ -222,7 +222,6 @@ export function CobroCheckoutClient({
                   shouldValidate: true,
                 })
               }
-              className={inputCls}
             />
           </Field>
           <Field
@@ -230,11 +229,10 @@ export function CobroCheckoutClient({
             error={errors.email?.message}
             className="sm:col-span-2"
           >
-            <input
+            <Input
               type="email"
               autoComplete="email"
               {...register("email")}
-              className={inputCls}
             />
           </Field>
           <Field
@@ -242,12 +240,11 @@ export function CobroCheckoutClient({
             error={errors.phone?.message}
             className="sm:col-span-2"
           >
-            <input
+            <Input
               type="tel"
               autoComplete="tel"
               placeholder="+56 9 1234 5678"
               {...register("phone")}
-              className={inputCls}
             />
           </Field>
         </div>
@@ -258,15 +255,15 @@ export function CobroCheckoutClient({
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={isBusy}
-          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] text-sm font-bold uppercase tracking-[0.15em] text-white shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--color-ca-violet-deep)] hover:shadow-[0_16px_40px_rgba(94,23,235,0.45)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          className="mt-6 h-12 w-full text-sm uppercase tracking-[0.15em] shadow-[0_12px_32px_rgba(94,23,235,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(94,23,235,0.45)] active:scale-[0.98] disabled:hover:translate-y-0"
         >
           {isBusy
             ? "Procesando…"
             : `Pagar ${priceFormatter.format(finalAmount)}`}
-        </button>
+        </Button>
 
         <p className="mt-3 text-center text-[11px] text-[var(--color-ca-ink-soft)]/80">
           Pago seguro procesado por Flow · Webpay, transferencia y tarjetas.
@@ -275,9 +272,6 @@ export function CobroCheckoutClient({
     </form>
   );
 }
-
-const inputCls =
-  "w-full h-11 rounded-xl border border-[rgba(20,22,58,0.12)] bg-[var(--color-ca-bg)] px-3 text-sm text-[var(--color-ca-ink)] outline-none transition-colors placeholder:text-[var(--color-ca-ink-soft)]/60 hover:border-[var(--color-ca-violet)]/40 focus:border-[var(--color-ca-violet)] focus:bg-white focus:ring-2 focus:ring-[var(--color-ca-violet)]/20";
 
 function Field({
   label,

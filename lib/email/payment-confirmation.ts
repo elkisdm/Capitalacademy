@@ -58,7 +58,7 @@ function getPublicBaseUrl(): string {
   if (fromEnv && !fromEnv.startsWith("http://localhost")) {
     return fromEnv;
   }
-  return "https://capitalacademy.vercel.app";
+  return "https://capitalacademy.cl";
 }
 
 const moneyFormatter = new Intl.NumberFormat("es-CL", {

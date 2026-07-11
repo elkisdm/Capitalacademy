@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
 import { moduleInProgramError } from "@/lib/admin/session-module";
+import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
@@ -126,7 +127,7 @@ export async function PATCH(
       fields.starts_at !== current.starts_at) ||
     (fields.ends_at !== undefined && fields.ends_at !== current.ends_at);
 
-  const update: Record<string, unknown> = { ...fields };
+  const update: Database["public"]["Tables"]["class_sessions"]["Update"] = { ...fields };
   if (datesChanged) {
     // Marca esta sesión como reprogramación de su propio estado anterior.
     update.rescheduled_from = current.id;
@@ -134,8 +135,7 @@ export async function PATCH(
 
   const { data, error } = await admin
     .from("class_sessions")
-    // Los tipos generados no incluyen aún title/teacher_id/audience.
-    .update(update as never)
+    .update(update)
     .eq("id", parsedId.data)
     .select("*")
     .single();

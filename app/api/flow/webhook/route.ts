@@ -5,8 +5,9 @@ import {
   sendPaymentConfirmationEmail,
   sendPaymentTeamNotification,
 } from "@/lib/email/payment-confirmation";
-import { enrollDiplomadoBuyer } from "@/lib/classroom/enroll-from-payment";
+import { enrollBuyer } from "@/lib/classroom/enroll-from-payment";
 import { PAYMENT_PLAN_KEYS } from "@/lib/flow/checkout";
+import { LIDERAZGO_PLAN_KEYS } from "@/lib/programs/liderazgo";
 import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
   const { data: existing } = await supabase
     .from("payments")
     .select(
-      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, discount_clp",
+      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp",
     )
     .eq("flow_token", token)
     .single();
@@ -155,20 +156,51 @@ export async function POST(req: Request) {
       });
     }
 
-    // Link checkout → matrícula: si el pago es del Diplomado (plan en
-    // PAYMENT_PLAN_KEYS), matricular al comprador en el classroom y
-    // enviarle el onboarding con link de activación. Idempotente y no rompe el
+    // Cupón: incrementar redemptions ahora que el pago quedó confirmado
+    // (primer succeeded). Nunca rompe el webhook: la plata ya fue tomada.
+    if (existing.coupon_id) {
+      try {
+        const { error: redeemError } = await supabase.rpc(
+          "increment_coupon_redemptions",
+          { p_coupon_id: existing.coupon_id },
+        );
+        if (redeemError) {
+          console.error("coupon redeem RPC failed (flow)", {
+            paymentId: existing.id,
+            couponId: existing.coupon_id,
+            error: redeemError,
+          });
+        }
+      } catch (e) {
+        console.error("coupon redeem RPC threw (flow)", {
+          paymentId: existing.id,
+          couponId: existing.coupon_id,
+          error: e instanceof Error ? e.message : e,
+        });
+      }
+    }
+
+    // Link checkout → matrícula: si el pago es del Diplomado o del Programa de
+    // Liderazgo (plan en PAYMENT_PLAN_KEYS o LIDERAZGO_PLAN_KEYS), matricular
+    // al comprador en el classroom de su cohorte activa y enviarle el
+    // onboarding branded con link de activación. Idempotente y no rompe el
     // webhook si falla (la plata ya fue tomada; se loguea para reconciliar).
-    if (existing.plan && (PAYMENT_PLAN_KEYS as readonly string[]).includes(existing.plan)) {
-      const enrollResult = await enrollDiplomadoBuyer({
+    if (
+      existing.plan &&
+      ((PAYMENT_PLAN_KEYS as readonly string[]).includes(existing.plan) ||
+        (LIDERAZGO_PLAN_KEYS as readonly string[]).includes(existing.plan))
+    ) {
+      const enrollResult = await enrollBuyer({
         email: existing.email,
         firstname: existing.firstname,
         lastname: existing.lastname,
+        plan: existing.plan,
       });
       if (!enrollResult.ok) {
-        console.error("diplomado enroll-on-payment failed (flow)", {
+        console.error("enroll-on-payment failed (flow)", {
           paymentId: existing.id,
           email: existing.email,
+          plan: existing.plan,
           error: enrollResult.error,
         });
       }

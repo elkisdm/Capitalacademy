@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Save, Trash2, Check, AlertTriangle, X } from "lucide-react";
 import { CoverImageField } from "@/components/admin/cover-image-field";
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/field";
 
 type ModuleEditFormProps = {
   module: {
@@ -76,19 +78,12 @@ export function ModuleEditForm({ module }: ModuleEditFormProps) {
     }
   };
 
-  const inputCls =
-    "w-full rounded-md border border-ca-ink/[0.08] px-3 py-2 text-sm focus:border-ca-violet focus:outline-none focus:ring-1 focus:ring-ca-violet/30";
-
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
-      >
+      <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
         <Pencil className="h-3.5 w-3.5" />
         Editar módulo
-      </button>
+      </Button>
     );
   }
 
@@ -98,33 +93,33 @@ export function ModuleEditForm({ module }: ModuleEditFormProps) {
         <span className="text-xs font-semibold uppercase tracking-wider text-ca-ink-soft">
           Editar módulo
         </span>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setOpen(false)}
-          className="rounded p-1 text-ca-ink-soft hover:bg-ca-bg-soft"
+          className="h-auto min-h-0 rounded p-1"
           aria-label="Cerrar"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Código</label>
-          <input value={code} onChange={(e) => setCode(e.target.value)} className={inputCls} />
+          <Input value={code} onChange={(e) => setCode(e.target.value)} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Título</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Descripción</label>
-        <textarea
+        <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className={inputCls}
           placeholder="Descripción del módulo (opcional)"
         />
       </div>
@@ -139,45 +134,33 @@ export function ModuleEditForm({ module }: ModuleEditFormProps) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !code.trim() || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-md bg-ca-violet px-4 py-2 text-sm font-medium text-white hover:bg-ca-violet-deep disabled:opacity-50"
-        >
+        <Button type="button" onClick={handleSave} disabled={saving || !code.trim() || !title.trim()}>
           {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           {saving ? "Guardando…" : saved ? "Guardado" : "Guardar"}
-        </button>
+        </Button>
 
         <div className="ml-auto">
           {confirmDelete ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-ca-ink-soft">¿Eliminar módulo?</span>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="rounded-md bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
-              >
+              <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
                 {deleting ? "Eliminando…" : "Sí, eliminar"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                className="rounded-md px-3 py-2 text-sm text-ca-ink-soft hover:bg-ca-bg-soft"
-              >
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
                 Cancelar
-              </button>
+              </Button>
             </div>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setConfirmDelete(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm text-red-500 hover:bg-red-50"
+              className="border-red-200 text-red-500 hover:bg-red-50"
             >
               <Trash2 className="h-4 w-4" />
               Eliminar
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -33,11 +33,10 @@ export async function GET(req: Request) {
 
   const admin = createAdminClient();
   const { data: pending, error } = await admin
-    .from("deliverables" as never)
+    .from("deliverables")
     .select("id")
     .is("open_notified_at", null)
-    .lte("opens_at", new Date().toISOString())
-    .overrideTypes<Array<{ id: string }>>();
+    .lte("opens_at", new Date().toISOString());
 
   if (error) {
     console.error("deliverable-openings query error", error);

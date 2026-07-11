@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { DELIVERABLES_BUCKET } from "@/lib/deliverables/storage";
 import { FILE_CATEGORIES } from "@/lib/deliverables/file-types";
+import type { Database } from "@/lib/supabase/types";
+
+type DeliverableUpdate = Database["public"]["Tables"]["deliverables"]["Update"];
 
 export const runtime = "nodejs";
 
@@ -54,10 +57,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
   // Re-valida due_at > opens_at si alguno de los dos se está editando.
   if (v.opensAt !== undefined || v.dueAt !== undefined) {
     const { data: current } = await admin
-      .from("deliverables" as never)
+      .from("deliverables")
       .select("opens_at, due_at")
       .eq("id", deliverableId)
-      .single<{ opens_at: string; due_at: string }>();
+      .single();
     if (!current) {
       return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
     }
@@ -71,7 +74,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     }
   }
 
-  const updates: Record<string, unknown> = {};
+  const updates: DeliverableUpdate = {};
   if (v.title !== undefined) updates.title = v.title;
   if (v.description !== undefined) updates.description = v.description;
   if (v.opensAt !== undefined) updates.opens_at = v.opensAt;
@@ -81,8 +84,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (v.allowMultiple !== undefined) updates.allow_multiple = v.allowMultiple;
 
   const { data: updated, error } = await admin
-    .from("deliverables" as never)
-    .update(updates as never)
+    .from("deliverables")
+    .update(updates)
     .eq("id", deliverableId)
     .select()
     .single();
@@ -108,10 +111,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const admin = createAdminClient();
 
   const { data: submissions } = await admin
-    .from("deliverable_submissions" as never)
+    .from("deliverable_submissions")
     .select("storage_path")
-    .eq("deliverable_id", deliverableId)
-    .overrideTypes<Array<{ storage_path: string | null }>>();
+    .eq("deliverable_id", deliverableId);
 
   const paths = (submissions ?? []).map((s) => s.storage_path).filter(Boolean) as string[];
   if (paths.length > 0) {
@@ -121,7 +123,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     }
   }
 
-  const { error } = await admin.from("deliverables" as never).delete().eq("id", deliverableId);
+  const { error } = await admin.from("deliverables").delete().eq("id", deliverableId);
   if (error) {
     console.error("Error deleting deliverable:", error);
     return NextResponse.json({ error: "Error al eliminar el entregable" }, { status: 500 });

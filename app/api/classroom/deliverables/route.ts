@@ -8,12 +8,6 @@ import { DELIVERABLES_BUCKET } from "@/lib/deliverables/storage";
 
 export const runtime = "nodejs";
 
-// `deliverables`/`deliverable_submissions` aún no están en el Database
-// generado (migración 0053 no aplicada a prod). Provisional: `as never` +
-// tipos locales, mismo patrón que las rutas API de entregables.
-type DeliverableRow = { allow_multiple: boolean };
-type SubmissionPathRow = { id: string; storage_path: string };
-
 const createSchema = z.object({
   deliverableId: uuidLike,
   storagePath: z.string().trim().min(1, "storagePath es requerido"),
@@ -67,10 +61,10 @@ export async function POST(req: Request) {
   }
 
   const { data: deliverable } = await admin
-    .from("deliverables" as never)
+    .from("deliverables")
     .select("allow_multiple")
     .eq("id", deliverableId)
-    .single<DeliverableRow>();
+    .single();
   if (!deliverable) {
     return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
   }
@@ -80,14 +74,13 @@ export async function POST(req: Request) {
   // due_at) en el insert también protege el borrado, en vez de ejecutarse
   // antes con service-role y destruir una entrega on-time por fuera de la
   // ventana.
-  let previous: SubmissionPathRow[] | null = null;
+  let previous: { id: string; storage_path: string }[] | null = null;
   if (!deliverable.allow_multiple) {
     const { data } = await admin
-      .from("deliverable_submissions" as never)
+      .from("deliverable_submissions")
       .select("id, storage_path")
       .eq("deliverable_id", deliverableId)
-      .eq("student_id", user.id)
-      .overrideTypes<SubmissionPathRow[]>();
+      .eq("student_id", user.id);
     previous = data;
   }
 
@@ -95,7 +88,7 @@ export async function POST(req: Request) {
   // segunda barrera (la primera ya se validó en upload-url).
   const supabase = await createClient();
   const { data: created, error } = await supabase
-    .from("deliverable_submissions" as never)
+    .from("deliverable_submissions")
     .insert({
       deliverable_id: deliverableId,
       student_id: user.id,
@@ -104,7 +97,7 @@ export async function POST(req: Request) {
       content_type: contentType ?? null,
       file_size_bytes:
         fileSizeBytes ?? (typeof obj.metadata?.size === "number" ? obj.metadata.size : null),
-    } as never)
+    })
     .select()
     .single();
 
@@ -120,7 +113,7 @@ export async function POST(req: Request) {
     const previousIds = previous.map((p) => p.id);
     const previousPaths = previous.map((p) => p.storage_path);
     await admin.storage.from(DELIVERABLES_BUCKET).remove(previousPaths);
-    await admin.from("deliverable_submissions" as never).delete().in("id", previousIds);
+    await admin.from("deliverable_submissions").delete().in("id", previousIds);
   }
 
   return NextResponse.json(created, { status: 201 });
@@ -147,11 +140,10 @@ export async function DELETE(req: Request) {
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("deliverable_submissions" as never)
+    .from("deliverable_submissions")
     .delete()
     .eq("id", id)
-    .select("id, storage_path")
-    .overrideTypes<SubmissionPathRow[]>();
+    .select("id, storage_path");
 
   if (error) {
     console.error("deliverable submission delete error", error);

@@ -11,26 +11,6 @@ export const runtime = "nodejs";
 const MAX_SIZE = 50 * 1024 * 1024;
 const categoryEnum = z.enum(FILE_CATEGORIES as [string, ...string[]]);
 
-// `deliverables` aún no está en el Database generado (migración 0053 no
-// aplicada a prod). Provisional: `as never` + tipo local, siguiendo el patrón
-// de payments antes de su regeneración. Quitar los casts cuando se
-// regeneren los tipos.
-type DeliverableRow = {
-  id: string;
-  program_id: string;
-  title: string;
-  description: string | null;
-  opens_at: string;
-  due_at: string;
-  allowed_file_types: string[];
-  max_file_size_bytes: number;
-  allow_multiple: boolean;
-  open_notified_at: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
 // ---------------------------------------------------------------------------
 // GET  /api/admin/deliverables?programId=xxx
 //   Lista los entregables del programa con el conteo de entregas recibidas.
@@ -48,11 +28,10 @@ export async function GET(req: Request) {
 
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("deliverables" as never)
+    .from("deliverables")
     .select("*, deliverable_submissions(count)")
     .eq("program_id", programId)
-    .order("opens_at", { ascending: true })
-    .overrideTypes<Array<DeliverableRow & { deliverable_submissions: { count: number }[] }>>();
+    .order("opens_at", { ascending: true });
 
   if (error) {
     console.error("Error fetching deliverables:", error);
@@ -110,7 +89,7 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
 
   const { data: created, error } = await admin
-    .from("deliverables" as never)
+    .from("deliverables")
     .insert({
       program_id: v.programId,
       title: v.title,
@@ -121,9 +100,9 @@ export async function POST(req: Request) {
       max_file_size_bytes: v.maxFileSizeBytes ?? MAX_SIZE,
       allow_multiple: v.allowMultiple ?? false,
       created_by: auth.user.id,
-    } as never)
+    })
     .select()
-    .single<DeliverableRow>();
+    .single();
 
   if (error) {
     console.error("Error creating deliverable:", error);

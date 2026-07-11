@@ -13,28 +13,6 @@ export const metadata: Metadata = {
   title: "Entregables · Capital Academy",
 };
 
-// `deliverables`/`deliverable_submissions` aún no están en el Database
-// generado (migración 0053 no aplicada a prod). Provisional: `as never` +
-// tipos locales, mismo patrón que las rutas API de entregables.
-type DeliverableRow = {
-  id: string;
-  title: string;
-  description: string | null;
-  opens_at: string;
-  due_at: string;
-  allowed_file_types: string[];
-  max_file_size_bytes: number;
-  allow_multiple: boolean;
-};
-
-type SubmissionRow = {
-  id: string;
-  deliverable_id: string;
-  filename: string;
-  storage_path: string;
-  uploaded_at: string;
-};
-
 export default async function EntregablesPage(
   props: { params: Promise<{ cohortSlug: string }> },
 ) {
@@ -58,12 +36,11 @@ export default async function EntregablesPage(
 
   const nowIso = new Date().toISOString();
   const { data: deliverableRows } = await supabase
-    .from("deliverables" as never)
+    .from("deliverables")
     .select("*")
     .eq("program_id", program.id)
     .lte("opens_at", nowIso)
-    .order("due_at", { ascending: true })
-    .overrideTypes<DeliverableRow[]>();
+    .order("due_at", { ascending: true });
   const deliverables = deliverableRows ?? [];
 
   const deliverableIds = deliverables.map((d) => d.id);
@@ -73,12 +50,11 @@ export default async function EntregablesPage(
   >();
   if (deliverableIds.length > 0) {
     const { data: submissionRows } = await supabase
-      .from("deliverable_submissions" as never)
+      .from("deliverable_submissions")
       .select("id, deliverable_id, filename, storage_path, uploaded_at")
       .eq("student_id", user.id)
       .in("deliverable_id", deliverableIds)
-      .order("uploaded_at", { ascending: true })
-      .overrideTypes<SubmissionRow[]>();
+      .order("uploaded_at", { ascending: true });
     const resolved = await resolveDeliverableUrls(submissionRows ?? []);
     for (const s of resolved) {
       const arr = submissionsByDeliverable.get(s.deliverable_id) ?? [];

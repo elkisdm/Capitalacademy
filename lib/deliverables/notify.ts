@@ -3,18 +3,6 @@ import { sendDeliverableOpenEmail } from "@/lib/email/deliverable-open";
 
 type NotifyResult = { skipped: true } | { skipped: false; sent: number };
 
-// `deliverables`/`deliverable_submissions` aún no están en el Database
-// generado (migración 0053 no aplicada a prod). Provisional: `as never` +
-// tipos locales, siguiendo el patrón de payments antes de su regeneración
-// (ver commit "chore(types): regenerate Supabase types and remove
-// provisional casts"). Quitar los casts cuando se regeneren los tipos.
-type ReservedDeliverable = {
-  id: string;
-  title: string;
-  due_at: string;
-  program_id: string;
-};
-
 /**
  * Envía el correo de apertura de un entregable a los alumnos con matrícula
  * activa en su programa.
@@ -30,13 +18,13 @@ export async function notifyDeliverableOpen(deliverableId: string): Promise<Noti
   const now = new Date().toISOString();
 
   const { data: reserved, error: reserveError } = await admin
-    .from("deliverables" as never)
-    .update({ open_notified_at: now } as never)
+    .from("deliverables")
+    .update({ open_notified_at: now })
     .eq("id", deliverableId)
     .is("open_notified_at", null)
     .lte("opens_at", now)
     .select("id, title, due_at, program_id")
-    .maybeSingle<ReservedDeliverable>();
+    .maybeSingle();
 
   if (reserveError) {
     console.error("notifyDeliverableOpen reserve error", reserveError);

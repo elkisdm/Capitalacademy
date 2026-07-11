@@ -14,18 +14,6 @@ type RosterFile = {
   uploaded_at: string;
 };
 
-// `deliverables`/`deliverable_submissions` aún no están en el Database
-// generado (migración 0053 no aplicada a prod). Provisional: `as never` +
-// tipo local, mismo patrón que app/api/admin/deliverables/route.ts.
-type DeliverableRow = { id: string; program_id: string };
-type SubmissionRow = {
-  id: string;
-  student_id: string;
-  filename: string;
-  storage_path: string;
-  uploaded_at: string;
-};
-
 // ---------------------------------------------------------------------------
 // GET  /api/admin/deliverables/[deliverableId]/submissions
 //   Roster: cruza alumnos con matrícula activa del programa con sus entregas.
@@ -39,10 +27,10 @@ export async function GET(_req: Request, { params }: Ctx) {
   const admin = createAdminClient();
 
   const { data: deliverable, error: deliverableError } = await admin
-    .from("deliverables" as never)
+    .from("deliverables")
     .select("*")
     .eq("id", deliverableId)
-    .single<DeliverableRow>();
+    .single();
   if (deliverableError || !deliverable) {
     return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
   }
@@ -67,11 +55,10 @@ export async function GET(_req: Request, { params }: Ctx) {
   }
 
   const { data: submissions } = await admin
-    .from("deliverable_submissions" as never)
+    .from("deliverable_submissions")
     .select("id, student_id, filename, storage_path, uploaded_at")
     .eq("deliverable_id", deliverableId)
-    .order("uploaded_at", { ascending: true })
-    .overrideTypes<SubmissionRow[]>();
+    .order("uploaded_at", { ascending: true });
 
   const resolved = await resolveDeliverableUrls(submissions ?? []);
 

@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
   const { error: updateError } = await supabase
     .from(targetTable(target))
-    .update({ cover_image_url: coverUrl } as never)
+    .update({ cover_image_url: coverUrl })
     .eq("id", id);
 
   if (updateError) {
@@ -115,7 +115,7 @@ export async function DELETE(req: Request) {
 
   await supabase
     .from(targetTable(target))
-    .update({ cover_image_url: null } as never)
+    .update({ cover_image_url: null })
     .eq("id", id);
 
   return NextResponse.json({ cover_image_url: null });

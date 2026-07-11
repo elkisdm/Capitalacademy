@@ -9,17 +9,6 @@ export const runtime = "nodejs";
 
 const BUCKET = "deliverables";
 
-// `deliverables` aún no está en el Database generado (migración 0053 no
-// aplicada a prod). Provisional: `as never` + tipo local, mismo patrón que
-// las demás rutas API de entregables.
-type DeliverableRow = {
-  opens_at: string;
-  due_at: string;
-  program_id: string;
-  allowed_file_types: string[];
-  max_file_size_bytes: number;
-};
-
 const schema = z.object({
   deliverableId: uuidLike,
   filename: z.string().trim().min(1, "filename es requerido").max(255),
@@ -62,10 +51,10 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
 
   const { data: deliverable } = await admin
-    .from("deliverables" as never)
+    .from("deliverables")
     .select("opens_at, due_at, program_id, allowed_file_types, max_file_size_bytes")
     .eq("id", deliverableId)
-    .single<DeliverableRow>();
+    .single();
   if (!deliverable) {
     return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
   }

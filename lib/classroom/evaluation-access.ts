@@ -67,7 +67,7 @@ export async function resolveEvaluationAccess(
     evaluation: {
       id: evaluation.id,
       program_id: evaluation.program_id,
-      scope: evaluation.scope,
+      scope: evaluation.scope as EvaluationForStudent["scope"],
       title: evaluation.title,
       passing_grade_pct: evaluation.passing_grade_pct,
       questions_per_attempt: evaluation.questions_per_attempt,

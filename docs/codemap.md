@@ -77,6 +77,11 @@
 |------|-----------------|---------------------------|-----|
 | `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) y detecta inasistencias (`processAbsenceAlerts`) | `POST /api/cron/session-reminders` | 0008, 0013 |
 | `netlify/functions/session-reminders-cron.mjs` | Netlify Scheduled Function (`*/30`) que invoca el endpoint de recordatorios | — | 0008 |
+| `lib/classroom/recording-notifications.ts` | Dispatch en dos fases (reserva→completado) del aviso "grabación disponible" (genérico y follow-up CAP-CI), reconciliable por el cron ante crash a mitad del envío | — | — |
+| `app/api/cron/recording-notifications/route.ts` | Cron de reconciliación: reintenta notificaciones de grabación cuya reserva quedó sin completar | `GET/POST /api/cron/recording-notifications` | — |
+| `netlify/functions/recording-notifications-cron.mjs` | Netlify Scheduled Function que invoca el cron de reconciliación de notificaciones de grabación | — | — |
+| `lib/api/cron-auth.ts` | `authorizeCron`: valida el header `Authorization: Bearer <CRON_SECRET>` (timing-safe) para los endpoints de cron | — | — |
+| `lib/email/recording-available.ts` | Correo "grabación disponible" al publicarse la repetición de una clase en vivo (todo programa salvo CAP-CI) | — | — |
 | `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI), `attendance-warning` (alerta de inasistencias, brandeada por entorno) | — | 0013 |
 
 ## Asistencia (QR)
@@ -89,6 +94,7 @@
 | `lib/asistencia/queries.ts` | Reportería de asistencia + marcado/desmarcado manual (service_role) + `getStudentsAtAbsenceThreshold` (conteo de inasistencias para el cron) | — | 0013 |
 | `db/migrations/0054_attendance_alerts.sql` | Bitácora idempotente de correos de alerta de inasistencia (`unique student+cohort+kind`) | — | 0013 |
 | `app/api/admin/sessions/[sessionId]/attendance/route.ts` | GET reporte · POST marcar · DELETE desmarcar (gateado por `requireSessionStaff`: staff o docente/asistente de esa cohorte) | `/api/admin/sessions/[sessionId]/attendance` | 0013 |
+| `app/api/admin/sessions/[sessionId]/attendance/bulk/route.ts` | Marca o quita, en un solo round-trip, la asistencia de varios alumnos a la vez | `POST /api/admin/sessions/[sessionId]/attendance/bulk` | 0013 |
 | `components/admin/session-qr.tsx` | QR imprimible por sesión para el PPT del docente (admin) | — | — |
 | `components/admin/session-attendance-panel.tsx` | Reportería + toggle de marcado manual en el editor de sesión | — | — |
 | `scripts/test-asistencia-e2e.mjs` | E2E autolimpiante del check-in (datos de prueba efímeros contra la BD real) | — | — |
@@ -107,6 +113,7 @@
 |------|-----------------|---------------------------|-----|
 | `app/(classroom)/classroom/page.tsx` | Landing del alumno: 1 matrícula→redirect directo, 2+→selector de programas (tarjetas); staff→entorno activo | `/classroom` | — |
 | `app/(classroom)/classroom/[cohortSlug]/page.tsx` | Home del programa: módulos + timeline de lecciones | `/classroom/[cohortSlug]` | — |
+| `components/classroom/module-accordion.tsx` | Acordeón de temario (server component) de la home del alumno: módulos colapsables con clases, estado y progreso | — | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/page.tsx` | Lista de lecciones del módulo | `/classroom/[cohortSlug]/[moduleSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/[lessonSlug]/page.tsx` | Reproductor de lección: video Mux, transcripción, resumen, comentarios y progreso | `…/[lessonSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/clase/[sessionId]/page.tsx` | Pantalla de una clase EN VIVO: cabecera (fecha/docente/modalidad), **repetición** (reusa `LessonVideoSection` con la lección `recorded` enlazada), material y quiz de la sesión. Entrada desde la lista de clases del módulo | `/classroom/[cohortSlug]/clase/[sessionId]` | 0041 |
@@ -149,6 +156,7 @@
 | `lib/deliverables/storage.ts` | Firma en lote las URLs de descarga de entregas (bucket privado `deliverables`) | — | — |
 | `lib/deliverables/notify.ts` | `notifyDeliverableOpen`: correo de apertura idempotente (reserva `open_notified_at` antes de enviar) | — | — |
 | `lib/email/deliverable-open.ts` | Correo "Ya puedes subir: <título>" al abrirse la ventana de un entregable | — | — |
+| `lib/email/deliverable-received.ts` | Correo de confirmación al alumno al recibirse su archivo de entrega | — | — |
 | `app/api/admin/deliverables/route.ts` · `[deliverableId]/route.ts` · `[deliverableId]/submissions/route.ts` | CRUD admin de entregables + roster de entregas por programa (con URLs firmadas) | `GET/POST/PATCH/DELETE /api/admin/deliverables` | — |
 | `app/api/classroom/deliverables/upload-url/route.ts` · `route.ts` | Subida del alumno: signed upload URL (valida matrícula/ventana/tipo/tamaño) + persistencia de la entrega | `POST /api/classroom/deliverables*` | — |
 | `app/api/cron/deliverable-openings/route.ts` · `netlify/functions/deliverable-openings-cron.mjs` | Cron (`*/30 min`) que notifica aperturas futuras de entregables pendientes | `POST /api/cron/deliverable-openings` | — |
@@ -198,6 +206,7 @@
 | `app/api/admin/lessons/route.ts` · `[lessonId]/route.ts` | CRUD de lecciones (POST crear, PATCH editar metadatos **y mover de módulo**, DELETE con guard de progreso) | `POST/PATCH/DELETE /api/admin/lessons` | — |
 | `app/api/admin/modules/route.ts` · `[moduleId]/route.ts` | CRUD de módulos (GET por cohorte, POST crear, PATCH editar, DELETE con guard de progreso) | `GET/POST/PATCH/DELETE /api/admin/modules` | — |
 | `app/api/admin/lessons/reorder/route.ts` · `components/admin/lesson-reorder-list.tsx` | Reordenar lecciones de un módulo (RPC atómico `reorder_lessons`, flechas arriba/abajo) | `POST /api/admin/lessons/reorder` | — |
+| `lib/admin/lesson-video-status.ts` | Deriva miniatura y estado del video (Grabada/Procesando/Error/etc.) de una lección para la card del listado admin | — | — |
 | `components/admin/lesson-edit-form.tsx` · `add-lesson-button.tsx` · `module-edit-form.tsx` · `add-module-button.tsx` | UI del editor de clases (crear/editar/eliminar módulos y lecciones) | — | — |
 | `components/admin/lessons-scope-filter.tsx` · `module-sessions-list.tsx` | Selector programa+cohorte del editor + lista de clases en vivo por módulo (mover de módulo, enlace al calendario) | — | — |
 | `lib/utils/slug.ts` | `slugify` + `uniqueSlug` para URLs legibles del classroom | — | — |
@@ -215,6 +224,7 @@
 | `components/admin/cover-image-field.tsx` · `app/api/admin/covers/route.ts` | Subida/quita de portada (módulo o lección) al bucket público `covers` (service-role); columna `cover_image_url` separada de `thumbnail_url` (Mux) | `POST/DELETE /api/admin/covers` | — |
 | `components/admin/program-filter.tsx` | Selector de entorno/programa para scopear recursos y lecciones en el admin | — | — |
 | `app/api/admin/{generate-summary,generate-chapters,generate-quiz,correct-transcript,transcript-segments}/route.ts` | Generación de contenido por IA (resumen, capítulos, quiz, transcripción) | — | — |
+| `lib/classroom/generate-chapters.ts` · `generate-summary.ts` | Lógica de generación IA de capítulos y resumen de una lección, invocada por su ruta admin y por el pipeline post-procesamiento de Mux | — | — |
 | `app/api/admin/{modules,resources,quiz-questions,certificates}/route.ts` | CRUD admin de módulos/recursos/preguntas/certificados (config e intentos del quiz se gestionan por evaluación, no por programa) | — | — |
 | `components/admin/` | UI admin: `user-drawer`, `progress-table`, `quiz-manager`, `mux-uploader`, `resource-manager`, `csv-import-modal`, `transcript-review` | — | — |
 | `lib/admin/user-queries.ts` | Lecturas de usuarios/segmento para el admin; `getAdminUsersList(programId?)` scopea por entorno (miembros del programa + staff transversal admin/ops) | — | — |
@@ -229,7 +239,7 @@
 |------|-----------------|---------------------------|-----|
 | `app/page.tsx` | Landing del Diplomado (hero, programas, syllabus, comparador, FAQ, contacto) | `/` | — |
 | `components/landing/` | Secciones de la landing (Hero, Programas, Comparador, Syllabus, FAQ, Formulario, …) | — | — |
-| `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images` | — | — |
+| `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images`, `cohort` (fecha de inicio de la próxima cohorte del Diplomado, en vivo desde `cohorts`) | — | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto | `POST /api/leads` | — |
 
 ## Video / Mux
@@ -262,7 +272,8 @@
 | `lib/api/base-url.ts` | Resuelve la base URL canónica de la app | — | — |
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap` | — | — |
 | `components/ui/markdown.tsx` | Renderer markdown compartido (contenido de clases de texto, ayuda) | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0053`) | — | — |
+| `components/ui/{checkbox,date-picker,file-input,radio,select}.tsx` | Componentes de formulario propios de marca (reemplazan los controles nativos del navegador) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0064`) | — | — |
 | `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
 | `db/migrations/0049_seed_capacitaciones.sql` | Siembra del entorno Ciclo de Capacitación Comercial CI: programa gratuito interno + cohorte + 5 sesiones presenciales | — | 0012 |
 | `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |

@@ -8,10 +8,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Home del alumno rediseñada: temario en acordeón, hero compacto y progreso siempre visible (`23e5d0e`)
+- Correo de confirmación automático al recibir una entrega (`23e5d0e`)
+- Aviso por correo cuando la grabación de una clase queda disponible (`23e5d0e`)
 - Los formularios del panel administrativo, el checkout y el classroom ahora usan controles propios de marca (selector de fecha, menú desplegable, casillas, radios y selector de archivo) en vez de los del navegador; el panel de asistencia de una clase queda más compacto con búsqueda y marcado en bloque, y el popover de notificaciones ya no se corta en pantallas angostas (`43626f6`)
 - El panel administrativo estrena diseño en lecciones, quizzes y entregables: el listado de lecciones ahora muestra miniatura, duración y estado del video, quizzes y entregables se presentan en una grilla con insignias de estado, y la gestión de un quiz se abre en una ventana emergente en vez de una pantalla aparte (`3c9eb40`)
 
 ### Changed
+- El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
 - El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)
 - La pantalla de una conversación carga más liviana y rápida: dejó de enviarse el procesador de texto al navegador y los avatares se optimizan automáticamente (`db2c32d`)
 - Las fotos de perfil en todo el classroom (menú, comentarios, perfil) se sirven optimizadas y livianas en vez del archivo original, y la página del quiz carga menos código de entrada (las pantallas de resultado se traen recién al terminar) (`624b57c`)
@@ -25,6 +29,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- Los programas en vivo ya no muestran "0 lecciones": ahora cuentan sus clases en vivo (`23e5d0e`)
+- Las notificaciones por correo ya no se pierden si un envío se interrumpe a la mitad; se reintentan solas (`23e5d0e`)
 - Un usuario de staff/operación sin matrícula ya puede editar su perfil en el classroom: antes cualquier guardado fallaba porque el formulario reenviaba nombre, teléfono y RUT completos y esos campos estaban vacíos en su cuenta
 - Un enlace largo pegado sin espacios en un comentario de clase o en un hilo del foro ya no desborda el diseño en el celular: ahora el texto envuelve dentro del contenedor.
 - Los alumnos matriculados en más de un programa (por ejemplo, el Diplomado y la Capacitación Comercial CI) ahora ven una pantalla para elegir a cuál entrar al abrir "Mis programas". Antes, el classroom abría siempre el programa más reciente y dejaba los demás sin forma de volver a ellos (`777fcf1`)

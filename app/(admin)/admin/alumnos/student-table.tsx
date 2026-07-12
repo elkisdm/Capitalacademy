@@ -90,9 +90,9 @@ function StudentDetail({ student, onClose }: { student: StudentPanelRow; onClose
         ) : (
           <div className="mb-6 flex flex-col gap-2">
             {student.attendance.missed.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-xl border border-ca-ink/[0.08] p-3">
-                <span className="text-[13px] font-bold text-ca-ink">{s.title ?? "Clase en vivo"}</span>
-                <span className="font-mono text-[11px] text-ca-ink-soft">
+              <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl border border-ca-ink/[0.08] p-3">
+                <span className="min-w-0 truncate text-[13px] font-bold text-ca-ink">{s.title ?? "Clase en vivo"}</span>
+                <span className="shrink-0 whitespace-nowrap font-mono text-[11px] text-ca-ink-soft">
                   {new Date(s.startsAt).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
               </div>

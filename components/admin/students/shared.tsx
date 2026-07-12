@@ -179,12 +179,12 @@ export function MetricCard({
   tone?: string;
 }) {
   return (
-    <div className="rounded-xl border border-ca-ink/[0.08] bg-white p-4">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">{label}</div>
-      <div className="mt-1 font-mono text-[26px] font-black" style={tone ? { color: tone } : undefined}>
+    <div className="min-w-0 rounded-xl border border-ca-ink/[0.08] bg-white p-3">
+      <div className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">{label}</div>
+      <div className="mt-1 truncate font-mono text-[20px] font-black" style={tone ? { color: tone } : undefined}>
         {value}
       </div>
-      {sub && <div className="text-[11px] font-semibold text-ca-ink-soft">{sub}</div>}
+      {sub && <div className="truncate text-[11px] font-semibold text-ca-ink-soft">{sub}</div>}
     </div>
   );
 }

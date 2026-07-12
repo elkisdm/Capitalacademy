@@ -246,6 +246,7 @@
 | `app/page.tsx` | Landing del Diplomado (hero, programas, syllabus, comparador, FAQ, contacto) | `/` | — |
 | `components/landing/` | Secciones de la landing (Hero, Programas, Comparador, Syllabus, FAQ, Formulario, …) | — | — |
 | `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images`, `cohort` (fecha de inicio de la próxima cohorte del Diplomado, en vivo desde `cohorts`) | — | — |
+| `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto | `POST /api/leads` | — |
 
 ## Video / Mux

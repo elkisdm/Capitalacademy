@@ -10,6 +10,19 @@ export const metadata = {
   title: "Ingreso al Diplomado",
   description:
     "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria. Pago seguro online.",
+  openGraph: {
+    title: "Ingreso al Diplomado",
+    description:
+      "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria. Pago seguro online.",
+    url: "/pago",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ingreso al Diplomado",
+    description:
+      "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría de Inversión Inmobiliaria. Pago seguro online.",
+  },
 };
 
 export const revalidate = 3600;

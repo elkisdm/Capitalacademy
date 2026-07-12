@@ -1,13 +1,44 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import QRCode from "qrcode";
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCertificateSignedUrl } from "@/lib/certificates/get-certificate-url";
 
-export const metadata: Metadata = {
-  title: "Verificar certificado | Capital Academy",
-  description: "Verifica la autenticidad de un certificado emitido por Capital Academy.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}): Promise<Metadata> {
+  const { code } = await params;
+  const cert = await verifyCertificate(code);
+
+  if (!cert) {
+    return {
+      title: "Verificar certificado | Capital Academy",
+      description: "Verifica la autenticidad de un certificado emitido por Capital Academy.",
+    };
+  }
+
+  const title = `Certificado de ${cert.studentName} · ${cert.programName}`;
+  const description = "Certificado verificado emitido por Capital Academy.";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/verificar/${code}`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icon helper                                            */
@@ -158,7 +189,7 @@ function fmtTimestamp() {
 /* ------------------------------------------------------------------ */
 /*  Data fetching                                                     */
 /* ------------------------------------------------------------------ */
-async function verifyCertificate(code: string) {
+const verifyCertificate = cache(async (code: string) => {
   const supabase = createAdminClient();
 
   const { data: certificate, error } = await supabase
@@ -214,7 +245,7 @@ async function verifyCertificate(code: string) {
     pdfUrl: await getCertificateSignedUrl(certificate.pdf_storage_path),
     verificationCode: certificate.verification_code,
   };
-}
+});
 
 /* ------------------------------------------------------------------ */
 /*  Page component                                                    */

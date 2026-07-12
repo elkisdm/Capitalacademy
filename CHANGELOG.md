@@ -14,6 +14,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Los formularios del panel administrativo, el checkout y el classroom ahora usan controles propios de marca (selector de fecha, menú desplegable, casillas, radios y selector de archivo) en vez de los del navegador; el panel de asistencia de una clase queda más compacto con búsqueda y marcado en bloque, y el popover de notificaciones ya no se corta en pantallas angostas (`43626f6`)
 - El panel administrativo estrena diseño en lecciones, quizzes y entregables: el listado de lecciones ahora muestra miniatura, duración y estado del video, quizzes y entregables se presentan en una grilla con insignias de estado, y la gestión de un quiz se abre en una ventana emergente en vez de una pantalla aparte (`3c9eb40`)
 - Las secciones de los editores de lección y de sesiones de cohorte ahora se pueden colapsar, para llegar más rápido a lo que se quiere editar sin scrollear paneles largos (00de220)
+- Al compartir enlaces de la plataforma en WhatsApp o LinkedIn ahora se ve una tarjeta de marca profesional: genérica del sitio, por programa en los checkouts, y el certificado verificado muestra el nombre del alumno y su programa
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)

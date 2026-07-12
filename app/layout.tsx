@@ -39,14 +39,12 @@ export const metadata: Metadata = {
     description:
       "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
     url: "/",
-    images: [{ url: "/brand/logo-light.png", width: 400, height: 400 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Capital Academy | Escuela de negocios inmobiliarios",
     description:
       "Formación ejecutiva para elevar el estándar de la industria inmobiliaria.",
-    images: ["/brand/logo-light.png"],
   },
   robots: {
     index: true,

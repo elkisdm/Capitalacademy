@@ -8,6 +8,19 @@ export const metadata = {
   title: "Inscripción · Programa de Liderazgo",
   description:
     "Inscripción al Programa de Liderazgo y Gestión de Equipos Comerciales. Cupos limitados. Pago seguro online.",
+  openGraph: {
+    title: "Inscripción · Programa de Liderazgo",
+    description:
+      "Inscripción al Programa de Liderazgo y Gestión de Equipos Comerciales. Cupos limitados. Pago seguro online.",
+    url: "/pago/liderazgo",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Inscripción · Programa de Liderazgo",
+    description:
+      "Inscripción al Programa de Liderazgo y Gestión de Equipos Comerciales. Cupos limitados. Pago seguro online.",
+  },
 };
 
 const FAQ = [

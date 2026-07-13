@@ -149,9 +149,33 @@ export default async function ClassroomLayout({
   // activa (staff siempre lo ve, vía la condición en el sidebar). Reutiliza la
   // misma fuente de verdad que /classroom usa para decidir si hay algo que elegir.
   let hasMultiplePrograms = false;
+  // Mapa por-matrícula (slug/id → {label, hasFinalEvaluation}) para que el sidebar
+  // resuelva label y "Quiz final" según la cohorte de la RUTA y no quede pegado a
+  // la del primer render (el layout no se re-renderiza en navegación client-side).
+  const cohortMap: Record<string, { label: string; hasFinalEvaluation: boolean }> = {};
   if (!isStaff) {
     const enrollments = await getActiveEnrollmentsForUser(user.id);
     hasMultiplePrograms = enrollments.length > 1;
+
+    // Evaluaciones finales activas de todos sus programas en una sola consulta.
+    const programIds = [...new Set(enrollments.map((e) => e.programId))];
+    const finalSet = new Set<string>();
+    if (programIds.length > 0) {
+      const { data: finals } = await supabase
+        .from("evaluations")
+        .select("program_id")
+        .in("program_id", programIds)
+        .eq("scope", "final")
+        .eq("is_active", true);
+      for (const f of finals ?? []) finalSet.add(f.program_id as string);
+    }
+
+    for (const e of enrollments) {
+      const info = { label: e.programName, hasFinalEvaluation: finalSet.has(e.programId) };
+      // Se indexa por slug y por id: la URL puede traer cualquiera (compat legacy).
+      if (e.cohortSlug) cohortMap[e.cohortSlug] = info;
+      cohortMap[e.cohortId] = info;
+    }
   }
 
   return (
@@ -171,6 +195,7 @@ export default async function ClassroomLayout({
         isTeacher={isTeacher}
         hasFinalEvaluation={hasFinalEvaluation}
         hasMultiplePrograms={hasMultiplePrograms}
+        cohortMap={cohortMap}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         {children}

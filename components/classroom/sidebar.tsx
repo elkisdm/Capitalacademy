@@ -355,6 +355,7 @@ export function ClassroomSidebar({
   isTeacher = false,
   hasFinalEvaluation = false,
   hasMultiplePrograms = false,
+  cohortMap = {},
 }: {
   userInitials: string;
   userName: string;
@@ -374,11 +375,52 @@ export function ClassroomSidebar({
   /** El alumno (no staff) tiene más de una matrícula activa: solo entonces se
    * muestra "Mis programas" como selector. Con una sola, no hay nada que elegir. */
   hasMultiplePrograms?: boolean;
+  /** Mapa slug/id de cohorte → {label, hasFinalEvaluation} de las matrículas
+   * activas del alumno. Permite que el sidebar siga la cohorte de la RUTA en
+   * navegación client-side sin re-render del layout. Vacío para staff. */
+  cohortMap?: Record<string, { label: string; hasFinalEvaluation: boolean }>;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const trapRef = useFocusTrap(mobileOpen);
   const pathname = usePathname();
+
+  // Cohorte activa según la RUTA (fuente de verdad en navegación client-side,
+  // porque el layout no se re-renderiza al cambiar de segmento hijo). Cae al prop
+  // del servidor cuando la ruta no trae slug (/classroom, /profile, /guia,
+  // /quiz/[id]) o es una sub-ruta reservada. Debe espejar RESERVED_SUBPATHS del layout.
+  const RESERVED_SUBPATHS = new Set(["profile", "guia", "quiz"]);
+  const pathParts = pathname.split("/").filter(Boolean); // ['classroom', '<slug>', ...]
+  const slugFromPath =
+    pathParts[0] === "classroom" && pathParts[1] && !RESERVED_SUBPATHS.has(pathParts[1])
+      ? pathParts[1]
+      : undefined;
+
+  // Recuerda la última cohorte vista para que en rutas sin slug (perfil, guía)
+  // el sidebar no "salte" de vuelta a la cohorte por defecto del servidor.
+  const [lastCohort, setLastCohort] = useState<string | undefined>(cohortId);
+  // Si el SERVIDOR re-resolvió la cohorte (p. ej. router.refresh() tras cambiar
+  // de entorno con el switcher del staff), el prop nuevo manda sobre lo recordado:
+  // sin este reset, el sidebar del staff quedaría anclado al entorno anterior.
+  const [prevServerCohort, setPrevServerCohort] = useState<string | undefined>(cohortId);
+  if (cohortId !== prevServerCohort) {
+    setPrevServerCohort(cohortId);
+    setLastCohort(cohortId);
+  }
+  if (slugFromPath && slugFromPath !== lastCohort) {
+    setLastCohort(slugFromPath);
+  }
+  const activeCohort = slugFromPath ?? lastCohort ?? cohortId;
+
+  const activeInfo = activeCohort ? cohortMap[activeCohort] : undefined;
+  // Solo se confía en el label/quiz del servidor cuando la cohorte activa coincide
+  // con la que resolvió el layout; sin match en el mapa (staff, cohorte fuera de
+  // sus matrículas) se degrada con gracia: hrefs con el slug de la ruta, label
+  // genérico "Inicio", sin "Quiz final".
+  const activeLabel =
+    activeInfo?.label ?? (activeCohort === cohortId ? cohortLabel : undefined);
+  const activeHasFinal =
+    activeInfo?.hasFinalEvaluation ?? (activeCohort === cohortId ? hasFinalEvaluation : false);
 
   // Cierra el drawer móvil al navegar a otra ruta. El setState en effect es
   // intencional (sincroniza con el cambio de pathname externo).
@@ -391,10 +433,10 @@ export function ClassroomSidebar({
     if (path === "/classroom") {
       return pathname === "/classroom";
     }
-    if (path === `/classroom/${cohortId}`) {
+    if (path === `/classroom/${activeCohort}`) {
       return (
-        pathname.startsWith(`/classroom/${cohortId}`) &&
-        !pathname.startsWith(`/classroom/${cohortId}/calendario`)
+        pathname.startsWith(`/classroom/${activeCohort}`) &&
+        !pathname.startsWith(`/classroom/${activeCohort}/calendario`)
       );
     }
     return pathname.startsWith(path);
@@ -424,14 +466,14 @@ export function ClassroomSidebar({
       ...(hasMultiplePrograms ? [
         { icon: "book", label: "Mis programas", href: "/classroom", section: "learn" as const },
       ] : []),
-      { icon: "home", label: cohortLabel ?? "Inicio", href: cohortId ? `/classroom/${cohortId}` : "/classroom", section: "learn" as const },
-      { icon: "calendar", label: "Calendario", href: cohortId ? `/classroom/${cohortId}/calendario` : "/classroom", section: "learn" as const },
-      ...(cohortId ? [
-        { icon: "folder", label: "Recursos", href: `/classroom/${cohortId}/recursos`, section: "learn" as const },
-        { icon: "upload", label: "Entregables", href: `/classroom/${cohortId}/entregables`, section: "learn" as const },
-        { icon: "chat", label: "Conversaciones", href: `/classroom/${cohortId}/conversaciones`, section: "learn" as const },
-        ...(hasFinalEvaluation ? [
-          { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${cohortId}/quiz`, section: "learn" as const },
+      { icon: "home", label: activeLabel ?? "Inicio", href: activeCohort ? `/classroom/${activeCohort}` : "/classroom", section: "learn" as const },
+      { icon: "calendar", label: "Calendario", href: activeCohort ? `/classroom/${activeCohort}/calendario` : "/classroom", section: "learn" as const },
+      ...(activeCohort ? [
+        { icon: "folder", label: "Recursos", href: `/classroom/${activeCohort}/recursos`, section: "learn" as const },
+        { icon: "upload", label: "Entregables", href: `/classroom/${activeCohort}/entregables`, section: "learn" as const },
+        { icon: "chat", label: "Conversaciones", href: `/classroom/${activeCohort}/conversaciones`, section: "learn" as const },
+        ...(activeHasFinal ? [
+          { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${activeCohort}/quiz`, section: "learn" as const },
         ] : []),
       ] : []),
       // Docente/asistente (cohort_roles): entrada al panel dedicado. Se oculta
@@ -444,8 +486,8 @@ export function ClassroomSidebar({
       // General: opciones globales (no atadas a un entorno).
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "general" as const },
       { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "general" as const },
-      ...(cohortId ? [
-        { icon: "chat", label: "Conversaciones", href: `/classroom/${cohortId}/conversaciones`, section: "general" as const },
+      ...(activeCohort ? [
+        { icon: "chat", label: "Conversaciones", href: `/classroom/${activeCohort}/conversaciones`, section: "general" as const },
       ] : []),
       // Configuración: armado del contenido del entorno activo. Los recursos se
       // gestionan dentro de Lecciones (lecciones grabadas y clases en vivo).
@@ -477,7 +519,7 @@ export function ClassroomSidebar({
           envOptions={envOptions}
           activeEnv={activeEnv}
           viewerId={viewerId}
-          cohortId={cohortId}
+          cohortId={activeCohort}
           onCollapse={() => setCollapsed(!collapsed)}
         />
       </aside>
@@ -493,7 +535,7 @@ export function ClassroomSidebar({
         </button>
         <Logo />
         <div className="flex items-center gap-1">
-          {viewerId && cohortId && (
+          {viewerId && activeCohort && (
             <NotificationBell viewerId={viewerId} />
           )}
           <Link href="/classroom/profile" prefetch={false} className="grid h-11 w-11 place-items-center">

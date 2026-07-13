@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { setActiveEnv, setViewMode } from "@/lib/admin/env-actions";
 import type { EnvOption, ViewMode } from "@/lib/admin/active-env";
 import { Select } from "@/components/ui/field";
@@ -15,28 +15,26 @@ export function EnvSwitcher({
   options,
   activeEnv,
   collapsed = false,
-  studentPreview = false,
 }: {
   options: EnvOption[];
   activeEnv: string | null;
   collapsed?: boolean;
-  /**
-   * En la vista de alumno del staff, cambiar de entorno debe re-resolver el
-   * cohorte que se previsualiza: navega a `/classroom` (que redirige al cohorte
-   * del entorno activo). En el panel admin basta con refrescar en el sitio.
-   */
-  studentPreview?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [pending, startTransition] = useTransition();
 
   if (options.length === 0) return null;
 
   function handleChange(value: string) {
     startTransition(async () => {
-      await setActiveEnv(value);
-      if (studentPreview) {
-        router.push("/classroom");
+      const slug = await setActiveEnv(value);
+      // Dentro del classroom, re-anclar la URL a la cohorte del nuevo entorno: así
+      // TODOS los links del sidebar (no solo "Inicio"), el label y "Quiz final"
+      // apuntan al entorno nuevo. En el panel admin la URL no lleva cohorte, así
+      // que basta refrescar en el sitio (el layout re-resuelve el entorno activo).
+      if (pathname.startsWith("/classroom")) {
+        router.push(slug ? `/classroom/${slug}` : "/classroom");
       }
       router.refresh();
     });

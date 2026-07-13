@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  checkoutFormSchema,
-  type CheckoutFormInput,
+  diplomadoCheckoutSchema,
+  type DiplomadoCheckoutInput,
 } from "@/lib/fintoc/schema";
 import {
   DIPLOMADO_PRICE_CLP,
@@ -68,10 +68,10 @@ export function CheckoutClient({ provider }: Props) {
     watch,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<CheckoutFormInput>({
-    resolver: zodResolver(checkoutFormSchema),
+  } = useForm<DiplomadoCheckoutInput>({
+    resolver: zodResolver(diplomadoCheckoutSchema),
     mode: "onBlur",
-    defaultValues: { plan: "contado" },
+    defaultValues: { plan: "contado", documentType: "boleta" },
   });
 
   const selectedPlan = (watch("plan") ?? "contado") as PaymentPlan;
@@ -209,6 +209,8 @@ export function CheckoutClient({ provider }: Props) {
   });
 
   const rutValue = watch("rut") ?? "";
+  const documentType = watch("documentType") ?? "boleta";
+  const invoiceRutValue = watch("invoice.rut") ?? "";
   const isBusy =
     isSubmitting || status === "submitting" || status === "loading-widget";
 
@@ -220,7 +222,7 @@ export function CheckoutClient({ provider }: Props) {
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-ca-violet)] text-white">
             1
           </span>
-          Tus datos
+          Datos del alumno
         </li>
         <span aria-hidden className="h-px flex-1 bg-[rgba(20,22,58,0.12)]" />
         <li className="flex items-center gap-2 text-[var(--color-ca-ink-soft)]">
@@ -239,10 +241,10 @@ export function CheckoutClient({ provider }: Props) {
           </span>
           <div>
             <h2 className="text-base font-bold leading-tight text-[var(--color-ca-ink)] sm:text-lg">
-              Tus datos
+              Datos del alumno
             </h2>
             <p className="text-[11px] text-[var(--color-ca-ink-soft)]">
-              Necesitamos esto para emitir tu boleta y crear tu cuenta.
+              Completa estos campos con los datos de quien cursará el programa —aunque otra persona realice el pago—. Con ellos creamos su cuenta y emitimos la boleta.
             </p>
           </div>
         </header>
@@ -297,6 +299,106 @@ export function CheckoutClient({ provider }: Props) {
               {...register("phone")}
             />
           </Field>
+        </div>
+
+        <div className="mt-5 border-t border-[rgba(20,22,58,0.08)] pt-5">
+          <Controller
+            name="documentType"
+            control={control}
+            render={({ field }) => (
+              <RadioGroup
+                value={field.value ?? "boleta"}
+                onChange={field.onChange}
+                name="documentType"
+                className="grid grid-cols-2 gap-2"
+              >
+                <Radio
+                  value="boleta"
+                  className={`rounded-xl border px-4 py-3 text-center transition-colors ${
+                    documentType === "boleta"
+                      ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
+                      : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
+                    Boleta
+                  </span>
+                </Radio>
+                <Radio
+                  value="factura"
+                  className={`rounded-xl border px-4 py-3 text-center transition-colors ${
+                    documentType === "factura"
+                      ? "border-[var(--color-ca-violet)]/40 bg-[var(--color-ca-violet)]/[0.04]"
+                      : "border-[rgba(20,22,58,0.1)] bg-white hover:border-[var(--color-ca-violet)]/30"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-[var(--color-ca-ink)]">
+                    Factura
+                  </span>
+                </Radio>
+              </RadioGroup>
+            )}
+          />
+          <p className="mt-2 text-[11px] text-[var(--color-ca-ink-soft)]">
+            Boleta (por defecto). Elige factura si el pago lo hace una empresa.
+          </p>
+
+          {documentType === "factura" && (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                label="Razón social"
+                error={errors.invoice?.razonSocial?.message}
+                className="sm:col-span-2"
+              >
+                <Input type="text" {...register("invoice.razonSocial")} />
+              </Field>
+              <Field
+                label="RUT de la empresa"
+                error={errors.invoice?.rut?.message}
+                className="sm:col-span-2"
+              >
+                <Input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  placeholder="76.123.456-7"
+                  value={invoiceRutValue}
+                  onChange={(e) =>
+                    setValue("invoice.rut", formatRut(e.target.value), {
+                      shouldValidate: false,
+                    })
+                  }
+                  onBlur={(e) =>
+                    setValue("invoice.rut", formatRut(e.target.value), {
+                      shouldValidate: true,
+                    })
+                  }
+                />
+              </Field>
+              <Field
+                label="Giro"
+                error={errors.invoice?.giro?.message}
+                className="sm:col-span-2"
+              >
+                <Input type="text" {...register("invoice.giro")} />
+              </Field>
+              <Field
+                label="Dirección comercial"
+                error={errors.invoice?.direccion?.message}
+                className="sm:col-span-2"
+              >
+                <Input type="text" {...register("invoice.direccion")} />
+              </Field>
+              <Field
+                label="Correo de contacto"
+                error={errors.invoice?.email?.message}
+                className="sm:col-span-2"
+              >
+                <Input type="email" {...register("invoice.email")} />
+              </Field>
+            </div>
+          )}
         </div>
       </section>
 

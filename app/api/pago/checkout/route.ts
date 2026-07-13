@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkoutFormSchema } from "@/lib/fintoc/schema";
+import { diplomadoCheckoutSchema } from "@/lib/fintoc/schema";
 import { PAYMENT_PLANS, createFlowCheckout } from "@/lib/flow/checkout";
 import { getActivePaymentProvider } from "@/lib/payments/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
   }
 
-  const parsed = checkoutFormSchema.safeParse(json);
+  const parsed = diplomadoCheckoutSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validación fallida", issues: parsed.error.flatten() },
@@ -34,8 +34,17 @@ export async function POST(req: Request) {
   }
 
   const provider = getActivePaymentProvider();
-  const { firstname, lastname, rut, email, phone, plan, couponCode } =
-    parsed.data;
+  const {
+    firstname,
+    lastname,
+    rut,
+    email,
+    phone,
+    plan,
+    couponCode,
+    documentType,
+    invoice,
+  } = parsed.data;
 
   const effectivePlan = plan;
   const baseAmount = PAYMENT_PLANS[effectivePlan].amount;
@@ -72,6 +81,8 @@ export async function POST(req: Request) {
     plan: effectivePlan,
     status: "pending",
     provider,
+    document_type: documentType,
+    invoice_data: documentType === "factura" ? invoice : null,
     ip_address:
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     user_agent: req.headers.get("user-agent"),

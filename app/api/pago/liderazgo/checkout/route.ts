@@ -41,8 +41,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const { firstname, lastname, rut, email, phone, plan, launchCode } =
-    parsed.data;
+  const {
+    firstname,
+    lastname,
+    rut,
+    email,
+    phone,
+    plan,
+    launchCode,
+    documentType,
+    invoice,
+  } = parsed.data;
 
   // El monto se computa SIEMPRE en el servidor; el cliente nunca lo envía.
   const planConfig = LIDERAZGO_PLANS[plan];
@@ -66,6 +75,8 @@ export async function POST(req: Request) {
     plan,
     status: "pending",
     provider: "flow",
+    document_type: documentType,
+    invoice_data: documentType === "factura" ? invoice : null,
     ip_address:
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     user_agent: req.headers.get("user-agent"),

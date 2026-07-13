@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cleanRut, isValidRut } from "@/lib/utils/rut";
+import { invoiceExtension, refineInvoice } from "@/lib/payments/invoice";
 
 export const checkoutFormSchema = z.object({
   firstname: z.string().trim().min(2, "Nombre muy corto").max(80),
@@ -30,3 +31,13 @@ export const checkoutFormSchema = z.object({
 // Output: lo que entrega zod tras parsear (plan ya tiene valor).
 export type CheckoutFormInput = z.input<typeof checkoutFormSchema>;
 export type CheckoutFormData = z.output<typeof checkoutFormSchema>;
+
+// Schema de SUBMIT del checkout del Diplomado: extiende el base con documento/
+// factura. Se mantiene separado de checkoutFormSchema porque este último debe
+// seguir siendo un ZodObject puro (cobro lo consume con .pick()/.extend()).
+export const diplomadoCheckoutSchema = checkoutFormSchema
+  .extend(invoiceExtension)
+  .superRefine(refineInvoice);
+
+export type DiplomadoCheckoutInput = z.input<typeof diplomadoCheckoutSchema>;
+export type DiplomadoCheckoutData = z.output<typeof diplomadoCheckoutSchema>;

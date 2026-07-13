@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   const { data: existing } = await supabase
     .from("payments")
     .select(
-      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp",
+      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp, document_type, invoice_data",
     )
     .eq("flow_token", token)
     .single();
@@ -136,6 +136,8 @@ export async function POST(req: Request) {
       plan: existing.plan,
       couponCode: existing.coupon_code,
       discountClp: existing.discount_clp,
+      documentType: existing.document_type,
+      invoiceData: existing.invoice_data as Record<string, string> | null,
     };
 
     const [studentResult, teamResult] = await Promise.all([

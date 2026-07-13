@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cleanRut, isValidRut } from "@/lib/utils/rut";
+import { invoiceExtension, refineInvoice } from "@/lib/payments/invoice";
 
 /**
  * Programa de Liderazgo y Gestión de Equipos Comerciales.
@@ -153,7 +154,8 @@ export const liderazgoCheckoutSchema = z.object({
     .transform((v) => v.toUpperCase())
     .optional()
     .or(z.literal("").transform(() => undefined)),
-});
+  ...invoiceExtension,
+}).superRefine(refineInvoice);
 
 export type LiderazgoCheckoutInput = z.input<typeof liderazgoCheckoutSchema>;
 export type LiderazgoCheckoutData = z.output<typeof liderazgoCheckoutSchema>;

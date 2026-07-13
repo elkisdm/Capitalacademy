@@ -1485,6 +1485,7 @@ export type Database = {
           created_at: string
           currency: string
           discount_clp: number | null
+          document_type: string
           email: string
           failure_reason: string | null
           fintoc_payment_id: string | null
@@ -1493,6 +1494,7 @@ export type Database = {
           flow_order: number | null
           flow_token: string | null
           id: string
+          invoice_data: Json | null
           ip_address: unknown
           lastname: string
           paid_at: string | null
@@ -1513,6 +1515,7 @@ export type Database = {
           created_at?: string
           currency?: string
           discount_clp?: number | null
+          document_type?: string
           email: string
           failure_reason?: string | null
           fintoc_payment_id?: string | null
@@ -1521,6 +1524,7 @@ export type Database = {
           flow_order?: number | null
           flow_token?: string | null
           id?: string
+          invoice_data?: Json | null
           ip_address?: unknown
           lastname: string
           paid_at?: string | null
@@ -1541,6 +1545,7 @@ export type Database = {
           created_at?: string
           currency?: string
           discount_clp?: number | null
+          document_type?: string
           email?: string
           failure_reason?: string | null
           fintoc_payment_id?: string | null
@@ -1549,6 +1554,7 @@ export type Database = {
           flow_order?: number | null
           flow_token?: string | null
           id?: string
+          invoice_data?: Json | null
           ip_address?: unknown
           lastname?: string
           paid_at?: string | null

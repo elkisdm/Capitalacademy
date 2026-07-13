@@ -6,6 +6,7 @@ import {
   LIDERAZGO_PROGRAM_NAME,
   LIDERAZGO_PROGRAM_SHORT,
 } from "@/lib/programs/liderazgo";
+import { formatRut } from "@/lib/utils/rut";
 
 const DIPLOMADO_PROGRAM_NAME =
   "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria";
@@ -40,6 +41,8 @@ interface PaymentConfirmationInput {
   plan: string | null;
   couponCode?: string | null;
   discountClp?: number | null;
+  documentType?: string | null;
+  invoiceData?: Record<string, string> | null;
 }
 
 // Etiqueta legible del plan para mostrar en el email. Para pagos antiguos
@@ -137,12 +140,13 @@ export async function sendPaymentTeamNotification(
     data.couponCode && data.discountClp && data.discountClp > 0
       ? moneyFormatter.format(data.discountClp)
       : null;
+  const isFactura = data.documentType === "factura";
 
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipient,
-      subject: `Pago recibido · ${program.short} · ${data.firstname} ${data.lastname} · ${amount}`,
+      subject: `Pago recibido · ${program.short} · ${data.firstname} ${data.lastname} · ${amount}${isFactura ? " · FACTURA" : ""}`,
       html: teamEmailHtml({
         ...data,
         amount,
@@ -314,6 +318,25 @@ function teamEmailHtml(d: RenderInput): string {
         <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Payment ID</td><td style="padding:8px 0;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12px;color:#3a14c7;">${escapeHtml(d.paymentId)}</td></tr>
       </table>
     </td></tr>
+    ${
+      d.documentType === "factura" && d.invoiceData
+        ? `<tr><td style="padding:8px 24px 4px 24px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:1.6;border-collapse:collapse;border-top:1px solid rgba(91,45,235,0.12);padding-top:8px;">
+        <tr><td colspan="2" style="padding:12px 0 4px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:800;color:#0d1340;">Datos de factura</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;width:120px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Razón social</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.invoiceData.razonSocial ?? "")}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">RUT empresa</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(formatRut(d.invoiceData.rut ?? ""))}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Giro</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.invoiceData.giro ?? "")}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Dirección</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.invoiceData.direccion ?? "")}</td></tr>
+        <tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Comuna</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.invoiceData.comuna ?? "")}</td></tr>
+        ${
+          d.invoiceData.email
+            ? `<tr><td style="padding:8px 0;color:#5b2deb;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Email facturación</td><td style="padding:8px 0;color:#0d1340;">${escapeHtml(d.invoiceData.email)}</td></tr>`
+            : ""
+        }
+      </table>
+    </td></tr>`
+        : ""
+    }
     <tr><td style="padding:18px 24px;background:#f9faff;border-top:1px solid rgba(91,45,235,0.12);font-size:12px;color:#5b2deb;line-height:1.6;">
       <strong style="color:#0d1340;">Tip:</strong> responde este correo para contactar al alumno directamente — el reply va a su email.
     </td></tr>
@@ -334,6 +357,20 @@ function teamEmailText(d: RenderInput): string {
       ? [`Cupón: ${d.couponCode} (−${d.discountFormatted})`]
       : []),
     `Payment ID: ${d.paymentId}`,
+    ...(d.documentType === "factura" && d.invoiceData
+      ? [
+          "",
+          "Datos de factura:",
+          `Razón social: ${d.invoiceData.razonSocial ?? ""}`,
+          `RUT empresa: ${formatRut(d.invoiceData.rut ?? "")}`,
+          `Giro: ${d.invoiceData.giro ?? ""}`,
+          `Dirección: ${d.invoiceData.direccion ?? ""}`,
+          `Comuna: ${d.invoiceData.comuna ?? ""}`,
+          ...(d.invoiceData.email
+            ? [`Email facturación: ${d.invoiceData.email}`]
+            : []),
+        ]
+      : []),
     "",
     "Responde este correo para contactar al alumno directamente.",
   ].join("\n");

@@ -8,6 +8,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- En el checkout de pago ahora puedes elegir boleta o factura; al elegir factura se piden los datos de la empresa (razón social, RUT, giro, dirección y correo de contacto) y le llegan al equipo junto al aviso de pago (`d9b8c97`)
+- Los archivos de la sección Recursos (y de cada lección) ahora se pueden ver directamente en la plataforma con el botón "Ver", además de descargarse (`340c947`)
 - Home del alumno rediseñada: temario en acordeón, hero compacto y progreso siempre visible (`23e5d0e`)
 - Correo de confirmación automático al recibir una entrega (`23e5d0e`)
 - Aviso por correo cuando la grabación de una clase queda disponible (`23e5d0e`)

@@ -66,6 +66,7 @@
 | `app/api/admin/sessions/route.ts` · `[sessionId]/route.ts` | CRUD de sesiones de clase de una cohorte | `POST/PATCH/DELETE /api/admin/sessions` | 0008 |
 | `app/api/admin/session-resources/route.ts` · `upload-url/route.ts` | Recursos de una sesión: link o **archivo subido** (≤50MB, bucket privado `lesson-resources`); DELETE limpia el objeto; gateado por `requireSessionStaff` (staff o docente de esa cohorte) | `/api/admin/session-resources` | 0008, 0013 |
 | `components/admin/session-resources-panel.tsx` | UI de material de la clase (subir/enlazar/borrar recurso); extraído de `sessions-manager-client.tsx` para reusarlo en el panel del profesor | — | 0013 |
+| `components/admin/session-delete-dialog.tsx` | Confirmación de borrado de una sesión: lista la cascada real (asistencia, repetición/Mux, recursos, quiz) antes de eliminar | — | — |
 | `app/api/admin/enrollment-segment/route.ts` | Asignación manual del segmento "Capital Inteligente" a una matrícula | `/api/admin/enrollment-segment` | 0008 |
 | `components/admin/segment-toggle.tsx` | Toggle admin del segmento de un alumno | — | 0008 |
 | `app/(classroom)/classroom/[cohortSlug]/calendario/` | Calendario de clases del alumno (vista lista + mes, recursos por sesión, CTA "Responder quiz" si la sesión tiene evaluación `scope='session'` activa) | `/classroom/[cohortSlug]/calendario` | 0008 |
@@ -97,6 +98,7 @@
 | `app/api/admin/sessions/[sessionId]/attendance/bulk/route.ts` | Marca o quita, en un solo round-trip, la asistencia de varios alumnos a la vez | `POST /api/admin/sessions/[sessionId]/attendance/bulk` | 0013 |
 | `components/admin/session-qr.tsx` | QR imprimible por sesión para el PPT del docente (admin) | — | — |
 | `components/admin/session-attendance-panel.tsx` | Reportería + toggle de marcado manual en el editor de sesión | — | — |
+| `components/admin/session-attendance-button.tsx` | Botón + modal que monta `SessionAttendancePanel` on-demand (patrón `SessionQrButton`) desde la card de la sesión, sin entrar a Editar | — | — |
 | `scripts/test-asistencia-e2e.mjs` | E2E autolimpiante del check-in (datos de prueba efímeros contra la BD real) | — | — |
 
 ## Panel docente
@@ -117,6 +119,8 @@
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/page.tsx` | Lista de lecciones del módulo | `/classroom/[cohortSlug]/[moduleSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/[moduleSlug]/[lessonSlug]/page.tsx` | Reproductor de lección: video Mux, transcripción, resumen, comentarios y progreso | `…/[lessonSlug]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/clase/[sessionId]/page.tsx` | Pantalla de una clase EN VIVO: cabecera (fecha/docente/modalidad), **repetición** (reusa `LessonVideoSection` con la lección `recorded` enlazada), material y quiz de la sesión. Entrada desde la lista de clases del módulo | `/classroom/[cohortSlug]/clase/[sessionId]` | 0041 |
+| `components/classroom/class-material.tsx` · `class-transcript-panel.tsx` | Material y transcripción de la pantalla de clase en vivo: `ClassMaterial` lista los recursos con acciones Ver (visor in-app) y Descargar; `ClassTranscriptPanel` es el drawer de transcripción sin sidebar de playlist (a diferencia de `CollapsiblePlaylist`) | en `…/clase/[sessionId]` | — |
+| `components/classroom/document-viewer.tsx` · `lib/classroom/resource-viewer.ts` | Visor de documentos in-app: PDF con render propio (`pdf.js`) y Office (ppt/word/excel) vía Microsoft Office Online; `detectViewerKind` decide el modo por extensión y nunca renderiza HTML/SVG inline (se degrada a descarga forzada, por seguridad) | — | — |
 | `app/(classroom)/classroom/profile/page.tsx` | Perfil editable del alumno (foto, RUT, cumpleaños) | `/classroom/profile` | — |
 | `app/api/classroom/profile/route.ts` | Actualización PARCIAL del perfil (editor inline campo por campo); a diferencia de onboarding, full_name/phone/rut son opcionales | `PATCH /api/classroom/profile` | — |
 | `app/(classroom)/classroom/[cohortSlug]/recursos/page.tsx` | Centro de recursos del programa: reúne el material de clases grabadas y en vivo | `/classroom/[cohortSlug]/recursos` | — |
@@ -127,6 +131,7 @@
 | `components/classroom/` | UI del classroom: `video-player`, `sidebar`, `comment-section`, `transcript-panel`, `summary-card`, `quiz-*`, `collapsible-playlist` | — | — |
 | `components/classroom/comment-section.tsx` | Comentarios de lección: 1 nivel de respuesta, edición propia ("(editado)"), moderación (staff borra comentarios ajenos), badge Profesor/Equipo, timestamps `mm:ss` clicables que saltan el video (`onSeek`), linkify, paginación "cargar más" | — | 0014 |
 | `app/(classroom)/classroom/go/thread/[threadId]/page.tsx` · `go/lesson/[lessonId]/page.tsx` | Rutas neutras de redirección: resuelven `program_id` del hilo/lección → cohorte del viewer con acceso (matrícula, teacher/assistant o admin/ops) → `redirect()` a la URL real, o `notFound()`. Único mecanismo para los enlaces de campana y correo (foro y lección), evita 404 cross-programa/cross-cohorte | `/classroom/go/thread/[id]`, `/classroom/go/lesson/[id]` | 0014 |
+| `lib/classroom/resolve-viewer-cohort.ts` | `resolveViewerCohortForProgram`: dado un `programId`, resuelve una cohorte donde el viewer tenga acceso (matrícula active/completed → docente/asistente → staff transversal), sin distinguir "no existe" de "sin acceso"; usado por las rutas `classroom/go/*` | — | 0014 |
 | `lib/notifications/lesson-comment.ts` | `notifyLessonComment`: notifica (campana + correo, admin client) respuestas y comentarios nuevos de lección — `lesson_reply` al autor del padre, `lesson_comment_new` a los docentes/asistentes del programa; cooldown de correo de 1h por usuario/lección | — | 0014 |
 | `lib/profiles/program-staff.ts` | `getProgramStaffIds`: resuelve el set de `user_id` staff de un programa (`cohort_roles` teacher/assistant + admin/ops transversal), para overlayar el badge "Profesor/Equipo" sobre `getPublicAuthorsMap` | — | 0014 |
 | `lib/classroom/queries.ts` · `admin-queries.ts` | Lecturas de módulos/lecciones/progreso (alumno y admin); `getModulesWithLessons` excluye del playlist las lecciones-repetición de clases en vivo; `getSessionForStudent` arma la pantalla de clase | — | — |
@@ -176,14 +181,14 @@
 | `lib/classroom/quiz-question-schema.ts` | Validación zod del payload de pregunta por tipo + `payloadToDbFields` (compartido por la API admin) | — | — |
 | `components/admin/quiz/question-draft.ts` · `question-editor.tsx` | Borrador editable de pregunta (4 tipos, N opciones) + editor UI dinámico, reusado por `add-question-form` y `question-card` | — | — |
 | `components/admin/quiz/lesson-quiz-panel.tsx` | Panel embebido en el editor de lección: crea (si no existe) la evaluación `scope='lesson'` y delega su gestión en `evaluation-panel` | en `/admin/lessons/[lessonId]` | — |
-| `components/admin/quiz/evaluaciones-tab.tsx` | Pestaña central del admin de quizes: lista evaluaciones por scope (final/módulo/lección), crea eligiendo target y gestiona inline | en `/admin/quizzes` | — |
+| `components/admin/quiz/evaluaciones-tab.tsx` | Pestaña central del admin de quizes: lista evaluaciones por scope (final/módulo/clase en vivo/lección, sin repeticiones), crea eligiendo target y gestiona inline | en `/admin/quizzes` | — |
 | `components/admin/quiz/evaluation-panel.tsx` | Gestor genérico de UNA evaluación (cualquier scope) en 3 pestañas (Preguntas colapsables · Ajustes · Respuestas); activar/desactivar, compartir, borrado seguro; reusado por `lesson-quiz-panel`, `session-quiz-panel` y `evaluaciones-tab` | — | — |
 | `components/admin/quiz/evaluation-settings.tsx` | Pestaña "Ajustes": edita config (intentos, % aprobación, preguntas por intento, tiempo) vía PATCH de la evaluación | — | — |
 | `components/admin/quiz/evaluation-attempts.tsx` | Pestaña "Respuestas": intentos de la evaluación + drill-down pregunta a pregunta (respuesta del alumno vs correcta) | — | — |
 | `components/admin/quiz/session-quiz-panel.tsx` | Panel embebido en el editor de sesiones: crea (si no existe) la evaluación `scope='session'` ligada a la clase en vivo y delega en `evaluation-panel` | en `/admin/cohorts/[id]/sesiones` | — |
 | `app/api/admin/evaluations/[evaluationId]/attempts/route.ts` | Intentos de UNA evaluación + desglose server-side (reusa `scoreAnswer`) para la pestaña Respuestas | `GET /api/admin/evaluations/[id]/attempts` | — |
 | `components/admin/quiz/share-quiz-dialog.tsx` | Diálogo de compartir: enlace deep-link + QR (`qrcode`) hacia `/classroom/quiz/[evaluationId]` | — | — |
-| `app/api/admin/evaluations/targets/route.ts` | Módulos + lecciones del programa para los selectores de creación de evaluaciones | `GET /api/admin/evaluations/targets` | — |
+| `app/api/admin/evaluations/targets/route.ts` | Módulos, lecciones (con flag `isRecording` para repeticiones) y clases en vivo del programa para los selectores de creación de evaluaciones | `GET /api/admin/evaluations/targets` | — |
 | `app/api/classroom/quiz/route.ts` | Estado/gating del quiz del alumno (locked/ready/passed); NO entrega preguntas | `GET /api/classroom/quiz` | — |
 | `app/api/classroom/quiz/start/route.ts` | Inicia/reanuda intento: persiste `questions_presented` server-side (ancla anti-bypass) | `POST /api/classroom/quiz/start` | — |
 | `app/api/classroom/quiz/submit/route.ts` | Cierra el intento y puntúa sobre el set persistido (cierra el bypass de certificación); el final lee config de `evaluations(scope='final')` | `POST /api/classroom/quiz/submit` | — |
@@ -218,6 +223,7 @@
 | `app/(admin)/admin/{resources,quizzes,progress}/page.tsx` | Recursos, quizzes y reporte de progreso por cohorte | `/admin/…` | — |
 | `app/(admin)/admin/alumnos/page.tsx` + `student-table.tsx` + `cohort-filter.tsx` | Panel roster por alumno del entorno activo: asistencia, avance de lecciones y evaluaciones en una tabla, con búsqueda, filtro "en riesgo" y drill-down | `/admin/alumnos` | — |
 | `lib/admin/student-panel-queries.ts` | `getStudentPanelReport(programId, cohortId?)`: agrega asistencia/avance/evaluaciones por alumno en consultas bulk (sin N+1), service-role | — | — |
+| `components/admin/students/shared.tsx` | Componentes presentacionales compartidos por `/admin/alumnos` y `/admin/progress` (StatStrip, hook `useIsDesktop`, etc.), agnósticos del dominio (props planas, no tipos de queries) | — | — |
 | `app/api/admin/users/` (`route`·`bulk`·`template`·`[userId]`) | CRUD de usuarios + importación CSV masiva | — | — |
 | `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |
 | `app/api/admin/send-invitation/route.ts` | Envío/reenvío de invitación por email | — | — |

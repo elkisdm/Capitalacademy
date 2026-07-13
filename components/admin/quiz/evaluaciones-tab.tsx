@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/admin/toast";
 import type { Evaluation, EvaluationScope } from "./types";
+import { formatDate } from "./types";
 import { EvaluationPanel } from "./evaluation-panel";
 import { LoaderIcon } from "./icons";
 
 type EvalItem = Evaluation & { questionCount?: number };
 type ModuleTarget = { id: string; title: string };
-type LessonTarget = { id: string; title: string; moduleId: string; moduleTitle: string };
+type LessonTarget = { id: string; title: string; moduleId: string; moduleTitle: string; isRecording: boolean };
+type SessionTarget = { id: string; title: string | null; startsAt: string; moduleTitle: string | null; cohortName: string };
 
 /**
  * Pestaña central de evaluaciones del programa. Lista todas las evaluaciones
@@ -24,6 +26,7 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
   const [evals, setEvals] = useState<EvalItem[]>([]);
   const [modules, setModules] = useState<ModuleTarget[]>([]);
   const [lessons, setLessons] = useState<LessonTarget[]>([]);
+  const [sessions, setSessions] = useState<SessionTarget[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [creating, setCreating] = useState<string | null>(null);
   const { toast, ToastContainer } = useToast();
@@ -41,9 +44,10 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
         setEvals(evaluations ?? []);
       }
       if (tgRes.ok) {
-        const { modules: m, lessons: l } = await tgRes.json();
+        const { modules: m, lessons: l, sessions: s } = await tgRes.json();
         setModules(m ?? []);
         setLessons(l ?? []);
+        setSessions(s ?? []);
       }
     } finally {
       setLoading(false);
@@ -64,13 +68,22 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
     () => new Map(evals.filter((e) => e.scope === "lesson" && e.lesson_id).map((e) => [e.lesson_id!, e])),
     [evals],
   );
+  const evalBySession = useMemo(
+    () => new Map(evals.filter((e) => e.scope === "session" && e.session_id).map((e) => [e.session_id!, e])),
+    [evals],
+  );
+  const multiCohort = useMemo(() => new Set(sessions.map((s) => s.cohortName)).size > 1, [sessions]);
+  const contentLessons = useMemo(
+    () => lessons.filter((l) => !l.isRecording || evalByLesson.has(l.id)),
+    [lessons, evalByLesson],
+  );
   const selectedEval = useMemo(() => evals.find((e) => e.id === selected) ?? null, [evals, selected]);
 
   const create = async (
     scope: EvaluationScope,
     title: string,
     key: string,
-    target?: { moduleId?: string; lessonId?: string },
+    target?: { moduleId?: string; lessonId?: string; sessionId?: string },
   ) => {
     setCreating(key);
     try {
@@ -152,14 +165,45 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
           )}
         </section>
 
+        {/* Por clase en vivo */}
+        <section>
+          <SectionTitle>Por clase en vivo</SectionTitle>
+          {sessions.length === 0 ? (
+            <EmptyHint>Este programa aún no tiene clases en vivo.</EmptyHint>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {sessions.map((s) => {
+                const displayTitle = s.title?.trim() || "Clase en vivo";
+                const subtitle = [s.moduleTitle, formatDate(s.startsAt), multiCohort ? s.cohortName : null]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <EvalCard
+                    key={s.id}
+                    title={displayTitle}
+                    subtitle={subtitle}
+                    evalItem={evalBySession.get(s.id) ?? null}
+                    rowKey={`session:${s.id}`}
+                    creating={creating}
+                    onToggle={setSelected}
+                    onCreate={() =>
+                      create("session", `Quiz de clase: ${displayTitle}`, `session:${s.id}`, { sessionId: s.id })
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {/* Por lección */}
         <section>
           <SectionTitle>Por lección</SectionTitle>
-          {lessons.length === 0 ? (
+          {contentLessons.length === 0 ? (
             <EmptyHint>Este programa aún no tiene lecciones.</EmptyHint>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {lessons.map((l) => (
+              {contentLessons.map((l) => (
                 <EvalCard
                   key={l.id}
                   title={l.title}

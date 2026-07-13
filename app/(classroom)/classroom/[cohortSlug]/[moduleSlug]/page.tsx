@@ -17,8 +17,9 @@ import {
   LessonStatusIcon,
   BrandShapes,
 } from "@/components/classroom/primitives";
-import type { LessonWithProgress, ScheduleSession, SessionResourceType } from "@/lib/classroom/types";
+import type { LessonWithProgress, ScheduleSession } from "@/lib/classroom/types";
 import { fmtDuration } from "@/lib/classroom/format";
+import { ClassMaterial } from "@/components/classroom/class-material";
 
 function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
   lesson: LessonWithProgress;
@@ -149,14 +150,6 @@ const MODALITY_LABEL: Record<string, string> = {
   recorded: "Grabada",
 };
 
-const RESOURCE_ICON: Record<SessionResourceType | "other", string> = {
-  pdf: "📄",
-  link: "🔗",
-  template: "📋",
-  document: "📝",
-  other: "📎",
-};
-
 function fmtSessionDate(iso: string) {
   return new Intl.DateTimeFormat("es-CL", {
     timeZone: TZ,
@@ -226,23 +219,7 @@ function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession;
           </a>
         )}
       </div>
-      {session.resources.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {session.resources.map((r) => (
-            <a
-              key={r.id}
-              href={r.url ?? undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-disabled={r.url ? undefined : true}
-              className={`inline-flex items-center gap-1.5 rounded-xl border border-ca-ink/[0.1] bg-ca-surface px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet${r.url ? "" : " pointer-events-none opacity-60"}`}
-            >
-              <span>{RESOURCE_ICON[r.type] ?? RESOURCE_ICON.other}</span>
-              {r.title}
-            </a>
-          ))}
-        </div>
-      )}
+      {session.resources.length > 0 && <ClassMaterial resources={session.resources} />}
       <Link
         href={classHref}
         className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-ca-ink/[0.06] px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:bg-ca-ink hover:text-white"

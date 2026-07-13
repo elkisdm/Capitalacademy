@@ -156,7 +156,7 @@ export default async function RecursosPage(
                         </span>
                         <span className="ml-2 text-[12px] text-ca-ink-soft">{fmtDate(s.starts_at)}</span>
                       </div>
-                      <ResourceList resources={resources} />
+                      <ResourceList resources={resources} table="session" />
                     </div>
                   );
                 })}

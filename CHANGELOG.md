@@ -34,6 +34,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- El menú del classroom ahora sigue al programa que estás viendo: alumnos con varios programas llegan a los entregables y recursos correctos, y al cambiar de entorno (staff) todos los links del menú se actualizan, no solo el inicio. (cc796c7)
 - Los programas en vivo ya no muestran "0 lecciones": ahora cuentan sus clases en vivo (`23e5d0e`)
 - Las notificaciones por correo ya no se pierden si un envío se interrumpe a la mitad; se reintentan solas (`23e5d0e`)
 - Un usuario de staff/operación sin matrícula ya puede editar su perfil en el classroom: antes cualquier guardado fallaba porque el formulario reenviaba nombre, teléfono y RUT completos y esos campos estaban vacíos en su cuenta

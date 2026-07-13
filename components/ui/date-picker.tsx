@@ -214,6 +214,9 @@ export function DatePicker({
       const target = e.target as Node;
       if (containerRef.current?.contains(target)) return;
       if (popoverRef.current?.contains(target)) return;
+      // Los Select de hora/minuto portalean su lista a document.body: un clic
+      // ahí no es "fuera" del picker, es parte de la interacción de hora.
+      if (target instanceof Element && target.closest("[data-select-popover]")) return;
       setOpen(false);
     }
     function onKey(e: KeyboardEvent) {

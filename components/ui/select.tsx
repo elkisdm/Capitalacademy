@@ -353,6 +353,7 @@ export function Select({
   const popover = (
     <div
       ref={popoverRef}
+      data-select-popover=""
       tabIndex={-1}
       onKeyDown={onPopoverKeyDown}
       aria-activedescendant={!isSearchable ? optionId(activeIndex) : undefined}

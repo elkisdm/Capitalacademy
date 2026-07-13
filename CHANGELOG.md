@@ -35,6 +35,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 - El menú del classroom ahora sigue al programa que estás viendo: alumnos con varios programas llegan a los entregables y recursos correctos, y al cambiar de entorno (staff) todos los links del menú se actualizan, no solo el inicio. (cc796c7)
+- Ver y descargar recursos ya no falla cuando la página lleva horas abierta: el enlace se genera fresco en cada clic, en todas las pantallas (lección, módulo, recursos y clase en vivo). (9ded24a)
 - Los programas en vivo ya no muestran "0 lecciones": ahora cuentan sus clases en vivo (`23e5d0e`)
 - Las notificaciones por correo ya no se pierden si un envío se interrumpe a la mitad; se reintentan solas (`23e5d0e`)
 - Un usuario de staff/operación sin matrícula ya puede editar su perfil en el classroom: antes cualquier guardado fallaba porque el formulario reenviaba nombre, teléfono y RUT completos y esos campos estaban vacíos en su cuenta

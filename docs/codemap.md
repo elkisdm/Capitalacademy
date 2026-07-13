@@ -29,6 +29,7 @@
 | `lib/fintoc/` | Schema de form del checkout (aún importado en la ruta de pago) | — | — |
 | `lib/cobro/sign.ts` | Firma/verifica el monto del cobro genérico (HMAC-SHA256) | — | — |
 | `lib/cobro/plans.ts` | Planes de cuotas del cobro (factor de recargo contado/6/12) + `resolveCobroAmount` | — | — |
+| `lib/payments/invoice.ts` | Boleta/factura del checkout: schema de datos de facturación (jsonb), `invoiceExtension` y `refineInvoice` compartidos por Diplomado y Liderazgo | — | — |
 | `lib/payments/provider.ts` | Resuelve el provider activo (`PAYMENT_PROVIDER`) | — | — |
 | `scripts/generate-cobro-link.mjs` | Genera enlaces de cobro firmados (hasta tener página admin) | — | — |
 
@@ -40,6 +41,7 @@
 | `scripts/send-diplomado-whatsapp.mjs` | Envío masivo de la plantilla `diplomado_4ta_gen_captacion` a la base externa (dry-run, throttle, idempotente) | `--send` | — |
 | `docs/marketing/telefonos-bd-externa.csv` | Base externa Diplomado 4ª gen: 169 teléfonos E.164 (canal WhatsApp) | — | — |
 | `scripts/send-test-brevo.mjs` | Envío de prueba del correo (Brevo transaccional); el blast masivo va por dashboard Brevo | — | — |
+| `scripts/send-novedades-alumnos.mjs` | Envío one-off por Resend del correo de novedades (2026-07-12) a alumnos activos, segmentado por programa; idempotente vía log local | `--list` / `--dry-run` / `preview` / `send` | — |
 
 ## Acceso / Onboarding
 
@@ -127,7 +129,7 @@
 | `app/(classroom)/classroom/guia/page.tsx` · `guia/[slug]/page.tsx` | Centro de ayuda: índice con buscador + página por tema; `lib/guide/content.tsx` es la fuente del contenido | `/classroom/guia`, `/classroom/guia/[slug]` | — |
 | `components/classroom/guide/guide-index-client.tsx` · `support-card.tsx` | Índice de ayuda (buscador/categorías) + tarjeta de soporte (mensaje + adjuntos) | — | — |
 | `app/api/support/route.ts` · `lib/email/support-request.ts` | Soporte in-app: recibe mensaje + adjuntos y los envía por correo al equipo | `POST /api/support` | — |
-| `components/classroom/mark-complete-button.tsx` · `resource-list.tsx` | Botón "marcar completada" y lista de materiales de la lección (descarga con URL firmada) | — | — |
+| `components/classroom/mark-complete-button.tsx` · `resource-list.tsx` | Botón "marcar completada" y grilla de materiales (descarga con URL firmada + acción "Ver" con visor in-app `document-viewer`) | — | — |
 | `components/classroom/` | UI del classroom: `video-player`, `sidebar`, `comment-section`, `transcript-panel`, `summary-card`, `quiz-*`, `collapsible-playlist` | — | — |
 | `components/classroom/comment-section.tsx` | Comentarios de lección: 1 nivel de respuesta, edición propia ("(editado)"), moderación (staff borra comentarios ajenos), badge Profesor/Equipo, timestamps `mm:ss` clicables que saltan el video (`onSeek`), linkify, paginación "cargar más" | — | 0014 |
 | `app/(classroom)/classroom/go/thread/[threadId]/page.tsx` · `go/lesson/[lessonId]/page.tsx` | Rutas neutras de redirección: resuelven `program_id` del hilo/lección → cohorte del viewer con acceso (matrícula, teacher/assistant o admin/ops) → `redirect()` a la URL real, o `notFound()`. Único mecanismo para los enlaces de campana y correo (foro y lección), evita 404 cross-programa/cross-cohorte | `/classroom/go/thread/[id]`, `/classroom/go/lesson/[id]` | 0014 |

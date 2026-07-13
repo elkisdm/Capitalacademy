@@ -80,3 +80,6 @@ reunion_capital_academy.*
 # Archivos sueltos / artefactos generados (NO versionar)
 /*.dc.html
 /deno.lock
+
+# Logs locales de scripts one-off (anti-duplicado de envíos)
+/scripts/.sent-novedades-2026-07-12.json

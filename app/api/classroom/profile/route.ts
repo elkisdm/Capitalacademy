@@ -105,6 +105,12 @@ export async function PATCH(req: Request) {
 
   if (error) {
     console.error("classroom profile update error:", error);
+    if (error.code === "23505") {
+      return NextResponse.json(
+        { error: "Este RUT ya está registrado en otra cuenta. Contacta a soporte." },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       { error: "Error al actualizar perfil" },
       { status: 500 },

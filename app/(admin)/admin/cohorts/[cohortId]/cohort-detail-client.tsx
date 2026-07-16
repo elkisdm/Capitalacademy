@@ -10,9 +10,11 @@ import {
   type CohortRole,
 } from "@/components/admin/user-primitives";
 import { SegmentToggle } from "@/components/admin/segment-toggle";
+import { AssignParticipantModal } from "@/components/admin/assign-participant-modal";
+import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
-import type { CohortMember } from "@/lib/admin/user-queries";
+import type { AdminUserListItem, CohortMember } from "@/lib/admin/user-queries";
 import Link from "next/link";
 import {
   ArrowLeftIcon,
@@ -114,14 +116,18 @@ export function CohortDetailClient({
   cohort,
   program,
   members,
+  users,
 }: {
   cohort: CohortInfo;
   program: ProgramInfo;
   members: Members;
+  users: AdminUserListItem[];
 }) {
   const router = useRouter();
+  const { toast, ToastContainer } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("participantes");
   const [search, setSearch] = useState("");
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
 
   const totalCount =
     members.teachers.length + members.assistants.length + members.students.length;
@@ -207,10 +213,43 @@ export function CohortDetailClient({
       )}
 
       {activeTab === "info" && (
-        <InfoTab cohort={cohort} program={program} members={members} />
+        <InfoTab
+          cohort={cohort}
+          program={program}
+          members={members}
+          onOpenAssignParticipant={() => setAssignModalOpen(true)}
+        />
       )}
 
       {activeTab === "progreso" && <ProgresoTab />}
+
+      <AssignParticipantModal
+        open={assignModalOpen}
+        cohortId={cohort.id}
+        cohortName={cohort.name}
+        users={users}
+        onClose={() => setAssignModalOpen(false)}
+        onAssign={async (data) => {
+          const res = await fetch("/api/admin/cohort-roles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: data.userId,
+              cohort_id: cohort.id,
+              role: data.role,
+            }),
+          });
+          if (res.ok) {
+            setAssignModalOpen(false);
+            toast("Participante asignado", "success");
+            router.refresh();
+          } else {
+            const err = await res.json().catch(() => ({}));
+            toast(err.error ?? "Error al asignar rol", "error");
+          }
+        }}
+      />
+      <ToastContainer />
     </div>
   );
 }
@@ -398,10 +437,12 @@ function InfoTab({
   cohort,
   program,
   members,
+  onOpenAssignParticipant,
 }: {
   cohort: CohortInfo;
   program: ProgramInfo;
   members: Members;
+  onOpenAssignParticipant: () => void;
 }) {
   const totalCount =
     members.teachers.length + members.assistants.length + members.students.length;
@@ -416,7 +457,7 @@ function InfoTab({
     { label: "Ayudantes", value: String(members.assistants.length) },
   ];
 
-  const actions: { label: string; icon: React.ComponentType<{ size?: number }>; description: string; href?: string }[] = [
+  const actions: { label: string; icon: React.ComponentType<{ size?: number }>; description: string; href?: string; onClick?: () => void }[] = [
     {
       label: "Gestionar calendario",
       icon: CalendarIcon,
@@ -427,6 +468,7 @@ function InfoTab({
       label: "Agregar participante",
       icon: PlusIcon,
       description: "Asigna un profesor, ayudante o alumno",
+      onClick: onOpenAssignParticipant,
     },
     {
       label: "Subir video",
@@ -510,15 +552,30 @@ function InfoTab({
                 </div>
               </>
             );
-            return action.href ? (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left transition-colors hover:border-ca-violet/40 hover:bg-ca-bg-soft"
-              >
-                {inner}
-              </Link>
-            ) : (
+            if (action.href) {
+              return (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left transition-colors hover:border-ca-violet/40 hover:bg-ca-bg-soft"
+                >
+                  {inner}
+                </Link>
+              );
+            }
+            if (action.onClick) {
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={action.onClick}
+                  className="flex items-center gap-4 rounded-xl border border-ca-ink/[0.08] p-4 text-left transition-colors hover:border-ca-violet/40 hover:bg-ca-bg-soft"
+                >
+                  {inner}
+                </button>
+              );
+            }
+            return (
               <button
                 key={action.label}
                 disabled

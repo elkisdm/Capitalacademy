@@ -160,6 +160,9 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
       setAssignModalOpen(false);
       toast("Rol asignado", "success");
       router.refresh();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast(err.error ?? "Error al asignar rol", "error");
     }
   };
 

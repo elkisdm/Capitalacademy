@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCohortMembers } from "@/lib/admin/user-queries";
+import { getAdminUsersList, getCohortMembers } from "@/lib/admin/user-queries";
 import { CohortDetailClient } from "./cohort-detail-client";
 
 export default async function AdminCohortDetailPage(
@@ -34,6 +34,7 @@ export default async function AdminCohortDetailPage(
   if (!cohort) notFound();
 
   const members = await getCohortMembers(cohortId);
+  const users = await getAdminUsersList(cohort.program_id);
 
   const program = cohort.programs as {
     id: string;
@@ -66,6 +67,7 @@ export default async function AdminCohortDetailPage(
             : null
         }
         members={members}
+        users={users}
       />
     </div>
   );

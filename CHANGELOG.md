@@ -37,6 +37,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- La hora de tu próxima clase ahora se muestra en hora de Chile: se veía varias horas más tarde de lo real (`522cfdf`)
+- Las fechas de inicio y término de una cohorte ya no se muestran un día antes (`33c4b81`)
 - Los recordatorios de clase ya no se pierden ni se repiten cuando la cohorte es grande: se envían por lote y se reintentan solo a quien le faltó el correo (`cbfc2fa`)
 - La alerta de inasistencias ya no llega a programas gratuitos o de captación que no la tienen activada; por ahora solo se envía en el Diplomado (`7b8c3f8`)
 - Comprar un programa ya no le quita los permisos a un administrador o profesor que use su misma cuenta: la matrícula automática ya no pisa el rol ni el nombre de un perfil que ya existía (`af9b097`)

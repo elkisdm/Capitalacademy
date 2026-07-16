@@ -219,9 +219,10 @@ type EnrollmentSegmentRow = {
 
 /**
  * Alumnos que acumulan `threshold` o más inasistencias a sesiones EN VIVO ya
- * cerradas (sin registro en `session_attendance`) en sus cohortes activas.
- * Respeta audiencia: una sesión `audience='capital_inteligente'` solo cuenta
- * para alumnos con `enrollments.segment='capital_inteligente'`.
+ * cerradas (sin registro en `session_attendance`) en sus cohortes activas
+ * de programas con `attendance_alerts_enabled = true`. Respeta audiencia: una
+ * sesión `audience='capital_inteligente'` solo cuenta para alumnos con
+ * `enrollments.segment='capital_inteligente'`.
  *
  * Todo con service_role: el llamador (cron) no tiene sesión de usuario.
  */
@@ -230,10 +231,24 @@ export async function getStudentsAtAbsenceThreshold(
 ): Promise<StudentAbsence[]> {
   const admin = createAdminClient();
 
+  // Solo programas con la alerta activada (migración 0076). Default false: un
+  // entorno nuevo NO hereda la alerta. ADR-0013 la definió para el Diplomado;
+  // el resto se activa con un UPDATE, sin deploy. Sin esto, CAP-CI (239
+  // matrículas, cupo real ~40 por sesión) recibiría la advertencia completa.
+  const { data: programsRaw } = await admin
+    .from("programs")
+    .select("id")
+    .eq("attendance_alerts_enabled", true);
+  const enabledProgramIds = ((programsRaw ?? []) as Array<{ id: string }>).map(
+    (p) => p.id,
+  );
+  if (enabledProgramIds.length === 0) return [];
+
   const { data: cohortsRaw } = await admin
     .from("cohorts")
     .select("id, program_id, name")
-    .eq("status", "active");
+    .eq("status", "active")
+    .in("program_id", enabledProgramIds);
   const cohorts = (cohortsRaw ?? []) as CohortRow[];
   if (cohorts.length === 0) return [];
 

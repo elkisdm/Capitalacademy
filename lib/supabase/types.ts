@@ -1699,6 +1699,7 @@ export type Database = {
       }
       programs: {
         Row: {
+          attendance_alerts_enabled: boolean
           code: string
           created_at: string
           description: string | null
@@ -1710,6 +1711,7 @@ export type Database = {
           total_modules: number | null
         }
         Insert: {
+          attendance_alerts_enabled?: boolean
           code: string
           created_at?: string
           description?: string | null
@@ -1721,6 +1723,7 @@ export type Database = {
           total_modules?: number | null
         }
         Update: {
+          attendance_alerts_enabled?: boolean
           code?: string
           created_at?: string
           description?: string | null

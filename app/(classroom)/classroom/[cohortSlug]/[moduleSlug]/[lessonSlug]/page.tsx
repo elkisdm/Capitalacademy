@@ -32,6 +32,7 @@ import { EvaluationRunner } from "@/components/classroom/evaluation/evaluation-r
 import { VideoSyncProvider } from "@/components/classroom/video-sync-context";
 import type { LessonResource } from "@/lib/classroom/types";
 import { fmtDuration } from "@/lib/classroom/format";
+import { formatChile } from "@/lib/time";
 
 export default async function LessonPage(
   props: { params: Promise<{ cohortSlug: string; moduleSlug: string; lessonSlug: string }> },
@@ -106,7 +107,7 @@ export default async function LessonPage(
           <h2 className="mt-4 text-lg font-black text-ca-ink">Lección bloqueada</h2>
           <p className="mt-2 text-ca-ink-soft">
             Disponible el{" "}
-            {new Date(lesson.unlock_at).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+            {formatChile(lesson.unlock_at, { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
       </div>

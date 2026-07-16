@@ -67,6 +67,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Reordenar las lecciones de un módulo desde el teléfono ya no provoca toques errados: los botones de subir/bajar tienen ahora tamaño táctil adecuado y la fila de cada lección se organiza en dos líneas claras (miniatura y título arriba, acciones abajo) en vez de amontonarse (4a60114)
 - El detalle de un alumno en el panel administrativo ya no recorta las tarjetas de asistencia/avance/evaluaciones ni desordena las fechas de las sesiones a las que faltó (4a60114)
 - En el panel de quizzes del admin, cada clase en vivo ahora tiene su propia tarjeta para crear y gestionar su quiz (el mismo que se ve en el editor del calendario), y las repeticiones ya no aparecen como lecciones que duplicaban el quiz de la clase original (aaaf4d2)
+- El botón "Agregar participante" del detalle de cohorte ya asigna profesores, ayudantes y alumnos en vez de estar deshabilitado, y al asignar un rol desde el perfil de un usuario los errores (por ejemplo, si ya tenía ese rol) ahora se muestran en pantalla en vez de fallar en silencio (`bf4c29a`)
 
 ### Added
 - Nuevo módulo "Entregables": el equipo crea tareas por programa con ventana de subida (fecha de apertura y fecha límite), tipos de archivo permitidos y tamaño máximo; el alumno sube su archivo desde el classroom dentro del plazo y recibe un correo apenas la ventana se abre; el equipo revisa desde el panel admin quién entregó y quién no, con descarga directa de cada archivo

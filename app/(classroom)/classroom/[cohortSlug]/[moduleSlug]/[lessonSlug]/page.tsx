@@ -160,6 +160,10 @@ export default async function LessonPage(
         .eq("lesson_id", lessonId)
         .eq("scope", "lesson")
         .eq("is_active", true)
+        // Defensivo (corrección M1 de la revisión): el índice único de DB ya
+        // garantiza a lo sumo una activa por lección, pero .limit(1) evita que
+        // esta lectura desaparezca en silencio si esa garantía cambiara.
+        .limit(1)
         .maybeSingle(),
     ]),
     getViewerProfile(user.id),

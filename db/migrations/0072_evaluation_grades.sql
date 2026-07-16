@@ -49,14 +49,18 @@ end $$;
 alter table public.evaluations
   add column if not exists weight_pct numeric(5,2);
 
--- ── 2. Acotar los índices únicos "una activa" a kind='quiz' ───────────────────
--- Preserva la semántica actual (a lo sumo un quiz activo por lección/módulo/
--- sesión) y libera el modelo del módulo práctico: varias evaluaciones
--- MANUALES activas a la vez sobre el mismo módulo/lección/sesión.
+-- ── 2. Acotar el índice único "una activa" a kind='quiz' SOLO en módulo ───────
+-- Únicamente el módulo práctico necesita varias evaluaciones MANUALES activas
+-- a la vez (roleplay, guión de venta, etc). Lección y sesión NO tienen ese
+-- caso de uso y varios consumidores (ej. la página de lección) leen la
+-- evaluación activa con `.maybeSingle()` asumiendo a lo sumo una fila — relajar
+-- esos dos índices haría que esa lectura falle en silencio con 2+ activas
+-- (corrección M1 de la revisión). Preservan la semántica original: a lo sumo
+-- una evaluación activa (de cualquier `kind`) por lección/sesión.
 drop index if exists evaluations_one_active_per_lesson;
 create unique index evaluations_one_active_per_lesson
   on public.evaluations (lesson_id)
-  where scope = 'lesson' and is_active and kind = 'quiz';
+  where scope = 'lesson' and is_active;
 
 drop index if exists evaluations_one_active_per_module;
 create unique index evaluations_one_active_per_module
@@ -66,7 +70,7 @@ create unique index evaluations_one_active_per_module
 drop index if exists evaluations_one_active_per_session;
 create unique index evaluations_one_active_per_session
   on public.evaluations (session_id)
-  where scope = 'session' and is_active and kind = 'quiz';
+  where scope = 'session' and is_active;
 
 -- ── 3. programs.grade_exigencia_pct ───────────────────────────────────────────
 alter table public.programs
@@ -138,9 +142,12 @@ create trigger trg_evaluation_grades_updated_at
 
 -- ── 6. Helpers de RLS ──────────────────────────────────────────────────────────
 -- Acceso de LECTURA de un alumno matriculado al programa de la evaluación
--- (mismo criterio que evaluations_student_select, sin exigir is_active — el
--- alumno lee los criterios de una evaluación aunque esté en borrador NO; ver
--- policy de criterios más abajo, que sí exige is_active vía evaluations).
+-- (mismo criterio que evaluations_student_select, sin exigir is_active). NOTA
+-- (corrección M7 de la revisión, esto NO se corrige acá, solo se documenta):
+-- la policy de criterios más abajo (evaluation_criteria_select) tampoco exige
+-- is_active — un alumno matriculado puede leer por PostgREST el checklist de
+-- una evaluación en BORRADOR de su programa. Si se quiere cerrar ese acceso,
+-- es un cambio de alcance aparte.
 create or replace function public.has_evaluation_access(p_evaluation_id uuid)
 returns boolean
 language sql

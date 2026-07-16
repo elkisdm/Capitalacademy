@@ -62,17 +62,23 @@ export async function POST(req: Request, { params }: Ctx) {
   }
 
   const admin = createAdminClient();
-  const { count } = await admin
+  // max(position) + 1 en vez de count: con posiciones no contiguas (ej. tras
+  // borrar un criterio del medio), count colisiona con `unique (evaluation_id,
+  // position)` y el insert falla con 500 (corrección M4 de la revisión).
+  const { data: lastCriterion } = await admin
     .from("evaluation_criteria")
-    .select("id", { count: "exact", head: true })
-    .eq("evaluation_id", evaluationId);
+    .select("position")
+    .eq("evaluation_id", evaluationId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const { data: created, error } = await admin
     .from("evaluation_criteria")
     .insert({
       evaluation_id: evaluationId,
       label: parsed.data.label,
-      position: count ?? 0,
+      position: (lastCriterion?.position ?? -1) + 1,
     })
     .select()
     .single();

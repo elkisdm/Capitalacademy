@@ -10,7 +10,8 @@
  *   - Vale el MEJOR intento COMPLETADO por (evaluation_id, enrollment_id) — B4.
  *   - Idempotente: se puede re-correr sin duplicar (upsert por unique
  *     (evaluation_id, enrollment_id)).
- *   - NUNCA pisa una nota `source='manual'` ya cargada por el profe (R7).
+ *   - NUNCA pisa una nota que no sea `source='quiz'` (`'manual'` o `'import'`,
+ *     ej. el Excel de notas reales de la profe) (R7, corrección M2).
  *   - Auto-publica (las notas de quiz no pasan por borrador — B3).
  *   - PRECONDICIÓN BLOQUEANTE (A6): antes de correr esto en un entorno con
  *     datos reales, confirmar que el quiz "dominio de crédito" (R13 del
@@ -124,7 +125,7 @@ async function main() {
       .eq("enrollment_id", enrollmentId)
       .maybeSingle();
 
-    if (existing && existing.source === "manual") {
+    if (existing && existing.source !== "quiz") {
       skippedManual++;
       continue;
     }
@@ -168,7 +169,7 @@ async function main() {
   console.log("\n=== Resumen ===");
   console.log(`Creadas:  ${created}`);
   console.log(`Actualizadas: ${updated}`);
-  console.log(`Omitidas (nota manual existente): ${skippedManual}`);
+  console.log(`Omitidas (nota manual o importada existente): ${skippedManual}`);
   console.log(`Omitidas (evaluación no encontrada): ${skippedNoEvaluation}`);
   if (dryRun) console.log("\n(Dry run — nada se escribió. Vuelve a correr sin --dry-run para aplicar.)");
 }

@@ -22,12 +22,11 @@
 //   `app/api/cron/session-reminders/route.ts` + la Netlify Scheduled Function
 //   `netlify/functions/session-reminders-cron.mjs` (corre cada 30 min, consulta
 //   `class_sessions` en las ventanas 24h/1h y garantiza idempotencia vía la tabla
-//   `session_reminders`). Ese cron hoy usa `sendSessionReminderEmail`. Para el
-//   ciclo de capacitación se puede: (a) reutilizar ese cron tal cual si los
-//   recordatorios genéricos bastan, o (b) enrutar por entorno/programa para usar
-//   `sendCapacitacionReminderEmail` (voz de captación + CTA), decidiendo según el
-//   `cohort`/`program` de la sesión. NO se modifica el cron aquí para no tocar el
-//   entorno nuevo, que otro proceso está construyendo en paralelo.
+//   `session_reminders` + `session_reminder_recipients`). El cron arma el correo
+//   con `buildCapacitacionReminderEmail` cuando el programa de la cohorte es el
+//   Ciclo de Capacitación (voz de captación + CTA) y con `buildSessionReminderEmail`
+//   en el resto, enrutando por el `program_id` de la cohorte de la sesión. Ver
+//   ADR-0020 (fan-out por lote e idempotencia por destinatario).
 //
 // - Seguimiento post-clase (4): se dispara cuando la grabación queda publicada en
 //   la plataforma (webhook de Mux al terminar el procesado, o un paso manual tras
@@ -35,6 +34,7 @@
 
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
+import type { EmailContent } from "@/lib/email/send-batch";
 
 const TZ = "America/Santiago";
 // URL base resuelta por entorno de deploy (dev/preview/prod), no hardcodeada.
@@ -92,17 +92,16 @@ export interface CapacitacionReminderInput {
   kind: "24h" | "1h";
 }
 
-/** (2 y 3) Recordatorio 24h / 1h antes de la sesión. */
-export async function sendCapacitacionReminderEmail(
+/** (2 y 3) Recordatorio 24h / 1h antes de la sesión, armado para envío por lote. */
+export function buildCapacitacionReminderEmail(
   params: CapacitacionReminderInput,
-): Promise<SendResult> {
+): EmailContent {
   const when = params.kind === "1h" ? "Hoy" : "Mañana";
-  return send({
-    to: params.email,
+  return {
     subject: `Recordatorio: ${when} tienes ${params.sessionTitle}`,
     html: reminderHtml(params),
     text: reminderText(params),
-  });
+  };
 }
 
 export interface CapacitacionFollowupInput {

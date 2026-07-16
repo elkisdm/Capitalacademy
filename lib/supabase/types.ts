@@ -1929,6 +1929,42 @@ export type Database = {
           },
         ]
       }
+      session_reminder_recipients: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          sent_at: string
+          session_id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          sent_at?: string
+          session_id: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          sent_at?: string
+          session_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       session_reminders: {
         Row: {
           channel: string

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Nueva pantalla de notas para el alumno (escala chilena 1-7) y panel de calificación para el profesor: además de los quizzes autocorregidos, ahora se pueden cargar notas manuales (roleplay, guión de venta, etc.) con checklist, borrador/publicación e importación desde Excel por email (`2064943`)
 - Ahora puedes marcar cada lección como clase, actividad práctica o evaluación; las actividades muestran una etiqueta al alumno y, si aún no tienen contenido, ya no se ve el bloque de video vacío (`730e266`)
 - Ahora puedes programar la apertura y el cierre de un quiz (por fecha y hora): se activa y se desactiva solo, sin que tengas que entrar a hacerlo manualmente (`fce1244`)
 - En el checkout de pago ahora puedes elegir boleta o factura; al elegir factura se piden los datos de la empresa (razón social, RUT, giro, dirección y correo de contacto) y le llegan al equipo junto al aviso de pago (`d9b8c97`)

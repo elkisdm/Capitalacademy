@@ -55,6 +55,7 @@ export default async function CertificadoPage(
       .select("id")
       .eq("program_id", program.id)
       .eq("scope", "final")
+      .eq("is_active", true)
       .maybeSingle();
 
     const { data: passedAttempt } = finalEval

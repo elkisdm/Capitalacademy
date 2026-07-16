@@ -75,6 +75,7 @@ export async function POST(req: Request) {
     .select("id")
     .eq("program_id", programId)
     .eq("scope", "final")
+    .eq("is_active", true)
     .maybeSingle();
 
   if (!finalEval) {

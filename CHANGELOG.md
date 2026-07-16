@@ -34,6 +34,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- Un pago cobrado por Flow ya no puede quedar sin registrar para siempre: el sistema verifica cada 15 minutos contra Flow los pagos en curso y recupera automáticamente los que el aviso de pago no alcanzó a confirmar (`df40b63`)
 - Los recordatorios de clase ya no se pierden ni se repiten cuando la cohorte es grande: se envían por lote y se reintentan solo a quien le faltó el correo (`cbfc2fa`)
 - La alerta de inasistencias ya no llega a programas gratuitos o de captación que no la tienen activada; por ahora solo se envía en el Diplomado (`7b8c3f8`)
 - Al quitar el rol de un usuario en una cohorte, si la operación falla ahora se avisa con un mensaje de error en vez de dejar el acceso intacto sin decir nada (`7ab7fa0`)

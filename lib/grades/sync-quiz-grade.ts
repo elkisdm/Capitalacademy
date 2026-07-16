@@ -57,7 +57,7 @@ export async function syncQuizGrade(
     // enrollment_id) porque alguien acaba de crear una fila 'manual'/'import'
     // en el medio, falla con 23505 y se descarta en silencio (mismo resultado
     // que "nunca pisar" — R7/M2).
-    const { data: updated } = await admin
+    const { data: updated, error: updateError } = await admin
       .from("evaluation_grades")
       .update({
         grade,
@@ -69,6 +69,15 @@ export async function syncQuizGrade(
       .eq("enrollment_id", enrollmentId)
       .eq("source", "quiz")
       .select("id");
+
+    // Un error real del UPDATE (ej. permisos, timeout) NO es "cero filas
+    // afectadas": si no se distingue, `updated` queda `null` y el flujo caía
+    // al INSERT, que choca con el unique y se descarta como si fuera la
+    // carrera esperada con una nota manual — el error real nunca se logueaba
+    // y la nota quedaba desactualizada sin rastro (bloqueante 2 de la
+    // revisión). Se lanza para que lo capture el catch de abajo (best-effort:
+    // se loguea, no bloquea el submit del alumno).
+    if (updateError) throw updateError;
 
     if (!updated || updated.length === 0) {
       const { error: insertError } = await admin.from("evaluation_grades").insert({

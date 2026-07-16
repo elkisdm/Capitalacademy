@@ -28,12 +28,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El classroom, el checkout y el panel del docente cargan más rápido: marcar asistencia de toda una clase ahora es una sola operación en vez de decenas, la pantalla de pago se sirve desde caché en vez de generarse en cada visita, y el aviso de notificaciones dejó de pedirse dos veces. Además, el panel del docente suma un código QR para el registro de asistencia y el video de cada lección genera automáticamente su glosario y capítulos al procesarse (`7d87e12`)
 
 ### Security
+- Un alumno ya no puede escribir directamente sus propios intentos de evaluación: la nota, la aprobación y el cierre solo los fija el servidor, cerrando la vía por la que se podía auto-emitir un certificado sin rendir el examen (`c5344fa`)
 - Se cerró un agujero por el que un alumno podía elevar su propia cuenta a administrador y así acceder a los datos personales de todos los usuarios; ahora solo un administrador o los procesos internos pueden cambiar el rol de una cuenta (`312267c`)
 - La página de registro de asistencia por QR solo muestra los datos de una clase (título y cohorte) a alumnos matriculados en ella; un usuario de otro programa ya no puede leer esa información abriendo el enlace de una sesión ajena (`0e82e7f`)
 - Los datos personales sensibles de un alumno (RUT, dirección, contacto de emergencia, fecha de nacimiento) ya no son visibles para sus compañeros de programa; en el foro y los comentarios solo se comparte nombre y avatar. Además, los egresados vuelven a tener acceso a las grabaciones de sus clases en vivo (`4925e11`)
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- El certificado ya no se puede emitir contra el examen final de un programa que quedó desactivado (`6a2876f`)
 - Al quitar el rol de un usuario en una cohorte, si la operación falla ahora se avisa con un mensaje de error en vez de dejar el acceso intacto sin decir nada (`7ab7fa0`)
 - Una misma persona con dos cuentas (por ejemplo, alumna de un programa y profesora de otro) ya puede completar su perfil: antes el segundo registro fallaba con "Error al actualizar perfil" porque el RUT solo podía existir en una cuenta (`2f8e5e2`)
 - El menú del classroom ahora sigue al programa que estás viendo: alumnos con varios programas llegan a los entregables y recursos correctos, y al cambiar de entorno (staff) todos los links del menú se actualizan, no solo el inicio. (cc796c7)

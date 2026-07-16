@@ -8,7 +8,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { GRACE_AFTER_MIN } from "./window";
+import { GRACE_AFTER_MIN, sessionAppliesToEnrollment } from "./window";
 
 export type AttendanceRow = {
   studentId: string;
@@ -288,11 +288,7 @@ export async function getStudentsAtAbsenceThreshold(
     const cohortSessions = sessionsByCohort.get(e.cohort_id) ?? [];
     let absences = 0;
     for (const s of cohortSessions) {
-      if (s.ends_at < e.enrolled_at) continue; // sesión anterior a su matrícula: no cuenta como ausencia
-      const applies =
-        s.audience === "all" ||
-        (s.audience === "capital_inteligente" && e.segment === "capital_inteligente");
-      if (!applies) continue;
+      if (!sessionAppliesToEnrollment(s, e)) continue;
       if (!attended.has(`${s.id}:${e.student_id}`)) absences++;
     }
     if (absences >= threshold) {

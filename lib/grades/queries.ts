@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getEnrollmentForUser } from "@/lib/classroom/queries";
-import { GRACE_AFTER_MIN } from "@/lib/asistencia/window";
-
-const MINUTE_MS = 60_000;
+import { isSessionClosed, sessionAppliesToEnrollment } from "@/lib/asistencia/window";
 
 export type StudentGradeRow = {
   evaluationId: string;
@@ -46,9 +45,20 @@ function round1(n: number): number {
 
 /**
  * Notas 1-7 consolidadas de un alumno en una cohorte, agrupadas por módulo.
- * Cliente RLS (no admin): el alumno solo puede ver sus propias notas
- * PUBLICADAS (`evaluation_grades_student_select`), consistente con el resto
- * del classroom.
+ * Cliente RLS (no admin) para el gate de fila de `evaluation_grades`: el
+ * alumno solo puede ver sus propias notas PUBLICADAS
+ * (`evaluation_grades_student_select`), consistente con el resto del
+ * classroom.
+ *
+ * La metadata de `evaluations` (título, scope, peso) se lee aparte con
+ * cliente admin, acotada a los `evaluation_id` ya validados por la query RLS
+ * de arriba (corrección M5 de la revisión): `evaluations_student_select`
+ * exige `is_active`, así que el embed RLS original hacía desaparecer notas ya
+ * PUBLICADAS del registro del alumno en cuanto la profe desactivaba el quiz
+ * al cerrar el trimestre. Una nota publicada es un registro académico —
+ * desactivar la evaluación no debe borrarla de la vista del alumno. El
+ * acotado por `evaluation_id` (no una lectura libre) evita que esto abra
+ * acceso a evaluaciones fuera de las que el alumno ya tiene nota.
  */
 export async function getStudentGrades(cohortId: string, userId: string): Promise<StudentGradesResult> {
   const supabase = await createClient();
@@ -57,6 +67,16 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   if (!enrollment) {
     return { groups: [], attendance: { pct: null, meetsRequirement: null } };
   }
+
+  const { data: enrollmentDetails } = await supabase
+    .from("enrollments")
+    .select("enrolled_at, segment")
+    .eq("id", enrollment.id)
+    .single();
+  const enrollmentEligibility = {
+    enrolled_at: enrollmentDetails?.enrolled_at ?? "1970-01-01T00:00:00.000Z",
+    segment: enrollmentDetails?.segment ?? null,
+  };
 
   const { data: cohort } = await supabase
     .from("cohorts")
@@ -67,27 +87,52 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
 
   const { data: gradeRows } = await supabase
     .from("evaluation_grades")
-    .select(
-      "grade, feedback, graded_at, evaluations(id, title, scope, module_id, lesson_id, session_id, weight_pct)",
-    )
+    .select("grade, feedback, graded_at, evaluation_id")
     .eq("enrollment_id", enrollment.id)
     .not("grade", "is", null);
 
+  type EvaluationMeta = {
+    id: string;
+    title: string;
+    scope: "final" | "module" | "lesson" | "session";
+    module_id: string | null;
+    lesson_id: string | null;
+    session_id: string | null;
+    weight_pct: number | null;
+  };
   type Row = {
     grade: number;
     feedback: string | null;
     graded_at: string | null;
-    evaluations: {
-      id: string;
-      title: string;
-      scope: "final" | "module" | "lesson" | "session";
-      module_id: string | null;
-      lesson_id: string | null;
-      session_id: string | null;
-      weight_pct: number | null;
-    } | null;
+    evaluations: EvaluationMeta | null;
   };
-  const rows = ((gradeRows ?? []) as unknown as Row[]).filter((r) => r.evaluations != null);
+
+  const gradeRowsSafe = (gradeRows ?? []) as unknown as Array<{
+    grade: number;
+    feedback: string | null;
+    graded_at: string | null;
+    evaluation_id: string;
+  }>;
+  const evaluationIds = Array.from(new Set(gradeRowsSafe.map((r) => r.evaluation_id)));
+
+  const admin = createAdminClient();
+  const { data: evaluationsRaw } =
+    evaluationIds.length > 0
+      ? await admin
+          .from("evaluations")
+          .select("id, title, scope, module_id, lesson_id, session_id, weight_pct")
+          .in("id", evaluationIds)
+      : { data: [] };
+  const evaluationById = new Map(((evaluationsRaw ?? []) as unknown as EvaluationMeta[]).map((e) => [e.id, e]));
+
+  const rows: Row[] = gradeRowsSafe
+    .map((r) => ({
+      grade: r.grade,
+      feedback: r.feedback,
+      graded_at: r.graded_at,
+      evaluations: evaluationById.get(r.evaluation_id) ?? null,
+    }))
+    .filter((r) => r.evaluations != null);
 
   // Resolver module_id para scope=lesson (via lessons.module_id) y
   // scope=session (via class_sessions.module_id, nullable — "Otras evaluaciones").
@@ -190,24 +235,28 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   // cohorte. NUNCA se expone `min_attendance_pct` en crudo (corrección A1) —
   // solo si el alumno cumple o no el requisito.
   //
-  // Definición canónica de "sesión cerrada" (corrección A3 de la revisión):
-  // misma que `lib/admin/student-panel-queries.ts` y el cron de alertas
-  // (`lib/asistencia/queries.ts:getStudentsAtAbsenceThreshold`) — excluye
-  // `status='cancelled'` Y `modality='recorded'` (una grabación no tiene QR,
-  // no puede computar como inasistencia), y exige `now > ends_at +
-  // GRACE_AFTER_MIN` (ventana de gracia de asistencia), no solo `ends_at` en
-  // el pasado.
+  // Definición canónica de "sesión cerrada Y aplicable" (corrección A3 de la
+  // revisión, ahora completa): misma que `lib/admin/student-panel-queries.ts`
+  // y el cron de alertas (`lib/asistencia/queries.ts:getStudentsAtAbsenceThreshold`)
+  // — excluye `status='cancelled'` Y `modality='recorded'` (una grabación no
+  // tiene QR, no puede computar como inasistencia), exige `now > ends_at +
+  // GRACE_AFTER_MIN` (ventana de gracia), descarta sesiones anteriores a la
+  // matrícula del alumno (`enrolled_at`) y respeta `audience`/`segment` (una
+  // sesión exclusiva de Capital Inteligente no cuenta para un alumno que no
+  // es de ese segmento). Predicados compartidos: `isSessionClosed` /
+  // `sessionAppliesToEnrollment` en `lib/asistencia/window.ts`.
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
   const { data: closedSessionsRaw } = await supabase
     .from("class_sessions")
-    .select("id, ends_at")
+    .select("id, ends_at, audience")
     .eq("cohort_id", cohortId)
     .neq("status", "cancelled")
     .neq("modality", "recorded")
     .lt("ends_at", nowIso);
   const closedSessionIds = (closedSessionsRaw ?? [])
-    .filter((s) => now > new Date(s.ends_at).getTime() + GRACE_AFTER_MIN * MINUTE_MS)
+    .filter((s) => isSessionClosed(s, now))
+    .filter((s) => sessionAppliesToEnrollment(s, enrollmentEligibility))
     .map((s) => s.id);
 
   let attendance: AttendanceLane = { pct: null, meetsRequirement: null };

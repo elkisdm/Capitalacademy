@@ -1,3 +1,5 @@
+import { formatChile } from "@/lib/time";
+
 export type Program = { id: string; name: string };
 
 export type QuestionType =
@@ -117,21 +119,7 @@ export type Certificate = {
   pdfUrl: string | null;
 };
 
-export type Tab = "evaluaciones" | "certificados";
-
-export type QuizManagerProps = {
-  programs: { id: string; name: string }[];
-  /** Entorno activo (program_id) para preseleccionar el programa. */
-  initialProgramId?: string;
-};
-
 export function formatDate(iso: string | null) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatChile(iso, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }

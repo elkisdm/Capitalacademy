@@ -4,20 +4,25 @@ const mockFetchFlowPaymentStatus = vi.fn();
 const mockMapFlowStatus = vi.fn();
 const mockEnrollDiplomadoBuyer = vi.fn();
 
+// Spy compartido para `is()` — expuesto a nivel de módulo para que los tests
+// puedan verificar que la guarda atómica `WHERE paid_at IS NULL` fue PEDIDA de
+// verdad, no solo que la fila devuelta simula el resultado esperado.
+const mockIsSpy = vi.fn();
+
 // Supabase admin mock — supports both atomic (.is().select().maybeSingle()) and
 // simple (.eq() resolves) chains depending on which path the route takes.
 function makeUpdateBuilder(result: { data: unknown; error: unknown } | null) {
   const resolved = result ?? { data: null, error: null };
   const builder: Record<string, unknown> = {
     eq: vi.fn(),
-    is: vi.fn(),
+    is: mockIsSpy,
     select: vi.fn(),
     maybeSingle: vi.fn().mockResolvedValue(resolved),
     // Thenable for branches that await the builder directly (non-atomic path)
     then: (resolve: (v: unknown) => unknown) => resolve(resolved),
   };
   builder.eq = vi.fn().mockReturnValue(builder);
-  builder.is = vi.fn().mockReturnValue(builder);
+  mockIsSpy.mockReturnValue(builder);
   builder.select = vi.fn().mockReturnValue(builder);
   return builder;
 }
@@ -188,6 +193,12 @@ describe("POST /api/flow/webhook", () => {
 
     const res = await POST(makeFormRequest("token=dup-token"));
     expect(res.status).toBe(200);
+
+    // La guarda atómica debe haberse PEDIDO de verdad (no solo simulado su
+    // resultado): si esta línea se borra de process-payment.ts, el mock
+    // seguiría devolviendo `mockClaimedRow` y el resto de las aserciones de
+    // este test pasarían igual — por eso se verifica el spy directamente.
+    expect(mockIsSpy).toHaveBeenCalledWith("paid_at", null);
 
     const { sendPaymentConfirmationEmail } = await import(
       "@/lib/email/payment-confirmation"

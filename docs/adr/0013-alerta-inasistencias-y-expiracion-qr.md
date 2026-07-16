@@ -98,3 +98,29 @@ inasistencias a clases en vivo. El equipo académico (reunión del 7-jul-2026, v
 - `db/migrations/0054_attendance_alerts.sql` — bitácora de idempotencia.
 - `db/migrations/0026_session_reminders.sql` (patrón reserva-antes-de-enviar).
 - `db/migrations/0024_audience_and_segment.sql` (audiencia/segmento).
+
+## Amendment (2026-07-16) — Alcance de la alerta pasa a opt-in explícito por programa
+
+La decisión original (punto 1) evalúa "la cohorte ACTIVA del alumno" sin filtrar por
+programa: el alcance real era implícito ("toda cohorte activa recibe la alerta"). La
+megaauditoría del 2026-07-16 (C5) encontró que esto expone al Ciclo de Capacitación
+Comercial CI (`CAP-CI`, 239 matrículas activas, entorno gratuito de captación creado por
+seed 0049 / ADR-0012 después de este ADR): su cohorte acumula la 2ª inasistencia el
+2026-07-28 y el cron enviaría a los 239 un correo que cita "Máximo permitido: 3
+inasistencias", régimen que nunca se pensó para ese ciclo.
+
+Causa raíz: el default era "todo programa nuevo hereda la alerta en silencio", no una
+decisión explícita sobre CAP-CI. Se corrige con `programs.attendance_alerts_enabled boolean
+not null default false` (migración `0076`, ver ADR-0020) — el alcance pasa de implícito a
+**opt-in explícito por programa**. Solo `DIP-VENTAS` se activa (es, de hecho, el único
+programa con alertas realmente enviadas: las 24 filas históricas de `attendance_alerts` son
+todas de esa cohorte).
+
+**Efecto secundario, no regresión:** Liderazgo (`LID-COMERCIAL`) y el Workshop
+(`WS-INMOB`) quedan apagados a la espera de que el equipo académico decida activarlos. Ninguno
+de los dos envió nunca una alerta de asistencia — el punto 1 de este ADR nunca se ejerció
+fuera del Diplomado en la práctica, aunque su alcance escrito no lo acotaba. Prenderlos es un
+`UPDATE public.programs set attendance_alerts_enabled = true where code = '…'`, sin deploy.
+
+Ver ADR-0020 para el detalle completo de la decisión y las opciones descartadas (deny-list,
+reuso de `min_attendance_pct`).

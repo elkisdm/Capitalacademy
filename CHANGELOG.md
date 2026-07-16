@@ -34,6 +34,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- Comprar un programa ya no le quita los permisos a un administrador o profesor que use su misma cuenta: la matrícula automática ya no pisa el rol ni el nombre de un perfil que ya existía (`af9b097`)
 - Al quitar el rol de un usuario en una cohorte, si la operación falla ahora se avisa con un mensaje de error en vez de dejar el acceso intacto sin decir nada (`7ab7fa0`)
 - Una misma persona con dos cuentas (por ejemplo, alumna de un programa y profesora de otro) ya puede completar su perfil: antes el segundo registro fallaba con "Error al actualizar perfil" porque el RUT solo podía existir en una cuenta (`2f8e5e2`)
 - El menú del classroom ahora sigue al programa que estás viendo: alumnos con varios programas llegan a los entregables y recursos correctos, y al cambiar de entorno (staff) todos los links del menú se actualizan, no solo el inicio. (cc796c7)

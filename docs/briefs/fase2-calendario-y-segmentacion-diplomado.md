@@ -1,6 +1,7 @@
 # Brief Fase 2 — Calendario interactivo + segmentación "Capital Inteligente"
 
-> Estado: **propuesta** · Fecha: 2026-06-16 · Relacionado: [ADR-0008](../adr/0008-entorno-diplomado-y-calendario-de-sesiones.md)
+> Estado: **superado (2026-07-16)** · Fecha original: 2026-06-16 · Relacionado: [ADR-0008](../adr/0008-entorno-diplomado-y-calendario-de-sesiones.md)
+> Nota de cierre: la realidad alcanzó a este brief — el calendario admin se implementó el 10-jul-2026 (commit 8e58770), la segmentación existe vía enrollments.segment + class_sessions.audience (usada en el Ciclo CI), y los recordatorios 24h operan en prod. Se archiva como referencia histórica; no ejecutar.
 > Precondición: Fase 0 (migración `0022`) y Fase 1 (sesiones pobladas) aplicadas.
 
 ## Clasificación spec-flow

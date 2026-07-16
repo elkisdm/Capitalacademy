@@ -88,6 +88,17 @@ export function NewEvaluationDialog({
     if (kind === "manual" && scope === "final") setScope("module");
   }, [kind, scope]);
 
+  // Un módulo admite varias notas manuales pero un solo quiz
+  // (`evaluations_one_active_per_module`, 0072). Si el módulo seleccionado ya
+  // tiene un quiz y el usuario cambia Tipo a "quiz", la selección queda
+  // inválida — se limpia para que vuelva a elegir.
+  useEffect(() => {
+    if (scope === "module" && kind === "quiz" && moduleId && blockers.moduleQuizzesTaken.has(moduleId)) {
+      setModuleId("");
+      setTitleTouched(false);
+    }
+  }, [kind, scope, moduleId, blockers.moduleQuizzesTaken]);
+
   const selectedModuleTitle = targets.modules.find((m) => m.id === moduleId)?.title ?? "";
   const selectedLessonTitle = contentLessons.find((l) => l.id === lessonId)?.title ?? "";
   const selectedSession = targets.sessions.find((s) => s.id === sessionId) ?? null;
@@ -222,11 +233,15 @@ export function NewEvaluationDialog({
             </label>
             <Select value={moduleId} onChange={(e) => { setModuleId(e.target.value); setTitleTouched(false); }} disabled={loadingTargets}>
               <option value="">Selecciona un módulo</option>
-              {targets.modules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
+              {targets.modules.map((m) => {
+                const taken = kind === "quiz" && blockers.moduleQuizzesTaken.has(m.id);
+                return (
+                  <option key={m.id} value={m.id} disabled={taken}>
+                    {m.title}
+                    {taken ? " · ya tiene quiz" : ""}
+                  </option>
+                );
+              })}
             </Select>
           </div>
         )}

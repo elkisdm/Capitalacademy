@@ -93,23 +93,37 @@ export function kindLabel(kind: EvaluationKind): string {
 
 /**
  * Qué se puede crear, dado lo que ya existe. Alimenta el modal de creación
- * (deshabilita opciones que chocarían con un índice único de 0033/0040):
+ * (deshabilita opciones que chocarían con un índice único de 0033/0040/0072):
  *   - `evaluations_one_final_per_program`: una sola final por programa, activa o no.
  *   - `evaluations_one_active_per_lesson`/`..._per_session`: a lo sumo una
  *     evaluación ACTIVA por lección/sesión — pero como crear un segundo
  *     borrador ahí nunca podría activarse, se bloquea con cualquier
  *     evaluación existente (activa o no), no solo las activas.
- * Los módulos nunca se bloquean (el módulo práctico admite varias manuales).
+ *   - `evaluations_one_active_per_module`: a lo sumo un quiz ACTIVO por
+ *     módulo (0072 acotó el índice a `kind='quiz'`) — mismo razonamiento que
+ *     lección/sesión: un segundo quiz ahí nunca podría activarse, se bloquea
+ *     con cualquier quiz existente (activo o no). Las notas manuales de
+ *     módulo NO se bloquean (el módulo práctico admite varias a la vez).
  */
 export function creationBlockers(
-  existing: Pick<EvaluationRow, "scope" | "lessonId" | "sessionId">[],
-): { finalTaken: boolean; lessonsTaken: Set<string>; sessionsTaken: Set<string> } {
+  existing: Pick<EvaluationRow, "scope" | "kind" | "moduleId" | "lessonId" | "sessionId">[],
+): {
+  finalTaken: boolean;
+  moduleQuizzesTaken: Set<string>;
+  lessonsTaken: Set<string>;
+  sessionsTaken: Set<string>;
+} {
   const finalTaken = existing.some((e) => e.scope === "final");
+  const moduleQuizzesTaken = new Set(
+    existing
+      .filter((e) => e.scope === "module" && e.kind === "quiz" && e.moduleId)
+      .map((e) => e.moduleId as string),
+  );
   const lessonsTaken = new Set(
     existing.filter((e) => e.scope === "lesson" && e.lessonId).map((e) => e.lessonId as string),
   );
   const sessionsTaken = new Set(
     existing.filter((e) => e.scope === "session" && e.sessionId).map((e) => e.sessionId as string),
   );
-  return { finalTaken, lessonsTaken, sessionsTaken };
+  return { finalTaken, moduleQuizzesTaken, lessonsTaken, sessionsTaken };
 }

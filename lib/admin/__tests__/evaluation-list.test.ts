@@ -87,13 +87,29 @@ describe("creationBlockers", () => {
 
   it("un módulo con 3 evaluaciones manuales sigue disponible (nunca se bloquea)", () => {
     const blockers = creationBlockers([
-      makeRow({ scope: "module", kind: "manual", lessonId: null, sessionId: null }),
-      makeRow({ scope: "module", kind: "manual", lessonId: null, sessionId: null }),
-      makeRow({ scope: "module", kind: "manual", lessonId: null, sessionId: null }),
+      makeRow({ scope: "module", kind: "manual", moduleId: "mod-1", lessonId: null, sessionId: null }),
+      makeRow({ scope: "module", kind: "manual", moduleId: "mod-1", lessonId: null, sessionId: null }),
+      makeRow({ scope: "module", kind: "manual", moduleId: "mod-1", lessonId: null, sessionId: null }),
     ]);
     expect(blockers.finalTaken).toBe(false);
+    expect(blockers.moduleQuizzesTaken.size).toBe(0);
     expect(blockers.lessonsTaken.size).toBe(0);
     expect(blockers.sessionsTaken.size).toBe(0);
+  });
+
+  it("bloquea un módulo que ya tiene un quiz, aunque sea borrador (is_active: false)", () => {
+    const blockers = creationBlockers([
+      makeRow({ scope: "module", kind: "quiz", moduleId: "mod-1", is_active: false, lessonId: null, sessionId: null }),
+    ]);
+    expect(blockers.moduleQuizzesTaken.has("mod-1")).toBe(true);
+    expect(blockers.moduleQuizzesTaken.has("mod-2")).toBe(false);
+  });
+
+  it("una nota manual en un módulo NO bloquea ese módulo para un quiz", () => {
+    const blockers = creationBlockers([
+      makeRow({ scope: "module", kind: "manual", moduleId: "mod-1", lessonId: null, sessionId: null }),
+    ]);
+    expect(blockers.moduleQuizzesTaken.has("mod-1")).toBe(false);
   });
 });
 

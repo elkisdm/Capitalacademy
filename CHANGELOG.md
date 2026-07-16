@@ -39,6 +39,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Fixed
 - Los recordatorios de clase ya no se pierden ni se repiten cuando la cohorte es grande: se envían por lote y se reintentan solo a quien le faltó el correo (`cbfc2fa`)
 - La alerta de inasistencias ya no llega a programas gratuitos o de captación que no la tienen activada; por ahora solo se envía en el Diplomado (`7b8c3f8`)
+- Comprar un programa ya no le quita los permisos a un administrador o profesor que use su misma cuenta: la matrícula automática ya no pisa el rol ni el nombre de un perfil que ya existía (`af9b097`)
 - Al quitar el rol de un usuario en una cohorte, si la operación falla ahora se avisa con un mensaje de error en vez de dejar el acceso intacto sin decir nada (`7ab7fa0`)
 - El panel de notas del profesor ya no confunde cohortes: si dictas más de una cohorte del mismo programa (ej. G4 y G5), calificar la evaluación de una ya no abría por error el listado de alumnos de la otra. Además, un profesor a cargo de varias cohortes ya no recibe "No autorizado" al gestionar el checklist de una evaluación, y el requisito de asistencia del alumno se oculta temporalmente mientras se confirma el porcentaje vigente con la profe (`34641cc`)
 - Notas de quiz y checklist de evaluaciones: el guardado automático de notas de quiz ya no puede pisar una nota manual o importada desde Excel, agregar un criterio nuevo tras borrar uno del medio ya no falla, y una lección con dos evaluaciones activas ya no oculta en silencio el bloque de evaluación al alumno (`73ddc45`)

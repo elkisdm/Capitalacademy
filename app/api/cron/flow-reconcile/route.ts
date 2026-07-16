@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 
 const WINDOW_MIN_MINUTES = 15;
 const WINDOW_MAX_DAYS = 30;
-const MAX_PER_RUN = 50;
+const MAX_PER_RUN = 100;
 
 const SELECT_COLS =
   "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp, document_type, invoice_data, flow_token, commerce_order";
@@ -54,7 +54,10 @@ export async function GET(req: Request) {
     .eq("provider", "flow")
     .lte("created_at", upper)
     .gte("created_at", lower)
-    .order("created_at", { ascending: true })
+    // Prioriza los pagos más nuevos: si hay más de MAX_PER_RUN pendientes en
+    // la ventana, son los recuperables (los viejos ya perdieron la carrera en
+    // corridas previas); ver ADR-0021 sobre el límite por corrida.
+    .order("created_at", { ascending: false })
     .limit(MAX_PER_RUN);
 
   if (error) {

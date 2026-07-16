@@ -17,6 +17,7 @@ let mockCandidatesResult: { data: unknown[] | null; error: unknown } = {
 const eqCalls: unknown[][] = [];
 let lteArg: string | undefined;
 let gteArg: string | undefined;
+let orderArgs: unknown[] | undefined;
 
 function makeCandidatesBuilder() {
   const builder: Record<string, unknown> = {};
@@ -33,7 +34,10 @@ function makeCandidatesBuilder() {
     gteArg = args[1] as string;
     return builder;
   };
-  builder.order = () => builder;
+  builder.order = (...args: unknown[]) => {
+    orderArgs = args;
+    return builder;
+  };
   builder.limit = () => Promise.resolve(mockCandidatesResult);
   return builder;
 }
@@ -79,6 +83,7 @@ describe("GET /api/cron/flow-reconcile", () => {
     eqCalls.length = 0;
     lteArg = undefined;
     gteArg = undefined;
+    orderArgs = undefined;
   });
 
   it("returns 401 when the cron request is not authorized", async () => {
@@ -261,5 +266,16 @@ describe("GET /api/cron/flow-reconcile", () => {
     // Filtra por status pending y provider flow.
     expect(eqCalls).toContainEqual(["status", "pending"]);
     expect(eqCalls).toContainEqual(["provider", "flow"]);
+  });
+
+  it("prioritizes the newest pending payments (ascending: false), not the oldest", async () => {
+    // Si hay más pendientes que MAX_PER_RUN dentro de la ventana, los pagos
+    // más viejos ya perdieron la carrera en corridas previas; los nuevos son
+    // los recuperables. Ver ADR-0021.
+    mockAuthorizeCron.mockReturnValue(true);
+
+    await GET(makeRequest());
+
+    expect(orderArgs).toEqual(["created_at", { ascending: false }]);
   });
 });

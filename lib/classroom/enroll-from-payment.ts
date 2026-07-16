@@ -119,13 +119,14 @@ export async function enrollBuyer(input: {
       `${base}/auth/confirm?token_hash=${encodeURIComponent(hashed)}` +
       `&type=${vtype}&next=${encodeURIComponent(onboardingPath)}`;
 
-    // 2. Perfil (rol student).
-    const { error: profileErr } = await admin
-      .from("profiles")
-      .upsert(
-        { id: userId, email, full_name: fullName, role: "student" },
-        { onConflict: "id" },
-      );
+    // 2. Perfil (rol student). Solo se crea si no existe: si el comprador ya
+    //    tenía un perfil (p. ej. admin/ops/teacher que compra con su misma
+    //    cuenta), `ignoreDuplicates` evita degradar su `role` a "student" o
+    //    pisar su `full_name` con lo que haya escrito en este checkout.
+    const { error: profileErr } = await admin.from("profiles").upsert(
+      { id: userId, email, full_name: fullName, role: "student" },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
     if (profileErr) return { ok: false, error: `profile: ${profileErr.message}` };
 
     // 3. Matrícula en la cohorte activa (segmento Capital Inteligente por dominio del correo).

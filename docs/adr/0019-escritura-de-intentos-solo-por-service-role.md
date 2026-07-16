@@ -1,4 +1,4 @@
-# ADR-0016: Escritura de intentos de evaluación solo por service_role
+# ADR-0019: Escritura de intentos de evaluación solo por service_role
 
 - **Status:** accepted
 - **Date:** 2026-07-16

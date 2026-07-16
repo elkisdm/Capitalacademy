@@ -11,6 +11,7 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import { fmtDuration } from "@/lib/classroom/format";
+import { formatChile, formatDateOnly } from "@/lib/time";
 import { BrandShapes, ProgressBar } from "@/components/classroom/primitives";
 import { ModuleAccordionItem, type ClassRowData } from "@/components/classroom/module-accordion";
 import type { LessonActivityType } from "@/lib/classroom/types";
@@ -35,7 +36,7 @@ function fmtUnlock(iso: string) {
 }
 
 function fmtSessionShort(iso: string) {
-  return new Date(iso).toLocaleDateString("es-CL", {
+  return formatChile(iso, {
     day: "numeric",
     month: "short",
     hour: "2-digit",
@@ -221,9 +222,9 @@ export default async function CohortDashboardPage(
               {program.name}
             </h1>
             <div className="mt-1.5 text-sm text-white/60">
-              {new Date(cohort.start_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {formatDateOnly(cohort.start_date, { day: "numeric", month: "short", year: "numeric" })}
               {" – "}
-              {new Date(cohort.end_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {formatDateOnly(cohort.end_date, { day: "numeric", month: "short", year: "numeric" })}
               {" · "}
               {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
             </div>

@@ -89,8 +89,12 @@ siempre llega (descartada)
 ## Consecuencias
 
 ### Positivas
-- Un pago cobrado por Flow ya no puede quedar sin registrar de forma indefinida: en el peor
-  caso (webhook perdido), el cron lo recupera dentro de 15-30 minutos.
+- Un pago cobrado por Flow ya no queda sin registrar de forma indefinida en el volumen actual
+  (86 pagos históricos, muy por debajo de `MAX_PER_RUN`): en el peor caso (webhook perdido),
+  el cron lo recupera en la corrida siguiente (~15 min), priorizando los pagos más nuevos de
+  la ventana. Esta garantía depende del volumen: si los pendientes dentro de la ventana de 30
+  días superaran `MAX_PER_RUN` (100), los más viejos podrían no ser re-consultados hasta
+  envejecer más de 30 días (ver Riesgos y Follow-ups).
 - La llave de reconciliación (`commerce_order`) queda garantizada en la base de datos desde
   el INSERT, cerrando también el bug latente del UPDATE sin captura de error.
 - Un solo lugar (`processFlowPayment`) concentra la idempotencia y los side-effects de un
@@ -112,8 +116,27 @@ siempre llega (descartada)
   se reparan a mano, con la decisión de matrícula escalada al negocio (no son casos
   automáticos).
 - Insertar un `id` explícito en vez de usar el default de la columna — riesgo bajo: es un
-  INSERT normal sobre una PK con default, verificado con la suite de tests y con la
-  definición de la tabla (`db/migrations/0003_payments_flow.sql` y siguientes).
+  INSERT normal sobre una PK con default (`id uuid primary key default gen_random_uuid()`,
+  que solo aplica si se omite la columna) y el único trigger de `payments` es BEFORE UPDATE,
+  no BEFORE INSERT. Verificado por inspección del esquema (`db/migrations/0003_payments_flow.sql`
+  y siguientes), **no por tests**: no existe ningún test bajo `app/api/pago/` que cubra el
+  INSERT de los tres endpoints de checkout (ver Follow-ups).
+- El cron prioriza los pagos `pending` más nuevos de la ventana (`ascending: false`) y sube
+  `MAX_PER_RUN` a 100: si hubiera más de 100 pendientes en la ventana de 30 días, los más
+  viejos quedarían sin re-consultar hasta envejecer más de 30 días (inanición). No se
+  implementa cierre automático de esos carritos abandonados (ver Follow-ups).
+
+## Follow-ups
+
+- **Cierre de carritos abandonados (decisión de negocio pendiente).** Hoy nada cierra un pago
+  `pending` cuyo `status` en Flow es "nunca pagó" (status=1): la línea que lo detecta hace
+  `continue` y la fila queda `pending` para siempre. El fix recomendado (marcar
+  `status='failed'`, `failure_reason='abandoned'` tras N días sin pago) cambia la semántica de
+  los datos de pago y requiere que el negocio defina N — no se implementa en este ADR.
+- **Sin tests del INSERT de checkout.** No existe ningún test bajo `app/api/pago/` que cubra
+  el INSERT con `id` explícito de `4ce40fe` (el commit más riesgoso de este fix: mueve
+  `commerce_order` al INSERT en los tres endpoints de checkout). Quedó sin red de tests;
+  la verificación fue solo por inspección de esquema (ver Riesgos).
 
 ## Referencias
 

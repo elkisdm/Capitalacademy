@@ -6,10 +6,16 @@
 -- quizzes ya rendidos):
 --   (1) `evaluations` gana `kind` ('quiz' | 'manual') + `weight_pct` (captura,
 --       v1 no calcula nota final ponderada).
---   (2) Los 3 índices únicos parciales "una activa por lección/módulo/sesión"
---       (0033/0040) se acotan a `kind='quiz'`: el módulo práctico necesita
---       varias evaluaciones MANUALES activas a la vez (roleplay, guión de
---       venta, etc). `evaluations_one_final_per_program` NO se toca.
+--   (2) Del índice único parcial "una activa por lección/módulo/sesión"
+--       (0033/0040), SOLO el de módulo se relaja a `kind='quiz'`: el módulo
+--       práctico necesita varias evaluaciones MANUALES activas a la vez
+--       (roleplay, mentalidad, guión de venta, etc). Lección y sesión NO se
+--       tocan y conservan el predicado original (a lo sumo una activa, de
+--       cualquier `kind`) porque varios consumidores (ej. la página de
+--       lección) leen la evaluación activa con `.maybeSingle()` asumiendo una
+--       sola fila — relajarlos también rompería esa lectura en silencio con
+--       2+ activas (corrección M1 de la revisión). `evaluations_one_final_per_program`
+--       NO se toca.
 --   (3) `programs.grade_exigencia_pct` (default 60): el % que corresponde a
 --       nota 4.0 en la escala chilena. Deliberadamente SEPARADO de
 --       `evaluations.passing_grade_pct` (default 70, umbral de `passed`

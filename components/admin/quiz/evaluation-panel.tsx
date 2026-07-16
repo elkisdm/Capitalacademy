@@ -12,6 +12,7 @@ import { EvaluationAttempts } from "./evaluation-attempts";
 import { EvaluationGrades } from "./evaluation-grades";
 import { EvaluationStateBadge } from "./evaluation-state-badge";
 import { getEvaluationState } from "@/lib/classroom/evaluation-window";
+import { formatChile } from "@/lib/time";
 import { LoaderIcon, TrashIcon, SparklesIcon } from "./icons";
 
 type PanelTab = "preguntas" | "ajustes" | "respuestas" | "notas";
@@ -240,7 +241,7 @@ export function EvaluationPanel({
             y parece que el botón no hizo nada — se explicita por qué. */}
         {evaluation.is_active && getEvaluationState(evaluation) === "closed" && evaluation.closes_at && (
           <p className="rounded-xl bg-ca-amber/10 px-4 py-2.5 text-[12.5px] font-semibold text-[#8b6914]">
-            Cerró el {new Date(evaluation.closes_at).toLocaleDateString("es-CL", {
+            Cerró el {formatChile(evaluation.closes_at, {
               day: "numeric",
               month: "short",
               hour: "2-digit",

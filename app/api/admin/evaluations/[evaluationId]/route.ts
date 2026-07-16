@@ -44,6 +44,11 @@ export async function GET(_req: Request, { params }: Ctx) {
 //   recrea si hace falta — evita estados incoherentes).
 // ---------------------------------------------------------------------------
 
+const isoDatetime = z
+  .string()
+  .trim()
+  .refine((v) => !Number.isNaN(Date.parse(v)), "Fecha inválida");
+
 const patchSchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
@@ -54,6 +59,9 @@ const patchSchema = z
     timeLimitMinutes: z.number().int().min(1).max(600).nullable().optional(),
     minCompletionPct: z.number().int().min(1).max(100).nullable().optional(),
     isActive: z.boolean().optional(),
+    // Ventana de programación (0070). NULL = sin límite en ese extremo.
+    opensAt: isoDatetime.nullable().optional(),
+    closesAt: isoDatetime.nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No se enviaron campos" });
 
@@ -87,6 +95,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (v.timeLimitMinutes !== undefined) updates.time_limit_minutes = v.timeLimitMinutes;
   if (v.minCompletionPct !== undefined) updates.min_completion_pct = v.minCompletionPct;
   if (v.isActive !== undefined) updates.is_active = v.isActive;
+  if (v.opensAt !== undefined) updates.opens_at = v.opensAt;
+  if (v.closesAt !== undefined) updates.closes_at = v.closesAt;
 
   const admin = createAdminClient();
 
@@ -105,6 +115,30 @@ export async function PATCH(req: Request, { params }: Ctx) {
     }
   }
 
+  // Validación cruzada de la ventana: un PATCH puede mandar solo uno de los dos
+  // campos (ej. solo closesAt); hay que compararlo contra el valor PERSISTIDO
+  // del otro extremo, no solo contra el CHECK de la DB (que daría un 23514
+  // genérico). Solo hace falta consultar si al menos uno de los dos viene en
+  // el body y el otro no (si vienen ambos o ninguno, no hace falta el fetch).
+  if (
+    (v.opensAt !== undefined || v.closesAt !== undefined) &&
+    (v.opensAt === undefined || v.closesAt === undefined)
+  ) {
+    const { data: current } = await admin
+      .from("evaluations")
+      .select("opens_at, closes_at")
+      .eq("id", evaluationId)
+      .single();
+    const effectiveOpensAt = v.opensAt !== undefined ? v.opensAt : (current?.opens_at ?? null);
+    const effectiveClosesAt = v.closesAt !== undefined ? v.closesAt : (current?.closes_at ?? null);
+    if (effectiveOpensAt && effectiveClosesAt && new Date(effectiveClosesAt) <= new Date(effectiveOpensAt)) {
+      return NextResponse.json(
+        { error: "La fecha de cierre debe ser posterior a la de apertura" },
+        { status: 422 },
+      );
+    }
+  }
+
   const { data: updated, error } = await admin
     .from("evaluations")
     .update(updates)
@@ -117,6 +151,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
       return NextResponse.json(
         { error: "Ya hay otra evaluación activa para esta lección o módulo" },
         { status: 409 },
+      );
+    }
+    // 23514 = check_violation (ej. evaluations_window_chk: cierre antes que apertura).
+    if ((error as { code?: string }).code === "23514") {
+      return NextResponse.json(
+        { error: "La fecha de cierre debe ser posterior a la de apertura" },
+        { status: 422 },
       );
     }
     console.error("Error updating evaluation:", error);

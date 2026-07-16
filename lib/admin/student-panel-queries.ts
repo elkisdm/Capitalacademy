@@ -178,6 +178,11 @@ export async function getStudentPanelReport(
     progressByEnrollment.set(p.enrollment_id, map);
   }
 
+  // Decisión explícita (ver ADR-0016): este reporte NO aplica la ventana de
+  // programación (opens_at/closes_at, migración 0070). Es un listado de
+  // evaluaciones PUBLICADAS para el panel del profesor, no un gate de acceso —
+  // si se filtrara por ventana, una evaluación ya cerrada desaparecería del
+  // reporte junto con el registro de quién la rindió y aprobó.
   const { data: evalsRaw } = await admin
     .from("evaluations")
     .select("id, title, scope")

@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/admin/toast";
 import type { Evaluation, EvaluationScope } from "./types";
 import { formatDate } from "./types";
 import { EvaluationPanel } from "./evaluation-panel";
+import { EvaluationStateBadge } from "./evaluation-state-badge";
 import { LoaderIcon } from "./icons";
 
 type EvalItem = Evaluation & { questionCount?: number };
@@ -295,9 +295,7 @@ function EvalRow({
         <div className="flex shrink-0 items-center gap-2">
           {evalItem ? (
             <>
-              <Badge tone={evalItem.is_active ? "lime" : "neutral"}>
-                {evalItem.is_active ? "Activa" : "Borrador"}
-              </Badge>
+              <EvaluationStateBadge evaluation={evalItem} />
               <span className="hidden text-[11.5px] text-ca-ink-soft sm:inline">
                 {evalItem.questionCount ?? 0} preg.
               </span>
@@ -350,9 +348,7 @@ function EvalCard({
         {evalItem ? (
           <>
             <div className="flex min-w-0 items-center gap-2">
-              <Badge tone={evalItem.is_active ? "lime" : "neutral"} size="sm">
-                {evalItem.is_active ? "Activa" : "Borrador"}
-              </Badge>
+              <EvaluationStateBadge evaluation={evalItem} size="sm" />
               <span className="text-[11px] text-ca-ink-soft">{evalItem.questionCount ?? 0} preg.</span>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => onToggle(evalItem.id)}>

@@ -904,6 +904,7 @@ export type Database = {
       }
       evaluations: {
         Row: {
+          closes_at: string | null
           created_at: string
           description: string | null
           id: string
@@ -912,6 +913,7 @@ export type Database = {
           max_attempts: number
           min_completion_pct: number | null
           module_id: string | null
+          opens_at: string | null
           passing_grade_pct: number
           program_id: string
           questions_per_attempt: number | null
@@ -922,6 +924,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          closes_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -930,6 +933,7 @@ export type Database = {
           max_attempts?: number
           min_completion_pct?: number | null
           module_id?: string | null
+          opens_at?: string | null
           passing_grade_pct?: number
           program_id: string
           questions_per_attempt?: number | null
@@ -940,6 +944,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          closes_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -948,6 +953,7 @@ export type Database = {
           max_attempts?: number
           min_completion_pct?: number | null
           module_id?: string | null
+          opens_at?: string | null
           passing_grade_pct?: number
           program_id?: string
           questions_per_attempt?: number | null

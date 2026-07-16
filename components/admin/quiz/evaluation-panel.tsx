@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { Evaluation, QuizQuestion } from "./types";
 import { AddQuestionForm } from "./add-question-form";
 import { QuestionCard } from "./question-card";
 import { ShareQuizDialog } from "./share-quiz-dialog";
 import { EvaluationSettings } from "./evaluation-settings";
 import { EvaluationAttempts } from "./evaluation-attempts";
+import { EvaluationStateBadge } from "./evaluation-state-badge";
+import { getEvaluationState } from "@/lib/classroom/evaluation-window";
 import { LoaderIcon, TrashIcon, SparklesIcon } from "./icons";
 
 type PanelTab = "preguntas" | "ajustes" | "respuestas";
@@ -181,9 +182,7 @@ export function EvaluationPanel({
         {/* Estado + acciones (fijo, sobre las pestañas) */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ca-bg-soft px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={evaluation.is_active ? "lime" : "neutral"}>
-              {evaluation.is_active ? "Activa" : "Borrador"}
-            </Badge>
+            <EvaluationStateBadge evaluation={evaluation} />
             <span className="text-[13px] font-semibold text-ca-ink">
               {questions.length} {questions.length === 1 ? "pregunta" : "preguntas"}
             </span>
@@ -216,6 +215,20 @@ export function EvaluationPanel({
             </Button>
           </div>
         </div>
+
+        {/* Gotcha UX: activar con closes_at ya pasado deja el badge en "Cerrada"
+            y parece que el botón no hizo nada — se explicita por qué. */}
+        {evaluation.is_active && getEvaluationState(evaluation) === "closed" && evaluation.closes_at && (
+          <p className="rounded-xl bg-ca-amber/10 px-4 py-2.5 text-[12.5px] font-semibold text-[#8b6914]">
+            Cerró el {new Date(evaluation.closes_at).toLocaleDateString("es-CL", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            . Borra o cambia la fecha de cierre para reabrirla.
+          </p>
+        )}
 
         {/* Pestañas internas */}
         <div className="flex items-center gap-1 rounded-2xl bg-ca-bg-soft p-1">

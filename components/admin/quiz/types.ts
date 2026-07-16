@@ -44,6 +44,8 @@ export type Evaluation = {
   time_limit_minutes: number | null;
   min_completion_pct: number | null;
   is_active: boolean;
+  opens_at: string | null;
+  closes_at: string | null;
 };
 
 /** Desglose pregunta-a-pregunta de un intento (vista admin "Respuestas"). */

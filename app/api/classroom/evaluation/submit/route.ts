@@ -43,7 +43,11 @@ export async function POST(req: Request) {
   const { evaluationId, attemptId, answers } = parsed.data;
 
   const admin = createAdminClient();
-  const access = await resolveEvaluationAccess(supabase, admin, user.id, evaluationId);
+  // D5 (ver ADR-0016): ignora closes_at — un intento ya iniciado siempre se
+  // puede entregar, aunque la ventana ya haya cerrado.
+  const access = await resolveEvaluationAccess(supabase, admin, user.id, evaluationId, {
+    ignoreClosesAt: true,
+  });
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }

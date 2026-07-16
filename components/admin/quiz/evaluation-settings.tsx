@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { Evaluation } from "./types";
 import { LoaderIcon, CheckCircleIcon } from "./icons";
 
@@ -17,7 +18,24 @@ type FormState = {
   questionsPerAttempt: string;
   timeLimitMinutes: string;
   minCompletionPct: string;
+  opensAt: string;
+  closesAt: string;
 };
+
+// timestamptz ISO → valor para el <DatePicker> (hora local). Mismo patrón que
+// lesson-edit-form.tsx / deliverables-manager.tsx.
+function isoToLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Valor del <DatePicker> (hora local) → ISO; vacío = null (sin límite).
+function fromLocalInput(value: string): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
 
 function fromEvaluation(ev: Evaluation): FormState {
   return {
@@ -28,6 +46,8 @@ function fromEvaluation(ev: Evaluation): FormState {
     questionsPerAttempt: ev.questions_per_attempt != null ? String(ev.questions_per_attempt) : "",
     timeLimitMinutes: ev.time_limit_minutes != null ? String(ev.time_limit_minutes) : "",
     minCompletionPct: ev.min_completion_pct != null ? String(ev.min_completion_pct) : "",
+    opensAt: isoToLocalInput(ev.opens_at),
+    closesAt: isoToLocalInput(ev.closes_at),
   };
 }
 
@@ -96,6 +116,15 @@ export function EvaluationSettings({
       if (!Number.isInteger(n) || n < 1 || n > 100) return "El % de avance mínimo debe estar entre 1 y 100.";
       payload.minCompletionPct = n;
     }
+
+    // Ventana de programación (0070): opcional, uniforme para todos los scopes (D4).
+    const opensAt = fromLocalInput(form.opensAt);
+    const closesAt = fromLocalInput(form.closesAt);
+    if (opensAt && closesAt && new Date(closesAt) <= new Date(opensAt)) {
+      return "La fecha de cierre debe ser posterior a la de apertura.";
+    }
+    payload.opensAt = opensAt;
+    payload.closesAt = closesAt;
 
     return payload;
   }
@@ -223,6 +252,26 @@ export function EvaluationSettings({
             <p className={hintCls}>Avance del programa requerido para habilitar el final.</p>
           </div>
         )}
+
+        <div>
+          <DatePicker
+            withTime
+            label="Se abre"
+            value={form.opensAt}
+            onChange={(v) => set("opensAt", v)}
+          />
+          <p className={hintCls}>Vacío = disponible en cuanto la actives.</p>
+        </div>
+
+        <div>
+          <DatePicker
+            withTime
+            label="Se cierra"
+            value={form.closesAt}
+            onChange={(v) => set("closesAt", v)}
+          />
+          <p className={hintCls}>Vacío = sin fecha de cierre.</p>
+        </div>
       </div>
 
       {error && (

@@ -63,6 +63,10 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
+  // D5 (ver ADR-0016): a propósito NO se aplica `closes_at` aquí — un intento ya
+  // iniciado (pasó el gate estricto de /start) siempre se puede entregar, aunque
+  // la ventana haya cerrado mientras el alumno respondía. Solo se exige
+  // `is_active` (que sigue siendo el master switch de publicación).
   const { data: config } = await admin
     .from("evaluations")
     .select("*")

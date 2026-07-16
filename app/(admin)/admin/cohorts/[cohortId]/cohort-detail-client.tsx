@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDateOnly } from "@/lib/time";
 import { Avatar } from "@/components/classroom/primitives";
 import {
   StateBadge,
@@ -77,8 +78,10 @@ function getInitials(name: string | null, email: string): string {
   return email.slice(0, 2).toUpperCase();
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-CL", {
+// cohorts.start_date / end_date son columnas `date` (sin instante) → UTC,
+// no Chile (ver lib/time.ts).
+function formatDate(dateStr: string): string {
+  return formatDateOnly(dateStr, {
     day: "numeric",
     month: "short",
     year: "numeric",

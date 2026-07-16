@@ -214,7 +214,10 @@ export function NewEvaluationDialog({
               </option>
             ))}
           </Select>
-          {scope === "final" && blockers.finalTaken && (
+          <p className="mt-1.5 text-[12px] text-ca-ink-soft">
+            El alcance y su target tampoco se pueden cambiar después de crear la evaluación.
+          </p>
+          {blockers.finalTaken && (
             <p className="mt-1.5 text-[12px] text-ca-ink-soft">Este programa ya tiene su evaluación final.</p>
           )}
           {kind === "manual" && (

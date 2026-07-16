@@ -30,9 +30,7 @@ type SessionRowLite = {
 };
 
 function fmtUnlock(iso: string) {
-  const d = new Date(iso);
-  const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  return `${d.getDate()} ${months[d.getMonth()]}`;
+  return formatChile(iso, { day: "numeric", month: "short" });
 }
 
 function fmtSessionShort(iso: string) {

@@ -231,11 +231,16 @@ async function processWindow(
       .from("enrollments")
       .select("student_id, profiles(email, full_name)")
       .eq("cohort_id", session.cohort_id)
-      .eq("status", "active");
+      .eq("status", "active")
+      .order("student_id", { ascending: true });
     if (session.audience === "capital_inteligente") {
       enrollQuery = enrollQuery.eq("segment", "capital_inteligente");
     }
-    const { data: enrollments } = await enrollQuery;
+    const { data: enrollments, error: enrollErr } = await enrollQuery;
+    if (enrollErr) {
+      errors.push(`enrollments ${session.id} (${kind}): ${enrollErr.message}`);
+      continue;
+    }
 
     // Se conserva student_id: es la clave de la bitácora por destinatario.
     const recipients = (
@@ -261,13 +266,17 @@ async function processWindow(
     // IDEMPOTENCIA POR DESTINATARIO (migración 0075): a quién YA le llegó.
     // Sin esto, un reclamo de fila 'pending'/'failed' reenviaba desde el
     // destinatario 1 (auditoría C4).
-    const { data: ledger } = await admin
+    const { data: ledger, error: ledgerReadErr } = await admin
       .from("session_reminder_recipients")
       .select("student_id")
       .eq("session_id", session.id)
       .eq("kind", kind)
       .eq("channel", CHANNEL)
       .eq("status", "sent");
+    if (ledgerReadErr) {
+      errors.push(`ledger read ${session.id} (${kind}): ${ledgerReadErr.message}`);
+      continue; // la fila queda 'pending' → se reclama como stale a los 10 min
+    }
     const alreadyDelivered = new Set(
       ((ledger ?? []) as Array<{ student_id: string }>).map((r) => r.student_id),
     );
@@ -347,12 +356,12 @@ async function processWindow(
         status:
           recipients.length === 0
             ? "skipped"
-            : deliveredTotal === recipients.length
+            : outcome.failed.length === 0
               ? "sent"
               : "failed",
         error:
           outcome.failed.length > 0
-            ? `${outcome.failed.length}/${recipients.length} fallaron: ${outcome.failed[0].error}`
+            ? `${outcome.failed.length}/${missing.length} fallaron: ${outcome.failed[0].error}`
             : null,
       })
       .eq("session_id", session.id)

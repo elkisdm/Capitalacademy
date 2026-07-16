@@ -134,4 +134,18 @@ describe("sendEmailBatch", () => {
     expect(outcome.failed.length).toBe(2);
     expect(outcome.failed[0].error).toContain("10 requests per second");
   });
+
+  it("pasa idempotencyKey, batchValidation permissive y el from correcto", async () => {
+    mockBatchSend.mockResolvedValue({ data: { data: [], errors: [] }, error: null });
+
+    const messages = makeMessages(2);
+    const promise = sendEmailBatch(messages, "sr:s1:24h");
+    await vi.runAllTimersAsync();
+    await promise;
+
+    const [payload, options] = mockBatchSend.mock.calls[0];
+    expect(options.batchValidation).toBe("permissive");
+    expect(options.idempotencyKey).toBe(idempotencyKeyFor("sr:s1:24h", messages));
+    expect(payload[0].from).toBe("Capital Academy <no-reply@example.com>");
+  });
 });

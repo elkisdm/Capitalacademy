@@ -46,7 +46,7 @@ export function EvaluationsListClient({
                 {group.weightTotal != null && (
                   <span
                     className={`text-[11.5px] font-bold ${
-                      group.weightTotal === 100 ? "text-ca-ink-soft" : "text-[#8b6914]"
+                      group.weightTotal === 100 || group.weightPartial ? "text-ca-ink-soft" : "text-[#8b6914]"
                     }`}
                   >
                     Suma de pesos: {group.weightTotal}%

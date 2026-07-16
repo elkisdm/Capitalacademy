@@ -36,12 +36,18 @@ export type EvaluationGroup = {
   rows: EvaluationRow[];
   /** `null` si ninguna fila del grupo define `weight_pct`; si no, la suma. */
   weightTotal: number | null;
+  /** `true` si SOLO algunas filas del grupo definen `weight_pct` (peso
+   *  informativo v1, no obligatorio — ver `evaluation-settings.tsx`). Con
+   *  pesos parciales, que la suma no dé 100 es un estado legítimo, no una
+   *  alarma: la UI no debe pintarlo en ámbar. */
+  weightPartial: boolean;
 };
 
 function buildGroup(key: string, title: string, rows: EvaluationRow[]): EvaluationGroup {
   const weights = rows.map((r) => r.weight_pct).filter((w): w is number => w != null);
   const weightTotal = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) : null;
-  return { key, title, rows, weightTotal };
+  const weightPartial = weights.length > 0 && weights.length < rows.length;
+  return { key, title, rows, weightTotal, weightPartial };
 }
 
 /**

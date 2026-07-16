@@ -60,6 +60,36 @@ describe("groupEvaluations", () => {
     ];
     const groups = groupEvaluations(rows, ["mod-1"]);
     expect(groups[0].weightTotal).toBe(100);
+    expect(groups[0].weightPartial).toBe(false);
+  });
+
+  it("marca weightPartial cuando solo algunas filas del grupo definen weight_pct", () => {
+    const rows: EvaluationRow[] = [
+      makeRow({ id: "a", scope: "module", moduleId: "mod-1", moduleTitle: "Módulo 1", weight_pct: 50 }),
+      makeRow({ id: "b", scope: "module", kind: "quiz", moduleId: "mod-1", moduleTitle: "Módulo 1", weight_pct: null }),
+    ];
+    const groups = groupEvaluations(rows, ["mod-1"]);
+    expect(groups[0].weightTotal).toBe(50);
+    expect(groups[0].weightPartial).toBe(true);
+  });
+
+  it("weightPartial es false cuando todas las filas definen weight_pct (aunque no sumen 100)", () => {
+    const rows: EvaluationRow[] = [
+      makeRow({ id: "a", scope: "module", moduleId: "mod-1", moduleTitle: "Módulo 1", weight_pct: 50 }),
+      makeRow({ id: "b", scope: "module", moduleId: "mod-1", moduleTitle: "Módulo 1", weight_pct: 30 }),
+    ];
+    const groups = groupEvaluations(rows, ["mod-1"]);
+    expect(groups[0].weightTotal).toBe(80);
+    expect(groups[0].weightPartial).toBe(false);
+  });
+
+  it("weightPartial es false cuando ninguna fila define weight_pct (weightTotal null)", () => {
+    const rows: EvaluationRow[] = [
+      makeRow({ id: "a", scope: "module", moduleId: "mod-1", moduleTitle: "Módulo 1", weight_pct: null }),
+    ];
+    const groups = groupEvaluations(rows, ["mod-1"]);
+    expect(groups[0].weightTotal).toBeNull();
+    expect(groups[0].weightPartial).toBe(false);
   });
 });
 

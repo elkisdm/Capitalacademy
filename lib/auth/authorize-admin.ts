@@ -125,6 +125,7 @@ export async function requireSessionStaff(
       .eq("user_id", user.id)
       .eq("cohort_id", session.cohort_id)
       .in("role", ["teacher", "assistant"])
+      .limit(1)
       .maybeSingle();
 
     if (cohortRole) {
@@ -212,6 +213,7 @@ export async function requireEvaluationStaff(
       .eq("user_id", user.id)
       .eq("cohort_id", cohortId)
       .in("role", ["teacher", "assistant"])
+      .limit(1)
       .maybeSingle();
 
     if (cohortRole) return { user };
@@ -235,6 +237,7 @@ export async function requireEvaluationStaff(
       .eq("user_id", user.id)
       .in("cohort_id", cohortIds)
       .in("role", ["teacher", "assistant"])
+      .limit(1)
       .maybeSingle();
     if (anyRole) return { user };
   }

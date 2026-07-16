@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getEnrollmentForUser } from "@/lib/classroom/queries";
+import { GRACE_AFTER_MIN } from "@/lib/asistencia/window";
+
+const MINUTE_MS = 60_000;
 
 export type StudentGradeRow = {
   evaluationId: string;
@@ -186,14 +189,26 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   // Carril de asistencia: % calculado sobre sesiones ya cerradas de la
   // cohorte. NUNCA se expone `min_attendance_pct` en crudo (corrección A1) —
   // solo si el alumno cumple o no el requisito.
-  const nowIso = new Date().toISOString();
-  const { data: closedSessions } = await supabase
+  //
+  // Definición canónica de "sesión cerrada" (corrección A3 de la revisión):
+  // misma que `lib/admin/student-panel-queries.ts` y el cron de alertas
+  // (`lib/asistencia/queries.ts:getStudentsAtAbsenceThreshold`) — excluye
+  // `status='cancelled'` Y `modality='recorded'` (una grabación no tiene QR,
+  // no puede computar como inasistencia), y exige `now > ends_at +
+  // GRACE_AFTER_MIN` (ventana de gracia de asistencia), no solo `ends_at` en
+  // el pasado.
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+  const { data: closedSessionsRaw } = await supabase
     .from("class_sessions")
-    .select("id")
+    .select("id, ends_at")
     .eq("cohort_id", cohortId)
     .neq("status", "cancelled")
+    .neq("modality", "recorded")
     .lt("ends_at", nowIso);
-  const closedSessionIds = (closedSessions ?? []).map((s) => s.id);
+  const closedSessionIds = (closedSessionsRaw ?? [])
+    .filter((s) => now > new Date(s.ends_at).getTime() + GRACE_AFTER_MIN * MINUTE_MS)
+    .map((s) => s.id);
 
   let attendance: AttendanceLane = { pct: null, meetsRequirement: null };
   if (closedSessionIds.length > 0) {

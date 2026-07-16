@@ -5,11 +5,16 @@ import { EvaluationGrades } from "@/components/admin/quiz/evaluation-grades";
 import type { GradableEvaluation } from "@/lib/docente/queries";
 
 export function NotasDocenteClient({ evaluations }: { evaluations: GradableEvaluation[] }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // `evaluations` es un producto cartesiano cohortes × evaluaciones del
+  // programa: la misma evaluación puede aparecer una vez por cada cohorte del
+  // docente. La selección debe identificar la fila (evaluación, cohorte), no
+  // solo la evaluación, o el `find` por `id` puede resolver a la cohorte
+  // equivocada (corrección A1 de la revisión).
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const selected = useMemo(
-    () => evaluations.find((e) => e.id === selectedId) ?? null,
-    [evaluations, selectedId],
+    () => evaluations.find((e) => `${e.id}:${e.cohortId}` === selectedKey) ?? null,
+    [evaluations, selectedKey],
   );
 
   if (evaluations.length === 0) {
@@ -25,7 +30,7 @@ export function NotasDocenteClient({ evaluations }: { evaluations: GradableEvalu
       <div>
         <button
           type="button"
-          onClick={() => setSelectedId(null)}
+          onClick={() => setSelectedKey(null)}
           className="mb-4 text-[12.5px] font-bold text-ca-violet hover:underline"
         >
           ← Volver a la lista
@@ -48,7 +53,7 @@ export function NotasDocenteClient({ evaluations }: { evaluations: GradableEvalu
         <button
           key={`${ev.id}:${ev.cohortId}`}
           type="button"
-          onClick={() => setSelectedId(ev.id)}
+          onClick={() => setSelectedKey(`${ev.id}:${ev.cohortId}`)}
           className="flex items-center justify-between gap-3 rounded-xl border border-ca-ink/[0.08] bg-white px-4 py-3 text-left transition-colors hover:bg-ca-bg-soft"
         >
           <div className="min-w-0">

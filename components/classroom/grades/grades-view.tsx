@@ -8,13 +8,22 @@ import type { StudentGradesResult } from "@/lib/grades/queries";
  * individuales, sin promedio, para no mostrar un número que contradiga la
  * composición ya comunicada por la profe (corrección A7 del brief).
  */
+
+// Corrección A4 de la revisión: el único umbral de asistencia dicho por quien
+// decide (Paola) es 80%, pero NO está confirmado como política vigente — el
+// 85%/75% de `programs.min_attendance_pct` es un default dormido del seed. Se
+// oculta el carril (el cálculo, ya corregido en A3, se mantiene intacto) para
+// no publicar un veredicto autoritativo derivado de un número no confirmado.
+// Reactivar en cuanto se confirme el umbral con la profe.
+const SHOW_ATTENDANCE_REQUIREMENT = false;
+
 export function GradesView({ data }: { data: StudentGradesResult }) {
   const hasAnyGrade = data.groups.some((g) => g.rows.length > 0);
 
   return (
     <div className="flex flex-col gap-5">
       {/* Carril de asistencia — visualmente separado, nunca afecta las notas. */}
-      {data.attendance.pct !== null && (
+      {SHOW_ATTENDANCE_REQUIREMENT && data.attendance.pct !== null && (
         <div className="ca-card flex items-center gap-3 border border-ca-ink/[0.08] px-4 py-3.5">
           <span
             className="shape-circle h-2.5 w-2.5 shrink-0"

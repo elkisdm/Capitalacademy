@@ -48,6 +48,7 @@ export async function getClassroomAccess(
     .eq("user_id", userId)
     .eq("cohort_id", cohortId)
     .in("role", ["teacher", "assistant"])
+    .limit(1)
     .maybeSingle();
   if (cohortRole) {
     return { enrollment: null, isStaff: true };

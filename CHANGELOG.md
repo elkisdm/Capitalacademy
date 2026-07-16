@@ -8,6 +8,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Evaluaciones ahora es una sección propia del panel admin (`/admin/evaluaciones`): creas una evaluación (quiz o nota manual) desde cero eligiendo su alcance, y la configuras en su propia pantalla; Certificados también estrena su propia sección en el menú (`e90c576`)
+- Nueva pantalla de notas para el alumno (escala chilena 1-7) y panel de calificación para el profesor: además de los quizzes autocorregidos, ahora se pueden cargar notas manuales (roleplay, guión de venta, etc.) con checklist, borrador/publicación e importación desde Excel por email (`2064943`)
+- Ahora puedes marcar cada lección como clase, actividad práctica o evaluación; las actividades muestran una etiqueta al alumno y, si aún no tienen contenido, ya no se ve el bloque de video vacío (`730e266`)
+- Ahora puedes programar la apertura y el cierre de un quiz (por fecha y hora): se activa y se desactiva solo, sin que tengas que entrar a hacerlo manualmente (`fce1244`)
 - En el checkout de pago ahora puedes elegir boleta o factura; al elegir factura se piden los datos de la empresa (razón social, RUT, giro, dirección y correo de contacto) y le llegan al equipo junto al aviso de pago (`d9b8c97`)
 - Los archivos de la sección Recursos (y de cada lección) ahora se pueden ver directamente en la plataforma con el botón "Ver", además de descargarse (`340c947`)
 - Home del alumno rediseñada: temario en acordeón, hero compacto y progreso siempre visible (`23e5d0e`)
@@ -35,10 +39,19 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- Un pago cobrado por Flow ya no puede quedar sin registrar para siempre: el sistema verifica cada 15 minutos contra Flow los pagos en curso y recupera automáticamente los que el aviso de pago no alcanzó a confirmar (`df40b63`)
+- La hora de tu próxima clase ahora se muestra en hora de Chile: se veía varias horas más tarde de lo real (`522cfdf`)
+- Las fechas de inicio y término de una cohorte ya no se muestran un día antes (`33c4b81`)
+- Los recordatorios de clase ya no se pierden ni se repiten cuando la cohorte es grande: se envían por lote y se reintentan solo a quien le faltó el correo (`cbfc2fa`)
+- La alerta de inasistencias ya no llega a programas gratuitos o de captación que no la tienen activada; por ahora solo se envía en el Diplomado (`7b8c3f8`)
+- Comprar un programa ya no le quita los permisos a un administrador o profesor que use su misma cuenta: la matrícula automática ya no pisa el rol ni el nombre de un perfil que ya existía (`af9b097`)
 - El certificado ya no se puede emitir contra el examen final de un programa que quedó desactivado (`6a2876f`)
 - Al quitar el rol de un usuario en una cohorte, si la operación falla ahora se avisa con un mensaje de error en vez de dejar el acceso intacto sin decir nada (`7ab7fa0`)
+- El panel de notas del profesor ya no confunde cohortes: si dictas más de una cohorte del mismo programa (ej. G4 y G5), calificar la evaluación de una ya no abría por error el listado de alumnos de la otra. Además, un profesor a cargo de varias cohortes ya no recibe "No autorizado" al gestionar el checklist de una evaluación, y el requisito de asistencia del alumno se oculta temporalmente mientras se confirma el porcentaje vigente con la profe (`34641cc`)
+- Notas de quiz y checklist de evaluaciones: el guardado automático de notas de quiz ya no puede pisar una nota manual o importada desde Excel, agregar un criterio nuevo tras borrar uno del medio ya no falla, y una lección con dos evaluaciones activas ya no oculta en silencio el bloque de evaluación al alumno (`73ddc45`)
 - Una misma persona con dos cuentas (por ejemplo, alumna de un programa y profesora de otro) ya puede completar su perfil: antes el segundo registro fallaba con "Error al actualizar perfil" porque el RUT solo podía existir en una cuenta (`2f8e5e2`)
 - El menú del classroom ahora sigue al programa que estás viendo: alumnos con varios programas llegan a los entregables y recursos correctos, y al cambiar de entorno (staff) todos los links del menú se actualizan, no solo el inicio. (cc796c7)
+- Las notas ya publicadas de un alumno ya no desaparecen de su pantalla de notas cuando la profe desactiva la evaluación (por ejemplo, al cerrar el trimestre): una nota publicada es un registro académico y ya no depende de que la evaluación siga activa (`37bc866`)
 - Ver y descargar recursos ya no falla cuando la página lleva horas abierta: el enlace se genera fresco en cada clic, en todas las pantallas (lección, módulo, recursos y clase en vivo). (9ded24a)
 - Al agendar clases o entregables ya se puede elegir la hora: el selector no se cierra solo ni queda pegado en las 09:00. (9639895)
 - Si al enviar el examen final o una evaluación falla la red o el servidor, las respuestas ya no se pierden: se muestra un aviso junto al botón para reintentar el envío, en vez de mandar de vuelta al inicio con el formulario vacío (`45e4068`)

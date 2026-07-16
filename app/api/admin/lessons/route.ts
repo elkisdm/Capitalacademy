@@ -7,12 +7,14 @@ import { uniqueSlug } from "@/lib/utils/slug";
 export const runtime = "nodejs";
 
 const lessonKind = z.enum(["live_in_person", "live_online", "recorded"]);
+const activityType = z.enum(["class", "practice", "evaluation"]);
 
 const createLessonSchema = z.object({
   moduleId: z.string().trim().min(1, "moduleId es requerido"),
   title: z.string().trim().min(1, "title es requerido").max(200),
   description: z.string().trim().max(2000).nullish(),
   kind: lessonKind.default("recorded"),
+  activityType: activityType.default("class"),
   // unlock_at: ISO o null (apertura por calendario). Vacío = disponible siempre.
   unlockAt: z
     .string()
@@ -41,7 +43,7 @@ export async function POST(req: Request) {
       { status: 422 },
     );
   }
-  const { moduleId, title, description, kind, unlockAt } = parsed.data;
+  const { moduleId, title, description, kind, activityType: activityTypeValue, unlockAt } = parsed.data;
 
   // El módulo debe existir (evita FK error opaco).
   const { data: mod } = await supabase
@@ -78,6 +80,7 @@ export async function POST(req: Request) {
       title,
       description: description ?? null,
       kind,
+      activity_type: activityTypeValue,
       unlock_at: unlockAt || null,
       position,
       slug,

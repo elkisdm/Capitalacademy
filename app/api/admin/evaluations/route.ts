@@ -62,6 +62,11 @@ export async function GET(req: Request) {
 //   Crea una evaluación ligada a una lección, un módulo, o el programa (final).
 // ---------------------------------------------------------------------------
 
+const isoDatetime = z
+  .string()
+  .trim()
+  .refine((v) => !Number.isNaN(Date.parse(v)), "Fecha inválida");
+
 const createSchema = z
   .object({
     programId: uuidLike,
@@ -71,14 +76,29 @@ const createSchema = z
     sessionId: uuidLike.optional(),
     title: z.string().trim().min(1, "El título es requerido").max(200),
     description: z.string().trim().max(2000).optional(),
+    // 'quiz' (default, compat con todos los llamadores existentes) | 'manual'
+    // (roleplay, guión de venta, etc — sin preguntas, se califica a mano).
+    // NO editable tras la creación (ver PATCH: no acepta `kind`).
+    kind: z.enum(["quiz", "manual"]).optional(),
+    weightPct: z.number().min(0).max(100).nullable().optional(),
     passingGradePct: z.number().int().min(1).max(100).optional(),
     questionsPerAttempt: z.number().int().min(1).max(200).nullable().optional(),
     maxAttempts: z.number().int().min(1).max(50).optional(),
     timeLimitMinutes: z.number().int().min(1).max(600).nullable().optional(),
     minCompletionPct: z.number().int().min(1).max(100).nullable().optional(),
     isActive: z.boolean().optional(),
+    // Ventana de programación (0070). NULL/ausente = sin límite en ese extremo.
+    opensAt: isoDatetime.nullable().optional(),
+    closesAt: isoDatetime.nullable().optional(),
   })
   .superRefine((val, ctx) => {
+    if (val.opensAt && val.closesAt && new Date(val.closesAt) <= new Date(val.opensAt)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "La fecha de cierre debe ser posterior a la de apertura",
+        path: ["closesAt"],
+      });
+    }
     // Coherencia de alcance ↔ target (espeja el CHECK evaluations_scope_target,
     // ampliado en 0040 con la rama session).
     if (val.scope === "module" && !val.moduleId) {
@@ -171,12 +191,16 @@ export async function POST(req: Request) {
       session_id: v.scope === "session" ? v.sessionId! : null,
       title: v.title,
       description: v.description ?? null,
+      kind: v.kind ?? "quiz",
+      weight_pct: v.weightPct ?? null,
       passing_grade_pct: v.passingGradePct ?? 70,
       questions_per_attempt: v.questionsPerAttempt ?? null,
       max_attempts: v.maxAttempts ?? 3,
       time_limit_minutes: v.timeLimitMinutes ?? null,
       min_completion_pct: v.scope === "final" ? (v.minCompletionPct ?? 80) : null,
       is_active: v.isActive ?? false,
+      opens_at: v.opensAt ?? null,
+      closes_at: v.closesAt ?? null,
     })
     .select()
     .single();
@@ -187,6 +211,13 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Ya existe una evaluación final o activa para este alcance" },
         { status: 409 },
+      );
+    }
+    // 23514 = check_violation (ej. evaluations_window_chk).
+    if ((error as { code?: string }).code === "23514") {
+      return NextResponse.json(
+        { error: "La fecha de cierre debe ser posterior a la de apertura" },
+        { status: 422 },
       );
     }
     console.error("Error creating evaluation:", error);

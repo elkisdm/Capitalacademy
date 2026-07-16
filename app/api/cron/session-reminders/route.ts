@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendSessionReminderEmail } from "@/lib/email/session-reminder";
-import { sendCapacitacionReminderEmail } from "@/lib/email/capacitacion-emails";
+import { buildSessionReminderEmail } from "@/lib/email/session-reminder";
+import { buildCapacitacionReminderEmail } from "@/lib/email/capacitacion-emails";
+import { sendEmailBatch, type BatchMessage } from "@/lib/email/send-batch";
 import { sendAttendanceWarningEmail } from "@/lib/email/attendance-warning";
 import { getStudentsAtAbsenceThreshold } from "@/lib/asistencia/queries";
 import { authorizeCron } from "@/lib/api/cron-auth";
@@ -230,22 +231,30 @@ async function processWindow(
       .from("enrollments")
       .select("student_id, profiles(email, full_name)")
       .eq("cohort_id", session.cohort_id)
-      .eq("status", "active");
+      .eq("status", "active")
+      .order("student_id", { ascending: true });
     if (session.audience === "capital_inteligente") {
       enrollQuery = enrollQuery.eq("segment", "capital_inteligente");
     }
-    const { data: enrollments } = await enrollQuery;
+    const { data: enrollments, error: enrollErr } = await enrollQuery;
+    if (enrollErr) {
+      errors.push(`enrollments ${session.id} (${kind}): ${enrollErr.message}`);
+      continue;
+    }
 
+    // Se conserva student_id: es la clave de la bitácora por destinatario.
     const recipients = (
       (enrollments ?? []) as Array<{
+        student_id: string;
         profiles: { email: string; full_name: string | null } | null;
       }>
     )
-      .map((e) => e.profiles)
-      .filter(
-        (p): p is { email: string; full_name: string | null } =>
-          Boolean(p?.email),
-      );
+      .filter((e) => Boolean(e.profiles?.email))
+      .map((e) => ({
+        studentId: e.student_id,
+        email: e.profiles!.email,
+        fullName: e.profiles!.full_name,
+      }));
 
     const title = session.title ?? "Tu próxima clase";
     const teacherName = session.teacher_id
@@ -254,13 +263,31 @@ async function processWindow(
     const isCapacitacion =
       programByCohort.get(session.cohort_id) === CAP_CI_PROGRAM_ID;
 
-    let sent = 0;
-    let lastError: string | undefined;
-    for (const r of recipients) {
-      const res = isCapacitacion
-        ? await sendCapacitacionReminderEmail({
+    // IDEMPOTENCIA POR DESTINATARIO (migración 0075): a quién YA le llegó.
+    // Sin esto, un reclamo de fila 'pending'/'failed' reenviaba desde el
+    // destinatario 1 (auditoría C4).
+    const { data: ledger, error: ledgerReadErr } = await admin
+      .from("session_reminder_recipients")
+      .select("student_id")
+      .eq("session_id", session.id)
+      .eq("kind", kind)
+      .eq("channel", CHANNEL)
+      .eq("status", "sent");
+    if (ledgerReadErr) {
+      errors.push(`ledger read ${session.id} (${kind}): ${ledgerReadErr.message}`);
+      continue; // la fila queda 'pending' → se reclama como stale a los 10 min
+    }
+    const alreadyDelivered = new Set(
+      ((ledger ?? []) as Array<{ student_id: string }>).map((r) => r.student_id),
+    );
+    const missing = recipients.filter((r) => !alreadyDelivered.has(r.studentId));
+
+    const studentIdByEmail = new Map(missing.map((r) => [r.email, r.studentId]));
+    const messages: BatchMessage[] = missing.map((r) => {
+      const content = isCapacitacion
+        ? buildCapacitacionReminderEmail({
             email: r.email,
-            fullName: r.full_name ?? "",
+            fullName: r.fullName ?? "",
             sessionTitle: title,
             startsAtIso: session.starts_at,
             endsAtIso: session.ends_at,
@@ -268,9 +295,9 @@ async function processWindow(
             meetingUrl: session.meeting_url,
             kind,
           })
-        : await sendSessionReminderEmail({
+        : buildSessionReminderEmail({
             email: r.email,
-            fullName: r.full_name ?? "",
+            fullName: r.fullName ?? "",
             sessionTitle: title,
             startsAtIso: session.starts_at,
             endsAtIso: session.ends_at,
@@ -279,20 +306,63 @@ async function processWindow(
             teacherName,
             kind,
           });
-      if (res.success) sent++;
-      else lastError = res.error;
+      return { to: r.email, ...content };
+    });
+
+    // Fan-out por lotes de 100: 239 destinatarios = 3 llamadas a Resend
+    // (~2-4s) en vez de 239 requests secuenciales que cruzan el rate limit de
+    // 10 req/s y el techo de la función.
+    const outcome = await sendEmailBatch(messages, `sr:${session.id}:${kind}`);
+
+    // Bitácora por destinatario. Un 'failed' aquí se reintenta en la próxima
+    // corrida (solo a él); un 'sent' no se vuelve a tocar nunca.
+    const ledgerRows = [
+      ...outcome.sent.map((to) => ({
+        session_id: session.id,
+        student_id: studentIdByEmail.get(to)!,
+        kind,
+        channel: CHANNEL,
+        status: "sent",
+        error: null as string | null,
+      })),
+      ...outcome.failed.map((f) => ({
+        session_id: session.id,
+        student_id: studentIdByEmail.get(f.to)!,
+        kind,
+        channel: CHANNEL,
+        status: "failed",
+        error: f.error,
+      })),
+    ];
+    if (ledgerRows.length > 0) {
+      const { error: ledgerErr } = await admin
+        .from("session_reminder_recipients")
+        .upsert(ledgerRows, { onConflict: "session_id,kind,channel,student_id" });
+      if (ledgerErr) errors.push(`ledger ${session.id} (${kind}): ${ledgerErr.message}`);
     }
 
-    totalEmails += sent;
+    const deliveredTotal = alreadyDelivered.size + outcome.sent.length;
+    totalEmails += outcome.sent.length;
     sessionsProcessed++;
 
-    // Actualizar la bitácora con el resultado real del envío.
+    // Estado real del envío. NO se marca 'sent' con entregas parciales (bug C4:
+    // 4 de 5 corridas históricas quedaron 'sent' con 429 y correos perdidos sin
+    // reintento). 'failed' es reintentable y ahora es seguro: la bitácora hace
+    // que el reintento toque solo a quien falta.
     await admin
       .from("session_reminders")
       .update({
-        recipients_count: sent,
-        status: sent > 0 ? "sent" : recipients.length === 0 ? "skipped" : "failed",
-        error: lastError ?? null,
+        recipients_count: deliveredTotal,
+        status:
+          recipients.length === 0
+            ? "skipped"
+            : outcome.failed.length === 0
+              ? "sent"
+              : "failed",
+        error:
+          outcome.failed.length > 0
+            ? `${outcome.failed.length}/${missing.length} fallaron: ${outcome.failed[0].error}`
+            : null,
       })
       .eq("session_id", session.id)
       .eq("kind", kind)

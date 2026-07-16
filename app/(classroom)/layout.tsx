@@ -10,6 +10,7 @@ import {
   getActiveEnrollmentsForUser,
 } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
+import { isEvaluationOpen } from "@/lib/classroom/evaluation-window";
 
 export const metadata = {
   title: "Classroom",
@@ -104,20 +105,21 @@ export default async function ClassroomLayout({
     }
   }
 
-  // Evaluación final publicada para el programa de la cohorte activa: oculta
-  // el item "Quiz final" del sidebar cuando no hay ninguna configurada (evita
-  // llevar a la pantalla "Próximamente"). Misma condición que /api/classroom/quiz.
+  // Evaluación final publicada Y dentro de ventana para el programa de la
+  // cohorte activa: oculta el item "Quiz final" del sidebar cuando no hay
+  // ninguna disponible (evita llevar a la pantalla "Próximamente"). Misma
+  // condición que /api/classroom/quiz (pasos 4 y 5 van juntos).
   let hasFinalEvaluation = false;
   if (programId) {
     const { data: finalEval } = await supabase
       .from("evaluations")
-      .select("id")
+      .select("id, is_active, opens_at, closes_at")
       .eq("program_id", programId)
       .eq("scope", "final")
       .eq("is_active", true)
       .limit(1)
       .maybeSingle();
-    hasFinalEvaluation = !!finalEval;
+    hasFinalEvaluation = !!finalEval && isEvaluationOpen(finalEval);
   }
 
   // Controles de staff (selector de entorno + modo de vista). Solo se cargan
@@ -157,17 +159,20 @@ export default async function ClassroomLayout({
     const enrollments = await getActiveEnrollmentsForUser(user.id);
     hasMultiplePrograms = enrollments.length > 1;
 
-    // Evaluaciones finales activas de todos sus programas en una sola consulta.
+    // Evaluaciones finales activas y dentro de ventana de todos sus programas,
+    // en una sola consulta.
     const programIds = [...new Set(enrollments.map((e) => e.programId))];
     const finalSet = new Set<string>();
     if (programIds.length > 0) {
       const { data: finals } = await supabase
         .from("evaluations")
-        .select("program_id")
+        .select("program_id, is_active, opens_at, closes_at")
         .in("program_id", programIds)
         .eq("scope", "final")
         .eq("is_active", true);
-      for (const f of finals ?? []) finalSet.add(f.program_id as string);
+      for (const f of finals ?? []) {
+        if (isEvaluationOpen(f)) finalSet.add(f.program_id as string);
+      }
     }
 
     for (const e of enrollments) {

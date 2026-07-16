@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCompletion } from "@/lib/classroom/quiz-runtime";
+import { isEvaluationOpen } from "@/lib/classroom/evaluation-window";
 
 export const runtime = "nodejs";
 
@@ -52,7 +53,9 @@ export async function GET(req: Request) {
     .eq("scope", "final")
     .eq("is_active", true)
     .single();
-  if (configError || !config) {
+  // Ventana de programación (0070) estricta: fuera de ventana se trata igual
+  // que "no configurada" (N3: no se agrega copy propio en esta iteración).
+  if (configError || !config || !isEvaluationOpen(config)) {
     return NextResponse.json({ status: "unconfigured" });
   }
   const minCompletion = config.min_completion_pct ?? 0;

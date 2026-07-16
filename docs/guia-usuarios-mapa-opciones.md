@@ -97,7 +97,7 @@ La plataforma envía **recordatorios automáticos** por email antes de cada clas
 ### 2.5 Evaluaciones / Quizzes
 Hay **dos tipos**, en la misma tabla `evaluations`, distinguidos por `scope`:
 
-**A) Examen FINAL — `/admin/quizzes`** (el único que **emite certificado**):
+**A) Examen FINAL — `/admin/evaluaciones`** (el único que **emite certificado**):
 | Tab | Qué hace |
 |-----|----------|
 | **Preguntas** | Pool del examen. Agregar manual o **Generar con IA** (usa transcripciones del programa). ⚠️ **Solo opción única A–D** (ver limitación abajo) |

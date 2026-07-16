@@ -14,13 +14,13 @@ import { resolveResourceUrls } from "@/lib/classroom/resource-urls";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { ResourceList, type DisplayResource } from "@/components/classroom/resource-list";
 import type { LessonResource } from "@/lib/classroom/types";
+import { formatChile } from "@/lib/time";
 
 export const metadata: Metadata = {
   title: "Recursos del programa · Capital Academy",
 };
 
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("es-CL", { day: "numeric", month: "long" });
+const fmtDate = (iso: string) => formatChile(iso, { day: "numeric", month: "long" });
 
 export default async function RecursosPage(
   props: { params: Promise<{ cohortSlug: string }> },

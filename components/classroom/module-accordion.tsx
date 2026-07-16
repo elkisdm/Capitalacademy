@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { LessonStatusIcon, ProgressBar, StatusPill } from "@/components/classroom/primitives";
+import { Badge } from "@/components/ui/badge";
+import { ACTIVITY_TYPE_LABELS, type LessonActivityType } from "@/lib/classroom/types";
 
 export type ClassRowData = {
   key: string;
@@ -10,6 +12,8 @@ export type ClassRowData = {
   unlockLabel?: string;
   /** Clase en vivo con repetición lista; href ya va a clase/[sessionId]. */
   hasRecording?: boolean;
+  /** Ausente para filas de `class_sessions` (no tienen la columna). */
+  activityType?: LessonActivityType;
 };
 
 export type ModuleAccordionItemProps = {
@@ -24,6 +28,19 @@ export type ModuleAccordionItemProps = {
   rows: ClassRowData[];
 };
 
+/** Badge de tipo de actividad. Solo cuando NO es 'class': marcar las clases
+ *  normales sería ruido en el 90% de las filas (reusa el pill de "Repetición"). */
+function ActivityBadge({ activityType }: { activityType?: LessonActivityType }) {
+  if (!activityType) return null;
+  const info = ACTIVITY_TYPE_LABELS[activityType];
+  if (!info) return null;
+  return (
+    <Badge tone={info.tone} size="sm" className="shrink-0">
+      {info.label}
+    </Badge>
+  );
+}
+
 function ClassRow({ row }: { row: ClassRowData }) {
   if (row.href) {
     return (
@@ -36,6 +53,7 @@ function ClassRow({ row }: { row: ClassRowData }) {
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ca-ink">
           {row.title}
         </span>
+        <ActivityBadge activityType={row.activityType} />
         {row.hasRecording && (
           <span className="shrink-0 rounded-full bg-ca-violet/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-ca-violet">
             Repetición
@@ -53,6 +71,7 @@ function ClassRow({ row }: { row: ClassRowData }) {
       <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ca-ink-soft">
         {row.title}
       </span>
+      <ActivityBadge activityType={row.activityType} />
       <span className="shrink-0 font-mono text-[11px] text-ca-ink-soft">
         {row.unlockLabel ?? row.durationOrDate}
       </span>

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
+import { DatePicker } from "@/components/ui/date-picker";
+import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
 import type { Evaluation } from "./types";
 import { LoaderIcon, CheckCircleIcon } from "./icons";
 
@@ -17,7 +19,23 @@ type FormState = {
   questionsPerAttempt: string;
   timeLimitMinutes: string;
   minCompletionPct: string;
+  weightPct: string;
+  opensAt: string;
+  closesAt: string;
 };
+
+// timestamptz ISO → valor para el <DatePicker> (hora de Chile).
+function isoToLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return isoToChileWallTime(iso);
+}
+
+// Valor del <DatePicker> (hora de Chile) → ISO; vacío = null (sin límite).
+function fromLocalInput(value: string): string | null {
+  return value ? chileWallTimeToIso(value) : null;
+}
 
 function fromEvaluation(ev: Evaluation): FormState {
   return {
@@ -28,6 +46,9 @@ function fromEvaluation(ev: Evaluation): FormState {
     questionsPerAttempt: ev.questions_per_attempt != null ? String(ev.questions_per_attempt) : "",
     timeLimitMinutes: ev.time_limit_minutes != null ? String(ev.time_limit_minutes) : "",
     minCompletionPct: ev.min_completion_pct != null ? String(ev.min_completion_pct) : "",
+    weightPct: ev.weight_pct != null ? String(ev.weight_pct) : "",
+    opensAt: isoToLocalInput(ev.opens_at),
+    closesAt: isoToLocalInput(ev.closes_at),
   };
 }
 
@@ -53,6 +74,7 @@ export function EvaluationSettings({
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const isFinal = evaluation.scope === "final";
+  const isManual = evaluation.kind === "manual";
 
   function buildPayload(): Record<string, unknown> | string {
     const title = form.title.trim();
@@ -96,6 +118,24 @@ export function EvaluationSettings({
       if (!Number.isInteger(n) || n < 1 || n > 100) return "El % de avance mínimo debe estar entre 1 y 100.";
       payload.minCompletionPct = n;
     }
+
+    // Peso informativo (0072): se captura y muestra, el cálculo es v2.
+    if (form.weightPct.trim() === "") {
+      payload.weightPct = null;
+    } else {
+      const n = Number(form.weightPct);
+      if (Number.isNaN(n) || n < 0 || n > 100) return "El peso debe estar entre 0 y 100, o vacío.";
+      payload.weightPct = n;
+    }
+
+    // Ventana de programación (0070): opcional, uniforme para todos los scopes (D4).
+    const opensAt = fromLocalInput(form.opensAt);
+    const closesAt = fromLocalInput(form.closesAt);
+    if (opensAt && closesAt && new Date(closesAt) <= new Date(opensAt)) {
+      return "La fecha de cierre debe ser posterior a la de apertura.";
+    }
+    payload.opensAt = opensAt;
+    payload.closesAt = closesAt;
 
     return payload;
   }
@@ -155,58 +195,84 @@ export function EvaluationSettings({
           />
         </div>
 
-        <div>
-          <label className={labelCls} htmlFor="eval-attempts">N.º de intentos</label>
-          <Input
-            id="eval-attempts"
-            type="number"
-            min={1}
-            max={50}
-            value={form.maxAttempts}
-            onChange={(e) => set("maxAttempts", e.target.value)}
-          />
-          <p className={hintCls}>Cuántas veces puede rendir el alumno.</p>
-        </div>
+        {/* N.º de intentos / % para aprobar / preguntas por intento / tiempo:
+            solo aplican a kind='quiz' — una nota manual no tiene intentos ni
+            autocorrección. Los valores subyacentes se siguen enviando (con su
+            default) para no tocar la validación existente. */}
+        {!isManual && (
+          <div>
+            <label className={labelCls} htmlFor="eval-attempts">N.º de intentos</label>
+            <Input
+              id="eval-attempts"
+              type="number"
+              min={1}
+              max={50}
+              value={form.maxAttempts}
+              onChange={(e) => set("maxAttempts", e.target.value)}
+            />
+            <p className={hintCls}>Cuántas veces puede rendir el alumno.</p>
+          </div>
+        )}
+
+        {!isManual && (
+          <div>
+            <label className={labelCls} htmlFor="eval-passing">% para aprobar</label>
+            <Input
+              id="eval-passing"
+              type="number"
+              min={1}
+              max={100}
+              value={form.passingGradePct}
+              onChange={(e) => set("passingGradePct", e.target.value)}
+            />
+            <p className={hintCls}>Nota mínima para aprobar la evaluación.</p>
+          </div>
+        )}
+
+        {!isManual && (
+          <div>
+            <label className={labelCls} htmlFor="eval-perattempt">Preguntas por intento</label>
+            <Input
+              id="eval-perattempt"
+              type="number"
+              min={1}
+              max={200}
+              value={form.questionsPerAttempt}
+              onChange={(e) => set("questionsPerAttempt", e.target.value)}
+              placeholder="Todas"
+            />
+            <p className={hintCls}>Vacío = todas las preguntas del pool.</p>
+          </div>
+        )}
+
+        {!isManual && (
+          <div>
+            <label className={labelCls} htmlFor="eval-time">Límite de tiempo (min)</label>
+            <Input
+              id="eval-time"
+              type="number"
+              min={1}
+              max={600}
+              value={form.timeLimitMinutes}
+              onChange={(e) => set("timeLimitMinutes", e.target.value)}
+              placeholder="Sin límite"
+            />
+            <p className={hintCls}>Vacío = sin límite de tiempo.</p>
+          </div>
+        )}
 
         <div>
-          <label className={labelCls} htmlFor="eval-passing">% para aprobar</label>
+          <label className={labelCls} htmlFor="eval-weight">Peso (%)</label>
           <Input
-            id="eval-passing"
+            id="eval-weight"
             type="number"
-            min={1}
+            min={0}
             max={100}
-            value={form.passingGradePct}
-            onChange={(e) => set("passingGradePct", e.target.value)}
+            value={form.weightPct}
+            onChange={(e) => set("weightPct", e.target.value)}
+            placeholder="Sin definir"
           />
-          <p className={hintCls}>Nota mínima para aprobar la evaluación.</p>
-        </div>
-
-        <div>
-          <label className={labelCls} htmlFor="eval-perattempt">Preguntas por intento</label>
-          <Input
-            id="eval-perattempt"
-            type="number"
-            min={1}
-            max={200}
-            value={form.questionsPerAttempt}
-            onChange={(e) => set("questionsPerAttempt", e.target.value)}
-            placeholder="Todas"
-          />
-          <p className={hintCls}>Vacío = todas las preguntas del pool.</p>
-        </div>
-
-        <div>
-          <label className={labelCls} htmlFor="eval-time">Límite de tiempo (min)</label>
-          <Input
-            id="eval-time"
-            type="number"
-            min={1}
-            max={600}
-            value={form.timeLimitMinutes}
-            onChange={(e) => set("timeLimitMinutes", e.target.value)}
-            placeholder="Sin límite"
-          />
-          <p className={hintCls}>Vacío = sin límite de tiempo.</p>
+          <p className={hintCls}>Informativo (v1): se muestra, no se calcula la nota final.</p>
         </div>
 
         {isFinal && (
@@ -223,6 +289,26 @@ export function EvaluationSettings({
             <p className={hintCls}>Avance del programa requerido para habilitar el final.</p>
           </div>
         )}
+
+        <div>
+          <DatePicker
+            withTime
+            label="Se abre"
+            value={form.opensAt}
+            onChange={(v) => set("opensAt", v)}
+          />
+          <p className={hintCls}>Vacío = disponible en cuanto la actives.</p>
+        </div>
+
+        <div>
+          <DatePicker
+            withTime
+            label="Se cierra"
+            value={form.closesAt}
+            onChange={(v) => set("closesAt", v)}
+          />
+          <p className={hintCls}>Vacío = sin fecha de cierre.</p>
+        </div>
       </div>
 
       {error && (

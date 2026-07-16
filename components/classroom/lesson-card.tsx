@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { LessonWithProgress, LessonStatus } from "@/lib/classroom/types";
 import { getLessonStatus } from "@/lib/classroom/progress";
 import { fmtDuration } from "@/lib/classroom/format";
+import { formatChile } from "@/lib/time";
 
 /* ── Inline SVG icons (matches classroom design pattern) ─────── */
 
@@ -133,7 +134,7 @@ export function LessonCard({
         {status === "locked" && lesson.unlock_at && (
           <p className="text-xs text-ca-ink-soft">
             Disponible{" "}
-            {new Date(lesson.unlock_at).toLocaleDateString("es-CL", {
+            {formatChile(lesson.unlock_at, {
               day: "numeric",
               month: "short",
             })}

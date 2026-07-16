@@ -7,6 +7,7 @@ import { uuidLike } from "@/lib/utils/zod";
 export const runtime = "nodejs";
 
 const lessonKind = z.enum(["live_in_person", "live_online", "recorded"]);
+const activityType = z.enum(["class", "practice", "evaluation"]);
 
 // Edición de metadatos de la lección. El `slug` NO se edita: cambiarlo rompería
 // URLs/bookmarks existentes (se fija al crear). El video/recursos se gestionan
@@ -18,6 +19,7 @@ const patchLessonSchema = z
     // Contenido de texto/diapositiva (Markdown). Hasta 50k caracteres.
     content: z.string().max(50000).nullish(),
     kind: lessonKind.optional(),
+    activityType: activityType.optional(),
     unlockAt: z
       .string()
       .trim()
@@ -55,13 +57,14 @@ export async function PATCH(
       { status: 422 },
     );
   }
-  const { title, description, content, kind, unlockAt, moduleId } = parsed.data;
+  const { title, description, content, kind, activityType: activityTypeValue, unlockAt, moduleId } = parsed.data;
 
   const patch: {
     title?: string;
     description?: string | null;
     content?: string | null;
     kind?: "live_in_person" | "live_online" | "recorded";
+    activity_type?: "class" | "practice" | "evaluation";
     unlock_at?: string | null;
     module_id?: string;
     position?: number;
@@ -70,6 +73,7 @@ export async function PATCH(
   if (description !== undefined) patch.description = description ?? null;
   if (content !== undefined) patch.content = content?.trim() ? content : null;
   if (kind !== undefined) patch.kind = kind;
+  if (activityTypeValue !== undefined) patch.activity_type = activityTypeValue;
   // unlockAt presente (incluso null/"") = setear/limpiar la apertura por calendario.
   if (unlockAt !== undefined) patch.unlock_at = unlockAt || null;
 
@@ -114,7 +118,7 @@ export async function PATCH(
   if (Object.keys(patch).length === 0) {
     const { data: current } = await supabase
       .from("lessons")
-      .select("id, title, description, kind, unlock_at, slug, position")
+      .select("id, title, description, kind, activity_type, unlock_at, slug, position")
       .eq("id", lessonId)
       .maybeSingle();
     if (!current) {
@@ -127,7 +131,7 @@ export async function PATCH(
     .from("lessons")
     .update(patch)
     .eq("id", lessonId)
-    .select("id, title, description, kind, unlock_at, slug, position")
+    .select("id, title, description, kind, activity_type, unlock_at, slug, position")
     .maybeSingle();
 
   if (error) {

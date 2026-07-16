@@ -1,4 +1,4 @@
-import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import type { EmailContent } from "@/lib/email/send-batch";
 
 const TZ = "America/Santiago";
 
@@ -16,29 +16,16 @@ export interface SessionReminderInput {
   kind: "24h" | "1h";
 }
 
-export async function sendSessionReminderEmail(
-  params: SessionReminderInput,
-): Promise<{ success: boolean; error?: string }> {
-  const resend = getResendClient();
-
-  try {
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: params.email,
-      subject: subjectFor(params),
-      html: reminderHtml(params),
-      text: reminderText(params),
-    });
-    if (result.error) {
-      return { success: false, error: result.error.message };
-    }
-    return { success: true };
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "unknown",
-    };
-  }
+/**
+ * Arma el recordatorio genérico sin enviarlo: el cron lo despacha por lote
+ * (lib/email/send-batch.ts). Ver ADR-0020.
+ */
+export function buildSessionReminderEmail(params: SessionReminderInput): EmailContent {
+  return {
+    subject: subjectFor(params),
+    html: reminderHtml(params),
+    text: reminderText(params),
+  };
 }
 
 // --- Helpers de presentación -------------------------------------------------

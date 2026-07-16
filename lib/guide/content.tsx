@@ -405,7 +405,7 @@ export const ARTICLES: Article[] = [
     overview:
       "El examen final es el que emite certificado. Defines sus reglas, cargas el pool de preguntas y revisas intentos y certificados.",
     steps: [
-      "En “Quizzes”, ajusta la Configuración: completitud mínima, nota de aprobación e intentos.",
+      "En “Evaluaciones”, abre la evaluación final y ajusta sus Ajustes: completitud mínima, nota de aprobación e intentos.",
       "Carga las preguntas manualmente o genéralas con IA a partir del contenido del programa.",
       "Activa el examen y revisa los intentos y certificados en sus pestañas.",
     ],
@@ -418,8 +418,8 @@ export const ARTICLES: Article[] = [
         a: "Por ahora el examen final usa solo opción única. Para esos tipos, úsalos en los quizzes de práctica por clase.",
       },
     ],
-    route: () => "/admin/quizzes",
-    routeLabel: "Ir a Quizzes",
+    route: () => "/admin/evaluaciones",
+    routeLabel: "Ir a Evaluaciones",
   },
   {
     slug: "certificacion",
@@ -431,13 +431,13 @@ export const ARTICLES: Article[] = [
     overview:
       "El certificado se emite automáticamente cuando un alumno aprueba el examen final. Es verificable públicamente y único por matrícula.",
     steps: [
-      "Revisa los certificados emitidos en la pestaña “Certificados” de Quizzes.",
+      "Revisa los certificados emitidos en la sección “Certificados”.",
       "Descarga o reemite si una generación falló.",
       "Cualquiera puede verificar un certificado con su código en /verificar.",
     ],
     tips: ["Solo el examen final emite certificado; aprobar un quiz de práctica no lo habilita."],
-    route: () => "/admin/quizzes",
-    routeLabel: "Ir a Quizzes",
+    route: () => "/admin/certificados",
+    routeLabel: "Ir a Certificados",
   },
   {
     slug: "progreso",

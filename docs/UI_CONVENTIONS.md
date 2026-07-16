@@ -77,7 +77,7 @@ Con feedback inline check/alert y mensaje "RUT inválido. Verifica el dígito ve
 
 ### 2.4 Moneda: locale `es-CL`, precio base desde constantes únicas
 
-**Regla:** El precio base vive en `lib/pricing.ts` (`DIPLOMADO_PRICE_CLP = 500_000`) y constantes de `lib/landing/constants.ts`; formatea con `Intl.NumberFormat("es-CL", { currency: "CLP" })`. Fechas con `Intl.DateTimeFormat("es-CL", ...)` (`lib/landing/cohort.ts:19`).
+**Regla:** El precio base vive en `lib/pricing.ts` (`DIPLOMADO_PRICE_CLP = 500_000`) y constantes de `lib/landing/constants.ts`; formatea con `Intl.NumberFormat("es-CL", { currency: "CLP" })`. Fechas: usa siempre los helpers de `lib/time.ts` — `formatChile()` para instantes (`timestamptz`: `starts_at`, `unlock_at`, `opens_at`…) y `formatDateOnly()` para columnas `date` sin componente de hora (`cohorts.start_date`). Nunca `Intl.DateTimeFormat("es-CL", ...)` ni `toLocale*` sin `timeZone` explícito: sin zona, el server hereda la del runtime (Netlify = UTC) y el instante se ve corrido; y aplicar la zona de Chile a una columna `date` la retrocede un día. Ver `lib/time.ts` para el porqué (`lib/landing/cohort.ts:19` usa un ancla de mediodía UTC-4 anterior a este helper — no rompe, pero no la repliques en código nuevo).
 
 **Antipatrón (gap real):** no existe helper compartido de CLP para el cliente — hoy se hace ad-hoc con `toLocaleString("es-CL")` (`admin/cobros/page.tsx:33`) y parseo manual `input.replace(/\D/g, "")` (`cobro-generator.tsx:34`). Si generas UI nueva con montos, crea `formatCLP()` en `lib/utils/` junto a `rut.ts`/`phone.ts` y úsalo — no sumes otro formateo inline.
 

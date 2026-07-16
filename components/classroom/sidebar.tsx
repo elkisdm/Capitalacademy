@@ -67,6 +67,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>,
   chat: <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></>,
   userCheck: <><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M16 11l2 2 4-4" /></>,
+  award: <><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" /></>,
 };
 
 function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -471,6 +472,9 @@ export function ClassroomSidebar({
       ...(activeCohort ? [
         { icon: "folder", label: "Recursos", href: `/classroom/${activeCohort}/recursos`, section: "learn" as const },
         { icon: "upload", label: "Entregables", href: `/classroom/${activeCohort}/entregables`, section: "learn" as const },
+        // Notas: NUNCA se gatea (a diferencia del quiz final) — la pantalla
+        // debe existir siempre, aunque el alumno aún no tenga notas publicadas.
+        { icon: "chart", label: "Notas", href: `/classroom/${activeCohort}/notas`, section: "learn" as const },
         { icon: "chat", label: "Conversaciones", href: `/classroom/${activeCohort}/conversaciones`, section: "learn" as const },
         ...(activeHasFinal ? [
           { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${activeCohort}/quiz`, section: "learn" as const },
@@ -493,7 +497,8 @@ export function ClassroomSidebar({
       // gestionan dentro de Lecciones (lecciones grabadas y clases en vivo).
       { icon: "calendar", label: "Calendario", href: "/admin/calendario", section: "config" as const },
       { icon: "filmLines", label: "Lecciones", href: "/admin/lessons", section: "config" as const },
-      { icon: "clipboardCheck", label: "Quizzes", href: "/admin/quizzes", section: "config" as const },
+      { icon: "clipboardCheck", label: "Evaluaciones", href: "/admin/evaluaciones", section: "config" as const },
+      { icon: "award", label: "Certificados", href: "/admin/certificados", section: "config" as const },
       { icon: "upload", label: "Entregables", href: "/admin/deliverables", section: "config" as const },
       { icon: "userCheck", label: "Alumnos", href: "/admin/alumnos", section: "config" as const },
       { icon: "chart", label: "Progreso cohorte", href: "/admin/progress", section: "config" as const },

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { diplomadoCheckoutSchema } from "@/lib/fintoc/schema";
 import { PAYMENT_PLANS, createFlowCheckout } from "@/lib/flow/checkout";
@@ -71,7 +72,17 @@ export async function POST(req: Request) {
 
   const supabase = createAdminClient();
 
+  // commerce_order se genera ANTES del insert (que sí captura errores) para
+  // que la llave de reconciliación exista en la DB antes de que Flow pueda
+  // cobrar. El UPDATE posterior de flow_token/flow_order es best-effort: si
+  // falla, el cron de reconciliación (app/api/cron/flow-reconcile) igual
+  // recupera el pago por commerce_order (ver ADR-0021 / M10).
+  const paymentId = crypto.randomUUID();
+  const commerceOrder = `CA-${paymentId.slice(0, 8)}-${Date.now().toString(36)}`;
+
   const insertPayload: PaymentInsert = {
+    id: paymentId,
+    commerce_order: commerceOrder,
     firstname,
     lastname,
     rut,
@@ -110,7 +121,6 @@ export async function POST(req: Request) {
   }
 
   if (provider === "flow") {
-    const commerceOrder = `CA-${payment.id.slice(0, 8)}-${Date.now().toString(36)}`;
     const flow = await createFlowCheckout({
       paymentId: payment.id,
       commerceOrder,
@@ -137,14 +147,21 @@ export async function POST(req: Request) {
       );
     }
 
-    await supabase
+    const { error: tokenErr } = await supabase
       .from("payments")
       .update({
-        commerce_order: flow.commerceOrder,
         flow_token: flow.token,
         flow_order: flow.flowOrder,
       } satisfies PaymentUpdate)
       .eq("id", payment.id);
+
+    if (tokenErr) {
+      console.error("payments flow_token update error (recuperable por cron)", {
+        paymentId: payment.id,
+        commerceOrder,
+        error: tokenErr,
+      });
+    }
 
     return NextResponse.json({
       provider: "flow" as const,

@@ -76,6 +76,11 @@ const createSchema = z
     sessionId: uuidLike.optional(),
     title: z.string().trim().min(1, "El título es requerido").max(200),
     description: z.string().trim().max(2000).optional(),
+    // 'quiz' (default, compat con todos los llamadores existentes) | 'manual'
+    // (roleplay, guión de venta, etc — sin preguntas, se califica a mano).
+    // NO editable tras la creación (ver PATCH: no acepta `kind`).
+    kind: z.enum(["quiz", "manual"]).optional(),
+    weightPct: z.number().min(0).max(100).nullable().optional(),
     passingGradePct: z.number().int().min(1).max(100).optional(),
     questionsPerAttempt: z.number().int().min(1).max(200).nullable().optional(),
     maxAttempts: z.number().int().min(1).max(50).optional(),
@@ -186,6 +191,8 @@ export async function POST(req: Request) {
       session_id: v.scope === "session" ? v.sessionId! : null,
       title: v.title,
       description: v.description ?? null,
+      kind: v.kind ?? "quiz",
+      weight_pct: v.weightPct ?? null,
       passing_grade_pct: v.passingGradePct ?? 70,
       questions_per_attempt: v.questionsPerAttempt ?? null,
       max_attempts: v.maxAttempts ?? 3,

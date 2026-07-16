@@ -181,7 +181,7 @@ export default async function AdminLessonPage(
       {mod?.program_id && (
         <CollapsibleSection
           title="Evaluación de la clase"
-          subtitle="Quiz de la lección: preguntas y configuración"
+          subtitle="Evaluación de la lección: quiz o nota manual"
           icon={<ListChecks className="h-5 w-5" />}
         >
           <LessonQuizPanel

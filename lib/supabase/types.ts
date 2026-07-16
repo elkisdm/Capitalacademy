@@ -909,6 +909,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          kind: string
           lesson_id: string | null
           max_attempts: number
           min_completion_pct: number | null
@@ -922,6 +923,7 @@ export type Database = {
           time_limit_minutes: number | null
           title: string
           updated_at: string
+          weight_pct: number | null
         }
         Insert: {
           closes_at?: string | null
@@ -929,6 +931,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          kind?: string
           lesson_id?: string | null
           max_attempts?: number
           min_completion_pct?: number | null
@@ -942,6 +945,7 @@ export type Database = {
           time_limit_minutes?: number | null
           title: string
           updated_at?: string
+          weight_pct?: number | null
         }
         Update: {
           closes_at?: string | null
@@ -949,6 +953,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          kind?: string
           lesson_id?: string | null
           max_attempts?: number
           min_completion_pct?: number | null
@@ -962,6 +967,7 @@ export type Database = {
           time_limit_minutes?: number | null
           title?: string
           updated_at?: string
+          weight_pct?: number | null
         }
         Relationships: [
           {
@@ -990,6 +996,114 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_criteria: {
+        Row: {
+          created_at: string
+          evaluation_id: string
+          id: string
+          label: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evaluation_id: string
+          id?: string
+          label: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evaluation_id?: string
+          id?: string
+          label?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_criteria_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_grades: {
+        Row: {
+          created_at: string
+          criteria_marks: Json
+          enrollment_id: string
+          evaluation_id: string
+          feedback: string | null
+          grade: number | null
+          graded_at: string | null
+          graded_by: string | null
+          id: string
+          published_at: string | null
+          quiz_attempt_id: string | null
+          score_pct: number | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria_marks?: Json
+          enrollment_id: string
+          evaluation_id: string
+          feedback?: string | null
+          grade?: number | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          published_at?: string | null
+          quiz_attempt_id?: string | null
+          score_pct?: number | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria_marks?: Json
+          enrollment_id?: string
+          evaluation_id?: string
+          feedback?: string | null
+          grade?: number | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          published_at?: string | null
+          quiz_attempt_id?: string | null
+          score_pct?: number | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_grades_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_grades_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_grades_quiz_attempt_id_fkey"
+            columns: ["quiz_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_attempts"
             referencedColumns: ["id"]
           },
         ]
@@ -1711,6 +1825,7 @@ export type Database = {
           code: string
           created_at: string
           description: string | null
+          grade_exigencia_pct: number
           id: string
           is_active: boolean
           min_attendance_pct: number
@@ -1722,6 +1837,7 @@ export type Database = {
           code: string
           created_at?: string
           description?: string | null
+          grade_exigencia_pct?: number
           id?: string
           is_active?: boolean
           min_attendance_pct?: number
@@ -1733,6 +1849,7 @@ export type Database = {
           code?: string
           created_at?: string
           description?: string | null
+          grade_exigencia_pct?: number
           id?: string
           is_active?: boolean
           min_attendance_pct?: number
@@ -2169,6 +2286,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["cohort_role_kind"]
       }
       has_cohort_access: { Args: { p_cohort_id: string }; Returns: boolean }
+      has_evaluation_access: { Args: { p_evaluation_id: string }; Returns: boolean }
       has_program_access: { Args: { p_program_id: string }; Returns: boolean }
       increment_coupon_redemptions: {
         Args: { p_coupon_id: string }
@@ -2176,6 +2294,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_cohort_staff: { Args: { p_cohort_id: string }; Returns: boolean }
+      is_evaluation_staff: { Args: { p_evaluation_id: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
       is_program_staff: { Args: { p_program_id: string }; Returns: boolean }
       reorder_lessons: {

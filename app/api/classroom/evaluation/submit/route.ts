@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { uuidLike } from "@/lib/utils/zod";
 import { resolveEvaluationAccess } from "@/lib/classroom/evaluation-access";
 import { getCorrectAnswers, scoreAnswer } from "@/lib/classroom/quiz-runtime";
+import { syncQuizGrade } from "@/lib/grades/sync-quiz-grade";
 
 export const runtime = "nodejs";
 
@@ -125,6 +126,14 @@ export async function POST(req: Request) {
   if (!updatedRows || updatedRows.length === 0) {
     return NextResponse.json({ error: "Este intento ya fue enviado" }, { status: 409 });
   }
+
+  // Registro académico (Paso 5 del brief evaluaciones/notas 1-7): best-effort,
+  // nunca bloquea la respuesta al alumno.
+  await syncQuizGrade(admin, {
+    evaluationId,
+    programId: evaluation.program_id,
+    enrollmentId,
+  });
 
   const { count: completedCount } = await admin
     .from("quiz_attempts")

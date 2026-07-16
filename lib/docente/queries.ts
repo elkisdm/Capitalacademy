@@ -101,3 +101,49 @@ export async function getTeacherSessions(userId: string): Promise<TeacherSession
     resources: resourcesBySession.get(s.id) ?? [],
   }));
 }
+
+export type GradableEvaluation = {
+  id: string;
+  title: string;
+  scope: "final" | "module" | "lesson" | "session";
+  kind: "quiz" | "manual";
+  cohortId: string;
+  cohortName: string;
+};
+
+/**
+ * Evaluaciones calificables (`kind` quiz o manual) de las cohortes del
+ * docente, para el panel de calificación de `/docente/notas`. Input de la
+ * auditoría de permisos (15-jul): el profe no usa `authorizeAdmin` (bloqueado
+ * a ops/admin) — esta lectura usa `cohort_roles` del propio usuario, igual
+ * que el resto de `lib/docente/queries.ts`; el guardado pasa por
+ * `requireEvaluationStaff` (lib/auth/authorize-admin.ts).
+ */
+export async function getTeacherGradableEvaluations(userId: string): Promise<GradableEvaluation[]> {
+  const admin = createAdminClient();
+  const cohorts = await getTeacherCohorts(userId);
+  if (cohorts.length === 0) return [];
+
+  const programIds = Array.from(new Set(cohorts.map((c) => c.programId)));
+  const { data: evaluations } = await admin
+    .from("evaluations")
+    .select("id, title, scope, kind, program_id")
+    .in("program_id", programIds)
+    .in("kind", ["quiz", "manual"]);
+
+  const result: GradableEvaluation[] = [];
+  for (const cohort of cohorts) {
+    for (const ev of evaluations ?? []) {
+      if (ev.program_id !== cohort.programId) continue;
+      result.push({
+        id: ev.id,
+        title: ev.title,
+        scope: ev.scope as GradableEvaluation["scope"],
+        kind: ev.kind as GradableEvaluation["kind"],
+        cohortId: cohort.cohortId,
+        cohortName: cohort.cohortName,
+      });
+    }
+  }
+  return result;
+}

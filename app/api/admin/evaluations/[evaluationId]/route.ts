@@ -59,6 +59,10 @@ const patchSchema = z
     timeLimitMinutes: z.number().int().min(1).max(600).nullable().optional(),
     minCompletionPct: z.number().int().min(1).max(100).nullable().optional(),
     isActive: z.boolean().optional(),
+    // Peso informativo (0072): se captura y muestra, el cálculo de nota final
+    // ponderada es v2. `kind` NO está aquí a propósito: no es editable tras
+    // la creación (evita estados incoherentes con el guard de activación).
+    weightPct: z.number().min(0).max(100).nullable().optional(),
     // Ventana de programación (0070). NULL = sin límite en ese extremo.
     opensAt: isoDatetime.nullable().optional(),
     closesAt: isoDatetime.nullable().optional(),
@@ -95,23 +99,33 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (v.timeLimitMinutes !== undefined) updates.time_limit_minutes = v.timeLimitMinutes;
   if (v.minCompletionPct !== undefined) updates.min_completion_pct = v.minCompletionPct;
   if (v.isActive !== undefined) updates.is_active = v.isActive;
+  if (v.weightPct !== undefined) updates.weight_pct = v.weightPct;
   if (v.opensAt !== undefined) updates.opens_at = v.opensAt;
   if (v.closesAt !== undefined) updates.closes_at = v.closesAt;
 
   const admin = createAdminClient();
 
-  // Invariante "activa ⇒ respondible": no activar una evaluación sin preguntas
-  // (la validación cliente no basta; un PATCH directo la evadiría).
+  // Invariante "activa ⇒ respondible": no activar un QUIZ sin preguntas (la
+  // validación cliente no basta; un PATCH directo la evadiría). Las
+  // evaluaciones MANUALES (roleplay, guión de venta, etc.) nunca tienen
+  // preguntas — el guard no aplica (fix §0.5 del brief evaluaciones/notas 1-7).
   if (v.isActive === true) {
-    const { count } = await admin
-      .from("quiz_questions")
-      .select("id", { count: "exact", head: true })
-      .eq("evaluation_id", evaluationId);
-    if ((count ?? 0) === 0) {
-      return NextResponse.json(
-        { error: "No se puede activar una evaluación sin preguntas" },
-        { status: 422 },
-      );
+    const { data: current } = await admin
+      .from("evaluations")
+      .select("kind")
+      .eq("id", evaluationId)
+      .single();
+    if (current?.kind !== "manual") {
+      const { count } = await admin
+        .from("quiz_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("evaluation_id", evaluationId);
+      if ((count ?? 0) === 0) {
+        return NextResponse.json(
+          { error: "No se puede activar una evaluación sin preguntas" },
+          { status: 422 },
+        );
+      }
     }
   }
 
@@ -187,6 +201,21 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if ((attemptCount ?? 0) > 0) {
     return NextResponse.json(
       { error: "No se puede eliminar: ya tiene intentos de alumnos. Desactívala en su lugar." },
+      { status: 409 },
+    );
+  }
+
+  // Igual que con los intentos: si ya hay notas cargadas (típico de las
+  // evaluaciones manuales, que no tienen intentos), no se borra el registro
+  // académico (7a del brief evaluaciones/notas 1-7).
+  const { count: gradeCount } = await admin
+    .from("evaluation_grades")
+    .select("id", { count: "exact", head: true })
+    .eq("evaluation_id", evaluationId);
+
+  if ((gradeCount ?? 0) > 0) {
+    return NextResponse.json(
+      { error: "No se puede eliminar: ya tiene notas cargadas. Desactívala en su lugar." },
       { status: 409 },
     );
   }

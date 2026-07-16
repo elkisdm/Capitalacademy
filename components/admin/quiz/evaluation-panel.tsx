@@ -3,22 +3,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { Evaluation, QuizQuestion } from "./types";
 import { AddQuestionForm } from "./add-question-form";
 import { QuestionCard } from "./question-card";
 import { ShareQuizDialog } from "./share-quiz-dialog";
 import { EvaluationSettings } from "./evaluation-settings";
 import { EvaluationAttempts } from "./evaluation-attempts";
+import { EvaluationGrades } from "./evaluation-grades";
+import { EvaluationStateBadge } from "./evaluation-state-badge";
+import { getEvaluationState } from "@/lib/classroom/evaluation-window";
 import { LoaderIcon, TrashIcon, SparklesIcon } from "./icons";
 
-type PanelTab = "preguntas" | "ajustes" | "respuestas";
+type PanelTab = "preguntas" | "ajustes" | "respuestas" | "notas";
 
 /**
  * Gestor genérico de UNA evaluación (cualquier scope). Organizado en pestañas:
- *   · Preguntas  — alta + lista colapsable de preguntas (4 tipos)
+ *   · Preguntas  — alta + lista colapsable de preguntas (4 tipos) — solo kind='quiz'
  *   · Ajustes    — config (intentos, % aprobación, tiempo, …) + borrado
- *   · Respuestas — intentos de los alumnos con desglose pregunta a pregunta
+ *   · Respuestas — intentos de los alumnos con desglose pregunta a pregunta — solo kind='quiz'
+ *   · Notas      — nota 1-7 por alumno, checklist, import Excel (0072)
  * Reusado por el panel de lección, el de sesión y la pestaña central.
  */
 export function EvaluationPanel({
@@ -31,13 +34,15 @@ export function EvaluationPanel({
   /** Si se provee, habilita el botón de borrar la evaluación (en Ajustes). */
   onDeleted?: () => void;
 }) {
-  const [tab, setTab] = useState<PanelTab>("preguntas");
+  const isManual = evaluation.kind === "manual";
+  const [tab, setTab] = useState<PanelTab>(isManual ? "ajustes" : "preguntas");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [cohorts, setCohorts] = useState<{ id: string; name: string }[]>([]);
   const { toast, ToastContainer } = useToast();
 
   // Generación con IA: solo el quiz final arma su pool desde las transcripciones
@@ -86,8 +91,24 @@ export function EvaluationPanel({
     load();
   }, [load]);
 
+  // Cohortes del programa, para el selector de la pestaña "Notas" (0072).
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/evaluations/targets?programId=${evaluation.program_id}`)
+      .then((res) => (res.ok ? res.json() : { cohorts: [] }))
+      .then((data) => {
+        if (!cancelled) setCohorts(data.cohorts ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [evaluation.program_id]);
+
   const toggleActive = async () => {
-    if (!evaluation.is_active && questions.length === 0) {
+    // Las evaluaciones MANUALES nunca tienen preguntas (fix §0.5): el guard
+    // de "agrega al menos una pregunta" solo aplica a kind='quiz'.
+    if (!isManual && !evaluation.is_active && questions.length === 0) {
       toast("Agrega al menos una pregunta antes de activar", "error");
       return;
     }
@@ -181,9 +202,7 @@ export function EvaluationPanel({
         {/* Estado + acciones (fijo, sobre las pestañas) */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ca-bg-soft px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={evaluation.is_active ? "lime" : "neutral"}>
-              {evaluation.is_active ? "Activa" : "Borrador"}
-            </Badge>
+            <EvaluationStateBadge evaluation={evaluation} />
             <span className="text-[13px] font-semibold text-ca-ink">
               {questions.length} {questions.length === 1 ? "pregunta" : "preguntas"}
             </span>
@@ -217,12 +236,28 @@ export function EvaluationPanel({
           </div>
         </div>
 
-        {/* Pestañas internas */}
+        {/* Gotcha UX: activar con closes_at ya pasado deja el badge en "Cerrada"
+            y parece que el botón no hizo nada — se explicita por qué. */}
+        {evaluation.is_active && getEvaluationState(evaluation) === "closed" && evaluation.closes_at && (
+          <p className="rounded-xl bg-ca-amber/10 px-4 py-2.5 text-[12.5px] font-semibold text-[#8b6914]">
+            Cerró el {new Date(evaluation.closes_at).toLocaleDateString("es-CL", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            . Borra o cambia la fecha de cierre para reabrirla.
+          </p>
+        )}
+
+        {/* Pestañas internas — Preguntas/Respuestas solo aplican a kind='quiz':
+            una evaluación MANUAL nunca tiene preguntas que autocorregir. */}
         <div className="flex items-center gap-1 rounded-2xl bg-ca-bg-soft p-1">
           {([
-            ["preguntas", `Preguntas${questions.length ? ` (${questions.length})` : ""}`],
+            ...(isManual ? [] : [["preguntas", `Preguntas${questions.length ? ` (${questions.length})` : ""}`] as [PanelTab, string]]),
             ["ajustes", "Ajustes"],
-            ["respuestas", "Respuestas"],
+            ...(isManual ? [] : [["respuestas", "Respuestas"] as [PanelTab, string]]),
+            ["notas", "Notas"],
           ] as [PanelTab, string][]).map(([key, label]) => (
             <button
               key={key}
@@ -237,7 +272,7 @@ export function EvaluationPanel({
         </div>
 
         {/* --- Preguntas --- */}
-        {tab === "preguntas" && (
+        {!isManual && tab === "preguntas" && (
           <div className="space-y-3">
             {showAddForm ? (
               <div className="rounded-xl border border-ca-ink/[0.08] bg-white p-1">
@@ -314,7 +349,10 @@ export function EvaluationPanel({
         )}
 
         {/* --- Respuestas --- */}
-        {tab === "respuestas" && <EvaluationAttempts evaluationId={evaluation.id} />}
+        {!isManual && tab === "respuestas" && <EvaluationAttempts evaluationId={evaluation.id} />}
+
+        {/* --- Notas --- */}
+        {tab === "notas" && <EvaluationGrades evaluationId={evaluation.id} cohorts={cohorts} />}
       </div>
     </>
   );

@@ -11,8 +11,10 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import { fmtDuration } from "@/lib/classroom/format";
+import { formatChile, formatDateOnly } from "@/lib/time";
 import { BrandShapes, ProgressBar } from "@/components/classroom/primitives";
 import { ModuleAccordionItem, type ClassRowData } from "@/components/classroom/module-accordion";
+import type { LessonActivityType } from "@/lib/classroom/types";
 
 // Fila mínima de class_sessions usada por esta página. `title` y `status` se
 // agregan en migraciones posteriores a la generación de tipos de Supabase, por
@@ -28,13 +30,11 @@ type SessionRowLite = {
 };
 
 function fmtUnlock(iso: string) {
-  const d = new Date(iso);
-  const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  return `${d.getDate()} ${months[d.getMonth()]}`;
+  return formatChile(iso, { day: "numeric", month: "short" });
 }
 
 function fmtSessionShort(iso: string) {
-  return new Date(iso).toLocaleDateString("es-CL", {
+  return formatChile(iso, {
     day: "numeric",
     month: "short",
     hour: "2-digit",
@@ -150,6 +150,7 @@ export default async function CohortDashboardPage(
         href: status === "locked" ? null : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}/${lesson.slug ?? lesson.id}`,
         durationOrDate: fmtDuration(lesson.video_duration_seconds),
         unlockLabel: status === "locked" && lesson.unlock_at ? `Desde ${fmtUnlock(lesson.unlock_at)}` : undefined,
+        activityType: lesson.activity_type as LessonActivityType,
       };
     });
     const sessionRows: ClassRowData[] = moduleSessions.map((session) => {
@@ -219,9 +220,9 @@ export default async function CohortDashboardPage(
               {program.name}
             </h1>
             <div className="mt-1.5 text-sm text-white/60">
-              {new Date(cohort.start_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {formatDateOnly(cohort.start_date, { day: "numeric", month: "short", year: "numeric" })}
               {" – "}
-              {new Date(cohort.end_date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {formatDateOnly(cohort.end_date, { day: "numeric", month: "short", year: "numeric" })}
               {" · "}
               {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
             </div>

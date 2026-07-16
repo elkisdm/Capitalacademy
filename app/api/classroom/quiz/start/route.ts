@@ -8,6 +8,7 @@ import {
   selectEvaluationQuestions,
   getPresentedEvaluationQuestions,
 } from "@/lib/classroom/quiz-runtime";
+import { isEvaluationOpen } from "@/lib/classroom/evaluation-window";
 
 export const runtime = "nodejs";
 
@@ -64,7 +65,9 @@ export async function POST(req: Request) {
     .eq("scope", "final")
     .eq("is_active", true)
     .single();
-  if (!config) {
+  // Ventana de programación (0070) estricta (D5: "estricto" en start, a
+  // diferencia de submit — ver route.ts de submit).
+  if (!config || !isEvaluationOpen(config)) {
     return NextResponse.json(
       { error: "No hay evaluacion configurada para este programa" },
       { status: 404 },

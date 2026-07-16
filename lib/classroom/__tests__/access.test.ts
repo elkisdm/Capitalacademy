@@ -18,7 +18,9 @@ vi.mock("@/lib/supabase/server", () => ({
               eq: () => ({
                 eq: () => ({
                   in: () => ({
-                    maybeSingle: mockCohortRoleSelect,
+                    limit: () => ({
+                      maybeSingle: mockCohortRoleSelect,
+                    }),
                   }),
                 }),
               }),

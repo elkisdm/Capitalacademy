@@ -11,6 +11,7 @@ import { Input, Textarea, Select } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DatePicker } from "@/components/ui/date-picker";
+import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
 
 type Deliverable = {
   id: string;
@@ -37,13 +38,11 @@ const MAX_SIZE = 50 * 1024 * 1024;
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return isoToChileWallTime(iso);
 }
 
 function fromLocalInput(value: string): string {
-  return new Date(value).toISOString();
+  return chileWallTimeToIso(value);
 }
 
 function fmtDateTime(iso: string): string {

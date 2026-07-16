@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { DatePicker } from "@/components/ui/date-picker";
+import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
 
 const TZ = "America/Santiago";
 
@@ -72,69 +73,9 @@ const STATUS_PILL: Record<SessionStatus, string> = {
 };
 
 // --- Helpers de fecha (NO se ejecutan en el cuerpo del render) ---------------
-
-/**
- * Convierte un ISO (UTC) al string `YYYY-MM-DDTHH:mm` que espera un input
- * datetime-local, expresado en la zona horaria de Santiago.
- */
-function isoToLocalInput(iso: string): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(iso));
-
-  const get = (type: string) =>
-    parts.find((p) => p.type === type)?.value ?? "00";
-
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-}
-
-/**
- * Devuelve el offset (en minutos) de la zona de Santiago para un instante dado.
- */
-function santiagoOffsetMinutes(at: Date): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(at);
-
-  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-  const asUtc = Date.UTC(
-    get("year"),
-    get("month") - 1,
-    get("day"),
-    get("hour"),
-    get("minute"),
-    get("second"),
-  );
-  return (asUtc - at.getTime()) / 60000;
-}
-
-/**
- * Interpreta un valor datetime-local `YYYY-MM-DDTHH:mm` como hora de Santiago
- * y lo convierte al ISO UTC equivalente.
- */
-function localInputToIso(local: string): string {
-  const [datePart, timePart] = local.split("T");
-  const [y, m, d] = datePart.split("-").map(Number);
-  const [hh, mm] = timePart.split(":").map(Number);
-
-  // Estimación inicial tratando los componentes como UTC.
-  const naiveUtc = Date.UTC(y, m - 1, d, hh, mm, 0);
-  const offset = santiagoOffsetMinutes(new Date(naiveUtc));
-  return new Date(naiveUtc - offset * 60000).toISOString();
-}
+// La conversión hora de pared (Chile) ↔ ISO vive en lib/time.ts
+// (isoToChileWallTime / chileWallTimeToIso) — ver ese archivo para el porqué
+// de las dos pasadas en la conversión de vuelta a ISO.
 
 function fmtRange(startsAt: string, endsAt: string): string {
   const day = new Intl.DateTimeFormat("es-CL", {
@@ -246,8 +187,8 @@ function emptyForm(): FormState {
 function formFromSession(s: ClassSession): FormState {
   return {
     title: s.title ?? "",
-    starts_at: isoToLocalInput(s.starts_at),
-    ends_at: isoToLocalInput(s.ends_at),
+    starts_at: isoToChileWallTime(s.starts_at),
+    ends_at: isoToChileWallTime(s.ends_at),
     modality: s.modality as Modality,
     teacher_id: s.teacher_id ?? "",
     module_id: (s as unknown as { module_id?: string }).module_id ?? "",
@@ -367,15 +308,15 @@ export function SessionsManagerClient({
       setError("Debes indicar inicio y término.");
       return;
     }
-    if (localInputToIso(form.ends_at) <= localInputToIso(form.starts_at)) {
+    if (chileWallTimeToIso(form.ends_at) <= chileWallTimeToIso(form.starts_at)) {
       setError("La hora de término debe ser posterior al inicio.");
       return;
     }
 
     const payload = {
       title: form.title.trim(),
-      starts_at: localInputToIso(form.starts_at),
-      ends_at: localInputToIso(form.ends_at),
+      starts_at: chileWallTimeToIso(form.starts_at),
+      ends_at: chileWallTimeToIso(form.ends_at),
       modality: form.modality,
       teacher_id: form.teacher_id || null,
       module_id: form.module_id || null,
@@ -690,8 +631,8 @@ export function SessionsManagerClient({
 
       {editing && programId && (
         <CollapsibleSection
-          title="Quiz de la clase"
-          subtitle="Evaluación formativa por enlace o QR"
+          title="Evaluación de la clase"
+          subtitle="Quiz o nota manual, por enlace o QR"
         >
           <SessionQuizPanel
             programId={programId}

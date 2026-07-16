@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/admin/toast";
-import type { Evaluation, EvaluationScope } from "./types";
+import type { Evaluation, EvaluationKind, EvaluationScope } from "./types";
 import { formatDate } from "./types";
 import { EvaluationPanel } from "./evaluation-panel";
+import { EvaluationStateBadge } from "./evaluation-state-badge";
 import { LoaderIcon } from "./icons";
 
 type EvalItem = Evaluation & { questionCount?: number };
@@ -60,10 +60,27 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
   }, [load]);
 
   const finalEval = useMemo(() => evals.find((e) => e.scope === "final") ?? null, [evals]);
-  const evalByModule = useMemo(
-    () => new Map(evals.filter((e) => e.scope === "module" && e.module_id).map((e) => [e.module_id!, e])),
+  // El módulo práctico necesita VARIAS evaluaciones MANUALES activas a la vez
+  // (roleplay, guión de venta, etc — 0072 acotó el índice único a kind='quiz').
+  // El quiz de módulo sigue siendo a lo sumo uno; las manuales son una lista.
+  const quizByModule = useMemo(
+    () =>
+      new Map(
+        evals.filter((e) => e.scope === "module" && e.module_id && e.kind === "quiz").map((e) => [e.module_id!, e]),
+      ),
     [evals],
   );
+  const manualsByModule = useMemo(() => {
+    const map = new Map<string, EvalItem[]>();
+    for (const e of evals) {
+      if (e.scope === "module" && e.module_id && e.kind === "manual") {
+        const list = map.get(e.module_id) ?? [];
+        list.push(e);
+        map.set(e.module_id, list);
+      }
+    }
+    return map;
+  }, [evals]);
   const evalByLesson = useMemo(
     () => new Map(evals.filter((e) => e.scope === "lesson" && e.lesson_id).map((e) => [e.lesson_id!, e])),
     [evals],
@@ -84,13 +101,14 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
     title: string,
     key: string,
     target?: { moduleId?: string; lessonId?: string; sessionId?: string },
+    kind?: EvaluationKind,
   ) => {
     setCreating(key);
     try {
       const res = await fetch("/api/admin/evaluations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ programId, scope, title, ...target }),
+        body: JSON.stringify({ programId, scope, title, kind, ...target }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -103,6 +121,15 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
     } finally {
       setCreating(null);
     }
+  };
+
+  // "+ Nota manual" (7e): un módulo puede tener VARIAS evaluaciones manuales
+  // a la vez (roleplay, guión de venta, etc — sin identidad fija, ver
+  // corrección A4 del brief: no hardcodear nombres de componentes).
+  const createManualForModule = async (moduleId: string) => {
+    const title = window.prompt("Título de la nota manual (ej. \"Nota 1 (25%)\")", "Nota manual")?.trim();
+    if (!title) return;
+    await create("module", title, `manual:${moduleId}`, { moduleId }, "manual");
   };
 
   const handleChange = (ev: Evaluation) =>
@@ -144,21 +171,26 @@ export function EvaluacionesTab({ programId }: { programId: string }) {
         {/* Por módulo */}
         <section>
           <SectionTitle>Por módulo</SectionTitle>
+          <p className="mb-3 text-[12.5px] text-ca-ink-soft">
+            Un quiz por módulo (autocorregido) + cuantas notas manuales necesites (roleplay, guión de venta, etc).
+          </p>
           {modules.length === 0 ? (
             <EmptyHint>Este programa aún no tiene módulos.</EmptyHint>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="flex flex-col gap-3">
               {modules.map((m) => (
-                <EvalCard
+                <ModuleEvalBlock
                   key={m.id}
-                  title={m.title}
-                  evalItem={evalByModule.get(m.id) ?? null}
-                  rowKey={`module:${m.id}`}
+                  moduleId={m.id}
+                  moduleTitle={m.title}
+                  quizEval={quizByModule.get(m.id) ?? null}
+                  manualEvals={manualsByModule.get(m.id) ?? []}
                   creating={creating}
                   onToggle={setSelected}
-                  onCreate={() =>
-                    create("module", `Evaluación: ${m.title}`, `module:${m.id}`, { moduleId: m.id })
+                  onCreateQuiz={() =>
+                    create("module", `Evaluación: ${m.title}`, `module:${m.id}`, { moduleId: m.id }, "quiz")
                   }
+                  onCreateManual={() => createManualForModule(m.id)}
                 />
               ))}
             </div>
@@ -295,9 +327,7 @@ function EvalRow({
         <div className="flex shrink-0 items-center gap-2">
           {evalItem ? (
             <>
-              <Badge tone={evalItem.is_active ? "lime" : "neutral"}>
-                {evalItem.is_active ? "Activa" : "Borrador"}
-              </Badge>
+              <EvaluationStateBadge evaluation={evalItem} />
               <span className="hidden text-[11.5px] text-ca-ink-soft sm:inline">
                 {evalItem.questionCount ?? 0} preg.
               </span>
@@ -317,6 +347,91 @@ function EvalRow({
             </Button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Bloque de un módulo: el quiz (a lo sumo uno, autocorregido) + la lista de
+ * notas manuales del módulo (0 o más — roleplay, guión de venta, etc). El
+ * índice único de 0072 solo bloquea dos quizzes activos a la vez; las
+ * manuales no tienen ese límite (7e del brief evaluaciones/notas 1-7).
+ */
+function ModuleEvalBlock({
+  moduleId,
+  moduleTitle,
+  quizEval,
+  manualEvals,
+  creating,
+  onToggle,
+  onCreateQuiz,
+  onCreateManual,
+}: {
+  moduleId: string;
+  moduleTitle: string;
+  quizEval: EvalItem | null;
+  manualEvals: EvalItem[];
+  creating: string | null;
+  onToggle: (id: string) => void;
+  onCreateQuiz: () => void;
+  onCreateManual: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-ca-ink/[0.08] bg-white p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h4 className="text-[13.5px] font-bold text-ca-ink">{moduleTitle}</h4>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCreateManual}
+          disabled={creating === `manual:${moduleId}`}
+        >
+          {creating === `manual:${moduleId}` ? <LoaderIcon /> : "+ Nota manual"}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {/* Quiz del módulo */}
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-ca-bg-soft px-3 py-2">
+          <span className="text-[12.5px] font-semibold text-ca-ink">Quiz del módulo</span>
+          {quizEval ? (
+            <div className="flex items-center gap-2">
+              <EvaluationStateBadge evaluation={quizEval} size="sm" />
+              <Button type="button" variant="outline" size="sm" onClick={() => onToggle(quizEval.id)}>
+                Gestionar
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="lime"
+              size="sm"
+              onClick={onCreateQuiz}
+              disabled={creating === `module:${moduleId}`}
+            >
+              {creating === `module:${moduleId}` ? <LoaderIcon /> : "Crear quiz"}
+            </Button>
+          )}
+        </div>
+
+        {/* Notas manuales del módulo */}
+        {manualEvals.length === 0 ? (
+          <p className="px-1 text-[12px] text-ca-ink-soft">Sin notas manuales todavía.</p>
+        ) : (
+          manualEvals.map((ev) => (
+            <div key={ev.id} className="flex items-center justify-between gap-3 rounded-lg bg-ca-bg-soft px-3 py-2">
+              <span className="min-w-0 truncate text-[12.5px] font-semibold text-ca-ink">{ev.title}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <EvaluationStateBadge evaluation={ev} size="sm" />
+                <Button type="button" variant="outline" size="sm" onClick={() => onToggle(ev.id)}>
+                  Gestionar
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -350,9 +465,7 @@ function EvalCard({
         {evalItem ? (
           <>
             <div className="flex min-w-0 items-center gap-2">
-              <Badge tone={evalItem.is_active ? "lime" : "neutral"} size="sm">
-                {evalItem.is_active ? "Activa" : "Borrador"}
-              </Badge>
+              <EvaluationStateBadge evaluation={evalItem} size="sm" />
               <span className="text-[11px] text-ca-ink-soft">{evalItem.questionCount ?? 0} preg.</span>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => onToggle(evalItem.id)}>

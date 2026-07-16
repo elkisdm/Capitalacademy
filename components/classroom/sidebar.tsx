@@ -471,6 +471,9 @@ export function ClassroomSidebar({
       ...(activeCohort ? [
         { icon: "folder", label: "Recursos", href: `/classroom/${activeCohort}/recursos`, section: "learn" as const },
         { icon: "upload", label: "Entregables", href: `/classroom/${activeCohort}/entregables`, section: "learn" as const },
+        // Notas: NUNCA se gatea (a diferencia del quiz final) — la pantalla
+        // debe existir siempre, aunque el alumno aún no tenga notas publicadas.
+        { icon: "chart", label: "Notas", href: `/classroom/${activeCohort}/notas`, section: "learn" as const },
         { icon: "chat", label: "Conversaciones", href: `/classroom/${activeCohort}/conversaciones`, section: "learn" as const },
         ...(activeHasFinal ? [
           { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${activeCohort}/quiz`, section: "learn" as const },

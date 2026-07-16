@@ -51,3 +51,31 @@ export const BEFORE_WINDOW_LABEL = `El registro de asistencia abre ${GRACE_BEFOR
 
 /** Etiqueta para cuando la ventana ya cerró (windowState === 'closed'). */
 export const EXPIRED_WINDOW_LABEL = `El registro de asistencia de esta clase ya cerró (hasta ${GRACE_AFTER_MIN} minutos después del término).`;
+
+/**
+ * Predicados compartidos de "sesión EN VIVO cerrada y aplicable a un alumno".
+ * Usados por `lib/asistencia/queries.ts`, `lib/admin/student-panel-queries.ts`
+ * y `lib/grades/queries.ts` (corrección A3 de la revisión): cada uno arma su
+ * propia consulta con su propio cliente (RLS o admin) y sus propias columnas
+ * — eso NO se unifica acá — pero el criterio de elegibilidad en sí (una vez
+ * que ya se tienen los datos en memoria) es el mismo en los tres, así que se
+ * extrae para no triplicar la lógica de negocio.
+ */
+
+/** `true` si `now` está más allá de `ends_at + GRACE_AFTER_MIN` (ventana de asistencia ya cerrada). */
+export function isSessionClosed(session: { ends_at: string }, now: number = Date.now()): boolean {
+  return now > new Date(session.ends_at).getTime() + GRACE_AFTER_MIN * MINUTE_MS;
+}
+
+/**
+ * `true` si una sesión cuenta como aplicable a un alumno matriculado: no fue
+ * anterior a su matrícula (`enrolled_at`), y si es exclusiva de un segmento
+ * (`audience='capital_inteligente'`), el alumno pertenece a ese segmento.
+ */
+export function sessionAppliesToEnrollment(
+  session: { ends_at: string; audience: string },
+  enrollment: { enrolled_at: string; segment: string | null },
+): boolean {
+  if (session.ends_at < enrollment.enrolled_at) return false;
+  return session.audience === "all" || (session.audience === "capital_inteligente" && enrollment.segment === "capital_inteligente");
+}

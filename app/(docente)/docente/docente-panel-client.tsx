@@ -284,12 +284,20 @@ export function DocentePanelClient({
               className="ca-card flex items-center justify-between gap-3 px-5 py-4"
             >
               <div className="text-[14px] font-bold text-ca-ink">{p.programName}</div>
-              <Link
-                href={p.conversationsHref}
-                className="ca-btn-primary inline-flex items-center gap-2 px-4 py-2 text-[12px] font-bold"
-              >
-                Ir a Conversaciones
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/docente/notas"
+                  className="inline-flex items-center gap-2 rounded-xl border border-ca-ink/[0.12] px-4 py-2 text-[12px] font-bold text-ca-ink"
+                >
+                  Calificar
+                </Link>
+                <Link
+                  href={p.conversationsHref}
+                  className="ca-btn-primary inline-flex items-center gap-2 px-4 py-2 text-[12px] font-bold"
+                >
+                  Ir a Conversaciones
+                </Link>
+              </div>
             </div>
           ))}
         </div>

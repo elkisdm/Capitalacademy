@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
-import { fetchFlowPaymentStatus, mapFlowStatus } from "@/lib/flow/status";
+import { fetchFlowPaymentStatus } from "@/lib/flow/status";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  sendPaymentConfirmationEmail,
-  sendPaymentTeamNotification,
-} from "@/lib/email/payment-confirmation";
-import { enrollBuyer } from "@/lib/classroom/enroll-from-payment";
-import { PAYMENT_PLAN_KEYS } from "@/lib/flow/checkout";
-import { LIDERAZGO_PLAN_KEYS } from "@/lib/programs/liderazgo";
-import type { Database } from "@/lib/supabase/types";
+import { processFlowPayment } from "@/lib/flow/process-payment";
 
 export const runtime = "nodejs";
 
-type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
+const SELECT_COLS =
+  "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp, document_type, invoice_data";
 
 // Flow envía POST application/x-www-form-urlencoded con un único campo `token`.
 // La autenticidad se valida indirectamente: solo Flow conoce los tokens
@@ -47,166 +41,65 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.reason }, { status: 401 });
   }
 
-  const status = mapFlowStatus(result.data.status);
   const supabase = createAdminClient();
 
-  const { data: existing } = await supabase
+  // 1) Camino normal: por flow_token.
+  const { data: existingByToken } = await supabase
     .from("payments")
-    .select(
-      "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp, document_type, invoice_data",
-    )
+    .select(SELECT_COLS)
     .eq("flow_token", token)
     .single();
 
+  let existing = existingByToken;
+
+  // 2) Red: por commerce_order, para el caso en que el UPDATE post-checkout no
+  // alcanzó a persistir el flow_token (M10 — ver ADR-0021).
+  if (!existing && result.data.commerceOrder) {
+    const { data } = await supabase
+      .from("payments")
+      .select(SELECT_COLS)
+      .eq("commerce_order", result.data.commerceOrder)
+      .maybeSingle();
+    existing = data;
+  }
+
+  // 3) Red adicional: por optional.payment_id. Lo enviamos nosotros al crear
+  // el pago en Flow (payment/create) y viene firmado de vuelta, así que es
+  // confiable. Flow devuelve `optional` como objeto, pero toleramos string JSON.
   if (!existing) {
-    console.warn("flow webhook: payment not found for token", token);
+    const raw = result.data.optional as unknown;
+    let opt: Record<string, string> | null = null;
+    if (typeof raw === "string") {
+      try {
+        opt = JSON.parse(raw);
+      } catch {
+        opt = null;
+      }
+    } else if (raw && typeof raw === "object") {
+      opt = raw as Record<string, string>;
+    }
+    if (opt?.payment_id) {
+      const { data } = await supabase
+        .from("payments")
+        .select(SELECT_COLS)
+        .eq("id", opt.payment_id)
+        .maybeSingle();
+      existing = data;
+    }
+  }
+
+  if (!existing) {
+    console.error("flow webhook: pago no encontrado", {
+      token,
+      commerceOrder: result.data.commerceOrder,
+      flowOrder: result.data.flowOrder,
+    });
     return NextResponse.json({ ok: true, ignored: "unknown-token" });
   }
 
-  const paidAtIso = new Date().toISOString();
-
-  // B1: si Flow aprobó un monto distinto al esperado, NO bloqueamos al alumno
-  // (la plata ya fue tomada). Marcamos succeeded igual y dejamos rastro en
-  // failure_reason para reconciliación manual offline.
-  const expectedAmount = existing.amount_clp;
-  const reportedAmount = result.data.amount;
-  const amountMismatch =
-    status === "succeeded" &&
-    typeof reportedAmount === "number" &&
-    reportedAmount !== expectedAmount;
-
-  if (amountMismatch) {
-    console.error("flow webhook: amount mismatch", {
-      paymentId: existing.id,
-      expected: expectedAmount,
-      reported: reportedAmount,
-      flowOrder: result.data.flowOrder,
-    });
-  }
-
-  const baseUpdate: PaymentUpdate = {
-    status,
-    raw_webhook: result.data as unknown as PaymentUpdate["raw_webhook"],
-    flow_order: result.data.flowOrder ?? null,
-  };
-  if (amountMismatch) {
-    baseUpdate.failure_reason = `amount_mismatch:expected=${expectedAmount}:reported=${reportedAmount}`;
-  }
-
-  // Para succeeded: UPDATE atómico con WHERE paid_at IS NULL.
-  // Solo el primer request que gane la carrera establece paid_at y dispara emails.
-  // Para otros estados: UPDATE normal (no hay side-effects que deduplicar).
-  let firstSuccess = false;
-  if (status === "succeeded") {
-    const { data: claimed, error } = await supabase
-      .from("payments")
-      .update({ ...baseUpdate, paid_at: paidAtIso })
-      .eq("flow_token", token)
-      .is("paid_at", null)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      console.error("payments update error (flow)", error);
-      return NextResponse.json({ error: "db" }, { status: 500 });
-    }
-    firstSuccess = Boolean(claimed);
-  } else {
-    const { error } = await supabase
-      .from("payments")
-      .update(baseUpdate)
-      .eq("flow_token", token);
-
-    if (error) {
-      console.error("payments update error (flow)", error);
-      return NextResponse.json({ error: "db" }, { status: 500 });
-    }
-  }
-
-  if (firstSuccess) {
-    const emailInput = {
-      paymentId: existing.id,
-      firstname: existing.firstname,
-      lastname: existing.lastname,
-      email: existing.email,
-      rut: existing.rut,
-      phone: existing.phone,
-      amountClp: existing.amount_clp,
-      paidAt: new Date(paidAtIso),
-      plan: existing.plan,
-      couponCode: existing.coupon_code,
-      discountClp: existing.discount_clp,
-      documentType: existing.document_type,
-      invoiceData: existing.invoice_data as Record<string, string> | null,
-    };
-
-    const [studentResult, teamResult] = await Promise.all([
-      sendPaymentConfirmationEmail(emailInput),
-      sendPaymentTeamNotification(emailInput),
-    ]);
-
-    if (!studentResult.ok) {
-      console.error("payment-email student failed (flow)", {
-        paymentId: existing.id,
-        error: studentResult.error,
-      });
-    }
-    if (!teamResult.ok) {
-      console.error("payment-email team failed (flow)", {
-        paymentId: existing.id,
-        error: teamResult.error,
-      });
-    }
-
-    // Cupón: incrementar redemptions ahora que el pago quedó confirmado
-    // (primer succeeded). Nunca rompe el webhook: la plata ya fue tomada.
-    if (existing.coupon_id) {
-      try {
-        const { error: redeemError } = await supabase.rpc(
-          "increment_coupon_redemptions",
-          { p_coupon_id: existing.coupon_id },
-        );
-        if (redeemError) {
-          console.error("coupon redeem RPC failed (flow)", {
-            paymentId: existing.id,
-            couponId: existing.coupon_id,
-            error: redeemError,
-          });
-        }
-      } catch (e) {
-        console.error("coupon redeem RPC threw (flow)", {
-          paymentId: existing.id,
-          couponId: existing.coupon_id,
-          error: e instanceof Error ? e.message : e,
-        });
-      }
-    }
-
-    // Link checkout → matrícula: si el pago es del Diplomado o del Programa de
-    // Liderazgo (plan en PAYMENT_PLAN_KEYS o LIDERAZGO_PLAN_KEYS), matricular
-    // al comprador en el classroom de su cohorte activa y enviarle el
-    // onboarding branded con link de activación. Idempotente y no rompe el
-    // webhook si falla (la plata ya fue tomada; se loguea para reconciliar).
-    if (
-      existing.plan &&
-      ((PAYMENT_PLAN_KEYS as readonly string[]).includes(existing.plan) ||
-        (LIDERAZGO_PLAN_KEYS as readonly string[]).includes(existing.plan))
-    ) {
-      const enrollResult = await enrollBuyer({
-        email: existing.email,
-        firstname: existing.firstname,
-        lastname: existing.lastname,
-        plan: existing.plan,
-      });
-      if (!enrollResult.ok) {
-        console.error("enroll-on-payment failed (flow)", {
-          paymentId: existing.id,
-          email: existing.email,
-          plan: existing.plan,
-          error: enrollResult.error,
-        });
-      }
-    }
+  const out = await processFlowPayment(existing, result.data, "webhook");
+  if (!out.ok) {
+    return NextResponse.json({ error: out.error ?? "db" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

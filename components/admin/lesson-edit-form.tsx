@@ -8,6 +8,7 @@ import { CoverImageField } from "@/components/admin/cover-image-field";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/field";
 import { DatePicker } from "@/components/ui/date-picker";
+import { ACTIVITY_OPTIONS, type LessonActivityType } from "@/lib/classroom/types";
 
 type LessonKind = "live_in_person" | "live_online" | "recorded";
 
@@ -24,6 +25,7 @@ type LessonEditFormProps = {
     description: string | null;
     content: string | null;
     kind: LessonKind;
+    activityType: LessonActivityType;
     unlockAt: string | null;
     coverImageUrl: string | null;
   };
@@ -44,6 +46,7 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
   const [description, setDescription] = useState(initial.description ?? "");
   const [content, setContent] = useState(initial.content ?? "");
   const [kind, setKind] = useState<LessonKind>(initial.kind);
+  const [activityType, setActivityType] = useState<LessonActivityType>(initial.activityType);
   const [unlockAt, setUnlockAt] = useState(isoToLocalInput(initial.unlockAt));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -65,6 +68,7 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
           description: description.trim() || null,
           content: content.trim() || null,
           kind,
+          activityType,
           // datetime-local (hora local) → ISO; vacío = limpiar la apertura.
           unlockAt: unlockAt ? new Date(unlockAt).toISOString() : null,
         }),
@@ -125,16 +129,31 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
 
       <div>
         <label className="mb-1 block text-xs font-medium text-ca-ink-soft">
-          Contenido de la clase (texto / diapositiva)
+          {activityType === "class"
+            ? "Contenido de la clase (texto / diapositiva)"
+            : "En qué consiste la actividad y cómo se evalúa"}
         </label>
         <LessonContentEditor lessonId={lessonId} value={content} onChange={setContent} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Tipo</label>
+          <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Modalidad</label>
           <Select value={kind} onChange={(e) => setKind(e.target.value as LessonKind)}>
             {KIND_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ca-ink-soft">Tipo de actividad</label>
+          <Select
+            value={activityType}
+            onChange={(e) => setActivityType(e.target.value as LessonActivityType)}
+          >
+            {ACTIVITY_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>

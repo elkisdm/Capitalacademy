@@ -13,6 +13,7 @@ import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progre
 import { fmtDuration } from "@/lib/classroom/format";
 import { BrandShapes, ProgressBar } from "@/components/classroom/primitives";
 import { ModuleAccordionItem, type ClassRowData } from "@/components/classroom/module-accordion";
+import type { LessonActivityType } from "@/lib/classroom/types";
 
 // Fila mínima de class_sessions usada por esta página. `title` y `status` se
 // agregan en migraciones posteriores a la generación de tipos de Supabase, por
@@ -150,6 +151,7 @@ export default async function CohortDashboardPage(
         href: status === "locked" ? null : `/classroom/${cohortSlug}/${mod.slug ?? mod.id}/${lesson.slug ?? lesson.id}`,
         durationOrDate: fmtDuration(lesson.video_duration_seconds),
         unlockLabel: status === "locked" && lesson.unlock_at ? `Desde ${fmtUnlock(lesson.unlock_at)}` : undefined,
+        activityType: lesson.activity_type as LessonActivityType,
       };
     });
     const sessionRows: ClassRowData[] = moduleSessions.map((session) => {

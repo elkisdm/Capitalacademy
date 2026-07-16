@@ -1407,6 +1407,7 @@ export type Database = {
       }
       lessons: {
         Row: {
+          activity_type: string
           content: string | null
           cover_image_url: string | null
           description: string | null
@@ -1429,6 +1430,7 @@ export type Database = {
           video_duration_seconds: number | null
         }
         Insert: {
+          activity_type?: string
           content?: string | null
           cover_image_url?: string | null
           description?: string | null
@@ -1451,6 +1453,7 @@ export type Database = {
           video_duration_seconds?: number | null
         }
         Update: {
+          activity_type?: string
           content?: string | null
           cover_image_url?: string | null
           description?: string | null

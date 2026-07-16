@@ -171,12 +171,20 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
       "¿Quitar el rol de este usuario en la cohorte? Perderá el acceso asociado a ese rol.",
     );
     if (!ok) return;
-    const res = await fetch(
-      `/api/admin/cohort-roles?id=${encodeURIComponent(cohortId)}`,
-      { method: "DELETE" },
-    );
-    if (res.ok) {
-      router.refresh();
+    try {
+      const res = await fetch(
+        `/api/admin/cohort-roles?id=${encodeURIComponent(cohortId)}`,
+        { method: "DELETE" },
+      );
+      if (res.ok) {
+        toast("Rol removido", "success");
+        router.refresh();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast(err.error ?? "Error al quitar el rol", "error");
+      }
+    } catch {
+      toast("Error de conexión", "error");
     }
   };
 

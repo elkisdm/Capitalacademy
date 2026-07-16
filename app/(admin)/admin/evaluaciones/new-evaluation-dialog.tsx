@@ -156,7 +156,6 @@ export function NewEvaluationDialog({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast("Evaluación creada", "success");
         onClose();
         router.push(`/admin/evaluaciones/${data.evaluation.id}`);
       } else {

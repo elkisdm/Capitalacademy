@@ -95,6 +95,10 @@ export default async function AdminLessonPage(
               | "live_in_person"
               | "live_online"
               | "recorded") ?? "recorded",
+            activityType: ((lesson as Record<string, unknown>).activity_type as
+              | "class"
+              | "practice"
+              | "evaluation") ?? "class",
             unlockAt: ((lesson as Record<string, unknown>).unlock_at as string | null) ?? null,
             coverImageUrl: ((lesson as Record<string, unknown>).cover_image_url as string | null) ?? null,
           }}
@@ -177,7 +181,7 @@ export default async function AdminLessonPage(
       {mod?.program_id && (
         <CollapsibleSection
           title="Evaluación de la clase"
-          subtitle="Quiz de la lección: preguntas y configuración"
+          subtitle="Evaluación de la lección: quiz o nota manual"
           icon={<ListChecks className="h-5 w-5" />}
         >
           <LessonQuizPanel

@@ -116,7 +116,14 @@ describe("POST /api/classroom/quiz/submit", () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "student-1" } } });
     mockEnrollmentQuery.mockResolvedValue({ data: { id: "enr-1", status: "active" }, error: null });
     state = {
-      config: { max_attempts: 1, passing_grade_pct: 70, questions_per_attempt: 3 },
+      config: {
+        max_attempts: 1,
+        passing_grade_pct: 70,
+        questions_per_attempt: 3,
+        is_active: true,
+        opens_at: null,
+        closes_at: null,
+      },
       attemptById: {
         id: ATTEMPT_ID,
         enrollment_id: "enr-1",

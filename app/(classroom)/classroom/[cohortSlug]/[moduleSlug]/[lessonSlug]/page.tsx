@@ -15,6 +15,7 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { resolveResourceUrls } from "@/lib/classroom/resource-urls";
 import { resolveCohortSlug, resolveModuleSlug, resolveLessonSlug } from "@/lib/classroom/resolve-slugs";
 import { getLessonStatus } from "@/lib/classroom/progress";
+import { isEvaluationOpen } from "@/lib/classroom/evaluation-window";
 import { LessonVideoSection } from "@/components/classroom/lesson-video-section";
 import { ResourceList } from "@/components/classroom/resource-list";
 import { MarkCompleteButton } from "@/components/classroom/mark-complete-button";
@@ -155,10 +156,14 @@ export default async function LessonPage(
         .eq("lesson_id", lessonId),
       supabase
         .from("evaluations")
-        .select("id, title")
+        .select("id, title, is_active, opens_at, closes_at")
         .eq("lesson_id", lessonId)
         .eq("scope", "lesson")
         .eq("is_active", true)
+        // Defensivo (corrección M1 de la revisión): el índice único de DB ya
+        // garantiza a lo sumo una activa por lección, pero .limit(1) evita que
+        // esta lectura desaparezca en silencio si esa garantía cambiara.
+        .limit(1)
         .maybeSingle(),
     ]),
     getViewerProfile(user.id),
@@ -167,11 +172,21 @@ export default async function LessonPage(
   const transcriptVtt = transcript?.content_vtt ?? null;
   const transcriptCorrectedVtt = transcript?.corrected_vtt ?? null;
   const watchPct = progress?.watch_percentage ?? 0;
+  // Ventana de programación (0070): igual condición que /api/classroom/quiz.
+  const activeLessonEvaluation =
+    lessonEvaluation && isEvaluationOpen(lessonEvaluation) ? lessonEvaluation : null;
 
   const resolvedResources = await resolveResourceUrls((resources ?? []) as LessonResource[]);
   const hasVideo = !!(muxPlaybackId && videoDuration);
-  // Clase de texto/diapositiva: sin video pero con contenido y/o material.
-  const isTextLesson = !hasVideo && (!!lessonContent?.trim() || resolvedResources.length > 0);
+  // Actividad práctica/evaluación (no clase): "una actividad no tiene
+  // repetición" — no le impone el bloque de video vacío ("Contenido
+  // disponible próximamente") cuando aún no tiene contenido escrito. Una
+  // actividad CON video grabado sigue mostrando el video (hasVideo manda).
+  const isActivity = ((lesson as Record<string, unknown>).activity_type as string) !== "class";
+  // Clase de texto/diapositiva, o actividad sin video: sin video pero con
+  // contenido y/o material, o directamente una actividad (aunque el contenido
+  // aún no se haya escrito — ver fallback discreto más abajo).
+  const isTextLesson = !hasVideo && (isActivity || !!lessonContent?.trim() || resolvedResources.length > 0);
 
   // LCP: precarga el poster del video (mismo time=30 que usa el player en
   // video-player.tsx) para que el navegador lo pida antes de hidratar el
@@ -263,7 +278,15 @@ export default async function LessonPage(
             />
           ) : isTextLesson ? (
             <article className="ca-card p-6 md:p-8">
-              {lessonContent?.trim() && <Markdown content={lessonContent} />}
+              {lessonContent?.trim() ? (
+                <Markdown content={lessonContent} />
+              ) : (
+                isActivity && (
+                  <p className="text-[13px] text-ca-ink-soft">
+                    El detalle de esta actividad se publicará pronto.
+                  </p>
+                )
+              )}
               {resolvedResources.length > 0 && (
                 <div className={lessonContent?.trim() ? "mt-8 border-t border-ca-ink/[0.08] pt-6" : ""}>
                   <h2 className="mb-3 font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">
@@ -327,9 +350,9 @@ export default async function LessonPage(
           </div>
 
           {/* Evaluación formativa de la clase */}
-          {lessonEvaluation && (
+          {activeLessonEvaluation && (
             <div className="mt-8">
-              <EvaluationRunner evaluationId={lessonEvaluation.id} title={lessonEvaluation.title} />
+              <EvaluationRunner evaluationId={activeLessonEvaluation.id} title={activeLessonEvaluation.title} />
             </div>
           )}
         </div>

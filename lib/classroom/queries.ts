@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveResourceUrls } from "./resource-urls";
+import { isEvaluationOpen } from "./evaluation-window";
 import type {
   ModuleWithLessons,
   VideoProgress,
@@ -15,9 +16,12 @@ import type {
 
 /**
  * Mapa sessionId → quiz activo de la clase en vivo (evaluación scope='session').
- * Solo incluye las activas: una evaluación inactiva no se ofrece al alumno, igual
- * que el gate de `resolveEvaluationAccess`. El acceso real lo sigue protegiendo
- * ese guard; este map solo decide si se pinta el CTA "Responder quiz".
+ * Solo incluye las que están dentro de su ventana de programación (0070): una
+ * evaluación inactiva, programada o cerrada no se ofrece al alumno, igual que
+ * el gate de `resolveEvaluationAccess`. El acceso real lo sigue protegiendo ese
+ * guard; este map solo decide si se pinta el CTA "Responder quiz". Filtrado en
+ * JS con el helper (no `.or()` de PostgREST): más legible y consistente con el
+ * resto de los sitios que usan `isEvaluationOpen`.
  */
 async function getActiveSessionEvaluations(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -27,11 +31,20 @@ async function getActiveSessionEvaluations(
   if (sessionIds.length === 0) return map;
   const { data } = await supabase
     .from("evaluations")
-    .select("id, title, session_id")
+    .select("id, title, session_id, is_active, opens_at, closes_at")
     .in("session_id", sessionIds)
     .eq("scope", "session")
     .eq("is_active", true);
-  for (const e of (data ?? []) as { id: string; title: string; session_id: string }[]) {
+  const now = new Date();
+  for (const e of (data ?? []) as {
+    id: string;
+    title: string;
+    session_id: string;
+    is_active: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+  }[]) {
+    if (!isEvaluationOpen(e, now)) continue;
     map.set(e.session_id, { id: e.id, title: e.title });
   }
   return map;

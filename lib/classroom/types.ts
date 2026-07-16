@@ -64,6 +64,31 @@ export type ModuleProgress = {
 
 export type LessonStatus = "locked" | "available" | "in_progress" | "completed" | "no_video";
 
+// --- Tipo de actividad (tipificación de lecciones, migración 0071) ----------
+// Ortogonal a `lessons.kind` (modalidad: presencial/online/grabada). Solo TRES
+// valores (ver ADR-0017): 'integration' NO es un tipo aparte, queda dentro de
+// 'practice' (taxonomía final de la profe: "es clase, es actividad práctica o
+// es evaluación").
+export type LessonActivityType = "class" | "practice" | "evaluation";
+
+export const ACTIVITY_OPTIONS: { value: LessonActivityType; label: string }[] = [
+  { value: "class", label: "Clase" },
+  { value: "practice", label: "Actividad práctica" },
+  { value: "evaluation", label: "Evaluación" },
+];
+
+/** Label + tono de badge por tipo de actividad. 'class' no lleva badge (90% de
+ *  las filas): marcarlo sería ruido, justo el desorden que la profe pidió
+ *  eliminar. */
+export const ACTIVITY_TYPE_LABELS: Record<
+  LessonActivityType,
+  { label: string; tone: "amber" | "lime" } | null
+> = {
+  class: null,
+  practice: { label: "Actividad práctica", tone: "amber" },
+  evaluation: { label: "Evaluación", tone: "lime" },
+};
+
 export const COMPLETION_THRESHOLD = 90;
 
 // --- Calendario de sesiones (clases en vivo) ---------------------------------

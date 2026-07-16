@@ -690,8 +690,8 @@ export function SessionsManagerClient({
 
       {editing && programId && (
         <CollapsibleSection
-          title="Quiz de la clase"
-          subtitle="Evaluación formativa por enlace o QR"
+          title="Evaluación de la clase"
+          subtitle="Quiz o nota manual, por enlace o QR"
         >
           <SessionQuizPanel
             programId={programId}

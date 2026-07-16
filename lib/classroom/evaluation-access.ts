@@ -1,5 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { getEvaluationState } from "@/lib/classroom/evaluation-window";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -21,28 +22,44 @@ export type EvalAccess =
 
 /**
  * Resuelve el acceso de un alumno a una evaluación por clase:
- *   1. La evaluación debe existir y estar ACTIVA.
+ *   1. La evaluación debe existir, estar ACTIVA y dentro de su ventana de
+ *      programación (opens_at/closes_at — migración 0070). Este es "el gate
+ *      que de verdad manda": bypassea RLS (service-role), a diferencia de
+ *      `evaluations_student_select` que solo protege el acceso directo.
  *   2. El alumno debe tener matrícula activa en el programa de la evaluación.
  * Devuelve la evaluación + el enrollmentId, o un error tipado. Reutilizado por
  * los tres endpoints del alumno (estado / start / submit) para no repetir el
- * chequeo de tenant ni el de activación.
+ * chequeo de tenant ni el de ventana.
+ *
+ * `opts.ignoreClosesAt` (D5, ver ADR-0016): un intento ya iniciado siempre debe
+ * poder entregarse aunque `closes_at` ya haya pasado — cerrarlo en `submit` le
+ * "quemaría" el intento sin nota. Lo usa únicamente el endpoint de submit.
  */
 export async function resolveEvaluationAccess(
   supabase: ServerClient,
   admin: AdminClient,
   userId: string,
   evaluationId: string,
+  opts?: { ignoreClosesAt?: boolean },
 ): Promise<EvalAccess> {
   const { data: evaluation } = await admin
     .from("evaluations")
     .select(
-      "id, program_id, scope, title, passing_grade_pct, questions_per_attempt, max_attempts, time_limit_minutes, is_active",
+      "id, program_id, scope, title, passing_grade_pct, questions_per_attempt, max_attempts, time_limit_minutes, is_active, opens_at, closes_at",
     )
     .eq("id", evaluationId)
     .single();
 
-  if (!evaluation || !evaluation.is_active) {
+  if (!evaluation) {
     return { ok: false, status: 404, error: "Evaluación no disponible" };
+  }
+
+  const state = getEvaluationState(evaluation, new Date());
+  if (state === "draft" || state === "scheduled") {
+    return { ok: false, status: 404, error: "Evaluación no disponible" };
+  }
+  if (state === "closed" && !opts?.ignoreClosesAt) {
+    return { ok: false, status: 403, error: "Esta evaluación ya cerró" };
   }
 
   // Acceso permanente al contenido (RN-049/050): un alumni con matrícula

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
 import { uuidLike } from "@/lib/utils/zod";
+import { syncQuizGrade } from "@/lib/grades/sync-quiz-grade";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,10 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
+  // D5 (ver ADR-0016): a propósito NO se aplica `closes_at` aquí — un intento ya
+  // iniciado (pasó el gate estricto de /start) siempre se puede entregar, aunque
+  // la ventana haya cerrado mientras el alumno respondía. Solo se exige
+  // `is_active` (que sigue siendo el master switch de publicación).
   const { data: config } = await admin
     .from("evaluations")
     .select("*")
@@ -180,6 +185,14 @@ export async function POST(req: Request) {
   if (!updatedRows || updatedRows.length === 0) {
     return NextResponse.json({ error: "Este intento ya fue enviado" }, { status: 409 });
   }
+
+  // Registro académico (Paso 5 del brief evaluaciones/notas 1-7): best-effort,
+  // nunca bloquea la emisión del certificado ni la respuesta al alumno.
+  await syncQuizGrade(admin, {
+    evaluationId: config.id,
+    programId,
+    enrollmentId: enrollment.id,
+  });
 
   const { data: completedAfter } = await admin
     .from("quiz_attempts")

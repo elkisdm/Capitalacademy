@@ -16,9 +16,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { GRACE_AFTER_MIN } from "@/lib/asistencia/window";
-
-const MINUTE_MS = 60_000;
+import { isSessionClosed, sessionAppliesToEnrollment } from "@/lib/asistencia/window";
 
 export type MissedSession = { id: string; title: string | null; startsAt: string };
 export type PendingLesson = { lessonTitle: string; moduleTitle: string };
@@ -125,9 +123,7 @@ export async function getStudentPanelReport(
           .neq("modality", "recorded")
           .lt("ends_at", nowIso)
       : { data: [] };
-  const closedSessions = (sessionsRaw ?? []).filter(
-    (s) => now > new Date(s.ends_at).getTime() + GRACE_AFTER_MIN * MINUTE_MS,
-  );
+  const closedSessions = (sessionsRaw ?? []).filter((s) => isSessionClosed(s, now));
 
   const { data: attendanceRaw } =
     closedSessions.length > 0
@@ -178,6 +174,11 @@ export async function getStudentPanelReport(
     progressByEnrollment.set(p.enrollment_id, map);
   }
 
+  // Decisión explícita (ver ADR-0016): este reporte NO aplica la ventana de
+  // programación (opens_at/closes_at, migración 0070). Es un listado de
+  // evaluaciones PUBLICADAS para el panel del profesor, no un gate de acceso —
+  // si se filtrara por ventana, una evaluación ya cerrada desaparecería del
+  // reporte junto con el registro de quién la rindió y aprobó.
   const { data: evalsRaw } = await admin
     .from("evaluations")
     .select("id, title, scope")
@@ -218,13 +219,9 @@ export async function getStudentPanelReport(
     const fullName = profile?.full_name ?? profile?.email ?? "Alumno";
     const email = profile?.email ?? "";
 
-    const applicableSessions = (sessionsByCohort.get(enr.cohort_id) ?? []).filter((s) => {
-      if (s.ends_at < enr.enrolled_at) return false; // sesión anterior a su matrícula: no cuenta
-      return (
-        s.audience === "all" ||
-        (s.audience === "capital_inteligente" && enr.segment === "capital_inteligente")
-      );
-    });
+    const applicableSessions = (sessionsByCohort.get(enr.cohort_id) ?? []).filter((s) =>
+      sessionAppliesToEnrollment(s, enr),
+    );
     const total = applicableSessions.length;
     const missed = applicableSessions.filter(
       (s) => !presentSet.has(`${enr.student_id}:${s.id}`),

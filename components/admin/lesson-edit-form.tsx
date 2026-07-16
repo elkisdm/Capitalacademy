@@ -8,6 +8,7 @@ import { CoverImageField } from "@/components/admin/cover-image-field";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/field";
 import { DatePicker } from "@/components/ui/date-picker";
+import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
 import { ACTIVITY_OPTIONS, type LessonActivityType } from "@/lib/classroom/types";
 
 type LessonKind = "live_in_person" | "live_online" | "recorded";
@@ -31,13 +32,12 @@ type LessonEditFormProps = {
   };
 };
 
-// timestamptz ISO → valor para el <DatePicker> (hora local).
+// timestamptz ISO → valor para el <DatePicker> (hora de Chile).
 function isoToLocalInput(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return isoToChileWallTime(iso);
 }
 
 export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
@@ -69,8 +69,8 @@ export function LessonEditForm({ lessonId, initial }: LessonEditFormProps) {
           content: content.trim() || null,
           kind,
           activityType,
-          // datetime-local (hora local) → ISO; vacío = limpiar la apertura.
-          unlockAt: unlockAt ? new Date(unlockAt).toISOString() : null,
+          // datetime-local (hora de Chile) → ISO; vacío = limpiar la apertura.
+          unlockAt: unlockAt ? chileWallTimeToIso(unlockAt) : null,
         }),
       });
       if (!res.ok) {

@@ -5,6 +5,7 @@ import { useToast } from "@/components/admin/toast";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
 import { DatePicker } from "@/components/ui/date-picker";
+import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
 import type { Evaluation } from "./types";
 import { LoaderIcon, CheckCircleIcon } from "./icons";
 
@@ -23,19 +24,17 @@ type FormState = {
   closesAt: string;
 };
 
-// timestamptz ISO → valor para el <DatePicker> (hora local). Mismo patrón que
-// lesson-edit-form.tsx / deliverables-manager.tsx.
+// timestamptz ISO → valor para el <DatePicker> (hora de Chile).
 function isoToLocalInput(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return isoToChileWallTime(iso);
 }
 
-// Valor del <DatePicker> (hora local) → ISO; vacío = null (sin límite).
+// Valor del <DatePicker> (hora de Chile) → ISO; vacío = null (sin límite).
 function fromLocalInput(value: string): string | null {
-  return value ? new Date(value).toISOString() : null;
+  return value ? chileWallTimeToIso(value) : null;
 }
 
 function fromEvaluation(ev: Evaluation): FormState {

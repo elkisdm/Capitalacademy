@@ -109,7 +109,7 @@ export const PROGRAMS: Record<ProgramId, ProgramMeta> = {
       },
       {
         num: 2,
-        title: "Metodología Comercial — aplicación guiada",
+        title: "Módulo Práctico — aplicación guiada",
         topics: [
           "Práctica guiada y feedback individual",
           "Challenge Day y Role Play",

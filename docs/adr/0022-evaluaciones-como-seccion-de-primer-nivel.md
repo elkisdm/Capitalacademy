@@ -19,8 +19,9 @@ una pestaña dentro de `/admin/quizzes`
 (`components/admin/quiz/tab-bar.tsx`), subordinando la evaluación al quiz en
 vez de al revés. Con 9 evaluaciones en toda la plataforma, la pantalla
 existente (`evaluaciones-tab.tsx`) tampoco listaba evaluaciones: renderizaba
-una tarjeta por *target* (33+ tarjetas en el Diplomado, para exponer 6
-evaluaciones) — un catálogo de módulos/lecciones/sesiones con botón "Crear
+una tarjeta por *target* (33+ tarjetas en el Diplomado, para exponer 8
+evaluaciones — verificado contra prod: 1 final, 1 de módulo, 1 de lección, 5
+de sesión) — un catálogo de módulos/lecciones/sesiones con botón "Crear
 quiz", no un listado de la entidad.
 
 El brief original de evaluaciones y notas 1-7
@@ -33,9 +34,11 @@ un redirect permanente hacia la nueva sección, no congelando la ruta.
 
 1. **Sección propia `/admin/evaluaciones`** (lista, agrupada por módulo) +
    **`/admin/evaluaciones/[evaluationId]`** (pantalla de configuración,
-   reusando `EvaluationPanel` sin modificarlo). Página de detalle en vez de
-   dialog: el panel tiene 4 pestañas con tablas de notas que no caben en el
-   `Dialog max-w-2xl` que usaba la pestaña vieja.
+   reusando `EvaluationPanel`). Página de detalle en vez de dialog: el panel
+   tiene 4 pestañas con tablas de notas que no caben en el `Dialog max-w-2xl`
+   que usaba la pestaña vieja. El commit `45da35d` sí le hizo un ajuste puntual
+   (`toLocaleDateString` → `formatChile` en `evaluation-panel.tsx:244`, fix de
+   zona horaria) — no se reescribió ni se le cambió lógica de negocio.
 2. **`/admin/quizzes` muere como pantalla** y queda solo como
    `redirect("/admin/evaluaciones")` (307, no 308 — reversible, sin caché de
    navegador) para no romper bookmarks del staff.
@@ -87,8 +90,9 @@ un redirect permanente hacia la nueva sección, no congelando la ruta.
 ### Negativas
 - `kind` y `scope`/target siguen sin ser editables tras crear (hereda
   ADR-0018): si el negocio necesita convertir un quiz en nota manual, es otro
-  frente (implica qué hacer con preguntas e intentos existentes). La UI lo
-  advierte; no se parchea aquí.
+  frente (implica qué hacer con preguntas e intentos existentes). La UI
+  advierte ambos en el modal de creación (`new-evaluation-dialog.tsx`) con
+  texto visible junto a Tipo y junto a Alcance; no se parchea aquí.
 - **Deuda reconocida**: la carpeta `components/admin/quiz/` y el archivo
   `certificados-tab.tsx` (montado ahora desde `/admin/certificados`) no se
   renombran en esta entrega — mover 19 archivos tocaría ~8 importadores y

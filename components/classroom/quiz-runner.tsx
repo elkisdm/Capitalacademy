@@ -88,6 +88,7 @@ type Phase =
       questions: QuizQuestion[];
       config: QuizConfig;
       attempt: number;
+      submitError?: string;
     }
   | {
       name: "result";
@@ -196,6 +197,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
     async (answers: Record<string, string>) => {
       if (phase.name !== "in_progress" || busy) return;
       setBusy(true);
+      setPhase((prev) => (prev.name === "in_progress" ? { ...prev, submitError: undefined } : prev));
       const elapsed = startedAtRef.current ? Date.now() - startedAtRef.current : 0;
       try {
         const res = await fetch(`/api/classroom/quiz/submit`, {
@@ -205,7 +207,17 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         });
         const data = await res.json();
         if (!res.ok) {
-          setPhase({ name: "error", message: data?.error ?? "No se pudo enviar el quiz" });
+          if (res.status === 409) {
+            // El intento ya quedó cerrado en el servidor (posible respuesta perdida
+            // en un intento de envío anterior): resincroniza en vez de exigir reenvío.
+            await loadGate();
+            return;
+          }
+          setPhase((prev) =>
+            prev.name === "in_progress"
+              ? { ...prev, submitError: data?.error ?? "No pudimos enviar tus respuestas" }
+              : prev,
+          );
           return;
         }
         setPhase({
@@ -218,12 +230,16 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
           timeUsed: fmtElapsed(elapsed),
         });
       } catch {
-        setPhase({ name: "error", message: "Error de red al enviar el quiz" });
+        setPhase((prev) =>
+          prev.name === "in_progress"
+            ? { ...prev, submitError: "Error de red al enviar tus respuestas" }
+            : prev,
+        );
       } finally {
         setBusy(false);
       }
     },
-    [phase, busy, programId],
+    [phase, busy, programId, loadGate],
   );
 
   const goWorkshop = useCallback(() => router.push(`/classroom/${cohortSlug}`), [router, cohortSlug]);
@@ -276,6 +292,7 @@ export function QuizRunner({ programId, programTitle, studentName, cohortSlug }:
         maxAttempts={phase.config.maxAttempts}
         onSubmit={submitAttempt}
         onExit={goWorkshop}
+        submitError={phase.submitError}
       />
       </div>
     );

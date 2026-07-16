@@ -35,7 +35,13 @@ type Phase =
   | { name: "loading" }
   | { name: "error"; message: string }
   | { name: "intro"; state: State }
-  | { name: "in_progress"; attemptId: string; questions: RunnerQuestion[]; config: Config }
+  | {
+      name: "in_progress";
+      attemptId: string;
+      questions: RunnerQuestion[];
+      config: Config;
+      submitError?: string;
+    }
   | {
       name: "result";
       result: SubmitResult;
@@ -108,6 +114,7 @@ export function EvaluationRunner({
   const submit = useCallback(async () => {
     if (phase.name !== "in_progress" || busy) return;
     setBusy(true);
+    setPhase((prev) => (prev.name === "in_progress" ? { ...prev, submitError: undefined } : prev));
     try {
       const res = await fetch(`/api/classroom/evaluation/submit`, {
         method: "POST",
@@ -116,7 +123,17 @@ export function EvaluationRunner({
       });
       const data = await res.json();
       if (!res.ok) {
-        setPhase({ name: "error", message: data?.error ?? "No se pudo enviar" });
+        if (res.status === 409) {
+          // El intento ya quedó cerrado en el servidor (posible respuesta perdida
+          // en un intento de envío anterior): resincroniza en vez de exigir reenvío.
+          await loadState();
+          return;
+        }
+        setPhase((prev) =>
+          prev.name === "in_progress"
+            ? { ...prev, submitError: data?.error ?? "No pudimos enviar tus respuestas" }
+            : prev,
+        );
         return;
       }
       setPhase({
@@ -127,11 +144,15 @@ export function EvaluationRunner({
         passingGradePct: phase.config.passingGradePct,
       });
     } catch {
-      setPhase({ name: "error", message: "Error de red al enviar" });
+      setPhase((prev) =>
+        prev.name === "in_progress"
+          ? { ...prev, submitError: "Error de red al enviar tus respuestas" }
+          : prev,
+      );
     } finally {
       setBusy(false);
     }
-  }, [phase, busy, evaluationId, answers]);
+  }, [phase, busy, evaluationId, answers, loadState]);
 
   /* ---- Render ---- */
 
@@ -212,6 +233,15 @@ export function EvaluationRunner({
             </div>
           ))}
         </div>
+        {phase.submitError && (
+          <div
+            className="mt-4 rounded-xl px-4 py-3 text-[13px] font-semibold"
+            style={{ background: "rgba(220,38,38,0.08)", color: "#dc2626" }}
+            role="alert"
+          >
+            {phase.submitError}. Tus respuestas siguen guardadas; puedes reintentar el envío.
+          </div>
+        )}
         <div className="mt-5 flex items-center gap-3">
           <Button
             onClick={submit}
@@ -219,9 +249,9 @@ export function EvaluationRunner({
             variant="lime"
             className="h-auto min-h-0 gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em]"
           >
-            {busy ? "Enviando…" : "Enviar respuestas"}
+            {busy ? "Enviando…" : phase.submitError ? "Reintentar envío" : "Enviar respuestas"}
           </Button>
-          {!allAnswered && (
+          {!allAnswered && !phase.submitError && (
             <span className="text-[12px] font-medium text-ca-ink-soft">
               Puedes enviar; lo no respondido cuenta como incorrecto.
             </span>

@@ -22,6 +22,7 @@ type QuizInProgressProps = {
   maxAttempts: number;
   onSubmit: (answers: Record<string, string>) => void;
   onExit: () => void;
+  submitError?: string;
 };
 
 /* ------------------------------------------------------------------ */
@@ -238,6 +239,7 @@ export function QuizInProgress({
   maxAttempts,
   onSubmit,
   onExit,
+  submitError,
 }: QuizInProgressProps) {
   const total = questions.length;
 
@@ -498,6 +500,17 @@ export function QuizInProgress({
 
           <div className="flex-1" />
 
+          {submitError && (
+            <div
+              className="flex items-center gap-2 rounded-xl px-4 py-3 text-[13px] font-semibold"
+              style={{ background: "rgba(220,38,38,0.08)", color: "#dc2626" }}
+              role="alert"
+            >
+              <Icon name="info" size={16} stroke={2} />
+              {submitError}. Tus respuestas siguen guardadas; puedes reintentar el envío.
+            </div>
+          )}
+
           {/* Footer nav */}
           <div
             className="mt-6 flex flex-col gap-3 border-t pt-5 pb-[env(safe-area-inset-bottom)] sm:flex-row sm:items-center sm:justify-between"
@@ -528,7 +541,7 @@ export function QuizInProgress({
               variant="lime"
               className="h-auto min-h-0 w-full gap-2 px-5 py-2.5 text-[12.5px] uppercase tracking-[0.08em] sm:w-auto"
             >
-              {isLast ? "Enviar respuestas" : "Siguiente"}
+              {isLast ? (submitError ? "Reintentar envío" : "Enviar respuestas") : "Siguiente"}
               <Icon name="arrowRight" size={15} stroke={2} />
             </Button>
           </div>

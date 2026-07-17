@@ -29,23 +29,27 @@ async function getActiveSessionEvaluations(
 ): Promise<Map<string, SessionEvaluationRef>> {
   const map = new Map<string, SessionEvaluationRef>();
   if (sessionIds.length === 0) return map;
-  const { data } = await supabase
-    .from("evaluations")
-    .select("id, title, session_id, is_active, opens_at, closes_at")
-    .in("session_id", sessionIds)
-    .eq("scope", "session")
-    .eq("is_active", true);
-  const now = new Date();
-  for (const e of (data ?? []) as {
-    id: string;
-    title: string;
-    session_id: string;
-    is_active: boolean;
-    opens_at: string | null;
-    closes_at: string | null;
-  }[]) {
-    if (!isEvaluationOpen(e, now)) continue;
-    map.set(e.session_id, { id: e.id, title: e.title });
+  try {
+    const { data } = await supabase
+      .from("evaluations")
+      .select("id, title, session_id, is_active, opens_at, closes_at")
+      .in("session_id", sessionIds)
+      .eq("scope", "session")
+      .eq("is_active", true);
+    const now = new Date();
+    for (const e of (data ?? []) as {
+      id: string;
+      title: string;
+      session_id: string;
+      is_active: boolean;
+      opens_at: string | null;
+      closes_at: string | null;
+    }[]) {
+      if (!isEvaluationOpen(e, now)) continue;
+      map.set(e.session_id, { id: e.id, title: e.title });
+    }
+  } catch (e) {
+    console.error("[getActiveSessionEvaluations] degradando (quiz CTA oculto)", e);
   }
   return map;
 }
@@ -329,11 +333,16 @@ export async function getCohortSchedule(
 ): Promise<ScheduleSession[]> {
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("class_sessions")
     .select("*")
     .eq("cohort_id", cohortId)
     .order("starts_at", { ascending: true });
+  if (error) {
+    // Fallo del dato CORE: se registra y se propaga vía el error boundary
+    // (ahora con digest visible). El enriquecimiento de abajo sí degrada.
+    console.error("[getCohortSchedule] class_sessions query error", error);
+  }
 
   const sessions = (data ?? []) as unknown as ClassSession[];
   if (sessions.length === 0) return [];
@@ -348,13 +357,17 @@ export async function getCohortSchedule(
 
   const teacherMap = new Map<string, SessionInstructor>();
   if (teacherIds.length > 0) {
-    const { data: instructors } = await supabase
-      .from("instructors")
-      .select("id, full_name, photo_url")
-      .in("id", teacherIds);
+    try {
+      const { data: instructors } = await supabase
+        .from("instructors")
+        .select("id, full_name, photo_url")
+        .in("id", teacherIds);
 
-    for (const i of (instructors ?? []) as SessionInstructor[]) {
-      teacherMap.set(i.id, i);
+      for (const i of (instructors ?? []) as SessionInstructor[]) {
+        teacherMap.set(i.id, i);
+      }
+    } catch (e) {
+      console.error("[getCohortSchedule] instructors degradando", e);
     }
   }
 
@@ -362,17 +375,21 @@ export async function getCohortSchedule(
   const sessionIds = sessions.map((s) => s.id);
   const resourcesMap = new Map<string, SessionResource[]>();
   if (sessionIds.length > 0) {
-    const { data: resources } = await supabase
-      .from("session_resources")
-      .select("id, session_id, title, type, url, storage_path, position")
-      .in("session_id", sessionIds)
-      .order("position", { ascending: true });
+    try {
+      const { data: resources } = await supabase
+        .from("session_resources")
+        .select("id, session_id, title, type, url, storage_path, position")
+        .in("session_id", sessionIds)
+        .order("position", { ascending: true });
 
-    const resolved = await resolveResourceUrls((resources ?? []) as SessionResource[]);
-    for (const r of resolved) {
-      const arr = resourcesMap.get(r.session_id) ?? [];
-      arr.push(r);
-      resourcesMap.set(r.session_id, arr);
+      const resolved = await resolveResourceUrls((resources ?? []) as SessionResource[]);
+      for (const r of resolved) {
+        const arr = resourcesMap.get(r.session_id) ?? [];
+        arr.push(r);
+        resourcesMap.set(r.session_id, arr);
+      }
+    } catch (e) {
+      console.error("[getCohortSchedule] session_resources degradando", e);
     }
   }
 

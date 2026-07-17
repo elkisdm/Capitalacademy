@@ -32,19 +32,29 @@ export async function resolveResourceUrls<T extends ResolvableResource>(
   const uploaded = resources.filter((r) => r.storage_path);
   if (uploaded.length === 0) return resources;
 
-  const supabase = createAdminClient();
-  const paths = uploaded.map((r) => r.storage_path as string);
-  const { data, error } = await supabase.storage
-    .from(RESOURCE_BUCKET)
-    .createSignedUrls(paths, RESOURCE_URL_EXPIRY);
-
-  if (error || !data) {
-    console.error("resource signed url error", error);
-    // Degradar con gracia: sin URL el recurso no se podrá abrir, pero no rompe
-    // la página de la lección.
-    return resources.map((r) =>
+  // Degradar con gracia: sin URL el recurso no se podrá abrir, pero no rompe
+  // la página de la lección ni del calendario.
+  const degraded = () =>
+    resources.map((r) =>
       r.storage_path ? { ...r, url: null, viewUrl: null } : r,
     );
+
+  let data: { error: string | null; path: string | null; signedUrl: string | null }[] | null = null;
+  try {
+    const supabase = createAdminClient();
+    const paths = uploaded.map((r) => r.storage_path as string);
+    const res = await supabase.storage
+      .from(RESOURCE_BUCKET)
+      .createSignedUrls(paths, RESOURCE_URL_EXPIRY);
+    if (res.error || !res.data) {
+      console.error("resource signed url error", res.error);
+      return degraded();
+    }
+    data = res.data;
+  } catch (e) {
+    // Reject de red / firma / cliente admin: degradar en vez de tumbar la vista.
+    console.error("resource signed url threw", e);
+    return degraded();
   }
 
   const signedByPath = new Map<string, string | null>();

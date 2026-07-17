@@ -64,6 +64,11 @@ export default function ClassroomError({
           Volver al Classroom
         </Link>
       </div>
+      {error.digest && (
+        <p className="mt-4 font-mono text-[11px] text-ca-ink-soft/60">
+          Código de error: {error.digest}
+        </p>
+      )}
     </div>
   );
 }

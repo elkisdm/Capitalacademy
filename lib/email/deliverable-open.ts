@@ -2,16 +2,14 @@
 // queda abierta (al crearlo si opens_at ya pasó, o vía el cron de aperturas
 // futuras). Reutiliza el shell/estilos de lib/email/capacitacion-emails.ts.
 
-import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
+import type { EmailContent } from "@/lib/email/send-batch";
 
 const TZ = "America/Santiago";
 const SITE_URL = getPublicBaseUrl();
 const PLATFORM_URL = `${SITE_URL}/classroom`;
 const BRAND_LOGO_URL = `${SITE_URL}/brand/logo-light.png`;
 const DEFAULT_PROGRAM_NAME = "Capital Academy";
-
-type SendResult = { success: boolean; error?: string };
 
 export interface DeliverableOpenInput {
   email: string;
@@ -23,27 +21,14 @@ export interface DeliverableOpenInput {
   url?: string;
 }
 
-export async function sendDeliverableOpenEmail(
-  params: DeliverableOpenInput,
-): Promise<SendResult> {
+export function buildDeliverableOpenEmail(params: DeliverableOpenInput): EmailContent {
   const program = params.programName || DEFAULT_PROGRAM_NAME;
   const url = params.url || PLATFORM_URL;
-  const resend = getResendClient();
-  try {
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: params.email,
-      subject: `Ya puedes subir: ${params.deliverableTitle}`,
-      html: html(params, program, url),
-      text: text(params, program, url),
-    });
-    if (result.error) {
-      return { success: false, error: result.error.message };
-    }
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "unknown" };
-  }
+  return {
+    subject: `Ya puedes subir: ${params.deliverableTitle}`,
+    html: html(params, program, url),
+    text: text(params, program, url),
+  };
 }
 
 // --- Helpers de formato ------------------------------------------------------

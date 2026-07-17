@@ -134,5 +134,21 @@ pendiente de commit en otro frente al momento de escribir este ADR).
 - `db/migrations/0054_attendance_alerts.sql` — bitácora de idempotencia de la alerta.
 - `db/migrations/0075_session_reminder_recipients.sql` — bitácora por destinatario (C4).
 - `db/migrations/0076_programs_attendance_alerts_optin.sql` — opt-in por programa (C5).
+- `db/migrations/0077_recipient_ledgers_deliverable_recording.sql` — bitácora por
+  destinatario extendida a entregable-abierto y grabación/seguimiento CAP-CI (amendment
+  2026-07-17).
 - `lib/email/send-batch.ts` — fan-out por lote.
 - `app/api/cron/session-reminders/route.ts` — `processWindow`, `processAbsenceAlerts`.
+
+## Amendment (2026-07-17)
+
+El patrón de fan-out por lote + bitácora por destinatario (sección 1) se extendió a las otras
+dos familias de correos que aún hacían fan-out secuencial sin bitácora: apertura de entregable
+(`lib/deliverables/notify.ts`) y grabación disponible / seguimiento CAP-CI
+(`lib/classroom/recording-notifications.ts`). Mismo mecanismo: `buildDeliverableOpenEmail` /
+`buildRecordingAvailableEmail` / `buildCapacitacionFollowupEmail` arman el contenido sin
+enviarlo, `sendEmailBatch` despacha, y dos tablas nuevas (`deliverable_open_recipients`,
+`recording_notify_recipients`, migración 0077) registran quién ya recibió para que un
+reintento sea quirúrgico. Además, ambos crons (`deliverable-openings`,
+`recording-notifications`) ganaron un `MAX_PER_RUN = 10` para acotar el trabajo por corrida
+(mismo criterio que `flow-reconcile`, ADR-0021).

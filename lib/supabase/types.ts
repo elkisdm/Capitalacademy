@@ -737,6 +737,42 @@ export type Database = {
         }
         Relationships: []
       }
+      deliverable_open_recipients: {
+        Row: {
+          channel: string
+          created_at: string
+          deliverable_id: string
+          error: string | null
+          id: string
+          kind: string
+          sent_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          deliverable_id: string
+          error?: string | null
+          id?: string
+          kind?: string
+          sent_at?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          deliverable_id?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          sent_at?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       deliverable_submissions: {
         Row: {
           content_type: string | null
@@ -1998,6 +2034,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recording_notify_recipients: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          sent_at: string
+          session_id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          sent_at?: string
+          session_id: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          sent_at?: string
+          session_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
       }
       session_attendance: {
         Row: {

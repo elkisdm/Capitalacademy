@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendDeliverableOpenEmail } from "@/lib/email/deliverable-open";
+import { buildDeliverableOpenEmail } from "@/lib/email/deliverable-open";
+import { sendEmailBatch, type BatchMessage } from "@/lib/email/send-batch";
 
 type NotifyResult = { skipped: true } | { skipped: false; sent: number };
 
@@ -77,40 +78,100 @@ export async function notifyDeliverableOpen(deliverableId: string): Promise<Noti
 
   const { data: enrollments } = await admin
     .from("enrollments")
-    .select("profiles(email, full_name), cohorts!inner(program_id)")
+    .select("student_id, profiles(email, full_name), cohorts!inner(program_id)")
     .eq("cohorts.program_id", reserved.program_id)
     .eq("status", "active");
 
-  const recipients = new Map<string, string>();
+  const byStudent = new Map<string, { email: string; fullName: string }>();
   for (const e of (enrollments ?? []) as Array<{
+    student_id: string;
     profiles: { email: string; full_name: string | null } | null;
   }>) {
     const p = e.profiles;
-    if (p?.email && !recipients.has(p.email)) {
-      recipients.set(p.email, p.full_name ?? "");
+    if (p?.email && !byStudent.has(e.student_id)) {
+      byStudent.set(e.student_id, { email: p.email, fullName: p.full_name ?? "" });
     }
   }
+  const recipients = [...byStudent].map(([studentId, r]) => ({ studentId, ...r }));
 
-  let sent = 0;
-  for (const [email, fullName] of recipients) {
-    const res = await sendDeliverableOpenEmail({
-      email,
-      fullName,
+  // IDEMPOTENCIA POR DESTINATARIO (migración 0077): a quién YA le llegó, para
+  // que un reclamo de una reserva vieja sin terminar no reenvíe desde cero
+  // (mismo bug y mismo fix que session_reminder_recipients / 0075).
+  const { data: ledger, error: ledgerReadErr } = await admin
+    .from("deliverable_open_recipients")
+    .select("student_id")
+    .eq("deliverable_id", reserved.id)
+    .eq("kind", "deliverable_open")
+    .eq("channel", "email")
+    .eq("status", "sent");
+  if (ledgerReadErr) {
+    console.error("notifyDeliverableOpen ledger read error", ledgerReadErr);
+    return { skipped: true };
+  }
+  const alreadyDelivered = new Set(
+    ((ledger ?? []) as Array<{ student_id: string }>).map((r) => r.student_id),
+  );
+  const missing = recipients.filter((r) => !alreadyDelivered.has(r.studentId));
+
+  const studentIdByEmail = new Map(missing.map((r) => [r.email, r.studentId]));
+  const messages: BatchMessage[] = missing.map((r) => ({
+    to: r.email,
+    ...buildDeliverableOpenEmail({
+      email: r.email,
+      fullName: r.fullName,
       deliverableTitle: reserved.title,
       dueAtIso: reserved.due_at,
       programName: program?.name,
-    });
-    if (res.success) sent++;
+    }),
+  }));
+
+  const outcome = await sendEmailBatch(messages, `do:${reserved.id}`);
+
+  const ledgerRows = [
+    ...outcome.sent.map((to) => ({
+      deliverable_id: reserved.id,
+      student_id: studentIdByEmail.get(to)!,
+      kind: "deliverable_open",
+      channel: "email",
+      status: "sent",
+      error: null as string | null,
+    })),
+    ...outcome.failed.map((f) => ({
+      deliverable_id: reserved.id,
+      student_id: studentIdByEmail.get(f.to)!,
+      kind: "deliverable_open",
+      channel: "email",
+      status: "failed",
+      error: f.error,
+    })),
+  ];
+  if (ledgerRows.length > 0) {
+    const { error: ledgerErr } = await admin
+      .from("deliverable_open_recipients")
+      .upsert(ledgerRows, { onConflict: "deliverable_id,kind,channel,student_id" });
+    if (ledgerErr) console.error("notifyDeliverableOpen ledger write error", ledgerErr);
   }
 
-  // Marca el envío como TERMINADO (0063): a partir de aquí ninguna corrida
-  // futura vuelve a reclamar esta fila, ni por "nunca reservada" ni por
-  // "reserva vieja sin terminar". `open_notified_count` (0060) queda como
-  // bitácora del conteo real de envíos exitosos.
+  const deliveredTotal = alreadyDelivered.size + outcome.sent.length;
+
+  // Estado real del envío (mismo criterio que session_reminders/0075): no se
+  // marca open_notify_completed_at con entregas parciales. 'failed' aquí es
+  // reintentable y seguro: el próximo reclamo solo reenvía a quien falta.
+  if (outcome.failed.length > 0) {
+    await admin
+      .from("deliverables")
+      .update({ open_notified_count: deliveredTotal })
+      .eq("id", reserved.id);
+    return { skipped: false, sent: outcome.sent.length };
+  }
+
   await admin
     .from("deliverables")
-    .update({ open_notified_count: sent, open_notify_completed_at: new Date().toISOString() })
-    .eq("id", deliverableId);
+    .update({
+      open_notified_count: deliveredTotal,
+      open_notify_completed_at: new Date().toISOString(),
+    })
+    .eq("id", reserved.id);
 
-  return { skipped: false, sent };
+  return { skipped: false, sent: outcome.sent.length };
 }

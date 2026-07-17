@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendCapacitacionFollowupEmail } from "@/lib/email/capacitacion-emails";
-import { sendRecordingAvailableEmail } from "@/lib/email/recording-available";
+import { buildCapacitacionFollowupEmail } from "@/lib/email/capacitacion-emails";
+import { buildRecordingAvailableEmail } from "@/lib/email/recording-available";
+import { sendEmailBatch, type BatchMessage } from "@/lib/email/send-batch";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 // Ciclo de Capacitación Comercial CI: solo sus grabaciones disparan el
@@ -96,42 +97,113 @@ export async function dispatchCapacitacionFollowup(
     // Inscritos activos de la cohorte (mismo patrón que el cron de recordatorios).
     const { data: enrollments } = await supabase
       .from("enrollments")
-      .select("profiles(email, full_name)")
+      .select("student_id, profiles(email, full_name)")
       .eq("cohort_id", sessionRow.cohort_id)
       .eq("status", "active");
 
     const recipients = (
       (enrollments ?? []) as Array<{
+        student_id: string;
         profiles: { email: string; full_name: string | null } | null;
       }>
     )
-      .map((e) => e.profiles)
-      .filter(
-        (p): p is { email: string; full_name: string | null } =>
-          Boolean(p?.email),
-      );
+      .filter((e) => Boolean(e.profiles?.email))
+      .map((e) => ({
+        studentId: e.student_id,
+        email: e.profiles!.email,
+        fullName: e.profiles!.full_name ?? "",
+      }));
 
     const cohortSlug = cohort.slug ?? sessionRow.cohort_id;
     const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.id}`;
     const title = sessionRow.title ?? "tu capacitación";
 
-    let sent = 0;
-    for (const r of recipients) {
-      const res = await sendCapacitacionFollowupEmail({
+    // IDEMPOTENCIA POR DESTINATARIO (migración 0077): a quién YA le llegó.
+    const { data: ledger, error: ledgerReadErr } = await supabase
+      .from("recording_notify_recipients")
+      .select("student_id")
+      .eq("session_id", sessionRow.id)
+      .eq("kind", "capacitacion_followup")
+      .eq("channel", "email")
+      .eq("status", "sent");
+    if (ledgerReadErr) {
+      console.error(
+        "Mux webhook: ledger read del follow-up CAP-CI falló para sesión",
+        sessionRow.id,
+        ledgerReadErr,
+      );
+      return;
+    }
+    const alreadyDelivered = new Set(
+      ((ledger ?? []) as Array<{ student_id: string }>).map((r) => r.student_id),
+    );
+    const missing = recipients.filter((r) => !alreadyDelivered.has(r.studentId));
+
+    const studentIdByEmail = new Map(missing.map((r) => [r.email, r.studentId]));
+    const messages: BatchMessage[] = missing.map((r) => ({
+      to: r.email,
+      ...buildCapacitacionFollowupEmail({
         email: r.email,
-        fullName: r.full_name ?? "",
+        fullName: r.fullName,
         sessionTitle: title,
         recordingUrl,
         programCtaUrl: FOLLOWUP_CTA_URL,
         programCtaLabel: FOLLOWUP_CTA_LABEL,
         programName: FOLLOWUP_PAID_PROGRAM_NAME,
-      });
-      if (res.success) sent++;
+      }),
+    }));
+
+    const outcome = await sendEmailBatch(
+      messages,
+      `rn:${sessionRow.id}:capacitacion_followup`,
+    );
+
+    const ledgerRows = [
+      ...outcome.sent.map((to) => ({
+        session_id: sessionRow.id,
+        student_id: studentIdByEmail.get(to)!,
+        kind: "capacitacion_followup",
+        channel: "email",
+        status: "sent",
+        error: null as string | null,
+      })),
+      ...outcome.failed.map((f) => ({
+        session_id: sessionRow.id,
+        student_id: studentIdByEmail.get(f.to)!,
+        kind: "capacitacion_followup",
+        channel: "email",
+        status: "failed",
+        error: f.error,
+      })),
+    ];
+    if (ledgerRows.length > 0) {
+      const { error: ledgerErr } = await supabase
+        .from("recording_notify_recipients")
+        .upsert(ledgerRows, { onConflict: "session_id,kind,channel,student_id" });
+      if (ledgerErr) {
+        console.error(
+          "Mux webhook: ledger write del follow-up CAP-CI falló para sesión",
+          sessionRow.id,
+          ledgerErr,
+        );
+      }
+    }
+
+    const deliveredTotal = alreadyDelivered.size + outcome.sent.length;
+
+    // No se marca completed_at con entregas parciales: 'failed' es
+    // reintentable y el próximo reclamo solo reenvía a quien falta.
+    if (outcome.failed.length > 0) {
+      await supabase
+        .from("capacitacion_followup_log")
+        .update({ recipients_count: deliveredTotal })
+        .eq("session_id", sessionRow.id);
+      return;
     }
 
     await supabase
       .from("capacitacion_followup_log")
-      .update({ recipients_count: sent, completed_at: new Date().toISOString() })
+      .update({ recipients_count: deliveredTotal, completed_at: new Date().toISOString() })
       .eq("session_id", sessionRow.id);
   } catch (err) {
     console.error(
@@ -231,44 +303,101 @@ export async function dispatchRecordingAvailableNotification(
     // Inscritos activos de la cohorte (mismo patrón que el follow-up CAP-CI).
     const { data: enrollments } = await supabase
       .from("enrollments")
-      .select("profiles(email, full_name)")
+      .select("student_id, profiles(email, full_name)")
       .eq("cohort_id", sessionRow.cohort_id)
       .eq("status", "active");
 
     const recipients = (
       (enrollments ?? []) as Array<{
+        student_id: string;
         profiles: { email: string; full_name: string | null } | null;
       }>
     )
-      .map((e) => e.profiles)
-      .filter(
-        (p): p is { email: string; full_name: string | null } =>
-          Boolean(p?.email),
-      );
+      .filter((e) => Boolean(e.profiles?.email))
+      .map((e) => ({
+        studentId: e.student_id,
+        email: e.profiles!.email,
+        fullName: e.profiles!.full_name ?? "",
+      }));
 
     const cohortSlug = cohort.slug ?? sessionRow.cohort_id;
     const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.id}`;
     const lessonTitle = sessionRow.title ?? "tu clase";
     const programName = cohort.programs?.name ?? "Capital Academy";
 
-    for (const r of recipients) {
-      const res = await sendRecordingAvailableEmail({
+    // IDEMPOTENCIA POR DESTINATARIO (migración 0077): a quién YA le llegó.
+    const { data: ledger, error: ledgerReadErr } = await supabase
+      .from("recording_notify_recipients")
+      .select("student_id")
+      .eq("session_id", sessionRow.id)
+      .eq("kind", "recording_available")
+      .eq("channel", "email")
+      .eq("status", "sent");
+    if (ledgerReadErr) {
+      console.error(
+        "Mux webhook: ledger read de notificación de grabación falló",
+        lessonId,
+        ledgerReadErr,
+      );
+      return;
+    }
+    const alreadyDelivered = new Set(
+      ((ledger ?? []) as Array<{ student_id: string }>).map((r) => r.student_id),
+    );
+    const missing = recipients.filter((r) => !alreadyDelivered.has(r.studentId));
+
+    const studentIdByEmail = new Map(missing.map((r) => [r.email, r.studentId]));
+    const messages: BatchMessage[] = missing.map((r) => ({
+      to: r.email,
+      ...buildRecordingAvailableEmail({
         to: r.email,
-        studentName: r.full_name ?? "",
+        studentName: r.fullName,
         lessonTitle,
         programName,
         cohortName: cohort.name,
         url: recordingUrl,
-      });
-      if (!res.ok) {
+      }),
+    }));
+
+    const outcome = await sendEmailBatch(
+      messages,
+      `rn:${sessionRow.id}:recording_available`,
+    );
+
+    const ledgerRows = [
+      ...outcome.sent.map((to) => ({
+        session_id: sessionRow.id,
+        student_id: studentIdByEmail.get(to)!,
+        kind: "recording_available",
+        channel: "email",
+        status: "sent",
+        error: null as string | null,
+      })),
+      ...outcome.failed.map((f) => ({
+        session_id: sessionRow.id,
+        student_id: studentIdByEmail.get(f.to)!,
+        kind: "recording_available",
+        channel: "email",
+        status: "failed",
+        error: f.error,
+      })),
+    ];
+    if (ledgerRows.length > 0) {
+      const { error: ledgerErr } = await supabase
+        .from("recording_notify_recipients")
+        .upsert(ledgerRows, { onConflict: "session_id,kind,channel,student_id" });
+      if (ledgerErr) {
         console.error(
-          "Mux webhook: envío de notificación de grabación falló",
+          "Mux webhook: ledger write de notificación de grabación falló",
           lessonId,
-          r.email,
-          res.error,
+          ledgerErr,
         );
       }
     }
+
+    // No se marca recording_notify_completed_at con entregas parciales: la
+    // próxima corrida reclama la reserva y reintenta solo a quien falta.
+    if (outcome.failed.length > 0) return;
 
     // Marca el envío como TERMINADO (0064): a partir de aquí ninguna corrida
     // futura vuelve a reclamar esta fila, ni por "nunca reservada" ni por

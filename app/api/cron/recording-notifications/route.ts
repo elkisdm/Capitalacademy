@@ -12,6 +12,11 @@ export const maxDuration = 60;
 // Evita que Next intente cachear/estatizar la ruta del cron.
 export const dynamic = "force-dynamic";
 
+// Techo de reintentos procesados por corrida: evita que una corrida quede
+// atascada si se acumulan muchas reservas stale (mismo criterio que
+// MAX_PER_RUN en flow-reconcile, ADR-0021).
+const MAX_PER_RUN = 10;
+
 // ---------------------------------------------------------------------------
 // GET/POST  /api/cron/recording-notifications
 //   Reconciliación del patrón "reserva-antes-de-enviar" del webhook de Mux
@@ -36,7 +41,9 @@ export async function GET(req: Request) {
     .select("id")
     .not("recording_notified_at", "is", null)
     .is("recording_notify_completed_at", null)
-    .lt("recording_notified_at", staleCutoffIso);
+    .lt("recording_notified_at", staleCutoffIso)
+    .order("recording_notified_at", { ascending: true })
+    .limit(MAX_PER_RUN);
 
   for (const l of staleLessons ?? []) {
     await dispatchRecordingAvailableNotification(admin, l.id);
@@ -46,7 +53,9 @@ export async function GET(req: Request) {
     .from("capacitacion_followup_log")
     .select("session_id, class_sessions(lesson_id)")
     .is("completed_at", null)
-    .lt("sent_at", staleCutoffIso);
+    .lt("sent_at", staleCutoffIso)
+    .order("sent_at", { ascending: true })
+    .limit(MAX_PER_RUN);
 
   for (const row of (staleLogs ?? []) as Array<{
     session_id: string;

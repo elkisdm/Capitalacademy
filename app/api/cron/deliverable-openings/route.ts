@@ -8,6 +8,11 @@ export const maxDuration = 60;
 // Evita que Next intente cachear/estatizar la ruta del cron.
 export const dynamic = "force-dynamic";
 
+// Techo de entregables procesados por corrida: evita que una corrida quede
+// atascada si se acumulan muchas aperturas pendientes (mismo criterio que
+// MAX_PER_RUN en flow-reconcile, ADR-0021).
+const MAX_PER_RUN = 10;
+
 // ---------------------------------------------------------------------------
 // GET/POST  /api/cron/deliverable-openings
 //   Cubre aperturas futuras: notifica los entregables cuya ventana ya abrió
@@ -29,7 +34,9 @@ export async function GET(req: Request) {
     .from("deliverables")
     .select("id")
     .is("open_notify_completed_at", null)
-    .lte("opens_at", new Date().toISOString());
+    .lte("opens_at", new Date().toISOString())
+    .order("opens_at", { ascending: true })
+    .limit(MAX_PER_RUN);
 
   if (error) {
     console.error("deliverable-openings query error", error);

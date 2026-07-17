@@ -4,14 +4,12 @@
 // seguimiento post-clase en lib/email/capacitacion-emails.ts). Reutiliza el
 // shell/estilos de lib/email/deliverable-open.ts.
 
-import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
+import type { EmailContent } from "@/lib/email/send-batch";
 
 const SITE_URL = getPublicBaseUrl();
 const PLATFORM_URL = `${SITE_URL}/classroom`;
 const BRAND_LOGO_URL = `${SITE_URL}/brand/logo-light.png`;
-
-type SendResult = { ok: boolean; error?: string };
 
 export interface RecordingAvailableInput {
   to: string;
@@ -23,25 +21,12 @@ export interface RecordingAvailableInput {
   url: string;
 }
 
-export async function sendRecordingAvailableEmail(
-  params: RecordingAvailableInput,
-): Promise<SendResult> {
-  const resend = getResendClient();
-  try {
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: params.to,
-      subject: `Ya está disponible la grabación de ${params.lessonTitle}`,
-      html: html(params),
-      text: text(params),
-    });
-    if (result.error) {
-      return { ok: false, error: result.error.message };
-    }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "unknown" };
-  }
+export function buildRecordingAvailableEmail(params: RecordingAvailableInput): EmailContent {
+  return {
+    subject: `Ya está disponible la grabación de ${params.lessonTitle}`,
+    html: html(params),
+    text: text(params),
+  };
 }
 
 // --- Helpers de formato ------------------------------------------------------

@@ -118,16 +118,15 @@ export interface CapacitacionFollowupInput {
 }
 
 /** (4) Seguimiento post-clase: grabación disponible + CTA a programa pago. */
-export async function sendCapacitacionFollowupEmail(
+export function buildCapacitacionFollowupEmail(
   params: CapacitacionFollowupInput,
-): Promise<SendResult> {
+): EmailContent {
   const program = params.programName || DEFAULT_PROGRAM_NAME;
-  return send({
-    to: params.email,
+  return {
     subject: `Ya está disponible la grabación de ${params.sessionTitle}`,
     html: followupHtml(params, program),
     text: followupText(params, program),
-  });
+  };
 }
 
 // --- Envío -------------------------------------------------------------------

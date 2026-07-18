@@ -6,7 +6,11 @@ import {
   fetchFlowPaymentStatusByCommerceId,
   mapFlowStatus,
 } from "@/lib/flow/status";
-import { processFlowPayment } from "@/lib/flow/process-payment";
+import {
+  processFlowPayment,
+  runPaymentEnrollment,
+  MAX_ENROLL_ATTEMPTS,
+} from "@/lib/flow/process-payment";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,6 +40,67 @@ const MAX_PER_RUN = 100;
 
 const SELECT_COLS =
   "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp, document_type, invoice_data, flow_token, commerce_order";
+
+const ENROLL_GRACE_MINUTES = 15;
+const ENROLL_MAX_PER_RUN = 100;
+const ENROLL_SELECT_COLS =
+  "id, firstname, lastname, email, rut, phone, amount_clp, paid_at, plan, coupon_code, coupon_id, discount_clp, document_type, invoice_data, enrollment_attempts";
+
+// ---------------------------------------------------------------------------
+// 2º pase: huérfanos A1 — pagos succeeded cuya matrícula (enrollBuyer) falló
+// y quedaron con enrollment_status en 'pending'/'failed'. NO consulta la API
+// de Flow (la plata ya está confirmada); solo reintenta runPaymentEnrollment.
+// Grace de 15 min para no pisar al webhook/cron principal en vuelo. Ver
+// ADR-0023.
+// ---------------------------------------------------------------------------
+async function reconcileEnrollments(admin: ReturnType<typeof createAdminClient>) {
+  const graceUpper = new Date(Date.now() - ENROLL_GRACE_MINUTES * 60_000).toISOString();
+  const { data: orphans, error } = await admin
+    .from("payments")
+    .select(ENROLL_SELECT_COLS)
+    .eq("status", "succeeded")
+    .eq("provider", "flow")
+    .in("plan", [
+      "contado",
+      "webpay-6",
+      "webpay-12",
+      "lid-contado",
+      "lid-46",
+      "lid-712",
+    ])
+    .in("enrollment_status", ["pending", "failed"])
+    .lt("enrollment_attempts", MAX_ENROLL_ATTEMPTS)
+    .lte("paid_at", graceUpper)
+    .order("enrollment_attempts", { ascending: true })
+    .order("paid_at", { ascending: true })
+    .limit(ENROLL_MAX_PER_RUN);
+
+  if (error) {
+    console.error("flow-reconcile: enrollment query error", error);
+    return { enrollChecked: 0, enrollRecovered: 0 };
+  }
+
+  let enrollChecked = 0;
+  let enrollRecovered = 0;
+  for (const p of orphans ?? []) {
+    enrollChecked++;
+    const result = await runPaymentEnrollment(
+      admin,
+      p,
+      p.enrollment_attempts as number,
+      "cron",
+    );
+    if (result === "enrolled") {
+      enrollRecovered++;
+      console.error("flow-reconcile: MATRÍCULA RECUPERADA (huérfano A1)", {
+        paymentId: p.id,
+        email: p.email,
+        plan: p.plan,
+      });
+    }
+  }
+  return { enrollChecked, enrollRecovered };
+}
 
 export async function GET(req: Request) {
   if (!authorizeCron(req)) {
@@ -105,7 +170,16 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, checked, recovered, closed });
+  const { enrollChecked, enrollRecovered } = await reconcileEnrollments(admin);
+
+  return NextResponse.json({
+    ok: true,
+    checked,
+    recovered,
+    closed,
+    enrollChecked,
+    enrollRecovered,
+  });
 }
 
 // Algunos schedulers invocan por GET; otros prefieren POST.

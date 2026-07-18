@@ -3,6 +3,7 @@ import type { Database } from "@/lib/supabase/types";
 import {
   sendPaymentConfirmationEmail,
   sendPaymentTeamNotification,
+  sendEnrollmentFailureNotification,
 } from "@/lib/email/payment-confirmation";
 import { enrollBuyer } from "@/lib/classroom/enroll-from-payment";
 import { PAYMENT_PLAN_KEYS } from "@/lib/flow/checkout";
@@ -10,6 +11,19 @@ import { LIDERAZGO_PLAN_KEYS } from "@/lib/programs/liderazgo";
 import { mapFlowStatus, type FlowPaymentStatus } from "@/lib/flow/status";
 
 type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
+
+type SupabaseAdmin = ReturnType<typeof createAdminClient>;
+
+export const MAX_ENROLL_ATTEMPTS = 5;
+
+const ENROLLABLE_PLANS: readonly string[] = [
+  ...PAYMENT_PLAN_KEYS,
+  ...LIDERAZGO_PLAN_KEYS,
+];
+
+export function isEnrollablePlan(plan: string | null): plan is string {
+  return !!plan && ENROLLABLE_PLANS.includes(plan);
+}
 
 // Subconjunto de columnas de `payments` que necesita processFlowPayment. Tanto
 // el webhook como el cron de reconciliación seleccionan (al menos) estas
@@ -36,6 +50,88 @@ export interface ProcessResult {
   firstSuccess: boolean;
   status: "pending" | "processing" | "succeeded" | "failed" | "refunded";
   error?: string;
+}
+
+/**
+ * Matricula (o reintenta) a un comprador de un pago succeeded y persiste el
+ * resultado en payments.enrollment_*. Reinvocable e idempotente. NO consulta la
+ * API de Flow. NUNCA lanza. Retorna el estado resultante para que el cron cuente
+ * recuperados sin re-leer la fila.
+ */
+export async function runPaymentEnrollment(
+  supabase: SupabaseAdmin,
+  payment: ExistingPaymentRow,
+  currentAttempts: number,
+  source: "webhook" | "cron",
+): Promise<"enrolled" | "failed" | "not_applicable"> {
+  try {
+    if (!isEnrollablePlan(payment.plan)) {
+      await supabase
+        .from("payments")
+        .update({ enrollment_status: "not_applicable" })
+        .eq("id", payment.id)
+        .neq("enrollment_status", "not_applicable");
+      return "not_applicable";
+    }
+
+    const enrollResult = await enrollBuyer({
+      email: payment.email,
+      firstname: payment.firstname,
+      lastname: payment.lastname,
+      plan: payment.plan,
+    });
+
+    if (enrollResult.ok) {
+      await supabase
+        .from("payments")
+        .update({
+          enrollment_status: "enrolled",
+          enrolled_at: new Date().toISOString(),
+          enrollment_error: null,
+        })
+        .eq("id", payment.id);
+      return "enrolled";
+    }
+
+    const attempts = currentAttempts + 1;
+    await supabase
+      .from("payments")
+      .update({
+        enrollment_status: "failed",
+        enrollment_attempts: attempts,
+        enrollment_error: enrollResult.error ?? "unknown",
+      })
+      .eq("id", payment.id);
+
+    console.error(`enroll-on-payment failed (${source})`, {
+      paymentId: payment.id,
+      email: payment.email,
+      plan: payment.plan,
+      attempts,
+      error: enrollResult.error,
+    });
+
+    if (attempts === 1 || attempts >= MAX_ENROLL_ATTEMPTS) {
+      await sendEnrollmentFailureNotification({
+        paymentId: payment.id,
+        firstname: payment.firstname,
+        lastname: payment.lastname,
+        email: payment.email,
+        amountClp: payment.amount_clp,
+        plan: payment.plan,
+        attempts,
+        exhausted: attempts >= MAX_ENROLL_ATTEMPTS,
+        error: enrollResult.error ?? "unknown",
+      });
+    }
+    return "failed";
+  } catch (e) {
+    console.error(`runPaymentEnrollment threw (${source})`, {
+      paymentId: payment.id,
+      error: e instanceof Error ? e.message : e,
+    });
+    return "failed";
+  }
 }
 
 /**
@@ -171,31 +267,10 @@ export async function processFlowPayment(
       }
     }
 
-    // Link checkout → matrícula: si el pago es del Diplomado o del Programa de
-    // Liderazgo (plan en PAYMENT_PLAN_KEYS o LIDERAZGO_PLAN_KEYS), matricular
-    // al comprador en el classroom de su cohorte activa y enviarle el
-    // onboarding branded con link de activación. Idempotente y no rompe el
-    // flujo si falla (la plata ya fue tomada; se loguea para reconciliar).
-    if (
-      payment.plan &&
-      ((PAYMENT_PLAN_KEYS as readonly string[]).includes(payment.plan) ||
-        (LIDERAZGO_PLAN_KEYS as readonly string[]).includes(payment.plan))
-    ) {
-      const enrollResult = await enrollBuyer({
-        email: payment.email,
-        firstname: payment.firstname,
-        lastname: payment.lastname,
-        plan: payment.plan,
-      });
-      if (!enrollResult.ok) {
-        console.error(`enroll-on-payment failed (${source})`, {
-          paymentId: payment.id,
-          email: payment.email,
-          plan: payment.plan,
-          error: enrollResult.error,
-        });
-      }
-    }
+    // Link checkout → matrícula: persiste el estado en enrollment_* y, si falla,
+    // deja la fila reintentable por el 2º pase de flow-reconcile + alerta.
+    // Idempotente y nunca rompe el flujo (la plata ya fue tomada).
+    await runPaymentEnrollment(supabase, payment, 0, source);
   }
 
   return { ok: true, firstSuccess, status };

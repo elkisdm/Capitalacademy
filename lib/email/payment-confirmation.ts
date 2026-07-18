@@ -177,6 +177,61 @@ export async function sendPaymentTeamNotification(
   }
 }
 
+export async function sendEnrollmentFailureNotification(data: {
+  paymentId: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  amountClp: number;
+  plan: string | null;
+  attempts: number;
+  exhausted: boolean;
+  error: string;
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const recipient = process.env.TEAM_NOTIFICATION_EMAIL;
+  if (!recipient) {
+    return { ok: false, error: "TEAM_NOTIFICATION_EMAIL not configured" };
+  }
+  const resend = getResendClient();
+  const program = resolveProgram(data.plan);
+  const amount = moneyFormatter.format(data.amountClp);
+  const tag = data.exhausted ? "ACCIÓN MANUAL" : "reintentando";
+  const subject = `Matrícula fallida (${tag}) · ${program.short} · ${data.firstname} ${data.lastname} · ${amount}`;
+  const lines = [
+    `El pago fue COBRADO pero la matrícula falló (intento ${data.attempts}${data.exhausted ? ", reintentos agotados" : ""}).`,
+    "",
+    `Alumno: ${data.firstname} ${data.lastname} <${data.email}>`,
+    `Programa: ${program.name}`,
+    `Plan: ${data.plan ?? "—"}`,
+    `Monto: ${amount}`,
+    `Payment ID: ${data.paymentId}`,
+    `Error: ${data.error}`,
+    "",
+    data.exhausted
+      ? "Se agotaron los reintentos automáticos. Matricular a mano o resetear enrollment_attempts=0 y enrollment_status='failed' para rearmar el reintento."
+      : "El cron flow-reconcile reintentará automáticamente cada 15 min.",
+  ];
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: recipient,
+      replyTo: data.email,
+      subject,
+      text: lines.join("\n"),
+      html: `<pre style="font-family:ui-monospace,Menlo,monospace;font-size:14px;white-space:pre-wrap;">${escapeHtml(lines.join("\n"))}</pre>`,
+    });
+    if (result.error) {
+      return { ok: false, error: result.error.message };
+    }
+    return { ok: true, id: result.data?.id ?? "" };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "unknown",
+    };
+  }
+}
+
 interface RenderInput extends PaymentConfirmationInput {
   amount: string;
   date: string;

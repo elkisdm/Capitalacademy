@@ -1646,6 +1646,10 @@ export type Database = {
           discount_clp: number | null
           document_type: string
           email: string
+          enrolled_at: string | null
+          enrollment_attempts: number
+          enrollment_error: string | null
+          enrollment_status: string
           failure_reason: string | null
           fintoc_payment_id: string | null
           fintoc_session_id: string | null
@@ -1676,6 +1680,10 @@ export type Database = {
           discount_clp?: number | null
           document_type?: string
           email: string
+          enrolled_at?: string | null
+          enrollment_attempts?: number
+          enrollment_error?: string | null
+          enrollment_status?: string
           failure_reason?: string | null
           fintoc_payment_id?: string | null
           fintoc_session_id?: string | null
@@ -1706,6 +1714,10 @@ export type Database = {
           discount_clp?: number | null
           document_type?: string
           email?: string
+          enrolled_at?: string | null
+          enrollment_attempts?: number
+          enrollment_error?: string | null
+          enrollment_status?: string
           failure_reason?: string | null
           fintoc_payment_id?: string | null
           fintoc_session_id?: string | null

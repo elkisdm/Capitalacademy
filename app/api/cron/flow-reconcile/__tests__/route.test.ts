@@ -5,6 +5,7 @@ const mockFetchFlowPaymentStatus = vi.fn();
 const mockFetchFlowPaymentStatusByCommerceId = vi.fn();
 const mockMapFlowStatus = vi.fn();
 const mockProcessFlowPayment = vi.fn();
+const mockRunPaymentEnrollment = vi.fn();
 
 // Query builder de `payments` para el listado de candidatos del cron. Todas
 // las llamadas de filtro (.eq/.lte/.gte/.order) se registran para poder
@@ -14,20 +15,48 @@ let mockCandidatesResult: { data: unknown[] | null; error: unknown } = {
   data: [],
   error: null,
 };
+// 2º pase (huérfanos de matrícula, A1): resultado separado — la query se
+// distingue de la principal porque es la única que llama `.in()`.
+let mockEnrollOrphansResult: { data: unknown[] | null; error: unknown } = {
+  data: [],
+  error: null,
+};
 const eqCalls: unknown[][] = [];
+const inCalls: unknown[][] = [];
 let lteArg: string | undefined;
 let gteArg: string | undefined;
 let orderArgs: unknown[] | undefined;
+// Rastreados aparte porque la query de reconcileEnrollments también llama
+// `.lte()`/`.order()` (sobre otras columnas, y con la misma ventana de 15 min
+// por coincidencia de constantes) — mezclarlos con lteArg/gteArg/orderArgs
+// haría los asserts del 1er pase frágiles ante cualquier cambio en el 2º.
+let enrollLtArg: unknown;
+let enrollLteArg: string | undefined;
+let enrollOrderCalls: unknown[][] = [];
 
 function makeCandidatesBuilder() {
   const builder: Record<string, unknown> = {};
+  let isEnrollQuery = false;
   builder.select = () => builder;
   builder.eq = (...args: unknown[]) => {
     eqCalls.push(args);
     return builder;
   };
+  builder.in = (...args: unknown[]) => {
+    isEnrollQuery = true;
+    inCalls.push(args);
+    return builder;
+  };
+  builder.lt = (...args: unknown[]) => {
+    enrollLtArg = args[1];
+    return builder;
+  };
   builder.lte = (...args: unknown[]) => {
-    lteArg = args[1] as string;
+    if (isEnrollQuery) {
+      enrollLteArg = args[1] as string;
+    } else {
+      lteArg = args[1] as string;
+    }
     return builder;
   };
   builder.gte = (...args: unknown[]) => {
@@ -35,10 +64,15 @@ function makeCandidatesBuilder() {
     return builder;
   };
   builder.order = (...args: unknown[]) => {
-    orderArgs = args;
+    if (isEnrollQuery) {
+      enrollOrderCalls.push(args);
+    } else {
+      orderArgs = args;
+    }
     return builder;
   };
-  builder.limit = () => Promise.resolve(mockCandidatesResult);
+  builder.limit = () =>
+    Promise.resolve(isEnrollQuery ? mockEnrollOrphansResult : mockCandidatesResult);
   return builder;
 }
 
@@ -65,6 +99,8 @@ vi.mock("@/lib/flow/status", () => ({
 
 vi.mock("@/lib/flow/process-payment", () => ({
   processFlowPayment: (...args: unknown[]) => mockProcessFlowPayment(...args),
+  runPaymentEnrollment: (...args: unknown[]) => mockRunPaymentEnrollment(...args),
+  MAX_ENROLL_ATTEMPTS: 5,
 }));
 
 const { GET } = await import("@/app/api/cron/flow-reconcile/route");
@@ -80,10 +116,15 @@ describe("GET /api/cron/flow-reconcile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCandidatesResult = { data: [], error: null };
+    mockEnrollOrphansResult = { data: [], error: null };
     eqCalls.length = 0;
+    inCalls.length = 0;
     lteArg = undefined;
     gteArg = undefined;
     orderArgs = undefined;
+    enrollLtArg = undefined;
+    enrollLteArg = undefined;
+    enrollOrderCalls = [];
   });
 
   it("returns 401 when the cron request is not authorized", async () => {
@@ -121,7 +162,7 @@ describe("GET /api/cron/flow-reconcile", () => {
     const res = await GET(makeRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toEqual({ ok: true, checked: 1, recovered: 1, closed: 0 });
+    expect(json).toEqual({ ok: true, checked: 1, recovered: 1, closed: 0, enrollChecked: 0, enrollRecovered: 0 });
     expect(mockProcessFlowPayment).toHaveBeenCalledWith(
       expect.objectContaining({ id: "pay-1" }),
       expect.anything(),
@@ -150,7 +191,7 @@ describe("GET /api/cron/flow-reconcile", () => {
 
     const res = await GET(makeRequest());
     const json = await res.json();
-    expect(json).toEqual({ ok: true, checked: 1, recovered: 0, closed: 0 });
+    expect(json).toEqual({ ok: true, checked: 1, recovered: 0, closed: 0, enrollChecked: 0, enrollRecovered: 0 });
     expect(mockProcessFlowPayment).not.toHaveBeenCalled();
   });
 
@@ -180,7 +221,7 @@ describe("GET /api/cron/flow-reconcile", () => {
 
     const res = await GET(makeRequest());
     const json = await res.json();
-    expect(json).toEqual({ ok: true, checked: 1, recovered: 0, closed: 1 });
+    expect(json).toEqual({ ok: true, checked: 1, recovered: 0, closed: 1, enrollChecked: 0, enrollRecovered: 0 });
     expect(mockProcessFlowPayment).toHaveBeenCalled();
   });
 
@@ -277,5 +318,90 @@ describe("GET /api/cron/flow-reconcile", () => {
     await GET(makeRequest());
 
     expect(orderArgs).toEqual(["created_at", { ascending: false }]);
+  });
+
+  describe("2º pase: reconciliación de huérfanos de matrícula (A1)", () => {
+    it("invoca runPaymentEnrollment para un huérfano failed dentro del grace y cuenta enrollRecovered al recuperarse", async () => {
+      mockAuthorizeCron.mockReturnValue(true);
+      mockEnrollOrphansResult = {
+        data: [
+          {
+            id: "pay-orphan-1",
+            email: "huerfano@test.com",
+            plan: "contado",
+            enrollment_attempts: 2,
+          },
+        ],
+        error: null,
+      };
+      mockRunPaymentEnrollment.mockResolvedValue("enrolled");
+
+      const res = await GET(makeRequest());
+      const json = await res.json();
+
+      expect(json).toEqual({
+        ok: true,
+        checked: 0,
+        recovered: 0,
+        closed: 0,
+        enrollChecked: 1,
+        enrollRecovered: 1,
+      });
+      expect(mockRunPaymentEnrollment).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ id: "pay-orphan-1" }),
+        2,
+        "cron",
+      );
+      expect(inCalls).toContainEqual([
+        "enrollment_status",
+        ["pending", "failed"],
+      ]);
+    });
+
+    it("no cuenta como recuperado un huérfano que sigue failed", async () => {
+      mockAuthorizeCron.mockReturnValue(true);
+      mockEnrollOrphansResult = {
+        data: [
+          {
+            id: "pay-orphan-2",
+            email: "sigue-fallando@test.com",
+            plan: "contado",
+            enrollment_attempts: 1,
+          },
+        ],
+        error: null,
+      };
+      mockRunPaymentEnrollment.mockResolvedValue("failed");
+
+      const res = await GET(makeRequest());
+      const json = await res.json();
+
+      expect(json).toEqual({
+        ok: true,
+        checked: 0,
+        recovered: 0,
+        closed: 0,
+        enrollChecked: 1,
+        enrollRecovered: 0,
+      });
+    });
+
+    it("sin huérfanos, el 2º pase no llama a runPaymentEnrollment", async () => {
+      mockAuthorizeCron.mockReturnValue(true);
+
+      const res = await GET(makeRequest());
+      const json = await res.json();
+
+      expect(json).toEqual({
+        ok: true,
+        checked: 0,
+        recovered: 0,
+        closed: 0,
+        enrollChecked: 0,
+        enrollRecovered: 0,
+      });
+      expect(mockRunPaymentEnrollment).not.toHaveBeenCalled();
+    });
   });
 });

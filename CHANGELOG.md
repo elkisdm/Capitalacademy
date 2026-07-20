@@ -24,6 +24,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Al compartir enlaces de la plataforma en WhatsApp o LinkedIn ahora se ve una tarjeta de marca profesional: genérica del sitio, por programa en los checkouts, y el certificado verificado muestra el nombre del alumno y su programa (a3213c7)
 - Los pagos de Flow cuya matrícula fallaba ahora se reintentan automáticamente y alertan al equipo, en vez de quedar cobrados sin acceso y sin aviso. (`f6dca5a`)
 - Las docentes y asistentes ahora ven las cohortes donde enseñan en "Mis programas", con un distintivo "Docente" (ca61542)
+- Subtítulos y selector de calidad ahora disponibles donde corresponde en el reproductor, con preferencias que se recuerdan (`3129602`)
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
@@ -32,6 +33,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Las fotos de perfil en todo el classroom (menú, comentarios, perfil) se sirven optimizadas y livianas en vez del archivo original, y la página del quiz carga menos código de entrada (las pantallas de resultado se traen recién al terminar) (`624b57c`)
 - La pantalla de la lección se siente más fluida mientras el video reproduce: dejó de repintarse varias veces por segundo, evitando micro-tirones al hacer scroll o interactuar (`110a23e`)
 - El classroom, el checkout y el panel del docente cargan más rápido: marcar asistencia de toda una clase ahora es una sola operación en vez de decenas, la pantalla de pago se sirve desde caché en vez de generarse en cada visita, y el aviso de notificaciones dejó de pedirse dos veces. Además, el panel del docente suma un código QR para el registro de asistencia y el video de cada lección genera automáticamente su glosario y capítulos al procesarse (`7d87e12`)
+- La transcripción se carga al abrirla: la página de clase pesa ~200KB menos (`3129602`)
 
 ### Security
 - Un alumno ya no puede escribir directamente sus propios intentos de evaluación: la nota, la aprobación y el cierre solo los fija el servidor, cerrando la vía por la que se podía auto-emitir un certificado sin rendir el examen (`c5344fa`)
@@ -90,6 +92,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El calendario de clases ya no muestra la pantalla de error completa por un fallo temporal de red: si falla la carga de datos secundarios (docentes, materiales o quizzes) esos se omiten y el resto del calendario sigue visible; además la pantalla de error ahora muestra un código para soporte. (`7acbb21`)
 - Los correos de apertura de entregable y de grabación/seguimiento del Ciclo CI ya no se duplican ni se pierden entre corridas — idempotencia por destinatario + tope de 10 casos por corrida. (`8a52d04`)
 - Los menús desplegables (selectores y calendarios) dentro de ventanas modales ya no quedaban ocultos detrás del modal; ahora se muestran encima (464b42e)
+- El avance del video ya no se pierde al pausar o cerrar la pestaña, y el reproductor se recupera de cortes de red (`3129602`)
+- Las clases nuevas generan capítulos, resumen y transcripción de forma confiable al subirse (`3129602`)
 
 ### Added
 - Nuevo módulo "Entregables": el equipo crea tareas por programa con ventana de subida (fecha de apertura y fecha límite), tipos de archivo permitidos y tamaño máximo; el alumno sube su archivo desde el classroom dentro del plazo y recibe un correo apenas la ventana se abre; el equipo revisa desde el panel admin quién entregó y quién no, con descarga directa de cada archivo

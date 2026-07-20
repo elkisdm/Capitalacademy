@@ -144,6 +144,7 @@
 | `lib/classroom/staff-preview.ts` | Resuelve el cohorte que el staff previsualiza en "Ver como Alumno": el del entorno activo del switcher, no su matrícula (usado por `/classroom` y el layout) | — | — |
 | `lib/profiles/public-authors.ts` | Resuelve el "autor público" (solo id/nombre/avatar) por service-role para foro y comentarios; la policy de `profiles` está cerrada a dueño+staff (0045) para no exponer PII | — | 0045 |
 | `app/api/classroom/{progress,comments,transcript,summary,avatar}/route.ts` | Endpoints del alumno: progreso, comentarios, transcripción, resumen, avatar | — | — |
+| `app/api/classroom/transcript-content/route.ts` | Contenido VTT de la transcripción, con carga diferida (fuera del HTML de la lección) y gate anti-IDOR por matrícula/cohorte | `GET /api/classroom/transcript-content` | — |
 
 ## Conversaciones
 
@@ -202,6 +203,7 @@
 | `lib/classroom/quiz-question-schema.ts` | Validación zod del payload de pregunta por tipo + `payloadToDbFields` | — | — |
 | `lib/classroom/quiz-runtime.ts` | Helpers server del quiz: completitud, selección/rehidratación (por programa y por evaluación), y `scoreAnswer` por tipo (single/multiple/true_false/short_answer) | — | — |
 | `db/migrations/0033_evaluations.sql` · `0040_evaluations_session_scope.sql` | Tabla `evaluations` (quiz por alcance final/módulo/lección) + tipos de pregunta en `quiz_questions` (`question_type`/`correct_answer`) + `evaluation_id` en `quiz_attempts`; 0040 agrega `scope='session'` + `session_id`→`class_sessions` | — | — |
+| `db/migrations/0073_quiz_attempts_readonly_for_students.sql` | Cierra el fraude de certificación (megaauditoría 16-jul, hallazgo C1): la policy del alumno sobre `quiz_attempts` pasa de `FOR ALL` (sin `WITH CHECK`) a `FOR SELECT`, y se revoca INSERT/UPDATE/DELETE a `authenticated`/`anon`; solo `service_role` escribe intentos | — | — |
 | `app/(classroom)/classroom/[cohortSlug]/quiz/page.tsx` · `components/classroom/quiz-runner.tsx` | Página del alumno para rendir el quiz + cliente máquina-de-estados | `/classroom/[cohortSlug]/quiz` | — |
 | `app/(classroom)/classroom/quiz/[evaluationId]/page.tsx` | Página standalone de una evaluación por enlace/QR compartible (deep-link autenticado): resuelve acceso y monta `evaluation-runner` | `/classroom/quiz/[evaluationId]` | — |
 | `app/(classroom)/classroom/[cohortSlug]/certificado/page.tsx` | Certificado del alumno | `/classroom/[cohortSlug]/certificado` | — |
@@ -215,6 +217,7 @@
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/users/` + `[userId]/` | Gestión de usuarios y roles por cohorte (RBAC) | `/admin/users` | 0004 |
 | `app/(admin)/admin/cohorts/[cohortId]/` | Detalle de cohorte (info, roster, accesos al calendario) | `/admin/cohorts/[cohortId]` | — |
+| `components/admin/assign-participant-modal.tsx` | Modal "Agregar participante" del detalle de cohorte: asigna profesor/asistente/alumno por rol (y módulo si aplica) | en `/admin/cohorts/[cohortId]` | — |
 | `app/(admin)/admin/calendario/` | Calendario mensual read-only de todas las sesiones del entorno activo (todas las cohortes); cada sesión enlaza al editor de la cohorte | `/admin/calendario` | — |
 | `app/(admin)/admin/lessons/` + `[lessonId]/` | Editor de módulo unificado (scope programa+cohorte): lecciones grabadas (crear/editar/reordenar/mover de módulo) + clases en vivo del calendario por módulo; detalle con upload Mux, transcripción, capítulos, resumen IA | `/admin/lessons` | — |
 | `app/api/admin/lessons/route.ts` · `[lessonId]/route.ts` | CRUD de lecciones (POST crear, PATCH editar metadatos **y mover de módulo**, DELETE con guard de progreso) | `POST/PATCH/DELETE /api/admin/lessons` | — |
@@ -240,6 +243,7 @@
 | `components/admin/program-filter.tsx` | Selector de entorno/programa para scopear recursos y lecciones en el admin | — | — |
 | `app/api/admin/{generate-summary,generate-chapters,generate-quiz,correct-transcript,transcript-segments}/route.ts` | Generación de contenido por IA (resumen, capítulos, quiz, transcripción) | — | — |
 | `lib/classroom/generate-chapters.ts` · `generate-summary.ts` | Lógica de generación IA de capítulos y resumen de una lección, invocada por su ruta admin y por el pipeline post-procesamiento de Mux | — | — |
+| `scripts/backfill-lesson-ai.ts` | Reconciliación one-off: regenera transcripción corregida, resumen/glosario y capítulos solo donde falten (huecos del fire-and-forget del webhook de Mux); reusa las mismas funciones que el webhook | `npx tsx scripts/backfill-lesson-ai.ts [--force]` | — |
 | `app/api/admin/{modules,resources,quiz-questions,certificates}/route.ts` | CRUD admin de módulos/recursos/preguntas/certificados (config e intentos del quiz se gestionan por evaluación, no por programa) | — | — |
 | `components/admin/` | UI admin: `user-drawer`, `progress-table`, `quiz-manager`, `mux-uploader`, `resource-manager`, `csv-import-modal`, `transcript-review` | — | — |
 | `components/admin/collapsible-section.tsx` | Sección colapsable reusable para paneles largos del admin (editor de lección, sesiones de cohorte) | — | — |
@@ -290,9 +294,11 @@
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap`, `time-ago` (relativo tipo "hace 2h"), `initials` (iniciales para avatar) | — | — |
 | `components/ui/markdown.tsx` | Renderer markdown compartido (contenido de clases de texto, ayuda) | — | — |
 | `components/ui/{checkbox,date-picker,file-input,radio,select}.tsx` | Componentes de formulario propios de marca (reemplazan los controles nativos del navegador) | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0067`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0078`) | — | — |
 | `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
 | `db/migrations/0049_seed_capacitaciones.sql` | Siembra del entorno Ciclo de Capacitación Comercial CI: programa gratuito interno + cohorte + 5 sesiones presenciales | — | 0012 |
 | `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |
+| `db/migrations/0074_leads.sql` | Versiona `leads` (megaauditoría 16-jul, hallazgo C3): reproduce la tabla que solo existía en prod (creada por dashboard); RLS habilitada sin policies (deny-all), único escritor es `app/api/leads/route.ts` vía service-role | — | — |
 | `scripts/invite-capacitaciones.mjs` | Invitación masiva de asistentes al ciclo CAP-CI (crea usuario + matrícula + correo branded) | — | 0012 |
+| `scripts/reinvite-stuck-capacitaciones.mjs` | Segunda tanda: reenvía invitación solo a quien sigue sin activar cuenta del ciclo CAP-CI (roster 'active' vs `last_sign_in_at` nulo en Admin API) | — | 0012 |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

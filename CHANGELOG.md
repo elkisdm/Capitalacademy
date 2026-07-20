@@ -23,6 +23,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Las secciones de los editores de lección y de sesiones de cohorte ahora se pueden colapsar, para llegar más rápido a lo que se quiere editar sin scrollear paneles largos (00de220)
 - Al compartir enlaces de la plataforma en WhatsApp o LinkedIn ahora se ve una tarjeta de marca profesional: genérica del sitio, por programa en los checkouts, y el certificado verificado muestra el nombre del alumno y su programa (a3213c7)
 - Los pagos de Flow cuya matrícula fallaba ahora se reintentan automáticamente y alertan al equipo, en vez de quedar cobrados sin acceso y sin aviso. (`f6dca5a`)
+- Las docentes y asistentes ahora ven las cohortes donde enseñan en "Mis programas", con un distintivo "Docente" (ca61542)
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)

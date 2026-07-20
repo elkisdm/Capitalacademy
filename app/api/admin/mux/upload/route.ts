@@ -50,6 +50,10 @@ export async function POST(req: Request) {
         ],
         // `encoding_tier: "baseline"` quedó deprecado en @mux/mux-node v14.
         video_quality: "basic",
+        // Rendition MP4 estática para el fallback progresivo del player cuando
+        // HLS no está disponible. Sin esto los assets nacen con
+        // static_renditions: "none" y la URL .mp4 devuelve 404.
+        static_renditions: [{ resolution: "highest" }],
         input: [
           {
             generated_subtitles: [

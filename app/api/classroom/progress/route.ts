@@ -55,37 +55,51 @@ export async function PATCH(req: Request) {
 
   const enrollment = { id: enrollmentId };
 
-  const { data: existing } = await supabase
-    .from("video_progress")
-    .select("max_position_seconds, completed, completed_at")
-    .eq("enrollment_id", enrollment.id)
-    .eq("lesson_id", lessonId)
-    .single();
+  // Lee-computa-escribe en una función reintentable: una carrera con otro
+  // flush concurrente para el mismo enrollment+lección (p.ej. el flush del
+  // timer de 15s y el del evento pause casi simultáneos) puede toparse con
+  // un lock transitorio en el upsert; un solo reintento alcanza porque para
+  // entonces el otro flush ya liberó la fila.
+  const upsertProgress = async () => {
+    const { data: existing } = await supabase
+      .from("video_progress")
+      .select("max_position_seconds, completed, completed_at")
+      .eq("enrollment_id", enrollment.id)
+      .eq("lesson_id", lessonId)
+      .maybeSingle();
 
-  const progress = computeServerProgress(existing, {
-    playback_position_seconds: Math.floor(playbackPositionSeconds),
-    duration_seconds: Math.floor(durationSeconds),
-  });
+    const progress = computeServerProgress(existing, {
+      playback_position_seconds: Math.floor(playbackPositionSeconds),
+      duration_seconds: Math.floor(durationSeconds),
+    });
 
-  const completedAt =
-    progress.completed && !existing?.completed_at
-      ? new Date().toISOString()
-      : existing?.completed_at ?? null;
+    const completedAt =
+      progress.completed && !existing?.completed_at
+        ? new Date().toISOString()
+        : existing?.completed_at ?? null;
 
-  const { data: upserted, error } = await supabase
-    .from("video_progress")
-    .upsert(
-      {
-        enrollment_id: enrollment.id,
-        lesson_id: lessonId,
-        ...progress,
-        completed_at: completedAt,
-        source: "player" as const,
-      },
-      { onConflict: "enrollment_id,lesson_id" },
-    )
-    .select("watch_percentage, completed, max_position_seconds, playback_position_seconds")
-    .single();
+    return supabase
+      .from("video_progress")
+      .upsert(
+        {
+          enrollment_id: enrollment.id,
+          lesson_id: lessonId,
+          ...progress,
+          completed_at: completedAt,
+          source: "player" as const,
+        },
+        { onConflict: "enrollment_id,lesson_id" },
+      )
+      .select("watch_percentage, completed, max_position_seconds, playback_position_seconds")
+      .single();
+  };
+
+  let { data: upserted, error } = await upsertProgress();
+
+  if (error) {
+    console.error("video_progress upsert error (reintentando)", error);
+    ({ data: upserted, error } = await upsertProgress());
+  }
 
   if (error) {
     console.error("video_progress upsert error", error);

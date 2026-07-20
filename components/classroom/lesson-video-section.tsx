@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, type KeyboardEvent } from "react";
 import { VideoPlayer } from "@/components/classroom/video-player";
 import { SummaryCard } from "@/components/classroom/summary-card";
 import { CommentSection } from "@/components/classroom/comment-section";
@@ -70,6 +70,7 @@ export function LessonVideoSection({
         : "comentarios";
 
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const handleTimeSync = useCallback((t: number) => {
     setCurrentTime(t);
@@ -84,9 +85,22 @@ export function LessonVideoSection({
   }
   tabs.push({ id: "comentarios", label: "Comentarios", count: commentCount });
 
+  const handleTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    let next = i;
+    if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    setActiveTab(tabs[next].id);
+    tabRefs.current[next]?.focus();
+  };
+
   return (
     <>
       <VideoPlayer
+        key={lessonId}
         playbackId={playbackId}
         lessonId={lessonId}
         lessonTitle={lessonTitle}
@@ -103,38 +117,47 @@ export function LessonVideoSection({
         <div className="mt-8">
           {/* Tab bar */}
           <div className="mb-4 flex items-center gap-0.5 overflow-x-auto border-b border-ca-ink/[0.08] pb-0 md:gap-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="relative shrink-0 px-3 py-3 text-[12px] font-bold tracking-tight transition-colors md:px-4 md:text-[13px]"
-                style={{
-                  color:
-                    activeTab === tab.id
-                      ? "var(--color-ca-ink)"
-                      : "var(--color-ca-ink-soft, #4a4f73)",
-                }}
-              >
-                {tab.label}
-                {tab.count != null && (
-                  <span
-                    className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
-                    style={{
-                      background:
-                        activeTab === tab.id
-                          ? "var(--color-ca-lime, #c5f122)"
-                          : "var(--color-ca-bg-soft, rgba(20,22,58,0.04))",
-                      color: "var(--color-ca-ink, #14163a)",
-                    }}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-                {activeTab === tab.id && (
-                  <span className="absolute inset-x-2 -bottom-px h-0.5 bg-ca-violet" />
-                )}
-              </button>
-            ))}
+            <div role="tablist" aria-label="Contenido de la lección" className="flex items-center gap-0.5 md:gap-1">
+              {tabs.map((tab, i) => (
+                <button
+                  key={tab.id}
+                  ref={(el) => { tabRefs.current[i] = el; }}
+                  role="tab"
+                  id={`lesson-tab-${tab.id}`}
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`lesson-panel-${tab.id}`}
+                  tabIndex={activeTab === tab.id ? 0 : -1}
+                  onClick={() => setActiveTab(tab.id)}
+                  onKeyDown={(e) => handleTabKeyDown(e, i)}
+                  className="relative shrink-0 px-3 py-3 text-[12px] font-bold tracking-tight transition-colors md:px-4 md:text-[13px]"
+                  style={{
+                    color:
+                      activeTab === tab.id
+                        ? "var(--color-ca-ink)"
+                        : "var(--color-ca-ink-soft, #4a4f73)",
+                  }}
+                >
+                  {tab.label}
+                  {tab.count != null && (
+                    <span
+                      className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                      style={{
+                        background:
+                          activeTab === tab.id
+                            ? "var(--color-ca-lime, #c5f122)"
+                            : "var(--color-ca-bg-soft, rgba(20,22,58,0.04))",
+                        color: "var(--color-ca-ink, #14163a)",
+                      }}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                  {activeTab === tab.id && (
+                    <span className="absolute inset-x-2 -bottom-px h-0.5 bg-ca-violet" />
+                  )}
+                </button>
+              ))}
+            </div>
             {hasTranscript && (
               <button
                 onClick={() => openTranscriptRef.current?.()}
@@ -150,33 +173,37 @@ export function LessonVideoSection({
 
           {/* Tab content */}
           {activeTab === "resumen" && summary && (
-            <SummaryCard
-              keyPoints={summary.key_points}
-              summaryText={summary.summary_text}
-              glossary={summary.glossary}
-              modelUsed={summary.model_used}
-              generatedAt={summary.generated_at}
-              chapters={chapters}
-              onSeek={(time) => seekRef.current?.(time)}
-            />
+            <div role="tabpanel" id="lesson-panel-resumen" aria-labelledby="lesson-tab-resumen" tabIndex={0}>
+              <SummaryCard
+                keyPoints={summary.key_points}
+                summaryText={summary.summary_text}
+                glossary={summary.glossary}
+                modelUsed={summary.model_used}
+                generatedAt={summary.generated_at}
+                chapters={chapters}
+                onSeek={(time) => seekRef.current?.(time)}
+              />
+            </div>
           )}
 
           {activeTab === "recursos" && hasResources && (
-            <div className="mt-5">
+            <div role="tabpanel" id="lesson-panel-recursos" aria-labelledby="lesson-tab-recursos" tabIndex={0} className="mt-5">
               <ResourceList resources={resources} />
             </div>
           )}
 
           {activeTab === "comentarios" && (
-            <CommentSection
-              lessonId={lessonId}
-              currentUserId={currentUserId}
-              currentUserName={currentUserName}
-              currentUserInitials={currentUserInitials}
-              currentUserAvatarUrl={currentUserAvatarUrl}
-              onSeek={(t) => seekRef.current?.(t)}
-              viewerIsStaff={viewerIsStaff}
-            />
+            <div role="tabpanel" id="lesson-panel-comentarios" aria-labelledby="lesson-tab-comentarios" tabIndex={0}>
+              <CommentSection
+                lessonId={lessonId}
+                currentUserId={currentUserId}
+                currentUserName={currentUserName}
+                currentUserInitials={currentUserInitials}
+                currentUserAvatarUrl={currentUserAvatarUrl}
+                onSeek={(t) => seekRef.current?.(t)}
+                viewerIsStaff={viewerIsStaff}
+              />
+            </div>
           )}
         </div>
       )}

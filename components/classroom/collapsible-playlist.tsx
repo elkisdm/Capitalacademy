@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusTrap } from "@/lib/utils/use-focus-trap";
 import { TranscriptPanel } from "@/components/classroom/transcript-panel";
 import { useVideoSyncActions, useVideoSyncTime } from "@/components/classroom/video-sync-context";
@@ -8,6 +8,8 @@ import { useVideoSyncActions, useVideoSyncTime } from "@/components/classroom/vi
 const LS_KEY = "ca-playlist-collapsed";
 
 type SidebarMode = "playlist" | "transcript";
+type TranscriptData = { contentVtt: string; correctedVtt: string | null };
+type TranscriptState = "idle" | "loading" | "error";
 
 type CollapsiblePlaylistProps = {
   children: React.ReactNode;
@@ -15,9 +17,49 @@ type CollapsiblePlaylistProps = {
   completedCount: number;
   moduleTitle: string;
   modulePosition: number;
-  transcriptVtt?: string | null;
-  correctedVtt?: string | null;
+  lessonId: string;
+  hasTranscript: boolean;
 };
+
+/**
+ * Único suscriptor de `useVideoSyncTime` (~2.5Hz durante la reproducción). Se
+ * monta solo con el drawer/modo transcripción abierto, así el resto del sidebar
+ * no re-renderiza mientras el video corre en modo playlist.
+ */
+function TranscriptPane({
+  transcript,
+  transcriptState,
+  transcriptKey,
+}: {
+  transcript: TranscriptData | null;
+  transcriptState: TranscriptState;
+  transcriptKey: number;
+}) {
+  const { seekRef } = useVideoSyncActions();
+  const currentTime = useVideoSyncTime();
+
+  if (transcript) {
+    return (
+      <TranscriptPanel
+        key={transcriptKey}
+        vttContent={transcript.contentVtt}
+        correctedVtt={transcript.correctedVtt}
+        currentTime={currentTime}
+        onSeek={(time) => seekRef.current?.(time)}
+      />
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center px-6 py-12">
+      <p className="text-[13px] text-ca-ink-soft">
+        {transcriptState === "error"
+          ? "No se pudo cargar la transcripción."
+          : "Cargando transcripción…"}
+      </p>
+    </div>
+  );
+}
 
 export function CollapsiblePlaylist({
   children,
@@ -25,18 +67,39 @@ export function CollapsiblePlaylist({
   completedCount,
   moduleTitle,
   modulePosition,
-  transcriptVtt,
-  correctedVtt,
+  lessonId,
+  hasTranscript,
 }: CollapsiblePlaylistProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mode, setMode] = useState<SidebarMode>("playlist");
   const [transcriptKey, setTranscriptKey] = useState(0);
-  const { seekRef, openTranscriptRef } = useVideoSyncActions();
-  const currentTime = useVideoSyncTime();
+  const [transcript, setTranscript] = useState<TranscriptData | null>(null);
+  const [transcriptState, setTranscriptState] = useState<TranscriptState>("idle");
+  const loadStartedRef = useRef(false);
+  const { openTranscriptRef } = useVideoSyncActions();
   const trapRef = useFocusTrap(mobileOpen);
-  const hasTranscript = !!transcriptVtt;
+
+  const loadTranscript = useCallback(async () => {
+    if (loadStartedRef.current) return;
+    loadStartedRef.current = true;
+    setTranscriptState("loading");
+    try {
+      const res = await fetch(`/api/classroom/transcript-content?lessonId=${lessonId}`);
+      if (!res.ok) throw new Error("transcript fetch failed");
+      const data = await res.json();
+      setTranscript({ contentVtt: data.contentVtt, correctedVtt: data.correctedVtt ?? null });
+      setTranscriptState("idle");
+    } catch {
+      loadStartedRef.current = false;
+      setTranscriptState("error");
+    }
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (mode === "transcript") loadTranscript();
+  }, [mode, loadTranscript]);
 
   useEffect(() => {
     try {
@@ -149,14 +212,12 @@ export function CollapsiblePlaylist({
             </div>
             {/* Content: Playlist or Transcript */}
             {mode === "playlist" && children}
-            {mode === "transcript" && transcriptVtt && (
+            {mode === "transcript" && hasTranscript && (
               <div className="flex-1 overflow-y-auto">
-                <TranscriptPanel
-                  key={transcriptKey}
-                  vttContent={transcriptVtt}
-                  correctedVtt={correctedVtt}
-                  currentTime={currentTime}
-                  onSeek={(time) => seekRef.current?.(time)}
+                <TranscriptPane
+                  transcript={transcript}
+                  transcriptState={transcriptState}
+                  transcriptKey={transcriptKey}
                 />
               </div>
             )}
@@ -217,9 +278,10 @@ export function CollapsiblePlaylist({
       </div>
 
       {/* -------- Mobile (<lg): toggle pill + slide-over -------- */}
-      {/* Sticky bajo el header móvil: sigue alcanzable al hacer scroll, sin
-          tener que llegar hasta el final de la página para encontrarlo. */}
-      <div className="sticky top-16 z-30 lg:hidden">
+      {/* `order-first`: en la columna única de móvil la píldora sube al tope
+          (bajo el título, sobre el video), en vez de quedar al final de la
+          página tras los comentarios. */}
+      <div className="order-first sticky top-16 z-30 lg:hidden">
         {/* Floating pill button */}
         <button
           type="button"
@@ -322,13 +384,12 @@ export function CollapsiblePlaylist({
               {/* Content */}
               <div className="flex flex-1 flex-col overflow-hidden">
                 {mode === "playlist" && children}
-                {mode === "transcript" && transcriptVtt && (
+                {mode === "transcript" && hasTranscript && (
                   <div className="flex-1 overflow-y-auto">
-                    <TranscriptPanel
-                      vttContent={transcriptVtt}
-                      correctedVtt={correctedVtt}
-                      currentTime={currentTime}
-                      onSeek={(time) => seekRef.current?.(time)}
+                    <TranscriptPane
+                      transcript={transcript}
+                      transcriptState={transcriptState}
+                      transcriptKey={transcriptKey}
                     />
                   </div>
                 )}

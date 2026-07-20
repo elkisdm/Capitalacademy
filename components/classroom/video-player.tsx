@@ -234,6 +234,27 @@ const QUALITIES = ["Auto", "1080p", "720p", "480p", "360p"] as const;
 
 const SPEED_CYCLE = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
+const MAX_HLS_RECOVERIES = 3;
+
+function applyStoredMediaPrefs(video: HTMLVideoElement) {
+  try {
+    const vol = localStorage.getItem("ca-vol");
+    if (vol != null) video.volume = Number(vol);
+    video.muted = localStorage.getItem("ca-muted") === "1";
+    const rate = localStorage.getItem("ca-speed");
+    if (rate != null) video.playbackRate = Number(rate);
+  } catch {
+    /* noop */
+  }
+}
+
+function applyNativeCc(video: HTMLVideoElement, enabled: boolean) {
+  const tracks = video.textTracks;
+  for (let i = 0; i < tracks.length; i++) {
+    tracks[i].mode = enabled ? "showing" : "hidden";
+  }
+}
+
 // ── Main component ───────────────────────────────────────────
 
 export function VideoPlayer({
@@ -266,14 +287,40 @@ export function VideoPlayer({
   const [hoverBar, setHoverBar] = useState(false);
   const [scrubX, setScrubX] = useState<number | null>(null);
   const [volumeOpen, setVolumeOpen] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(() => {
+    try {
+      const v = localStorage.getItem("ca-vol");
+      return v != null ? Number(v) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  const [muted, setMuted] = useState(() => {
+    try {
+      return localStorage.getItem("ca-muted") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [qualityOpen, setQualityOpen] = useState(false);
   const [quality, setQuality] = useState<string>("Auto");
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(() => {
+    try {
+      const s = localStorage.getItem("ca-speed");
+      return s != null ? Number(s) : 1;
+    } catch {
+      return 1;
+    }
+  });
   const [pipActive, setPipActive] = useState(false);
+  const [pipSupported, setPipSupported] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hoveredChapter, setHoveredChapter] = useState<number | null>(null);
+  const [usingHls, setUsingHls] = useState(false);
+  const [hasCaptions, setHasCaptions] = useState(false);
+  const [degraded, setDegraded] = useState(false);
+  const [controlsFocused, setControlsFocused] = useState(false);
+  const [liveMessage, setLiveMessage] = useState("");
 
   const [ccEnabled, setCcEnabled] = useState(() => {
     try {
@@ -292,6 +339,10 @@ export function VideoPlayer({
   const isDragging = useRef(false);
   const isVolumeDragging = useRef(false);
   const lastSyncRef = useRef(0);
+  const hlsRetryRef = useRef(0);
+  const ccEnabledRef = useRef(ccEnabled);
+  const qualityRef = useRef<HTMLDivElement>(null);
+  const qualityBtnRef = useRef<HTMLButtonElement>(null);
 
   const progress =
     durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
@@ -342,82 +393,137 @@ export function VideoPlayer({
   // ── HLS / media setup ─────────────────────────────────────
 
   const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
-  const mp4Url = `https://stream.mux.com/${playbackId}/high.mp4`;
+  // La ingesta pide `static_renditions: [{ resolution: "highest" }]`, cuyo
+  // archivo se sirve como `highest.mp4` (el naming `high.mp4` era del
+  // `mp4_support: "standard"` deprecado).
+  const mp4Url = `https://stream.mux.com/${playbackId}/highest.mp4`;
   const posterUrl = `https://image.mux.com/${playbackId}/thumbnail.webp?time=30`;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Safari / iOS have native HLS — no need to load hls.js at all
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    hlsRetryRef.current = 0;
+
+    // Último recurso: MP4 progresivo. Conserva la posición de reanudación y las
+    // preferencias de reproducción; no lleva subtítulos ni control de calidad.
+    const fallbackToMp4 = (resumeAt: number) => {
+      setUsingHls(false);
+      setHasCaptions(false);
+      setDegraded(true);
+      video.src = mp4Url;
+      video.load();
+      video.addEventListener(
+        "loadedmetadata",
+        () => {
+          setReady(true);
+          const at = resumeAt > 0 ? resumeAt : initialPosition;
+          if (at > 0) video.currentTime = at;
+          applyStoredMediaPrefs(video);
+        },
+        { once: true },
+      );
+      video.addEventListener("error", () => setError(true), { once: true });
+    };
+
+    // Reproducción nativa: solo para navegadores sin soporte MSE (p.ej. iOS
+    // Safari viejo), donde hls.js no podría usarse de todas formas. Algunos
+    // Chromium (incluido el headless de Playwright) devuelven "maybe" en
+    // canPlayType para HLS pese a no tener parsing real — por eso este
+    // camino se intenta DESPUÉS de comprobar Hls.isSupported(), nunca antes.
+    const useNativeHls = () => {
       video.src = hlsUrl;
+      const applyCc = () => applyNativeCc(video, ccEnabledRef.current);
       video.addEventListener(
         "loadedmetadata",
         () => {
           setReady(true);
           if (initialPosition > 0) video.currentTime = initialPosition;
+          applyStoredMediaPrefs(video);
+          if (video.textTracks.length > 0) setHasCaptions(true);
+          applyCc();
         },
         { once: true },
       );
-      video.addEventListener("error", () => setError(true), { once: true });
-      return;
-    }
-
-    // Non-Safari: dynamically import hls.js only when needed
-    let cancelled = false;
-
-    import("hls.js").then(({ default: Hls }) => {
-      if (cancelled) return;
-
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          startPosition: initialPosition,
-          enableWorker: true,
-          lowLatencyMode: false,
-        });
-        hlsRef.current = hls;
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(video);
-
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          setReady(true);
-          if (ccEnabled && hls.subtitleTracks.length > 0) {
-            hls.subtitleTrack = 0;
-          }
-        });
-
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (data.fatal) {
-            hls.destroy();
-            hlsRef.current = null;
-            video.src = mp4Url;
-            video.load();
-            video.addEventListener("loadedmetadata", () => setReady(true), {
-              once: true,
-            });
-            video.addEventListener("error", () => setError(true), {
-              once: true,
-            });
-          }
-        });
-      } else {
-        // hls.js loaded but not supported — fall back to mp4
-        video.src = mp4Url;
-        video.addEventListener("loadedmetadata", () => setReady(true), {
-          once: true,
-        });
-        video.addEventListener("error", () => setError(true), { once: true });
-      }
-    }).catch(() => {
-      // Failed to load hls.js — fall back to mp4
-      if (cancelled) return;
-      video.src = mp4Url;
-      video.addEventListener("loadedmetadata", () => setReady(true), {
-        once: true,
+      video.textTracks.addEventListener("addtrack", () => {
+        setHasCaptions(video.textTracks.length > 0);
+        applyCc();
       });
       video.addEventListener("error", () => setError(true), { once: true });
-    });
+    };
+
+    let cancelled = false;
+
+    import("hls.js")
+      .then(({ default: Hls }) => {
+        if (cancelled) return;
+
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            startPosition: initialPosition,
+            enableWorker: true,
+            lowLatencyMode: false,
+          });
+          hlsRef.current = hls;
+          setUsingHls(true);
+          hls.loadSource(hlsUrl);
+          hls.attachMedia(video);
+
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            setReady(true);
+            applyStoredMediaPrefs(video);
+          });
+
+          // Los subtítulos de Mux llegan como rendition aparte: recién se
+          // conocen cuando hls.js resuelve el nivel activo (tras
+          // LEVEL_LOADING), no en MANIFEST_PARSED — leer hls.subtitleTracks
+          // ahí siempre da 0.
+          hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_event, data) => {
+            setHasCaptions(data.subtitleTracks.length > 0);
+            if (ccEnabledRef.current && data.subtitleTracks.length > 0) {
+              hls.subtitleTrack = 0;
+            }
+          });
+
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data.fatal) return;
+
+            // Intentar recuperación in situ antes de degradar.
+            if (
+              data.type === Hls.ErrorTypes.NETWORK_ERROR &&
+              hlsRetryRef.current < MAX_HLS_RECOVERIES
+            ) {
+              hlsRetryRef.current += 1;
+              hls.startLoad();
+              return;
+            }
+            if (
+              data.type === Hls.ErrorTypes.MEDIA_ERROR &&
+              hlsRetryRef.current < MAX_HLS_RECOVERIES
+            ) {
+              hlsRetryRef.current += 1;
+              hls.recoverMediaError();
+              return;
+            }
+
+            // Recuperación agotada — cae a MP4 conservando la posición actual.
+            const resumeAt = video.currentTime;
+            hls.destroy();
+            hlsRef.current = null;
+            fallbackToMp4(resumeAt);
+          });
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          useNativeHls();
+        } else {
+          // Ni hls.js ni HLS nativo disponibles — fallback a mp4
+          fallbackToMp4(0);
+        }
+      })
+      .catch(() => {
+        // Failed to load hls.js — fall back to mp4
+        if (cancelled) return;
+        fallbackToMp4(0);
+      });
 
     return () => {
       cancelled = true;
@@ -467,6 +573,12 @@ export function VideoPlayer({
     const onVolumeChange = () => {
       setVolume(video.volume);
       setMuted(video.muted);
+      try {
+        localStorage.setItem("ca-vol", String(video.volume));
+        localStorage.setItem("ca-muted", video.muted ? "1" : "0");
+      } catch {
+        /* noop */
+      }
     };
 
     video.addEventListener("timeupdate", onTimeUpdate);
@@ -534,6 +646,15 @@ export function VideoPlayer({
       )
         return;
 
+      // Solo intercepta cuando el foco está en el reproductor o en el body: así
+      // Espacio y flechas siguen sirviendo para hacer scroll de la página o
+      // activar botones en el resto de la pantalla de clase.
+      const active = document.activeElement;
+      const withinPlayer =
+        !!active && !!rootRef.current && rootRef.current.contains(active);
+      const onBody = !active || active === document.body;
+      if (!withinPlayer && !onBody) return;
+
       const video = videoRef.current;
       if (!video || error) return;
 
@@ -555,6 +676,32 @@ export function VideoPlayer({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [durationSeconds, error]);
+
+  // ── Cierre del menú de calidad — clic afuera / Escape ──────
+
+  useEffect(() => {
+    if (!qualityOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (
+        qualityRef.current &&
+        !qualityRef.current.contains(e.target as Node)
+      ) {
+        setQualityOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setQualityOpen(false);
+        qualityBtnRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [qualityOpen]);
 
   // ── Fullscreen ─────────────────────────────────────────────
 
@@ -618,6 +765,10 @@ export function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    setPipSupported(
+      document.pictureInPictureEnabled === true &&
+        !video.disablePictureInPicture,
+    );
     const onLeave = () => setPipActive(false);
     video.addEventListener("leavepictureinpicture", onLeave);
     return () => video.removeEventListener("leavepictureinpicture", onLeave);
@@ -652,6 +803,24 @@ export function VideoPlayer({
     }
   }, [ccEnabled]);
 
+  useEffect(() => {
+    ccEnabledRef.current = ccEnabled;
+  }, [ccEnabled]);
+
+  // ── Estado hablado para lectores de pantalla ───────────────
+
+  useEffect(() => {
+    setLiveMessage(playing ? "Reproduciendo" : "En pausa");
+  }, [playing]);
+
+  useEffect(() => {
+    if (buffering) setLiveMessage("Cargando video");
+  }, [buffering]);
+
+  useEffect(() => {
+    setLiveMessage(muted ? "Silenciado" : "Sonido activado");
+  }, [muted]);
+
   // ── Playback toggle (touch-aware) ──────────────────────────
 
   const togglePlay = useCallback(() => {
@@ -681,6 +850,12 @@ export function VideoPlayer({
       const next = SPEED_CYCLE[(idx + 1) % SPEED_CYCLE.length];
       const video = videoRef.current;
       if (video) video.playbackRate = next;
+      try {
+        localStorage.setItem("ca-speed", String(next));
+      } catch {
+        /* noop */
+      }
+      setLiveMessage(`Velocidad ${next}x`);
       return next;
     });
   }, []);
@@ -868,7 +1043,26 @@ export function VideoPlayer({
   // ── Derived UI flags ───────────────────────────────────────
 
   const showControls =
-    !started || mouseActive || !playing || qualityOpen || volumeOpen;
+    !started ||
+    mouseActive ||
+    !playing ||
+    qualityOpen ||
+    volumeOpen ||
+    controlsFocused;
+
+  // Capítulo bajo el cursor o cercano al punto de scrubbing (funciona también
+  // con touch, donde no hay hover).
+  const nearChapter =
+    scrubX == null
+      ? null
+      : chapterMarkers.reduce<number | null>((acc, m, i) => {
+          if (Math.abs(m - scrubX) > 2.5) return acc;
+          if (acc == null) return i;
+          return Math.abs(m - scrubX) < Math.abs(chapterMarkers[acc] - scrubX)
+            ? i
+            : acc;
+        }, null);
+  const shownChapter = hoveredChapter != null ? hoveredChapter : nearChapter;
   const showCenter = !started || (!playing && !buffering && !error);
   const volIcon: IconName = muted
     ? "mute"
@@ -944,6 +1138,34 @@ export function VideoPlayer({
           poster={posterUrl}
           className="absolute inset-0 h-full w-full object-contain"
         />
+
+        {/* Legibilidad de subtítulos sobre el video */}
+        <style>{`
+          .vp-frame video::cue {
+            font-size: 1.05em;
+            line-height: 1.35;
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+          }
+        `}</style>
+
+        {/* Estado hablado para lectores de pantalla */}
+        <div className="sr-only" role="status" aria-live="polite">
+          {liveMessage}
+        </div>
+
+        {/* Aviso de modo de respaldo (MP4 progresivo, sin subtítulos) */}
+        {degraded && (
+          <div
+            className="absolute right-4 top-4 z-20 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md"
+            style={{
+              background: "rgba(0,0,0,0.55)",
+              border: "1px solid rgba(255,255,255,0.14)",
+            }}
+          >
+            Modo de respaldo — sin subtítulos
+          </div>
+        )}
 
         {/* Loading overlay before ready — mantiene visible el poster debajo,
             oscurecido con un gradiente encima (no bg-black/40 + backgroundImage:
@@ -1060,6 +1282,14 @@ export function VideoPlayer({
         {/* ── Controls bar ── */}
         <div
           className="absolute inset-x-3 bottom-3 z-20 transition-opacity duration-300"
+          onFocusCapture={() => {
+            setControlsFocused(true);
+            kickIdle();
+          }}
+          onBlurCapture={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node))
+              setControlsFocused(false);
+          }}
           style={{
             opacity: showControls && started ? 1 : 0,
             pointerEvents: showControls && started ? "auto" : "none",
@@ -1147,7 +1377,9 @@ export function VideoPlayer({
                         background: "rgba(255,255,255,0.55)",
                       }}
                     />
-                    {hoveredChapter === i && chapters?.[i] && (
+                    {shownChapter === i &&
+                      chapters?.[i] &&
+                      (hoverBar || isDragging.current) && (
                       <div
                         className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 font-mono text-[11px] font-bold text-white"
                         style={{
@@ -1179,7 +1411,9 @@ export function VideoPlayer({
                   />
                 )}
                 {/* Scrub tooltip — visible en hover (mouse) o durante drag táctil */}
-                {scrubX != null && (hoverBar || isDragging.current) && (
+                {scrubX != null &&
+                  shownChapter == null &&
+                  (hoverBar || isDragging.current) && (
                   <div
                     className="absolute -top-9 -translate-x-1/2 rounded-md px-2 py-1 font-mono text-[11px] font-bold text-white"
                     style={{
@@ -1233,7 +1467,7 @@ export function VideoPlayer({
                     skipBack();
                   }}
                   aria-label="Retroceder 10 segundos"
-                  className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
+                  className="hidden h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:grid md:h-9 md:w-9"
                 >
                   <VPIcon name="skip-back" size={14} color="#ffffff" />
                 </button>
@@ -1243,7 +1477,7 @@ export function VideoPlayer({
                     skipForward();
                   }}
                   aria-label="Avanzar 10 segundos"
-                  className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
+                  className="hidden h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:grid md:h-9 md:w-9"
                 >
                   <VPIcon name="skip-fwd" size={14} color="#ffffff" />
                 </button>
@@ -1322,23 +1556,25 @@ export function VideoPlayer({
 
               {/* RIGHT */}
               <div className="flex items-center gap-1 md:gap-1.5">
-                {/* CC toggle */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCcEnabled((v) => !v);
-                  }}
-                  aria-label={ccEnabled ? "Desactivar subtítulos" : "Activar subtítulos"}
-                  className="relative grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
-                >
-                  <VPIcon name="cc" size={18} color="#ffffff" />
-                  {ccEnabled && (
-                    <span
-                      className="absolute bottom-1.5 left-1/2 h-[2px] w-4 -translate-x-1/2 rounded-full md:bottom-1"
-                      style={{ background: CA.lime }}
-                    />
-                  )}
-                </button>
+                {/* CC toggle — solo si la lección tiene subtítulos */}
+                {hasCaptions && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCcEnabled((v) => !v);
+                    }}
+                    aria-label={ccEnabled ? "Desactivar subtítulos" : "Activar subtítulos"}
+                    className="relative grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:h-9 md:w-9"
+                  >
+                    <VPIcon name="cc" size={18} color="#ffffff" />
+                    {ccEnabled && (
+                      <span
+                        className="absolute bottom-1.5 left-1/2 h-[2px] w-4 -translate-x-1/2 rounded-full md:bottom-1"
+                        style={{ background: CA.lime }}
+                      />
+                    )}
+                  </button>
+                )}
 
                 {/* Speed pill */}
                 <button
@@ -1346,113 +1582,125 @@ export function VideoPlayer({
                     e.stopPropagation();
                     cycleSpeed();
                   }}
-                  aria-label="Velocidad de reproducción"
+                  aria-label={`Velocidad de reproducción: ${speed}x`}
                   className="rounded-full px-2 py-1.5 font-mono text-[11px] font-bold tabular-nums transition-colors hover:bg-white/[0.12] md:px-2.5 md:py-1"
                   style={{ border: "1px solid rgba(255,255,255,0.10)", minHeight: 44, minWidth: 44, display: "grid", placeItems: "center" }}
                 >
                   {speed}x
                 </button>
 
-                {/* Quality selector — hidden on mobile */}
-                <div className="relative hidden md:block">
+                {/* Quality selector — solo con hls.js (en HLS nativo la calidad
+                    la controla el navegador); oculto en móvil */}
+                {usingHls && (
+                  <div ref={qualityRef} className="relative hidden md:block">
+                    <button
+                      ref={qualityBtnRef}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQualityOpen((v) => !v);
+                      }}
+                      aria-label={`Calidad de video: ${quality}`}
+                      aria-haspopup="menu"
+                      aria-expanded={qualityOpen}
+                      className="flex h-9 items-center gap-1 rounded-full px-3 transition-colors hover:bg-white/[0.12]"
+                      style={
+                        qualityOpen
+                          ? { background: "rgba(255,255,255,0.10)" }
+                          : undefined
+                      }
+                    >
+                      <span className="font-mono text-[11px] font-bold text-white">
+                        {quality}
+                      </span>
+                      <VPIcon name="chevron-down" size={12} color="#ffffff" />
+                    </button>
+                    {qualityOpen && (
+                      <div
+                        role="menu"
+                        aria-label="Calidad"
+                        className="absolute bottom-full right-0 mb-2 min-w-[210px] rounded-2xl p-1.5"
+                        style={{
+                          background: "rgba(15,17,42,0.85)",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          backdropFilter: "blur(20px)",
+                          WebkitBackdropFilter: "blur(20px)",
+                          boxShadow: "0 18px 40px rgba(0,0,0,0.45)",
+                        }}
+                      >
+                        <div
+                          className="px-3 py-1.5 font-sans text-[10px] font-bold uppercase text-white/45"
+                          style={{ letterSpacing: "0.18em" }}
+                        >
+                          Calidad
+                        </div>
+                        {QUALITIES.map((q) => {
+                          const isActive = quality === q;
+                          return (
+                            <button
+                              key={q}
+                              role="menuitemradio"
+                              aria-checked={isActive}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQuality(q);
+                                setQualityOpen(false);
+                                if (hlsRef.current) {
+                                  if (q === "Auto") {
+                                    hlsRef.current.currentLevel = -1;
+                                  } else {
+                                    const targetHeight = parseInt(q);
+                                    const levelIndex =
+                                      hlsRef.current.levels.findIndex(
+                                        (l) => l.height === targetHeight,
+                                      );
+                                    if (levelIndex !== -1) {
+                                      hlsRef.current.currentLevel = levelIndex;
+                                    }
+                                  }
+                                }
+                                kickIdle();
+                              }}
+                              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-white/90 transition-colors hover:bg-white/10"
+                            >
+                              <span>
+                                {q === "Auto" ? "Auto (recomendado)" : q}
+                              </span>
+                              {isActive && (
+                                <VPIcon name="check" size={16} color={CA.lime} />
+                              )}
+                            </button>
+                          );
+                        })}
+                        <div
+                          className="absolute -bottom-1.5 right-4 h-3 w-3 rotate-45"
+                          style={{
+                            background: "rgba(15,17,42,0.85)",
+                            borderRight: "1px solid rgba(255,255,255,0.12)",
+                            borderBottom: "1px solid rgba(255,255,255,0.12)",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* PiP — hidden on mobile y solo si el navegador lo soporta */}
+                {pipSupported && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setQualityOpen((v) => !v);
+                      togglePip();
                     }}
-                    aria-label="Calidad de video"
-                    className="flex h-9 items-center gap-1 rounded-full px-3 transition-colors hover:bg-white/[0.12]"
-                    style={
-                      qualityOpen
-                        ? { background: "rgba(255,255,255,0.10)" }
-                        : undefined
-                    }
+                    aria-label={pipActive ? "Salir de imagen en imagen" : "Imagen en imagen"}
+                    className="hidden h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:grid"
                   >
-                    <span className="font-mono text-[11px] font-bold text-white">
-                      {quality}
-                    </span>
-                    <VPIcon name="chevron-down" size={12} color="#ffffff" />
+                    <VPIcon
+                      name={pipActive ? "pip-on" : "pip"}
+                      size={18}
+                      color="#ffffff"
+                    />
                   </button>
-                  {qualityOpen && (
-                    <div
-                      className="absolute bottom-full right-0 mb-2 min-w-[210px] rounded-2xl p-1.5"
-                      style={{
-                        background: "rgba(15,17,42,0.85)",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        backdropFilter: "blur(20px)",
-                        WebkitBackdropFilter: "blur(20px)",
-                        boxShadow: "0 18px 40px rgba(0,0,0,0.45)",
-                      }}
-                    >
-                      <div
-                        className="px-3 py-1.5 font-sans text-[10px] font-bold uppercase text-white/45"
-                        style={{ letterSpacing: "0.18em" }}
-                      >
-                        Calidad
-                      </div>
-                      {QUALITIES.map((q) => {
-                        const isActive = quality === q;
-                        return (
-                          <button
-                            key={q}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setQuality(q);
-                              setQualityOpen(false);
-                              if (hlsRef.current) {
-                                if (q === "Auto") {
-                                  hlsRef.current.currentLevel = -1;
-                                } else {
-                                  const targetHeight = parseInt(q);
-                                  const levelIndex =
-                                    hlsRef.current.levels.findIndex(
-                                      (l) => l.height === targetHeight,
-                                    );
-                                  if (levelIndex !== -1) {
-                                    hlsRef.current.currentLevel = levelIndex;
-                                  }
-                                }
-                              }
-                              kickIdle();
-                            }}
-                            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-white/90 transition-colors hover:bg-white/10"
-                          >
-                            <span>
-                              {q === "Auto" ? "Auto (recomendado)" : q}
-                            </span>
-                            {isActive && (
-                              <VPIcon name="check" size={16} color={CA.lime} />
-                            )}
-                          </button>
-                        );
-                      })}
-                      <div
-                        className="absolute -bottom-1.5 right-4 h-3 w-3 rotate-45"
-                        style={{
-                          background: "rgba(15,17,42,0.85)",
-                          borderRight: "1px solid rgba(255,255,255,0.12)",
-                          borderBottom: "1px solid rgba(255,255,255,0.12)",
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* PiP — hidden on mobile */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    togglePip();
-                  }}
-                  aria-label={pipActive ? "Salir de imagen en imagen" : "Imagen en imagen"}
-                  className="hidden h-9 w-9 place-items-center rounded-full transition-colors hover:bg-white/[0.12] md:grid"
-                >
-                  <VPIcon
-                    name={pipActive ? "pip-on" : "pip"}
-                    size={18}
-                    color="#ffffff"
-                  />
-                </button>
+                )}
 
                 {/* Fullscreen */}
                 <button

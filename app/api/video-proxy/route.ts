@@ -68,7 +68,8 @@ export async function GET(req: Request) {
   // --- Proxy the video from Mux ---
   const muxUrl = `https://stream.mux.com/${playbackId}/medium.mp4`;
 
-  const muxRes = await fetch(muxUrl);
+  const range = req.headers.get("range");
+  const muxRes = await fetch(muxUrl, range ? { headers: { Range: range } } : undefined);
 
   if (!muxRes.ok) {
     return NextResponse.json(
@@ -80,10 +81,14 @@ export async function GET(req: Request) {
   const headers = new Headers();
   headers.set("Content-Type", muxRes.headers.get("content-type") ?? "video/mp4");
   headers.set("Accept-Ranges", "bytes");
+  const contentRange = muxRes.headers.get("content-range");
+  if (contentRange) {
+    headers.set("Content-Range", contentRange);
+  }
   if (muxRes.headers.get("content-length")) {
     headers.set("Content-Length", muxRes.headers.get("content-length")!);
   }
   headers.set("Cache-Control", "private, max-age=3600");
 
-  return new NextResponse(muxRes.body, { status: 200, headers });
+  return new NextResponse(muxRes.body, { status: muxRes.status, headers });
 }

@@ -186,7 +186,7 @@ describe("PATCH /api/classroom/progress", () => {
     mockVerifyEnrollment.mockResolvedValue(ENROLLMENT_ID);
 
     // existing progress row (or null)
-    mockVideoProgressSelectSingle.mockResolvedValue({
+    mockVideoProgressMaybeSingle.mockResolvedValue({
       data: { max_position_seconds: 20, completed: false, completed_at: null },
     });
 

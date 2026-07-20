@@ -295,37 +295,49 @@ export async function POST(req: Request) {
           );
         }
 
-        // Auto-trigger transcript correction (fire-and-forget)
+        // Post-procesado de IA: corrección de la transcripción, glosario/resumen
+        // y capítulos. Mismo pipeline que la regeneración manual
+        // (/api/admin/generate-summary, /api/admin/generate-chapters); aplica por
+        // igual a lecciones pregrabadas y a la lección-repetición de una clase en
+        // vivo (class_sessions.lesson_id → lessons.kind='recorded', migración 0041).
+        //
+        // Se AWAITEA dentro del handler (maxDuration=300): en serverless la
+        // instancia se congela al responder 200, así que un fire-and-forget mata
+        // estas promesas en vuelo y deja la clase sin capítulos/resumen/corrección.
+        // allSettled para que el fallo de una no impida las demás; los huecos que
+        // igual queden se reconcilian con scripts/backfill-lesson-ai.ts.
+        const aiTasks: Array<Promise<unknown>> = [];
         if (contentVtt) {
-          correctTranscript(lesson.id).catch((err) =>
-            console.error(
-              "Mux webhook: auto-correction failed for lesson",
-              lesson.id,
-              err,
-            ),
+          aiTasks.push(
+            correctTranscript(lesson.id).catch((err) => {
+              console.error(
+                "Mux webhook: auto-correction failed for lesson",
+                lesson.id,
+                err,
+              );
+            }),
           );
         }
-
-        // Auto-trigger glosario/resumen y capítulos (fire-and-forget). Mismo
-        // pipeline que la regeneración manual (/api/admin/generate-summary,
-        // /api/admin/generate-chapters); aplica por igual a lecciones
-        // pregrabadas y a la lección-repetición de una clase en vivo
-        // (class_sessions.lesson_id → lessons.kind='recorded', migración 0041).
         if (contentText) {
-          generateLessonSummary(lesson.id).catch((err) =>
-            console.error(
-              "Mux webhook: auto-summary failed for lesson",
-              lesson.id,
-              err,
-            ),
+          aiTasks.push(
+            generateLessonSummary(lesson.id).catch((err) => {
+              console.error(
+                "Mux webhook: auto-summary failed for lesson",
+                lesson.id,
+                err,
+              );
+            }),
+            generateLessonChapters(lesson.id).catch((err) => {
+              console.error(
+                "Mux webhook: auto-chapters failed for lesson",
+                lesson.id,
+                err,
+              );
+            }),
           );
-          generateLessonChapters(lesson.id).catch((err) =>
-            console.error(
-              "Mux webhook: auto-chapters failed for lesson",
-              lesson.id,
-              err,
-            ),
-          );
+        }
+        if (aiTasks.length > 0) {
+          await Promise.allSettled(aiTasks);
         }
       } else {
         console.error(

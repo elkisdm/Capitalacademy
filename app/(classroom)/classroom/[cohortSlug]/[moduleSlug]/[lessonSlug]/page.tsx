@@ -137,7 +137,7 @@ export default async function LessonPage(
         .order("position", { ascending: true }),
       supabase
         .from("lesson_transcripts")
-        .select("content_vtt, corrected_vtt")
+        .select("lesson_id")
         .eq("lesson_id", lessonId)
         .eq("status", "ready")
         .maybeSingle(),
@@ -170,8 +170,7 @@ export default async function LessonPage(
     getViewerProfile(user.id),
   ]);
 
-  const transcriptVtt = transcript?.content_vtt ?? null;
-  const transcriptCorrectedVtt = transcript?.corrected_vtt ?? null;
+  const hasTranscript = !!transcript;
   const watchPct = progress?.watch_percentage ?? 0;
   // Ventana de programación (0070): igual condición que /api/classroom/quiz.
   const activeLessonEvaluation =
@@ -274,7 +273,7 @@ export default async function LessonPage(
               currentUserName={userName}
               currentUserInitials={userInitials}
               currentUserAvatarUrl={profile?.avatar_url ?? null}
-              hasTranscript={!!transcriptVtt}
+              hasTranscript={hasTranscript}
               viewerIsStaff={access.isStaff}
             />
           ) : isTextLesson ? (
@@ -364,8 +363,8 @@ export default async function LessonPage(
           completedCount={siblingLessons.filter((l) => getLessonStatus(l) === "completed").length}
           moduleTitle={currentModule?.title ?? ""}
           modulePosition={currentModule?.position ?? 0}
-          transcriptVtt={transcriptVtt}
-          correctedVtt={transcriptCorrectedVtt}
+          lessonId={lessonId}
+          hasTranscript={hasTranscript}
         >
           {/* Module title (inside expanded header) */}
           <div className="px-5 pb-3">

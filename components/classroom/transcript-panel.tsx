@@ -23,6 +23,13 @@ type TranscriptPanelProps = {
   fill?: boolean;
 };
 
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 function useDebounce<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -171,7 +178,10 @@ export function TranscriptPanel({
     const elHeight = el.offsetHeight;
     const containerHeight = container.clientHeight;
     const targetScroll = elTop - containerHeight / 2 + elHeight / 2;
-    container.scrollTo({ top: Math.max(0, targetScroll), behavior: "smooth" });
+    container.scrollTo({
+      top: Math.max(0, targetScroll),
+      behavior: prefersReducedMotion() ? "instant" : "smooth",
+    });
   }, [activeIdx, search]);
 
   const handleUserScroll = useCallback(() => {
@@ -216,7 +226,7 @@ export function TranscriptPanel({
         if (next) {
           setFocusedIdx(next.index);
           itemRefs.current.get(next.index)?.scrollIntoView({
-            behavior: "smooth",
+            behavior: prefersReducedMotion() ? "instant" : "smooth",
             block: "nearest",
           });
         }

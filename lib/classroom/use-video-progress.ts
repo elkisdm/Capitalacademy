@@ -23,9 +23,17 @@ export function useVideoProgress({
   const positionRef = useRef(initialPosition);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const isFlushing = useRef(false);
+  const flushPending = useRef(false);
 
   const flush = useCallback(async () => {
-    if (isFlushing.current || durationSeconds <= 0) return;
+    if (durationSeconds <= 0) return;
+    if (isFlushing.current) {
+      // Ya hay un flush en vuelo (p.ej. el del timer de 15s): no lo
+      // pisamos ni lo perdemos — se re-encola y corre apenas termine el
+      // actual, con la posición más reciente.
+      flushPending.current = true;
+      return;
+    }
     isFlushing.current = true;
 
     try {
@@ -50,8 +58,30 @@ export function useVideoProgress({
       // Silently fail — next flush will retry
     } finally {
       isFlushing.current = false;
+      if (flushPending.current) {
+        flushPending.current = false;
+        flush();
+      }
     }
   }, [lessonId, durationSeconds, onProgressUpdate]);
+
+  const flushOnUnload = useCallback(() => {
+    if (durationSeconds <= 0) return;
+    try {
+      fetch("/api/classroom/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonId,
+          playbackPositionSeconds: positionRef.current,
+          durationSeconds,
+        }),
+        keepalive: true,
+      });
+    } catch {
+      // Best-effort save on unload
+    }
+  }, [lessonId, durationSeconds]);
 
   const handleTimeUpdate = useCallback((currentTime: number) => {
     positionRef.current = Math.floor(currentTime);
@@ -73,6 +103,18 @@ export function useVideoProgress({
       flush();
     };
   }, [flush]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") flushOnUnload();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", flushOnUnload);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", flushOnUnload);
+    };
+  }, [flushOnUnload]);
 
   return {
     handleTimeUpdate,

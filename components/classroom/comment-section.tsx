@@ -503,7 +503,7 @@ function CommentItem({
                   type="button"
                   variant="ghost"
                   onClick={() => setShowReplyInput(!showReplyInput)}
-                  className="h-auto min-h-0 rounded p-0 text-[12px] text-ca-ink-soft hover:bg-transparent hover:text-ca-violet"
+                  className="h-auto min-h-[40px] rounded px-2 -mx-2 text-[12px] text-ca-ink-soft hover:bg-transparent hover:text-ca-violet md:min-h-0 md:mx-0 md:px-0"
                 >
                   Responder
                 </Button>
@@ -569,7 +569,7 @@ function CommentItem({
               type="button"
               variant="ghost"
               onClick={() => setShowReplies(true)}
-              className="mb-3 h-auto min-h-0 rounded p-0 text-[12px] text-ca-violet hover:bg-transparent hover:text-ca-violet-deep"
+              className="mb-3 h-auto min-h-[40px] rounded px-2 -mx-2 text-[12px] text-ca-violet hover:bg-transparent hover:text-ca-violet-deep md:min-h-0 md:mx-0 md:px-0"
             >
               <ChevronDownIcon size={14} />
               {replies.length} respuestas
@@ -593,7 +593,7 @@ function CommentItem({
               type="button"
               variant="ghost"
               onClick={() => setShowReplies(false)}
-              className="mt-2 h-auto min-h-0 rounded p-0 text-[12px] text-ca-ink-soft hover:bg-transparent hover:text-ca-violet"
+              className="mt-2 h-auto min-h-[40px] rounded px-2 -mx-2 text-[12px] text-ca-ink-soft hover:bg-transparent hover:text-ca-violet md:min-h-0 md:mx-0 md:px-0"
             >
               Ocultar respuestas
             </Button>

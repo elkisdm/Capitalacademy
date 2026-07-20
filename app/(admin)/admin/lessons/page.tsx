@@ -26,6 +26,7 @@ type RecordingInfo = {
   muxUploadId: string | null;
   muxError: string | null;
   durationSeconds: number | null;
+  thumbnailUrl: string | null;
 };
 
 type SessionResourceRow = {
@@ -101,6 +102,7 @@ export default async function AdminLessonsPage(props: {
         muxUploadId: (lesson.mux_upload_id as string | null) ?? null,
         muxError: (lesson.mux_error as string | null) ?? null,
         durationSeconds: (lesson.video_duration_seconds as number | null) ?? null,
+        thumbnailUrl: (lesson.thumbnail_url as string | null) ?? null,
       });
     }
   }

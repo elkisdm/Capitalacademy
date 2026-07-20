@@ -236,6 +236,8 @@ const SPEED_CYCLE = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 const MAX_HLS_RECOVERIES = 3;
 
+const DOUBLE_TAP_MS = 280;
+
 function applyStoredMediaPrefs(video: HTMLVideoElement) {
   try {
     const vol = localStorage.getItem("ca-vol");
@@ -329,6 +331,9 @@ export function VideoPlayer({
       return false;
     }
   });
+  const [seekFeedback, setSeekFeedback] = useState<
+    { dir: "back" | "fwd"; key: number } | null
+  >(null);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -343,6 +348,8 @@ export function VideoPlayer({
   const ccEnabledRef = useRef(ccEnabled);
   const qualityRef = useRef<HTMLDivElement>(null);
   const qualityBtnRef = useRef<HTMLButtonElement>(null);
+  const lastTapRef = useRef<{ t: number } | null>(null);
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const progress =
     durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
@@ -821,6 +828,12 @@ export function VideoPlayer({
     setLiveMessage(muted ? "Silenciado" : "Sonido activado");
   }, [muted]);
 
+  useEffect(() => {
+    if (!seekFeedback) return;
+    const id = setTimeout(() => setSeekFeedback(null), 600);
+    return () => clearTimeout(id);
+  }, [seekFeedback]);
+
   // ── Playback toggle (touch-aware) ──────────────────────────
 
   const togglePlay = useCallback(() => {
@@ -872,6 +885,41 @@ export function VideoPlayer({
     if (video)
       video.currentTime = Math.min(durationSeconds, video.currentTime + 10);
   }, [durationSeconds]);
+
+  // ── Doble tap ±10s en móvil (mouse/pen: acción inmediata) ──
+
+  const onOverlayPointerUp = useCallback(
+    (e: ReactPointerEvent<HTMLButtonElement>) => {
+      // Desktop (mouse/pen): comportamiento inmediato, sin cambios.
+      if (e.pointerType !== "touch") {
+        handleVideoAreaTap();
+        return;
+      }
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const now = performance.now();
+      const prev = lastTapRef.current;
+
+      if (prev && now - prev.t < DOUBLE_TAP_MS) {
+        clearTimeout(singleTapTimer.current);
+        lastTapRef.current = null;
+        const isLeft = x < rect.width / 2;
+        if (isLeft) skipBack();
+        else skipForward();
+        setSeekFeedback({ dir: isLeft ? "back" : "fwd", key: now });
+        kickIdle();
+        return;
+      }
+
+      lastTapRef.current = { t: now };
+      clearTimeout(singleTapTimer.current);
+      singleTapTimer.current = setTimeout(() => {
+        handleVideoAreaTap();
+        lastTapRef.current = null;
+      }, DOUBLE_TAP_MS);
+    },
+    [handleVideoAreaTap, skipBack, skipForward, kickIdle],
+  );
 
   // ── Seek on progress bar ───────────────────────────────────
 
@@ -1147,6 +1195,21 @@ export function VideoPlayer({
             background: rgba(0,0,0,0.75);
             color: #fff;
           }
+          .ca-seek-pop { animation: ca-seek-pop 600ms ease-out forwards; }
+          @keyframes ca-seek-pop {
+            0% { opacity: 0; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1); }
+          }
+          @media (min-width: 768px) {
+            .vp-frame .vp-controls-card {
+              border-radius: 18px;
+              background: rgba(0,0,0,0.55);
+              backdrop-filter: blur(24px) saturate(140%);
+              -webkit-backdrop-filter: blur(24px) saturate(140%);
+              border: 1px solid rgba(255,255,255,0.10);
+            }
+          }
         `}</style>
 
         {/* Estado hablado para lectores de pantalla */}
@@ -1218,9 +1281,15 @@ export function VideoPlayer({
           </div>
         )}
 
-        {/* Click/tap area — touch: first tap shows controls, second pauses */}
+        {/* Click/tap area — mouse: inmediato; touch: doble tap = ±10s */}
         <button
-          onClick={handleVideoAreaTap}
+          onPointerUp={onOverlayPointerUp}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleVideoAreaTap();
+            }
+          }}
           className="absolute inset-0 z-10 cursor-pointer bg-transparent"
           aria-label="Reproducir o pausar"
         />
@@ -1253,6 +1322,29 @@ export function VideoPlayer({
           </div>
         )}
 
+        {seekFeedback && (
+          <div
+            key={seekFeedback.key}
+            className="pointer-events-none absolute inset-y-0 z-20 grid place-items-center md:hidden"
+            style={{
+              left: seekFeedback.dir === "back" ? 0 : "50%",
+              right: seekFeedback.dir === "back" ? "50%" : 0,
+            }}
+          >
+            <div
+              className="ca-seek-pop grid place-items-center rounded-full px-4 py-3"
+              style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}
+            >
+              <VPIcon
+                name={seekFeedback.dir === "back" ? "skip-back" : "skip-fwd"}
+                size={22}
+                color="#fff"
+              />
+              <span className="mt-0.5 text-[11px] font-bold tabular-nums">10s</span>
+            </div>
+          </div>
+        )}
+
         {/* Buffering spinner */}
         {buffering && (
           <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center">
@@ -1281,7 +1373,7 @@ export function VideoPlayer({
 
         {/* ── Controls bar ── */}
         <div
-          className="absolute inset-x-3 bottom-3 z-20 transition-opacity duration-300"
+          className="absolute inset-x-0 bottom-0 z-20 transition-opacity duration-300 md:inset-x-3 md:bottom-3"
           onFocusCapture={() => {
             setControlsFocused(true);
             kickIdle();
@@ -1295,15 +1387,7 @@ export function VideoPlayer({
             pointerEvents: showControls && started ? "auto" : "none",
           }}
         >
-          <div
-            className="rounded-[18px] px-3 pb-3 pt-3"
-            style={{
-              background: "rgba(0,0,0,0.55)",
-              backdropFilter: "blur(24px) saturate(140%)",
-              WebkitBackdropFilter: "blur(24px) saturate(140%)",
-              border: "1px solid rgba(255,255,255,0.10)",
-            }}
-          >
+          <div className="vp-controls-card px-2 pb-2 pt-1 md:px-3 md:pb-3 md:pt-3">
             {/* Progress bar */}
             <div
               ref={trackRef}
@@ -1315,7 +1399,7 @@ export function VideoPlayer({
               aria-valuenow={Math.round(currentTime)}
               aria-valuetext={`${fmtTimestamp(currentTime)} de ${fmtTimestamp(durationSeconds)}`}
               onKeyDown={onTrackKeyDown}
-              className="mb-2 cursor-pointer rounded-full px-1 outline-none touch-none focus-visible:ring-2 focus-visible:ring-white/80"
+              className="mb-1 cursor-pointer rounded-full px-0 outline-none touch-none focus-visible:ring-2 focus-visible:ring-white/80 md:mb-2 md:px-1"
               style={{ height: 24 }}
               onPointerEnter={() => setHoverBar(true)}
               onPointerLeave={() => {
@@ -1728,7 +1812,7 @@ export function VideoPlayer({
         className="flex flex-wrap items-center gap-2 text-sm md:gap-3"
         style={{ color: "var(--color-ca-ink-soft)" }}
       >
-        <span className="shrink-0 text-[11px] font-semibold">
+        <span className="hidden shrink-0 text-[11px] font-semibold md:inline">
           Progreso
         </span>
         <div className="min-w-[100px] flex-1">

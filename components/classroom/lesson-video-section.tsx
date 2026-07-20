@@ -161,7 +161,7 @@ export function LessonVideoSection({
             {hasTranscript && (
               <button
                 onClick={() => openTranscriptRef.current?.()}
-                className="ml-auto flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-bold text-ca-ink-soft transition-colors hover:text-ca-violet"
+                className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2.5 text-[12px] font-bold text-ca-ink-soft transition-colors hover:text-ca-violet"
               >
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 8h4M7 12h10M7 16h6" />

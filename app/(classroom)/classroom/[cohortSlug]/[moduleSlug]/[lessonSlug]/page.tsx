@@ -219,7 +219,7 @@ export default async function LessonPage(
       {/* Title block — above the video */}
       <div className="mb-4 flex flex-col gap-3 md:mb-5 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-sans text-[11px] font-semibold text-ca-ink-soft md:text-[10px] md:font-bold md:uppercase md:tracking-[0.22em] md:gap-2">
             <span>Lección {String(idx + 1).padStart(2, "0")} de {siblingLessons.length}</span>
             <span className="opacity-40">·</span>
             <span>{fmtDuration(videoDuration)}</span>
@@ -236,11 +236,11 @@ export default async function LessonPage(
           )}
         </div>
         {currentModule?.teacher?.full_name && (
-          <div className="flex shrink-0 items-center gap-2.5">
-            <Avatar initials={currentModule.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={32} />
-            <div className="md:text-right">
-              <div className="text-[13px] font-bold tracking-tight text-ca-ink">{currentModule.teacher.full_name}</div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">Instructor</div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Avatar initials={currentModule.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={28} />
+            <div className="text-[12px] md:text-right">
+              <span className="font-bold tracking-tight text-ca-ink">{currentModule.teacher.full_name}</span>
+              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft md:ml-0 md:block">Instructor</span>
             </div>
           </div>
         )}

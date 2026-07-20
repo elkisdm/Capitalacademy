@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
@@ -168,19 +169,30 @@ export default async function ClassSessionPage(
   return (
     <div className="ca-fade-up mx-auto w-full max-w-[1200px] px-4 py-4 md:px-8 md:py-6">
       <div className="mb-5">
-        <Breadcrumb
-          items={[
-            { label: program.name, href: `/classroom/${cohortSlug}` },
-            { label: "Calendario", href: `/classroom/${cohortSlug}/calendario` },
-            { label: title },
-          ]}
-        />
+        {/* Móvil: enlace único de regreso */}
+        <Link
+          href={`/classroom/${cohortSlug}/calendario`}
+          className="inline-flex items-center gap-1 font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft transition-colors hover:text-ca-violet md:hidden"
+        >
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          Calendario
+        </Link>
+        {/* Desktop: breadcrumb completo */}
+        <div className="hidden md:block">
+          <Breadcrumb
+            items={[
+              { label: program.name, href: `/classroom/${cohortSlug}` },
+              { label: "Calendario", href: `/classroom/${cohortSlug}/calendario` },
+              { label: title },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Header de la clase */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft md:gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5 font-sans text-[11px] font-semibold text-ca-ink-soft md:text-[10px] md:font-bold md:uppercase md:tracking-[0.22em] md:gap-2">
             <span>{fmtSessionDate(session.starts_at)}</span>
             <span className="opacity-40">·</span>
             <span>{MODALITY_LABEL[session.modality] ?? session.modality}</span>
@@ -202,11 +214,11 @@ export default async function ClassSessionPage(
             </a>
           )}
           {session.teacher?.full_name && (
-            <div className="flex items-center gap-2.5">
-              <Avatar initials={session.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={32} />
-              <div className="md:text-right">
-                <div className="text-[13px] font-bold tracking-tight text-ca-ink">{session.teacher.full_name}</div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft">Instructor</div>
+            <div className="flex items-center gap-2">
+              <Avatar initials={session.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={28} />
+              <div className="text-[12px] md:text-right">
+                <span className="font-bold tracking-tight text-ca-ink">{session.teacher.full_name}</span>
+                <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft md:ml-0 md:block">Instructor</span>
               </div>
             </div>
           )}
@@ -215,9 +227,11 @@ export default async function ClassSessionPage(
 
       {/* Repetición */}
       <section>
-        <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-          Repetición
-        </div>
+        {!hasVideo && (
+          <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            Repetición
+          </div>
+        )}
         {hasVideo ? (
           videoBlock
         ) : (

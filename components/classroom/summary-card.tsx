@@ -84,12 +84,12 @@ function EmptyIcon({ size = 20 }: { size?: number }) {
 
 const STORAGE_KEY = "ca-summary-expanded";
 
-function readExpanded(): boolean {
+function readExpandedRaw(): "1" | "0" | null {
   try {
     const v = localStorage.getItem(STORAGE_KEY);
-    return v === null ? true : v === "1";
+    return v === "1" || v === "0" ? v : null;
   } catch {
-    return true;
+    return null;
   }
 }
 
@@ -132,7 +132,12 @@ export function SummaryCard({
 
   // Hydrate from localStorage after mount (avoids SSR mismatch)
   useEffect(() => {
-    setExpanded(readExpanded());
+    const stored = readExpandedRaw();
+    if (stored === null) {
+      setExpanded(window.matchMedia("(min-width: 768px)").matches);
+    } else {
+      setExpanded(stored === "1");
+    }
   }, []);
 
   const toggle = useCallback(() => {

@@ -89,6 +89,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El botón "Agregar participante" del detalle de cohorte ya asigna profesores, ayudantes y alumnos en vez de estar deshabilitado, y al asignar un rol desde el perfil de un usuario los errores (por ejemplo, si ya tenía ese rol) ahora se muestran en pantalla en vez de fallar en silencio (`bf4c29a`)
 - El calendario de clases ya no muestra la pantalla de error completa por un fallo temporal de red: si falla la carga de datos secundarios (docentes, materiales o quizzes) esos se omiten y el resto del calendario sigue visible; además la pantalla de error ahora muestra un código para soporte. (`7acbb21`)
 - Los correos de apertura de entregable y de grabación/seguimiento del Ciclo CI ya no se duplican ni se pierden entre corridas — idempotencia por destinatario + tope de 10 casos por corrida. (`8a52d04`)
+- Los menús desplegables (selectores y calendarios) dentro de ventanas modales ya no quedaban ocultos detrás del modal; ahora se muestran encima (464b42e)
 
 ### Added
 - Nuevo módulo "Entregables": el equipo crea tareas por programa con ventana de subida (fecha de apertura y fecha límite), tipos de archivo permitidos y tamaño máximo; el alumno sube su archivo desde el classroom dentro del plazo y recibe un correo apenas la ventana se abre; el equipo revisa desde el panel admin quién entregó y quién no, con descarga directa de cada archivo

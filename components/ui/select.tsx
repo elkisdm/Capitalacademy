@@ -364,7 +364,7 @@ export function Select({
         width: coords?.width,
         maxWidth: "calc(100vw - 2rem)",
       }}
-      className="ca-card ca-scale-in z-50 overflow-hidden p-0 shadow-xl outline-none"
+      className="ca-card ca-scale-in z-[90] overflow-hidden p-0 shadow-xl outline-none"
     >
       {isSearchable && (
         <div className="border-b border-ca-ink/[0.06] p-1.5">

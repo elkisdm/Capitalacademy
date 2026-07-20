@@ -354,7 +354,7 @@ export function DatePicker({
         width: POPOVER_WIDTH,
         maxWidth: "calc(100vw - 2rem)",
       }}
-      className="ca-card ca-scale-in z-50 overflow-hidden p-0 shadow-xl outline-none"
+      className="ca-card ca-scale-in z-[90] overflow-hidden p-0 shadow-xl outline-none"
     >
       <div className="flex items-center justify-between gap-2 border-b border-ca-ink/[0.06] px-3 py-2.5">
         <div className="flex items-center gap-1">

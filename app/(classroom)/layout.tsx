@@ -8,6 +8,8 @@ import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
 import {
   getCohortWithProgram,
   getActiveEnrollmentsForUser,
+  getTeachingCohortsForUser,
+  type ActiveEnrollmentProgram,
 } from "@/lib/classroom/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { isEvaluationOpen } from "@/lib/classroom/evaluation-window";
@@ -136,15 +138,10 @@ export default async function ClassroomLayout({
   // Docente/asistente (cohort_roles), para mostrar el link "Panel docente" en
   // el sidebar. El staff ya tiene su propia nav (admin), no necesita este check.
   let isTeacher = false;
+  let teachingCohorts: ActiveEnrollmentProgram[] = [];
   if (!isStaff) {
-    const { data: cohortRole } = await supabase
-      .from("cohort_roles")
-      .select("id")
-      .eq("user_id", user.id)
-      .in("role", ["teacher", "assistant"])
-      .limit(1)
-      .maybeSingle();
-    isTeacher = !!cohortRole;
+    teachingCohorts = await getTeachingCohortsForUser(user.id);
+    isTeacher = teachingCohorts.length > 0;
   }
 
   // "Mis programas" solo se muestra al alumno si tiene más de una matrícula
@@ -157,7 +154,9 @@ export default async function ClassroomLayout({
   const cohortMap: Record<string, { label: string; hasFinalEvaluation: boolean }> = {};
   if (!isStaff) {
     const enrollments = await getActiveEnrollmentsForUser(user.id);
-    hasMultiplePrograms = enrollments.length > 1;
+    const enrolledIds = new Set(enrollments.map((e) => e.cohortId));
+    const extraTeaching = teachingCohorts.filter((t) => !enrolledIds.has(t.cohortId));
+    hasMultiplePrograms = enrollments.length + extraTeaching.length > 1;
 
     // Evaluaciones finales activas y dentro de ventana de todos sus programas,
     // en una sola consulta.
@@ -180,6 +179,12 @@ export default async function ClassroomLayout({
       // Se indexa por slug y por id: la URL puede traer cualquiera (compat legacy).
       if (e.cohortSlug) cohortMap[e.cohortSlug] = info;
       cohortMap[e.cohortId] = info;
+    }
+
+    for (const t of extraTeaching) {
+      const info = { label: t.programName, hasFinalEvaluation: false };
+      if (t.cohortSlug) cohortMap[t.cohortSlug] = info;
+      cohortMap[t.cohortId] = info;
     }
   }
 

@@ -163,6 +163,48 @@ export async function getActiveEnrollmentsForUser(
   }));
 }
 
+/**
+ * Cohortes donde el usuario es docente/asistente (cohort_roles), en la misma
+ * forma que getActiveEnrollmentsForUser para mezclarlas en "Mis programas".
+ */
+export async function getTeachingCohortsForUser(
+  userId: string,
+): Promise<ActiveEnrollmentProgram[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cohort_roles")
+    .select(
+      "granted_at, cohorts!inner(id, slug, name, programs!inner(id, name, code, description))",
+    )
+    .eq("user_id", userId)
+    .in("role", ["teacher", "assistant"])
+    .order("granted_at", { ascending: false });
+
+  type Row = {
+    cohorts: {
+      id: string;
+      slug: string | null;
+      name: string | null;
+      programs: {
+        id: string;
+        name: string;
+        code: string | null;
+        description: string | null;
+      };
+    };
+  };
+
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    cohortId: r.cohorts.id,
+    cohortSlug: r.cohorts.slug,
+    cohortName: r.cohorts.name,
+    programId: r.cohorts.programs.id,
+    programName: r.cohorts.programs.name,
+    programCode: r.cohorts.programs.code,
+    programDescription: r.cohorts.programs.description,
+  }));
+}
+
 export const getCohortWithProgram = cache(async (cohortId: string) => {
   const supabase = await createClient();
   const { data } = await supabase

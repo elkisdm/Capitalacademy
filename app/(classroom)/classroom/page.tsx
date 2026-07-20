@@ -4,6 +4,7 @@ import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import {
   getCohortSlugById,
   getActiveEnrollmentsForUser,
+  getTeachingCohortsForUser,
 } from "@/lib/classroom/queries";
 import { getBrandByProgramId } from "@/lib/programs/registry";
 import { getActiveEnv, getViewMode } from "@/lib/admin/active-env";
@@ -32,7 +33,17 @@ export default async function ClassroomIndexPage() {
     }
   }
 
-  const programs = await getActiveEnrollmentsForUser(user.id);
+  const [enrolled, teaching] = await Promise.all([
+    getActiveEnrollmentsForUser(user.id),
+    getTeachingCohortsForUser(user.id),
+  ]);
+  const enrolledIds = new Set(enrolled.map((p) => p.cohortId));
+  const programs = [
+    ...enrolled.map((p) => ({ ...p, isTeaching: false })),
+    ...teaching
+      .filter((t) => !enrolledIds.has(t.cohortId))
+      .map((p) => ({ ...p, isTeaching: true })),
+  ];
 
   // Con una sola matrícula, no hay nada que elegir: entrada directa al programa.
   if (programs.length === 1) {
@@ -65,8 +76,18 @@ export default async function ClassroomIndexPage() {
                   style={{ backgroundColor: brand.accent }}
                   aria-hidden
                 />
+                {p.isTeaching && (
+                  <span
+                    className="mt-4 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white"
+                    style={{ backgroundColor: brand.accent }}
+                  >
+                    Docente
+                  </span>
+                )}
                 {p.programCode && (
-                  <span className="mt-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <span
+                    className={`${p.isTeaching ? "mt-1" : "mt-4"} text-xs font-semibold uppercase tracking-wider text-gray-400`}
+                  >
                     {p.programCode}
                     {p.cohortName ? ` · ${p.cohortName}` : ""}
                   </span>

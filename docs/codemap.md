@@ -298,6 +298,7 @@
 | `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
 | `db/migrations/0049_seed_capacitaciones.sql` | Siembra del entorno Ciclo de Capacitación Comercial CI: programa gratuito interno + cohorte + 5 sesiones presenciales | — | 0012 |
 | `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |
+| `db/migrations/0069_drop_profiles_rut_unique_idx.sql` | Borra el índice único global de RUT en `profiles`: el RUT identifica a una persona, no a una cuenta, y una misma persona puede tener varias cuentas legítimas (alumna en un programa, profe en otro) | — | 0015 |
 | `db/migrations/0074_leads.sql` | Versiona `leads` (megaauditoría 16-jul, hallazgo C3): reproduce la tabla que solo existía en prod (creada por dashboard); RLS habilitada sin policies (deny-all), único escritor es `app/api/leads/route.ts` vía service-role | — | — |
 | `scripts/invite-capacitaciones.mjs` | Invitación masiva de asistentes al ciclo CAP-CI (crea usuario + matrícula + correo branded) | — | 0012 |
 | `scripts/reinvite-stuck-capacitaciones.mjs` | Segunda tanda: reenvía invitación solo a quien sigue sin activar cuenta del ciclo CAP-CI (roster 'active' vs `last_sign_in_at` nulo en Admin API) | — | 0012 |

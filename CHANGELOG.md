@@ -25,6 +25,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Los pagos de Flow cuya matrícula fallaba ahora se reintentan automáticamente y alertan al equipo, en vez de quedar cobrados sin acceso y sin aviso. (`f6dca5a`)
 - Las docentes y asistentes ahora ven las cohortes donde enseñan en "Mis programas", con un distintivo "Docente" (ca61542)
 - Subtítulos y selector de calidad ahora disponibles donde corresponde en el reproductor, con preferencias que se recuerdan (`3129602`)
+- Ver las clases desde el teléfono es más cómodo: doble toque a la izquierda o derecha del video para retroceder o avanzar 10 segundos, controles compactos al borde que ya no tapan la imagen ni los subtítulos, y encabezado y resumen IA más livianos en pantallas chicas (`1f14926`)
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)

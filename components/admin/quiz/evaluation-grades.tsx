@@ -86,7 +86,7 @@ export function EvaluationGrades({
     updateRow(row.enrollmentId, { criteriaMarks: marks });
   };
 
-  const saveGrade = async (row: GradeRow, publish: boolean) => {
+  const saveGrade = async (row: GradeRow, publish: boolean, unpublish = false) => {
     if (row.grade == null) {
       toast("Ingresa una nota antes de guardar", "error");
       return;
@@ -102,6 +102,7 @@ export function EvaluationGrades({
           feedback: row.feedback,
           criteriaMarks: marksFromCriteria(criteria, row),
           publish,
+          unpublish,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -115,7 +116,7 @@ export function EvaluationGrades({
           gradedAt: g.graded_at,
           source: g.source,
         });
-        toast(publish ? "Nota publicada" : "Borrador guardado", "success");
+        toast(unpublish ? "Nota retirada del alumno" : publish ? "Nota publicada" : "Borrador guardado", "success");
       } else {
         toast(data.error ?? "Error al guardar", "error");
       }
@@ -365,6 +366,20 @@ export function EvaluationGrades({
                       >
                         Guardar y publicar
                       </Button>
+                      {row.publishedAt && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={savingId === row.enrollmentId}
+                          onClick={() => {
+                            if (!confirm(`¿Retirar la nota de ${row.studentName}? El alumno dejará de verla.`)) return;
+                            saveGrade(row, false, true);
+                          }}
+                        >
+                          Despublicar
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

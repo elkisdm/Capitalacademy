@@ -105,6 +105,8 @@ const putSchema = z.object({
   feedback: z.string().trim().max(4000).nullable().optional(),
   criteriaMarks: z.array(criterionMarkSchema).optional(),
   publish: z.boolean(),
+  /** Retira explícitamente una nota ya publicada. Solo se honra si `publish` es false. */
+  unpublish: z.boolean().optional(),
 });
 
 export async function PUT(req: Request, { params }: Ctx) {
@@ -138,6 +140,21 @@ export async function PUT(req: Request, { params }: Ctx) {
   const auth = await requireEvaluationStaff(evaluationId, enrollment.cohort_id);
   if ("error" in auth) return auth.error;
 
+  const { data: existing } = await admin
+    .from("evaluation_grades")
+    .select("published_at")
+    .eq("evaluation_id", evaluationId)
+    .eq("enrollment_id", v.enrollmentId)
+    .maybeSingle();
+
+  // Publicar preserva la PRIMERA publicación (es registro académico, no se
+  // reescribe); guardar borrador NUNCA despublica; despublicar es explícito.
+  const publishedAt = v.unpublish
+    ? null
+    : v.publish
+      ? (existing?.published_at ?? new Date().toISOString())
+      : (existing?.published_at ?? null);
+
   const { data: upserted, error } = await admin
     .from("evaluation_grades")
     .upsert(
@@ -150,7 +167,7 @@ export async function PUT(req: Request, { params }: Ctx) {
         criteria_marks: v.criteriaMarks ?? [],
         graded_by: auth.user.id,
         graded_at: new Date().toISOString(),
-        published_at: v.publish ? new Date().toISOString() : null,
+        published_at: publishedAt,
       },
       { onConflict: "evaluation_id,enrollment_id" },
     )

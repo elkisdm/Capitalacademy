@@ -48,6 +48,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- En casos puntuales de notas ponderadas, un error de precisión decimal podía mostrar "reprobado" a un alumno que en realidad había aprobado por el mínimo; el promedio ya se calcula correctamente (`b699182`)
 - Si tu nota falla en cargar por un problema real de la base de datos, la pantalla de notas ya no dice "aún no tienes notas publicadas" — muestra el error y puedes reintentar; y cuando tu profesor carga notas con distinto peso (ej. 25/50/25), tu promedio del módulo ahora se calcula ponderado en vez de desaparecer, con un ícono junto a cada nota que marca si aprobaste o no (`693fbcf`)
 - Un pago cobrado por Flow ya no puede quedar sin registrar para siempre: el sistema verifica cada 15 minutos contra Flow los pagos en curso y recupera automáticamente los que el aviso de pago no alcanzó a confirmar (`df40b63`)
 - La hora de tu próxima clase ahora se muestra en hora de Chile: se veía varias horas más tarde de lo real (`522cfdf`)

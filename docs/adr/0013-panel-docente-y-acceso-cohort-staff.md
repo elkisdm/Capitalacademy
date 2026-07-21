@@ -87,6 +87,17 @@ entornos.
   comments, reactions, bookmarks, notifications) porque es su único punto de uso
   (`0044`). Es el efecto buscado.
 
+## Seguimiento (2026-07-21)
+
+`getTeacherCohorts` (`lib/docente/queries.ts`) ahora es la unión de (a)
+`cohort_roles` teacher/assistant (esta ADR, otorga escritura) y (b) instructor
+asignado vía `instructors.profile_id` → `class_sessions.teacher_id` (solo
+visibilidad, sin escritura — los guards `requireSessionStaff`/
+`requireEvaluationStaff` siguen mirando solo `cohort_roles`). Motivo: un
+platform staff con ficha en `instructors` pero sin `cohort_roles` entraba al
+panel (gate de este ADR) y lo veía vacío. Convertir `instructors` en fuente de
+permisos de escritura queda fuera de alcance — requiere su propio ADR.
+
 ## Referencias
 
 - `db/migrations/0007_rbac_cohort_roles.sql` (`cohort_roles`, `is_cohort_staff`,

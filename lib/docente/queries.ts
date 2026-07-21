@@ -2,9 +2,15 @@
  * Lecturas del panel del docente (`/docente`).
  *
  * Todo con service_role (`createAdminClient`): el llamador (server component
- * de `app/(docente)/`) valida antes que el usuario es teacher/assistant de al
- * menos una cohorte. Cada función parte de `cohort_roles` del propio usuario,
- * así que un docente nunca ve sesiones de cohortes ajenas.
+ * de `app/(docente)/`) valida antes que el usuario es platform staff
+ * (ops/admin) o teacher/assistant de al menos una cohorte.
+ *
+ * El listado de cohortes (`getTeacherCohorts`) combina dos vías:
+ *  (a) `cohort_roles.role in ('teacher','assistant')` del propio usuario:
+ *      otorga ESCRITURA — los guards `requireSessionStaff`/
+ *      `requireEvaluationStaff` solo miran esta tabla.
+ *  (b) `instructors.profile_id` del usuario → `class_sessions.teacher_id`:
+ *      SOLO VISIBILIDAD. Ver `TeacherCohort.source`.
  */
 
 import { cache } from "react";
@@ -17,39 +23,99 @@ export type TeacherCohort = {
   cohortSlug: string | null;
   programId: string;
   programName: string;
+  /**
+   * "role": el usuario tiene `cohort_roles` teacher/assistant en esta
+   * cohorte — otorga ESCRITURA (los guards `requireSessionStaff` y
+   * `requireEvaluationStaff` autorizan por esta vía).
+   *
+   * "instructor": el usuario está asignado como `instructors.profile_id` en
+   * alguna `class_sessions.teacher_id` de esta cohorte, sin `cohort_roles`
+   * ahí — SOLO VISIBILIDAD. Los guards no miran `instructors`; ampliarlo a
+   * escritura requiere un ADR propio, porque `profile_id` es nullable y no
+   * único en el esquema, y la tabla se edita libre desde /admin.
+   */
+  source: "role" | "instructor";
 };
 
-/** Cohortes donde el usuario es teacher o assistant (cohort_roles). */
-export const getTeacherCohorts = cache(async (userId: string): Promise<TeacherCohort[]> => {
+/** Fichas de `instructors` ligadas a este profile. Un profile puede tener más
+ *  de una (profile_id no es único en el esquema). */
+export const getInstructorIdsForProfile = cache(async (userId: string): Promise<string[]> => {
   const admin = createAdminClient();
+  const { data } = await admin.from("instructors").select("id").eq("profile_id", userId);
+  return (data ?? []).map((i) => i.id as string);
+});
 
-  const { data } = await admin
+type CohortJoinRow = {
+  cohort_id: string;
+  cohorts: {
+    id: string;
+    name: string;
+    slug: string | null;
+    program_id: string;
+    programs: { id: string; name: string } | null;
+  } | null;
+};
+
+/**
+ * Cohortes donde el usuario dicta clase: unión de (a) `cohort_roles`
+ * teacher/assistant y (b) instructor asignado en `class_sessions`. (a) gana
+ * si ambas coinciden — nunca se degrada una cohorte de "role" a "instructor".
+ */
+async function getTeacherCohortsImpl(userId: string): Promise<TeacherCohort[]> {
+  const admin = createAdminClient();
+  const cohortsById = new Map<string, TeacherCohort>();
+
+  const { data: roleRows } = await admin
     .from("cohort_roles")
     .select("cohort_id, cohorts(id, name, slug, program_id, programs(id, name))")
     .eq("user_id", userId)
     .in("role", ["teacher", "assistant"]);
 
-  type Row = {
-    cohort_id: string;
-    cohorts: {
-      id: string;
-      name: string;
-      slug: string | null;
-      program_id: string;
-      programs: { id: string; name: string } | null;
-    } | null;
-  };
+  for (const r of ((roleRows ?? []) as unknown as CohortJoinRow[])) {
+    if (!r.cohorts || !r.cohorts.programs) continue;
+    cohortsById.set(r.cohorts.id, {
+      cohortId: r.cohorts.id,
+      cohortName: r.cohorts.name,
+      cohortSlug: r.cohorts.slug,
+      programId: r.cohorts.programs.id,
+      programName: r.cohorts.programs.name,
+      source: "role",
+    });
+  }
 
-  return ((data ?? []) as unknown as Row[])
-    .filter((r) => r.cohorts && r.cohorts.programs)
-    .map((r) => ({
-      cohortId: r.cohorts!.id,
-      cohortName: r.cohorts!.name,
-      cohortSlug: r.cohorts!.slug,
-      programId: r.cohorts!.programs!.id,
-      programName: r.cohorts!.programs!.name,
-    }));
-});
+  const instructorIds = await getInstructorIdsForProfile(userId);
+  if (instructorIds.length > 0) {
+    const { data: sessionRows } = await admin
+      .from("class_sessions")
+      .select("cohort_id, cohorts(id, name, slug, program_id, programs(id, name))")
+      .in("teacher_id", instructorIds);
+
+    for (const r of ((sessionRows ?? []) as unknown as CohortJoinRow[])) {
+      if (!r.cohorts || !r.cohorts.programs) continue;
+      if (cohortsById.has(r.cohorts.id)) continue; // (a) gana, no se degrada
+      cohortsById.set(r.cohorts.id, {
+        cohortId: r.cohorts.id,
+        cohortName: r.cohorts.name,
+        cohortSlug: r.cohorts.slug,
+        programId: r.cohorts.programs.id,
+        programName: r.cohorts.programs.name,
+        source: "instructor",
+      });
+    }
+  }
+
+  return Array.from(cohortsById.values()).sort((a, b) => {
+    if (a.programName !== b.programName) return a.programName.localeCompare(b.programName, "es");
+    return a.cohortName.localeCompare(b.cohortName, "es");
+  });
+}
+
+// `cache()` de React dedupe por request; en tests (fuera de un render) no
+// memoiza predeciblemente, así que se exporta también la versión sin cachear
+// para test unitario (`app/(docente)/docente/page.tsx` sigue usando la
+// exportada cacheada — la dedup por request no cambia).
+export const getTeacherCohorts = cache(getTeacherCohortsImpl);
+export const __getTeacherCohortsUncached = getTeacherCohortsImpl;
 
 /** Nº de alumnos activos matriculados en las cohortes del docente (conteo, sin filas). */
 export async function getTeacherStudentCount(cohortIds: string[]): Promise<number> {
@@ -65,20 +131,34 @@ export async function getTeacherStudentCount(cohortIds: string[]): Promise<numbe
 
 export type TeacherSession = ClassSession & { resources: SessionResource[] };
 
-/** Sesiones de las cohortes del docente, con sus recursos iniciales adjuntos. */
+/**
+ * Sesiones de las cohortes del docente, con sus recursos iniciales adjuntos.
+ * En cohortes donde el acceso es solo por vía instructor (`source:"instructor"`),
+ * se listan únicamente las sesiones donde el usuario es el `teacher_id` — no
+ * la agenda completa de la cohorte.
+ */
 export async function getTeacherSessions(userId: string): Promise<TeacherSession[]> {
   const admin = createAdminClient();
   const cohorts = await getTeacherCohorts(userId);
   const cohortIds = cohorts.map((c) => c.cohortId);
   if (cohortIds.length === 0) return [];
 
+  const instructorOnlyCohortIds = new Set(
+    cohorts.filter((c) => c.source === "instructor").map((c) => c.cohortId),
+  );
+  const instructorIds =
+    instructorOnlyCohortIds.size > 0 ? await getInstructorIdsForProfile(userId) : [];
+
   const { data: sessions } = await admin
     .from("class_sessions")
-    .select("id, cohort_id, title, starts_at, ends_at, modality, status")
+    .select("id, cohort_id, title, starts_at, ends_at, modality, status, teacher_id")
     .in("cohort_id", cohortIds)
     .order("starts_at");
 
-  const sessionRows = (sessions ?? []) as unknown as ClassSession[];
+  const sessionRows = ((sessions ?? []) as unknown as ClassSession[]).filter((s) => {
+    if (!instructorOnlyCohortIds.has(s.cohort_id)) return true;
+    return s.teacher_id !== null && instructorIds.includes(s.teacher_id);
+  });
   const sessionIds = sessionRows.map((s) => s.id);
 
   const { data: resources } =
@@ -122,7 +202,11 @@ export type GradableEvaluation = {
  */
 export async function getTeacherGradableEvaluations(userId: string): Promise<GradableEvaluation[]> {
   const admin = createAdminClient();
-  const cohorts = await getTeacherCohorts(userId);
+  const allCohorts = await getTeacherCohorts(userId);
+  // Calificar es escritura: los guards (`requireEvaluationStaff`) solo miran
+  // `cohort_roles`, así que incluir cohortes solo-instructor mostraría
+  // evaluaciones cuyo guardado devuelve 403.
+  const cohorts = allCohorts.filter((c) => c.source === "role");
   if (cohorts.length === 0) return [];
 
   const programIds = Array.from(new Set(cohorts.map((c) => c.programId)));

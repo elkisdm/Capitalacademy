@@ -149,13 +149,22 @@ function SessionRow({
         <div className="overflow-hidden">
           {hasOpened && (
             <div className="border-t border-ca-ink/[0.06] px-5 py-5">
-              <SessionResourcesPanel
-                sessionId={s.id}
-                resources={resources}
-                onAdd={onAdd}
-                onRemove={onRemove}
-              />
-              <SessionAttendancePanel sessionId={s.id} />
+              {cohort?.source === "instructor" ? (
+                <p className="text-[13px] text-ca-ink-soft">
+                  Estás asignado como docente de esta clase, pero la asistencia y el
+                  material los gestiona el equipo de la cohorte.
+                </p>
+              ) : (
+                <>
+                  <SessionResourcesPanel
+                    sessionId={s.id}
+                    resources={resources}
+                    onAdd={onAdd}
+                    onRemove={onRemove}
+                  />
+                  <SessionAttendancePanel sessionId={s.id} />
+                </>
+              )}
             </div>
           )}
         </div>
@@ -174,12 +183,14 @@ export function DocentePanelClient({
   upcomingSessions,
   pastSessions,
   stats,
+  isPlatformStaff,
 }: {
   cohorts: TeacherCohort[];
   programs: ProgramLink[];
   upcomingSessions: TeacherSession[];
   pastSessions: TeacherSession[];
   stats: DocenteStats;
+  isPlatformStaff: boolean;
 }) {
   const [resourcesBySession, setResourcesBySession] = useState<
     Record<string, SessionResource[]>
@@ -232,6 +243,29 @@ export function DocentePanelClient({
       ...prev,
       [sessionId]: (prev[sessionId] ?? []).filter((r) => r.id !== id),
     }));
+  }
+
+  if (cohorts.length === 0) {
+    return (
+      <div>
+        {isPlatformStaff ? (
+          <EmptyState
+            title="No dictas clases asignadas."
+            description="Este panel muestra únicamente las clases que tú dictas. Para gestionar cualquier cohorte del programa, usa el panel de administración."
+            action={
+              <Link href="/admin/calendario" className="ca-btn-primary inline-flex items-center gap-2 px-4 py-2 text-[12px] font-bold">
+                Ir al panel de administración
+              </Link>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="Aún no tienes cohortes asignadas."
+            description="Cuando el equipo te asigne una cohorte o una clase, aparecerá aquí."
+          />
+        )}
+      </div>
+    );
   }
 
   return (

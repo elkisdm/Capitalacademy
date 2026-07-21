@@ -480,9 +480,11 @@ export function ClassroomSidebar({
           { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${activeCohort}/quiz`, section: "learn" as const },
         ] : []),
       ] : []),
-      // Docente/asistente (cohort_roles): entrada al panel dedicado. Se oculta
-      // en la vista admin (showOpsNav) para no duplicar con la nav de staff.
-      ...(isTeacher && !showOpsNav ? [
+      // Docente/asistente (cohort_roles) o instructor asignado: entrada al
+      // panel dedicado. Se muestra también en la vista admin (showOpsNav):
+      // staff que además dicta clase (p.ej. instructor asignado) debe poder
+      // llegar a /docente.
+      ...(isTeacher ? [
         { icon: "users", label: "Panel del profesor", href: "/docente", section: "learn" as const },
       ] : []),
     ] : []),

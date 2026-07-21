@@ -11,6 +11,7 @@ import {
   getTeachingCohortsForUser,
   type ActiveEnrollmentProgram,
 } from "@/lib/classroom/queries";
+import { getTeacherCohorts } from "@/lib/docente/queries";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
 import { isEvaluationOpen } from "@/lib/classroom/evaluation-window";
 
@@ -135,11 +136,16 @@ export default async function ClassroomLayout({
     ]);
   }
 
-  // Docente/asistente (cohort_roles), para mostrar el link "Panel docente" en
-  // el sidebar. El staff ya tiene su propia nav (admin), no necesita este check.
+  // Docente/asistente (cohort_roles) o instructor asignado en class_sessions,
+  // para mostrar el link "Panel docente" en el sidebar. `teachingCohorts` (usado
+  // para "Mis programas" y `cohortMap`) es un cálculo de matrículas del alumno
+  // y no debe heredar la vía instructor — se calcula por separado con
+  // `getTeacherCohorts` (lib/docente/queries.ts, incluye ambas vías).
   let isTeacher = false;
   let teachingCohorts: ActiveEnrollmentProgram[] = [];
-  if (!isStaff) {
+  if (isStaff) {
+    isTeacher = (await getTeacherCohorts(user.id)).length > 0;
+  } else {
     teachingCohorts = await getTeachingCohortsForUser(user.id);
     isTeacher = teachingCohorts.length > 0;
   }

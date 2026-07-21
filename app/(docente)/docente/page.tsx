@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthUser } from "@/lib/supabase/auth";
+import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import {
   getTeacherCohorts,
   getTeacherSessions,
@@ -17,6 +17,9 @@ export default async function DocentePage() {
     data: { user },
   } = await getAuthUser();
   if (!user) redirect("/login");
+
+  const profile = await getViewerProfile(user.id);
+  const isPlatformStaff = ["ops", "admin"].includes(profile?.system_role ?? "");
 
   const [cohorts, sessions] = await Promise.all([
     getTeacherCohorts(user.id),
@@ -55,6 +58,7 @@ export default async function DocentePage() {
       upcomingSessions={upcomingSessions}
       pastSessions={pastSessions}
       stats={{ nextSession: upcomingSessions[0] ?? null, studentCount }}
+      isPlatformStaff={isPlatformStaff}
     />
   );
 }

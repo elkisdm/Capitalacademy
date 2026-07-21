@@ -18,9 +18,23 @@
 export const DEFAULT_EXIGENCIA_PCT = 60;
 export const DEFAULT_PASSING_GRADE = 4.0;
 
-/** Redondea a 1 decimal (el formato de la nota chilena). */
+/**
+ * Redondea a 1 decimal (el formato de la nota chilena).
+ *
+ * NO simplificar a `Math.round(n * 10) / 10`: el ponderado de
+ * `computeGroupAverage` puede llegar acá con ruido de punto flotante que
+ * cruza el umbral de aprobación. Caso real: notas 3.1 (peso 15) y 4.1 (peso
+ * 85) dan matemáticamente (3.1*15 + 4.1*85)/100 = 3.95 → 4.0 (aprobado),
+ * pero en JS `3.1*15 + 4.1*85` = `394.99999999999994`, así que
+ * `Math.round(n*10)/10` da 3.9 (reprobado) — el alumno vería "reprobado"
+ * en una nota que en realidad aprobó. `Number.EPSILON` NO alcanza para
+ * corregirlo: es el ULP cerca de 1.0, pero acá el valor a redondear es
+ * ~39.5, con un ULP ~32× mayor. Por eso normalizamos a 10 decimales con
+ * `toFixed` (elimina el ruido de punto flotante, muy por debajo de la
+ * precisión real de una nota) ANTES de redondear a 1 decimal.
+ */
 export function round1(n: number): number {
-  return Math.round(n * 10) / 10;
+  return Math.round(Number((n * 10).toFixed(10))) / 10;
 }
 
 /**

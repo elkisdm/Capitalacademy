@@ -141,4 +141,31 @@ describe("computeGroupAverage — CANDADO (ADR-0024)", () => {
     ]);
     expect(result.value).toBe(6.1);
   });
+
+  it("CANDADO: el ruido de punto flotante no reprueba a un alumno que aprobó (round1)", () => {
+    // (3.1*15 + 4.1*85)/100 = 3.95 exacto → 4.0. En JS crudo da
+    // 394.99999999999994/100 = 3.9499999999999993, que con
+    // Math.round(n*10)/10 redondeaba a 3.9 (reprobado). Ver comentario en round1.
+    expect(
+      computeGroupAverage([
+        { grade: 3.1, weightPct: 15 },
+        { grade: 4.1, weightPct: 85 },
+      ]).value,
+    ).toBe(4);
+
+    // Otras combinaciones que también dan 3.95 exacto y disparan el mismo bug.
+    expect(
+      computeGroupAverage([
+        { grade: 1.1, weightPct: 5 },
+        { grade: 4.1, weightPct: 95 },
+      ]).value,
+    ).toBe(4);
+
+    expect(
+      computeGroupAverage([
+        { grade: 2.6, weightPct: 10 },
+        { grade: 4.1, weightPct: 90 },
+      ]).value,
+    ).toBe(4);
+  });
 });

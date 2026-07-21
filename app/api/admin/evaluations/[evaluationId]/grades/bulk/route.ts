@@ -90,6 +90,11 @@ export async function POST(req: Request, { params }: Ctx) {
     if (email) enrollmentByEmail.set(email, e.id);
   }
 
+  // Snapshot leído UNA vez antes del loop de upserts (hasta 500 filas). Si
+  // otro staff despublica una nota a mitad del import, el import puede
+  // re-publicarla con este valor stale. Se acepta: requiere dos acciones de
+  // staff simultáneas sobre el mismo alumno+evaluación en una ventana de
+  // segundos, y es reversible con un clic (no amerita lógica atómica en SQL).
   const enrollmentIds = Array.from(enrollmentByEmail.values());
   const { data: existingGrades } =
     enrollmentIds.length > 0
@@ -112,7 +117,15 @@ export async function POST(req: Request, { params }: Ctx) {
 
     const grade = row.grade ?? pctToGrade(row.scorePct!, exigencia);
     const isUpdate = existingByEnrollment.has(enrollmentId);
-    const publishedAt = publish ? new Date().toISOString() : (existingByEnrollment.get(enrollmentId) ?? null);
+    // Alineado con el PUT individual: publicar preserva la PRIMERA fecha de
+    // publicación, nunca la reescribe (es registro académico). NO hace falta
+    // `.has()` acá: `Map.get` de una clave ausente da `undefined`, y `??`
+    // trata `undefined` y `null` igual — así que "nota nueva" (clave ausente)
+    // y "nota en borrador" (clave presente con published_at null) caen en el
+    // mismo fallback en ambas ramas: fecha nueva si se publica, null si no.
+    const publishedAt = publish
+      ? (existingByEnrollment.get(enrollmentId) ?? new Date().toISOString())
+      : (existingByEnrollment.get(enrollmentId) ?? null);
 
     const { error } = await admin.from("evaluation_grades").upsert(
       {

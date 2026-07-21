@@ -41,6 +41,14 @@ describe("formatChile", () => {
     expect(result).toContain("10:00");
     expect(result).not.toContain("02:00");
   });
+
+  it("devuelve '—' para null, undefined, vacío o un string no-fecha", () => {
+    const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+    expect(formatChile(null, opts)).toBe("—");
+    expect(formatChile(undefined, opts)).toBe("—");
+    expect(formatChile("", opts)).toBe("—");
+    expect(formatChile("no-es-fecha", opts)).toBe("—");
+  });
 });
 
 describe("formatDateOnly", () => {
@@ -67,6 +75,14 @@ describe("formatDateOnly", () => {
       year: "numeric",
     });
     expect(correct).toBe("20 jun 2026");
+  });
+
+  it("devuelve '—' para null, undefined, vacío o un string no-fecha", () => {
+    const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+    expect(formatDateOnly(null, opts)).toBe("—");
+    expect(formatDateOnly(undefined, opts)).toBe("—");
+    expect(formatDateOnly("", opts)).toBe("—");
+    expect(formatDateOnly("no-es-fecha", opts)).toBe("—");
   });
 });
 

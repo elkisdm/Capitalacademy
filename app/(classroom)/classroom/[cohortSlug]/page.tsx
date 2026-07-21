@@ -61,7 +61,10 @@ export default async function CohortDashboardPage(
   if (!access) notFound();
   if (!cohort) notFound();
 
-  const program = cohort.programs as { id: string; name: string; code: string; description: string | null; total_modules: number | null };
+  const program = cohort.programs as { id: string; name: string; code: string; description: string | null; total_modules: number | null } | null;
+  // Los fallos transitorios (p.ej. timeout de BD) ya lanzan dentro de
+  // getCohortWithProgram; si llegamos aquí sin program es un dato faltante real.
+  if (!program) notFound();
   const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
 
   // Clases en vivo (class_sessions) por módulo de ESTA cohorte. Para programas

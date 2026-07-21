@@ -207,11 +207,24 @@ export async function getTeachingCohortsForUser(
 
 export const getCohortWithProgram = cache(async (cohortId: string) => {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("cohorts")
     .select("*, programs(*)")
     .eq("id", cohortId)
     .single();
+
+  if (error) {
+    // PGRST116 = 0 filas: dato faltante legítimo (cohorte no existe o sin acceso).
+    if (error.code === "PGRST116") return null;
+
+    console.error("[classroom] getCohortWithProgram falló", {
+      cohortId,
+      code: error.code,
+      message: error.message,
+    });
+    throw error;
+  }
+
   return data;
 });
 

@@ -31,10 +31,14 @@ export const TZ_CHILE = "America/Santiago";
  * zona horaria de Chile. Úsala SIEMPRE para `starts_at`, `ends_at`,
  * `unlock_at`, `opens_at`, `closes_at`, `due_at` y cualquier otro instante.
  */
-export function formatChile(iso: string, opts: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat("es-CL", { ...opts, timeZone: TZ_CHILE }).format(
-    new Date(iso),
-  );
+export function formatChile(
+  iso: string | null | undefined,
+  opts: Intl.DateTimeFormatOptions,
+): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("es-CL", { ...opts, timeZone: TZ_CHILE }).format(date);
 }
 
 /**
@@ -43,9 +47,15 @@ export function formatChile(iso: string, opts: Intl.DateTimeFormatOptions): stri
  * calendario, y proyectarlas a Chile las retrocede un día. NO le pases un
  * `timestamptz` a esta función.
  */
-export function formatDateOnly(dateStr: string, opts: Intl.DateTimeFormatOptions): string {
+export function formatDateOnly(
+  dateStr: string | null | undefined,
+  opts: Intl.DateTimeFormatOptions,
+): string {
+  if (!dateStr) return "—";
   const [year, month, day] = dateStr.split("-").map(Number);
+  if (![year, month, day].every(Number.isFinite)) return "—";
   const date = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("es-CL", { ...opts, timeZone: "UTC" }).format(date);
 }
 

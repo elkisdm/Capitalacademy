@@ -270,6 +270,7 @@
 | `app/api/webhooks/mux/route.ts` | Webhook de Mux con firma HMAC: `asset.ready`/`deleted`/`track.ready` + `upload.errored`/`asset.errored` (guarda `lessons.mux_error` para que la UI muestre el fallo en vez de polling infinito) | `POST /api/webhooks/mux` | 0042 |
 | `app/api/video-proxy/route.ts` | Proxy de video con validación de enrollment | — | — |
 | `lib/mux/client.ts` | Cliente Mux (gestión de assets/uploads) | — | — |
+| `lib/mux/smart-thumbnail.ts` | Selección por IA de visión del frame más atractivo para la miniatura de un video (usada por el webhook asset.ready; fallback al default de Mux) | — | — |
 | `components/classroom/video-player.tsx` | Player premium (controles custom, CC, capítulos, velocidad, PiP, atajos) | — | — |
 
 ## Auth (core)

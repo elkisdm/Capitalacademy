@@ -7,6 +7,7 @@ import {
   dispatchCapacitacionFollowup,
   dispatchRecordingAvailableNotification,
 } from "@/lib/classroom/recording-notifications";
+import { pickSmartThumbnailTime } from "@/lib/mux/smart-thumbnail";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
@@ -127,11 +128,34 @@ export async function POST(req: Request) {
 
     const playbackId = playback_ids?.[0]?.id ?? null;
     const durationSeconds = duration ? Math.round(duration) : null;
-    const thumbnailUrl = playbackId
-      ? `https://image.mux.com/${playbackId}/thumbnail.webp`
-      : null;
 
     const supabase = createAdminClient();
+
+    // Idempotencia: si Mux reentrega este webhook (redelivery) y ya elegimos
+    // una miniatura inteligente antes, reúsala tal cual y no vuelvas a llamar
+    // a la IA (evita costo y llamadas duplicadas a OpenAI).
+    const { data: existingLesson } = await supabase
+      .from("lessons")
+      .select("thumbnail_url")
+      .eq("mux_upload_id", upload_id)
+      .maybeSingle();
+
+    // Miniatura: intenta que la IA elija el frame más atractivo ANTES del update.
+    // Si no logra elegir (o falla/expira), cae al frame default de Mux. Este paso
+    // NUNCA rompe el flujo: pickSmartThumbnailTime jamás lanza y responde en <8s.
+    let thumbnailUrl: string | null = null;
+    if (existingLesson?.thumbnail_url?.includes("?time=")) {
+      thumbnailUrl = existingLesson.thumbnail_url;
+    } else if (playbackId) {
+      const smartTime =
+        durationSeconds != null
+          ? await pickSmartThumbnailTime(playbackId, durationSeconds)
+          : null;
+      thumbnailUrl =
+        smartTime != null
+          ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=${smartTime}`
+          : `https://image.mux.com/${playbackId}/thumbnail.webp`;
+    }
 
     const { data: updatedLessons, error } = await supabase
       .from("lessons")

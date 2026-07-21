@@ -27,6 +27,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Las docentes y asistentes ahora ven las cohortes donde enseñan en "Mis programas", con un distintivo "Docente" (ca61542)
 - Subtítulos y selector de calidad ahora disponibles donde corresponde en el reproductor, con preferencias que se recuerdan (`3129602`)
 - Ver las clases desde el teléfono es más cómodo: doble toque a la izquierda o derecha del video para retroceder o avanzar 10 segundos, controles compactos al borde que ya no tapan la imagen ni los subtítulos, y encabezado y resumen IA más livianos en pantallas chicas (`1f14926`)
+- Ahora puedes retirar una nota que ya publicaste (el alumno deja de verla, con confirmación antes de hacerlo), en vez de que la única forma de despublicar fuera guardar un borrador por accidente (`12d704d`)
+- El panel de notas del profesor ahora marca con una etiqueta las evaluaciones que aún están en borrador (el alumno todavía no las ve), tanto en la lista como al entrar a calificar (`7307c98`)
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
@@ -36,6 +38,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - La pantalla de la lección se siente más fluida mientras el video reproduce: dejó de repintarse varias veces por segundo, evitando micro-tirones al hacer scroll o interactuar (`110a23e`)
 - El classroom, el checkout y el panel del docente cargan más rápido: marcar asistencia de toda una clase ahora es una sola operación en vez de decenas, la pantalla de pago se sirve desde caché en vez de generarse en cada visita, y el aviso de notificaciones dejó de pedirse dos veces. Además, el panel del docente suma un código QR para el registro de asistencia y el video de cada lección genera automáticamente su glosario y capítulos al procesarse (`7d87e12`)
 - La transcripción se carga al abrirla: la página de clase pesa ~200KB menos (`3129602`)
+- El import de notas desde Excel ya no publica automáticamente: por defecto queda como borrador para que la profe revise antes de que el alumno la vea, y el resumen ahora distingue notas nuevas de notas sobrescritas (`7c37eea`)
 
 ### Security
 - Un alumno ya no puede escribir directamente sus propios intentos de evaluación: la nota, la aprobación y el cierre solo los fija el servidor, cerrando la vía por la que se podía auto-emitir un certificado sin rendir el examen (`c5344fa`)

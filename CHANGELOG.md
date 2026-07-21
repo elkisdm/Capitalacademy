@@ -46,6 +46,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Fixed
 - Un pago cobrado por Flow ya no puede quedar sin registrar para siempre: el sistema verifica cada 15 minutos contra Flow los pagos en curso y recupera automáticamente los que el aviso de pago no alcanzó a confirmar (`df40b63`)
 - La hora de tu próxima clase ahora se muestra en hora de Chile: se veía varias horas más tarde de lo real (`522cfdf`)
+- Se corrigió el error "Algo salió mal" que veían los alumnos al entrar al classroom por saturación de la base de datos; la migración con el fix a producción queda pendiente de aplicar (`e523c79`)
 - Las fechas de inicio y término de una cohorte ya no se muestran un día antes (`33c4b81`)
 - Los recordatorios de clase ya no se pierden ni se repiten cuando la cohorte es grande: se envían por lote y se reintentan solo a quien le faltó el correo (`cbfc2fa`)
 - La alerta de inasistencias ya no llega a programas gratuitos o de captación que no la tienen activada; por ahora solo se envía en el Diplomado (`7b8c3f8`)

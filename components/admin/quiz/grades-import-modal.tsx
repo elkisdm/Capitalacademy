@@ -36,6 +36,7 @@ type ParsedRow = {
 
 type ImportResult = {
   created: number;
+  updated: number;
   notFound: number;
   errors: number;
 };
@@ -95,6 +96,7 @@ export function GradesImportModal({ open, onClose, evaluationId, cohortId, roste
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [publishOnImport, setPublishOnImport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reset = useCallback(() => {
@@ -104,6 +106,7 @@ export function GradesImportModal({ open, onClose, evaluationId, cohortId, roste
     setResult(null);
     setDragOver(false);
     setImporting(false);
+    setPublishOnImport(false);
   }, []);
 
   const handleClose = () => {
@@ -255,16 +258,17 @@ export function GradesImportModal({ open, onClose, evaluationId, cohortId, roste
             scorePct: r.scorePct ?? undefined,
             comentario: r.comentario || undefined,
           })),
+          publish: publishOnImport,
         }),
       });
-      const data = await res.json().catch(() => ({ created: 0, results: [] }));
+      const data = await res.json().catch(() => ({ created: 0, updated: 0, results: [] }));
       const notFound = (data.results ?? []).filter((d: { status: string }) => d.status === "not_found").length;
       const errors = (data.results ?? []).filter((d: { status: string }) => d.status === "error").length;
-      setResult({ created: data.created ?? 0, notFound, errors });
+      setResult({ created: data.created ?? 0, updated: data.updated ?? 0, notFound, errors });
       setStep(2);
       onImported();
     } catch {
-      setResult({ created: 0, notFound: 0, errors: selected.length });
+      setResult({ created: 0, updated: 0, notFound: 0, errors: selected.length });
       setStep(2);
     } finally {
       setImporting(false);
@@ -373,16 +377,55 @@ export function GradesImportModal({ open, onClose, evaluationId, cohortId, roste
             </div>
 
             <div className="mt-3 text-[12px] font-semibold text-ca-ink-soft">{selectedCount} de {rows.length} filas seleccionadas para importar</div>
+
+            <fieldset className="mt-4 rounded-xl border p-3" style={{ borderColor: "rgba(20,22,58,0.08)" }}>
+              <legend className="px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft">Al importar</legend>
+              <label className="flex items-start gap-2 py-1 text-[13px] text-ca-ink">
+                <input
+                  type="radio"
+                  name="publish-mode"
+                  checked={!publishOnImport}
+                  onChange={() => setPublishOnImport(false)}
+                  className="mt-1"
+                />
+                <span>
+                  <strong>Importar como borrador</strong>
+                  <span className="block text-[12px] text-ca-ink-soft">Revisas las notas antes de que el alumno las vea. Recomendado.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 py-1 text-[13px] text-ca-ink">
+                <input
+                  type="radio"
+                  name="publish-mode"
+                  checked={publishOnImport}
+                  onChange={() => setPublishOnImport(true)}
+                  className="mt-1"
+                />
+                <span>
+                  <strong>Importar y publicar</strong>
+                  <span className="block text-[12px] text-ca-ink-soft">Los alumnos verán estas notas de inmediato.</span>
+                </span>
+              </label>
+            </fieldset>
           </div>
         )}
 
         {step === 2 && result && (
           <div className="flex flex-col items-center text-center">
             <h3 className="text-[20px] font-black tracking-tight text-ca-ink">Importación completada</h3>
-            <div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+            <p className="mt-1 text-[13px] text-ca-ink-soft">
+              {publishOnImport
+                ? "Las notas ya están visibles para los alumnos."
+                : "Guardadas como borrador. Usa “Publicar todas” cuando quieras que los alumnos las vean."}
+            </p>
+            <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-xl px-4 py-4" style={{ background: "rgba(63,90,5,0.08)" }}>
                 <div className="font-mono text-[28px] font-black" style={{ color: "#3f5a05" }}>{result.created}</div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#3f5a05" }}>Notas cargadas</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#3f5a05" }}>Nuevas</div>
+              </div>
+              <div className="rounded-xl px-4 py-4" style={{ background: "rgba(217,119,6,0.08)" }}>
+                <div className="font-mono text-[28px] font-black" style={{ color: "#92400e" }}>{result.updated}</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#92400e" }}>Sobrescritas</div>
               </div>
               <div className="rounded-xl px-4 py-4" style={{ background: "rgba(217,119,6,0.08)" }}>
                 <div className="font-mono text-[28px] font-black" style={{ color: "#92400e" }}>{result.notFound}</div>
@@ -413,7 +456,9 @@ export function GradesImportModal({ open, onClose, evaluationId, cohortId, roste
           )}
           {step === 1 && (
             <Button type="button" variant="primary" onClick={handleImport} disabled={selectedCount === 0 || importing}>
-              {importing ? "Importando…" : `Importar ${selectedCount} notas`}
+              {importing
+                ? "Importando…"
+                : `${publishOnImport ? "Importar y publicar" : "Importar como borrador"} (${selectedCount})`}
             </Button>
           )}
           {step === 2 && (

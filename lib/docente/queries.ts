@@ -109,6 +109,7 @@ export type GradableEvaluation = {
   kind: "quiz" | "manual";
   cohortId: string;
   cohortName: string;
+  isActive: boolean;
 };
 
 /**
@@ -127,7 +128,7 @@ export async function getTeacherGradableEvaluations(userId: string): Promise<Gra
   const programIds = Array.from(new Set(cohorts.map((c) => c.programId)));
   const { data: evaluations } = await admin
     .from("evaluations")
-    .select("id, title, scope, kind, program_id")
+    .select("id, title, scope, kind, program_id, is_active")
     .in("program_id", programIds)
     .in("kind", ["quiz", "manual"]);
 
@@ -142,8 +143,14 @@ export async function getTeacherGradableEvaluations(userId: string): Promise<Gra
         kind: ev.kind as GradableEvaluation["kind"],
         cohortId: cohort.cohortId,
         cohortName: cohort.cohortName,
+        isActive: ev.is_active ?? false,
       });
     }
   }
-  return result;
+  // Orden determinista: activas primero, luego por cohorte y título.
+  return result.sort((a, b) => {
+    if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+    if (a.cohortName !== b.cohortName) return a.cohortName.localeCompare(b.cohortName, "es");
+    return a.title.localeCompare(b.title, "es");
+  });
 }

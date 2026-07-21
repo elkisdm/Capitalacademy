@@ -38,6 +38,11 @@ export function NotasDocenteClient({ evaluations }: { evaluations: GradableEvalu
         <h2 className="mb-4 text-[16px] font-black tracking-tight text-ca-ink">
           {selected.title} <span className="font-normal text-ca-ink-soft">· {selected.cohortName}</span>
         </h2>
+        {!selected.isActive && (
+          <p className="mb-3 rounded-xl bg-[rgba(217,119,6,0.08)] px-3 py-2 text-[12.5px] font-semibold" style={{ color: "#92400e" }}>
+            Esta evaluación está en borrador: los alumnos todavía no la ven. Puedes calificar ahora; actívala desde Evaluaciones cuando quieras publicarla.
+          </p>
+        )}
         <EvaluationGrades
           evaluationId={selected.id}
           cohorts={[{ id: selected.cohortId, name: selected.cohortName }]}
@@ -61,6 +66,11 @@ export function NotasDocenteClient({ evaluations }: { evaluations: GradableEvalu
             <p className="text-[12px] text-ca-ink-soft">
               {ev.cohortName} · {ev.kind === "quiz" ? "Quiz" : "Nota manual"}
             </p>
+            {!ev.isActive && (
+              <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-[rgba(217,119,6,0.12)] px-2 py-0.5 text-[11px] font-bold" style={{ color: "#92400e" }}>
+                Borrador — los alumnos aún no la ven
+              </p>
+            )}
           </div>
         </button>
       ))}

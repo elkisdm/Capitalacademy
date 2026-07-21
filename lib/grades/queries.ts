@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEnrollmentForUser } from "@/lib/classroom/queries";
 import { isSessionClosed, sessionAppliesToEnrollment } from "@/lib/asistencia/window";
+import { computeGroupAverage } from "@/lib/grades/scale";
 
 export type StudentGradeRow = {
   evaluationId: string;
@@ -17,14 +18,11 @@ export type StudentGradeGroup = {
   key: string;
   title: string;
   rows: StudentGradeRow[];
-  /**
-   * Promedio SIMPLE (sin ponderar), o `null` cuando: (a) no hay notas, o
-   * (b) el grupo tiene alguna evaluación con `weight_pct` cargado — un
-   * promedio simple ahí contradice la composición ponderada que la profe ya
-   * comunicó a los alumnos (corrección A7 del brief). En ese caso se listan
-   * solo las notas individuales.
-   */
+  /** Promedio sobre evaluaciones YA CALIFICADAS. Ponderado si alguna tiene
+   *  `weight_pct` (ADR-0024, supersede A7 de ADR-0018). */
   average: number | null;
+  averageKind: "weighted" | "simple" | null;
+  averageExcluded: number;
 };
 
 export type AttendanceLane = {
@@ -38,10 +36,6 @@ export type StudentGradesResult = {
   groups: StudentGradeGroup[];
   attendance: AttendanceLane;
 };
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
 
 /**
  * Notas 1-7 consolidadas de un alumno en una cohorte, agrupadas por módulo.
@@ -68,28 +62,50 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
     return { groups: [], attendance: { pct: null, meetsRequirement: null } };
   }
 
-  const { data: enrollmentDetails } = await supabase
+  const { data: enrollmentDetails, error: enrollmentDetailsError } = await supabase
     .from("enrollments")
     .select("enrolled_at, segment")
     .eq("id", enrollment.id)
     .single();
+  if (enrollmentDetailsError && enrollmentDetailsError.code !== "PGRST116") {
+    console.error("[grades] enrollmentDetails falló", {
+      cohortId,
+      userId,
+      code: enrollmentDetailsError.code,
+      message: enrollmentDetailsError.message,
+    });
+    throw enrollmentDetailsError;
+  }
   const enrollmentEligibility = {
     enrolled_at: enrollmentDetails?.enrolled_at ?? "1970-01-01T00:00:00.000Z",
     segment: enrollmentDetails?.segment ?? null,
   };
 
-  const { data: cohort } = await supabase
+  const { data: cohort, error: cohortError } = await supabase
     .from("cohorts")
     .select("program_id, programs(min_attendance_pct)")
     .eq("id", cohortId)
     .maybeSingle();
+  if (cohortError) {
+    console.error("[grades] cohort falló", { cohortId, userId, code: cohortError.code, message: cohortError.message });
+    throw cohortError;
+  }
   const program = cohort?.programs as { min_attendance_pct: number } | null;
 
-  const { data: gradeRows } = await supabase
+  const { data: gradeRows, error: gradeRowsError } = await supabase
     .from("evaluation_grades")
     .select("grade, feedback, graded_at, evaluation_id")
     .eq("enrollment_id", enrollment.id)
     .not("grade", "is", null);
+  if (gradeRowsError) {
+    console.error("[grades] evaluation_grades falló", {
+      cohortId,
+      userId,
+      code: gradeRowsError.code,
+      message: gradeRowsError.message,
+    });
+    throw gradeRowsError;
+  }
 
   type EvaluationMeta = {
     id: string;
@@ -116,13 +132,22 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   const evaluationIds = Array.from(new Set(gradeRowsSafe.map((r) => r.evaluation_id)));
 
   const admin = createAdminClient();
-  const { data: evaluationsRaw } =
+  const { data: evaluationsRaw, error: evaluationsError } =
     evaluationIds.length > 0
       ? await admin
           .from("evaluations")
           .select("id, title, scope, module_id, lesson_id, session_id, weight_pct")
           .in("id", evaluationIds)
-      : { data: [] };
+      : { data: [], error: null };
+  if (evaluationsError) {
+    console.error("[grades] evaluations falló", {
+      cohortId,
+      userId,
+      code: evaluationsError.code,
+      message: evaluationsError.message,
+    });
+    throw evaluationsError;
+  }
   const evaluationById = new Map(((evaluationsRaw ?? []) as unknown as EvaluationMeta[]).map((e) => [e.id, e]));
 
   const rows: Row[] = gradeRowsSafe
@@ -141,12 +166,25 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
 
   const moduleIdByLesson = new Map<string, string | null>();
   if (lessonIds.length > 0) {
-    const { data: lessons } = await supabase.from("lessons").select("id, module_id").in("id", lessonIds);
+    const { data: lessons, error: lessonsError } = await supabase.from("lessons").select("id, module_id").in("id", lessonIds);
+    if (lessonsError) {
+      console.error("[grades] lessons falló", { cohortId, userId, code: lessonsError.code, message: lessonsError.message });
+      throw lessonsError;
+    }
     for (const l of lessons ?? []) moduleIdByLesson.set(l.id, l.module_id);
   }
   const moduleIdBySession = new Map<string, string | null>();
   if (sessionIds.length > 0) {
-    const { data: sessions } = await supabase.from("class_sessions").select("id, module_id").in("id", sessionIds);
+    const { data: sessions, error: sessionsError } = await supabase.from("class_sessions").select("id, module_id").in("id", sessionIds);
+    if (sessionsError) {
+      console.error("[grades] class_sessions (module) falló", {
+        cohortId,
+        userId,
+        code: sessionsError.code,
+        message: sessionsError.message,
+      });
+      throw sessionsError;
+    }
     for (const s of sessions ?? []) moduleIdBySession.set(s.id, s.module_id);
   }
 
@@ -169,12 +207,25 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
     if (moduleId) moduleIdsNeeded.add(moduleId);
   }
   const moduleTitleById = new Map<string, string>();
+  const positionByModuleId = new Map<string, number>();
   if (moduleIdsNeeded.size > 0) {
-    const { data: modules } = await supabase
+    const { data: modules, error: modulesError } = await supabase
       .from("program_modules")
       .select("id, title, position")
       .in("id", Array.from(moduleIdsNeeded));
-    for (const m of modules ?? []) moduleTitleById.set(m.id, m.title);
+    if (modulesError) {
+      console.error("[grades] program_modules falló", {
+        cohortId,
+        userId,
+        code: modulesError.code,
+        message: modulesError.message,
+      });
+      throw modulesError;
+    }
+    for (const m of modules ?? []) {
+      moduleTitleById.set(m.id, m.title);
+      positionByModuleId.set(m.id, m.position);
+    }
   }
 
   const groupsByKey = new Map<string, StudentGradeGroup>();
@@ -186,7 +237,7 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
     if (!group) {
       const title =
         key === "final" ? "Evaluación final" : key === "other" ? "Otras evaluaciones" : (moduleId && moduleTitleById.get(moduleId)) || "Módulo";
-      group = { key, title, rows: [], average: null };
+      group = { key, title, rows: [], average: null, averageKind: null, averageExcluded: 0 };
       groupsByKey.set(key, group);
     }
     group.rows.push({
@@ -200,20 +251,11 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
     });
   }
 
-  const groups = Array.from(groupsByKey.values()).map((g) => {
-    const hasWeighting = g.rows.some((row) => row.weightPct != null);
-    const average = hasWeighting ? null : g.rows.length > 0 ? round1(g.rows.reduce((sum, row) => sum + row.grade, 0) / g.rows.length) : null;
-    return { key: g.key, title: g.title, rows: g.rows, average };
+  const groups: StudentGradeGroup[] = Array.from(groupsByKey.values()).map((g) => {
+    const avg = computeGroupAverage(g.rows);
+    return { key: g.key, title: g.title, rows: g.rows, average: avg.value, averageKind: avg.kind, averageExcluded: avg.excluded };
   });
   // Orden: módulos (por posición del módulo), luego "Otras evaluaciones", luego "Evaluación final".
-  const positionByModuleId = new Map<string, number>();
-  if (moduleIdsNeeded.size > 0) {
-    const { data: modules } = await supabase
-      .from("program_modules")
-      .select("id, position")
-      .in("id", Array.from(moduleIdsNeeded));
-    for (const m of modules ?? []) positionByModuleId.set(m.id, m.position);
-  }
   groups.sort((a, b) => {
     const rank = (g: StudentGradeGroup) => {
       if (g.key === "final") return 2;
@@ -247,13 +289,22 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   // `sessionAppliesToEnrollment` en `lib/asistencia/window.ts`.
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
-  const { data: closedSessionsRaw } = await supabase
+  const { data: closedSessionsRaw, error: closedSessionsError } = await supabase
     .from("class_sessions")
     .select("id, ends_at, audience")
     .eq("cohort_id", cohortId)
     .neq("status", "cancelled")
     .neq("modality", "recorded")
     .lt("ends_at", nowIso);
+  if (closedSessionsError) {
+    console.error("[grades] class_sessions (asistencia) falló", {
+      cohortId,
+      userId,
+      code: closedSessionsError.code,
+      message: closedSessionsError.message,
+    });
+    throw closedSessionsError;
+  }
   const closedSessionIds = (closedSessionsRaw ?? [])
     .filter((s) => isSessionClosed(s, now))
     .filter((s) => sessionAppliesToEnrollment(s, enrollmentEligibility))
@@ -261,11 +312,20 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
 
   let attendance: AttendanceLane = { pct: null, meetsRequirement: null };
   if (closedSessionIds.length > 0) {
-    const { data: presentRows } = await supabase
+    const { data: presentRows, error: presentRowsError } = await supabase
       .from("session_attendance")
       .select("session_id")
       .eq("student_id", userId)
       .in("session_id", closedSessionIds);
+    if (presentRowsError) {
+      console.error("[grades] session_attendance falló", {
+        cohortId,
+        userId,
+        code: presentRowsError.code,
+        message: presentRowsError.message,
+      });
+      throw presentRowsError;
+    }
     const pct = Math.round(((presentRows?.length ?? 0) / closedSessionIds.length) * 100);
     attendance = {
       pct,

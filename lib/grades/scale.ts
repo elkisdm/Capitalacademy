@@ -19,7 +19,7 @@ export const DEFAULT_EXIGENCIA_PCT = 60;
 export const DEFAULT_PASSING_GRADE = 4.0;
 
 /** Redondea a 1 decimal (el formato de la nota chilena). */
-function round1(n: number): number {
+export function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
@@ -58,4 +58,38 @@ export function averageGrade(grades: number[]): number | null {
   if (grades.length === 0) return null;
   const sum = grades.reduce((acc, g) => acc + g, 0);
   return round1(sum / grades.length);
+}
+
+export type GroupAverage = {
+  value: number | null;
+  kind: "weighted" | "simple" | null;
+  counted: number;
+  excluded: number;
+};
+
+/**
+ * Promedio de un grupo de evaluaciones YA CALIFICADAS.
+ * Si alguna tiene `weightPct`, se pondera SOLO sobre esas, normalizando por
+ * la suma de SUS pesos: Σ(nota × peso) / Σ(peso). Normalizar (en vez de
+ * dividir por 100) preserva el criterio de "promedio de lo ya calificado"
+ * y hace que pesos que no suman 100 den un resultado correcto igual.
+ * Las notas sin peso quedan EXCLUIDAS del ponderado (ADR-0024): el peso
+ * parcial es un estado legítimo (ver lib/admin/evaluation-list.ts) y el
+ * fallback a promedio simple destruiría la composición ya comunicada.
+ * La UI DEBE informar `excluded > 0`.
+ */
+export function computeGroupAverage(
+  rows: Array<{ grade: number; weightPct: number | null }>,
+): GroupAverage {
+  if (rows.length === 0) return { value: null, kind: null, counted: 0, excluded: 0 };
+  const weighted = rows.filter((r) => r.weightPct != null && r.weightPct > 0);
+  if (weighted.length === 0) {
+    return { value: round1(rows.reduce((s, r) => s + r.grade, 0) / rows.length), kind: "simple", counted: rows.length, excluded: 0 };
+  }
+  const weightSum = weighted.reduce((s, r) => s + r.weightPct!, 0);
+  if (weightSum <= 0) {
+    return { value: round1(rows.reduce((s, r) => s + r.grade, 0) / rows.length), kind: "simple", counted: rows.length, excluded: 0 };
+  }
+  const weightedSum = weighted.reduce((s, r) => s + r.grade * r.weightPct!, 0);
+  return { value: round1(weightedSum / weightSum), kind: "weighted", counted: weighted.length, excluded: rows.length - weighted.length };
 }

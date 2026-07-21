@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pctToGrade, gradeToPct, formatGrade, isPassing, averageGrade } from "@/lib/grades/scale";
+import { pctToGrade, gradeToPct, formatGrade, isPassing, averageGrade, computeGroupAverage } from "@/lib/grades/scale";
 
 describe("pctToGrade — CANDADO (brief §0.2 / corrección A5)", () => {
   it("90% → 6.3 con exigencia 60 (default)", () => {
@@ -70,5 +70,75 @@ describe("averageGrade", () => {
 
   it("array vacío → null", () => {
     expect(averageGrade([])).toBeNull();
+  });
+});
+
+describe("computeGroupAverage — CANDADO (ADR-0024)", () => {
+  it("todos con peso sumando 100", () => {
+    const result = computeGroupAverage([
+      { grade: 6.0, weightPct: 25 },
+      { grade: 5.0, weightPct: 50 },
+      { grade: 7.0, weightPct: 25 },
+    ]);
+    expect(result).toEqual({ value: 5.8, kind: "weighted", counted: 3, excluded: 0 });
+  });
+
+  it("todos con peso NO sumando 100 (normaliza por la suma real)", () => {
+    const result = computeGroupAverage([
+      { grade: 6.0, weightPct: 30 },
+      { grade: 4.0, weightPct: 30 },
+    ]);
+    expect(result.value).toBe(5.0);
+    expect(result.kind).toBe("weighted");
+  });
+
+  it("ninguno con peso → promedio simple", () => {
+    const result = computeGroupAverage([
+      { grade: 6.0, weightPct: null },
+      { grade: 5.0, weightPct: null },
+    ]);
+    expect(result).toEqual({ value: 5.5, kind: "simple", counted: 2, excluded: 0 });
+  });
+
+  it("mixto: pondera solo las con peso, excluye el resto", () => {
+    const result = computeGroupAverage([
+      { grade: 6.0, weightPct: 50 },
+      { grade: 5.0, weightPct: 50 },
+      { grade: 2.0, weightPct: null },
+    ]);
+    expect(result).toEqual({ value: 5.5, kind: "weighted", counted: 2, excluded: 1 });
+  });
+
+  it("CANDADO: un solo elemento con peso normaliza por SU peso, no por 100", () => {
+    // Si alguien implementa Σ(nota×peso)/100 esto da 1.2 en vez de 4.7.
+    const result = computeGroupAverage([{ grade: 4.7, weightPct: 25 }]);
+    expect(result.value).toBe(4.7);
+    expect(result.kind).toBe("weighted");
+  });
+
+  it("un solo elemento sin peso → simple", () => {
+    const result = computeGroupAverage([{ grade: 4.7, weightPct: null }]);
+    expect(result).toEqual({ value: 4.7, kind: "simple", counted: 1, excluded: 0 });
+  });
+
+  it("ninguno calificado → todo null/0", () => {
+    expect(computeGroupAverage([])).toEqual({ value: null, kind: null, counted: 0, excluded: 0 });
+  });
+
+  it("peso 0 explícito no pondera (cae a simple)", () => {
+    const result = computeGroupAverage([
+      { grade: 6.0, weightPct: 0 },
+      { grade: 4.0, weightPct: null },
+    ]);
+    expect(result.kind).toBe("simple");
+    expect(result.value).toBe(5.0);
+  });
+
+  it("redondea a 1 decimal", () => {
+    const result = computeGroupAverage([
+      { grade: 6.05, weightPct: 50 },
+      { grade: 6.05, weightPct: 50 },
+    ]);
+    expect(result.value).toBe(6.1);
   });
 });

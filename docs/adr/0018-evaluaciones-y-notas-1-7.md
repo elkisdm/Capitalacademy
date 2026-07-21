@@ -141,6 +141,7 @@ Hallazgos clave del repo (ver brief, sección 0, para el detalle completo):
   (corrección A7 del brief) — la UI del alumno para el módulo práctico
   muestra notas individuales sin promedio, lo cual es intencional pero menos
   "limpio" visualmente que un número único.
+  (Superseded por ADR-0024: el promedio ponderado sí se calcula.)
 - Certificados y `passed` booleano del quiz siguen sin relación con la nota
   1-7 (ver ADR-0007) — riesgo de expectativa: si nadie le explica esto a la
   profe antes de la entrega, puede leer la pantalla de notas como una nota

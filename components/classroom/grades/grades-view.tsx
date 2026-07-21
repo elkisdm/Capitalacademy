@@ -1,12 +1,28 @@
+import { Check, AlertTriangle } from "lucide-react";
 import { formatGrade, isPassing } from "@/lib/grades/scale";
 import type { StudentGradesResult } from "@/lib/grades/queries";
 
+/** Nota con ícono de aprobado/reprobado — no depende solo del color (H6). */
+function GradeValue({ grade, size = 15 }: { grade: number; size?: number }) {
+  const passing = isPassing(grade);
+  return (
+    <span
+      className="inline-flex items-center gap-1 font-mono font-black"
+      style={{ fontSize: size, color: passing ? "#3f5a05" : "#9f1b3e" }}
+      aria-label={`Nota ${formatGrade(grade)}, ${passing ? "aprobada" : "reprobada"}`}
+    >
+      {passing ? <Check className="h-3.5 w-3.5" aria-hidden /> : <AlertTriangle className="h-3.5 w-3.5" aria-hidden />}
+      {formatGrade(grade)}
+    </span>
+  );
+}
+
 /**
- * Vista de notas consolidadas del alumno. Promedio SIMPLE (sin ponderar) por
- * módulo, salvo que el módulo tenga evaluaciones con `weight_pct` cargado
- * (ej. metodología comercial: 25/50/25) — ahí se listan solo las notas
- * individuales, sin promedio, para no mostrar un número que contradiga la
- * composición ya comunicada por la profe (corrección A7 del brief).
+ * Vista de notas consolidadas del alumno. Promedio por módulo sobre las
+ * evaluaciones YA CALIFICADAS: ponderado si alguna tiene `weight_pct`
+ * cargado (ej. metodología comercial: 25/50/25), simple en caso contrario.
+ * En modo ponderado, las notas sin peso quedan excluidas del cálculo y la UI
+ * lo indica explícitamente (ADR-0024, supersede A7 de ADR-0018).
  */
 
 // Corrección A4 de la revisión: el único umbral de asistencia dicho por quien
@@ -54,16 +70,20 @@ export function GradesView({ data }: { data: StudentGradesResult }) {
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-[15px] font-black tracking-tight text-ca-ink">{group.title}</h2>
                 {group.average !== null && (
-                  <div className="flex items-baseline gap-1.5 rounded-full bg-ca-bg-soft px-3 py-1">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ca-ink-soft">
-                      Promedio de tus evaluaciones calificadas
-                    </span>
-                    <span
-                      className="font-mono text-[14px] font-black"
-                      style={{ color: isPassing(group.average) ? "#3f5a05" : "#9f1b3e" }}
-                    >
-                      {formatGrade(group.average)}
-                    </span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div className="flex items-baseline gap-1.5 rounded-full bg-ca-bg-soft px-3 py-1">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ca-ink-soft">
+                        {group.averageKind === "weighted" ? "Promedio ponderado" : "Promedio de tus evaluaciones calificadas"}
+                      </span>
+                      <GradeValue grade={group.average} size={14} />
+                    </div>
+                    {group.averageKind === "weighted" && (
+                      <p className="text-[11px] text-ca-ink-soft">
+                        Calculado según el peso de cada evaluación
+                        {group.averageExcluded > 0 &&
+                          ` · ${group.averageExcluded} ${group.averageExcluded === 1 ? "evaluación no pondera" : "evaluaciones no ponderan"}`}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -72,15 +92,17 @@ export function GradesView({ data }: { data: StudentGradesResult }) {
                 {group.rows.map((row) => (
                   <div key={row.evaluationId} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                     <div className="min-w-0">
-                      <p className="truncate text-[13.5px] font-semibold text-ca-ink">{row.title}</p>
+                      <p className="truncate text-[13.5px] font-semibold text-ca-ink">
+                        {row.title}
+                        {group.averageKind === "weighted" && (
+                          <span className="ml-1.5 text-[11px] font-medium text-ca-ink-soft">
+                            {row.weightPct != null ? `${row.weightPct}% del promedio` : "no pondera"}
+                          </span>
+                        )}
+                      </p>
                       {row.feedback && <p className="mt-0.5 text-[12px] text-ca-ink-soft">{row.feedback}</p>}
                     </div>
-                    <span
-                      className="font-mono text-[15px] font-black"
-                      style={{ color: isPassing(row.grade) ? "#3f5a05" : "#9f1b3e" }}
-                    >
-                      {formatGrade(row.grade)}
-                    </span>
+                    <GradeValue grade={row.grade} />
                   </div>
                 ))}
               </div>

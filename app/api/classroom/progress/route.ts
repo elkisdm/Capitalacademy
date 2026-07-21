@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { computeServerProgress } from "@/lib/classroom/progress";
 import { verifyEnrollment } from "@/lib/classroom/verify-enrollment";
 import { uuidLike } from "@/lib/utils/zod";
@@ -55,13 +56,14 @@ export async function PATCH(req: Request) {
 
   const enrollment = { id: enrollmentId };
 
-  // Lee-computa-escribe en una función reintentable: una carrera con otro
-  // flush concurrente para el mismo enrollment+lección (p.ej. el flush del
-  // timer de 15s y el del evento pause casi simultáneos) puede toparse con
-  // un lock transitorio en el upsert; un solo reintento alcanza porque para
-  // entonces el otro flush ya liberó la fila.
+  // enrollment_id ya viene verificado por verifyEnrollment (usa createAdminClient
+  // internamente y confirma matrícula activa) — usamos el cliente admin para el
+  // resto de las queries y así evitar que la RLS re-verifique lo mismo pagando
+  // el cascade de video_progress → enrollments → cohort_roles → profiles.
+  const db = createAdminClient();
+
   const upsertProgress = async () => {
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("video_progress")
       .select("max_position_seconds, completed, completed_at")
       .eq("enrollment_id", enrollment.id)
@@ -78,7 +80,7 @@ export async function PATCH(req: Request) {
         ? new Date().toISOString()
         : existing?.completed_at ?? null;
 
-    return supabase
+    return db
       .from("video_progress")
       .upsert(
         {
@@ -94,18 +96,26 @@ export async function PATCH(req: Request) {
       .single();
   };
 
-  let { data: upserted, error } = await upsertProgress();
+  const { data: upserted, error } = await upsertProgress();
 
   if (error) {
-    console.error("video_progress upsert error (reintentando)", error);
-    ({ data: upserted, error } = await upsertProgress());
-  }
-
-  if (error) {
-    console.error("video_progress upsert error", error);
+    const transient = error.code === "57014";
+    console.error("[progress] video_progress upsert error", {
+      code: error.code,
+      message: error.message,
+      lessonId,
+      transient,
+    });
     return NextResponse.json(
-      { error: "Error al guardar progreso" },
-      { status: 500 },
+      {
+        error: transient
+          ? "Servicio ocupado, reintenta en unos segundos"
+          : "Error al guardar progreso",
+      },
+      {
+        status: transient ? 503 : 500,
+        headers: transient ? { "Retry-After": "5" } : undefined,
+      },
     );
   }
 
@@ -148,7 +158,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: lesson } = await supabase
+  // enrollment_id ya viene verificado por verifyEnrollment (usa createAdminClient
+  // internamente y confirma matrícula activa) — usamos el cliente admin para el
+  // resto de las queries y así evitar que la RLS re-verifique lo mismo pagando
+  // el cascade de video_progress → enrollments → cohort_roles → profiles.
+  const db = createAdminClient();
+
+  const { data: lesson } = await db
     .from("lessons")
     .select("video_duration_seconds")
     .eq("id", lessonId)
@@ -156,7 +172,7 @@ export async function POST(req: Request) {
 
   const duration = (lesson?.video_duration_seconds as number | null) ?? 0;
 
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from("video_progress")
     .select("playback_position_seconds, max_position_seconds, duration_seconds")
     .eq("enrollment_id", enrollmentId)
@@ -165,7 +181,7 @@ export async function POST(req: Request) {
 
   const now = new Date().toISOString();
 
-  const { data: upserted, error } = await supabase
+  const { data: upserted, error } = await db
     .from("video_progress")
     .upsert(
       {
@@ -186,10 +202,23 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    console.error("manual complete error", error);
+    const transient = error.code === "57014";
+    console.error("[progress] video_progress upsert error", {
+      code: error.code,
+      message: error.message,
+      lessonId,
+      transient,
+    });
     return NextResponse.json(
-      { error: "Error al marcar como completada" },
-      { status: 500 },
+      {
+        error: transient
+          ? "Servicio ocupado, reintenta en unos segundos"
+          : "Error al marcar como completada",
+      },
+      {
+        status: transient ? 503 : 500,
+        headers: transient ? { "Retry-After": "5" } : undefined,
+      },
     );
   }
 

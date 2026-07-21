@@ -19,37 +19,48 @@ const mockLessonSelectSingle = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: mockGetUser },
-    from: (table: string) => {
-      if (table === "video_progress") {
-        return {
-          select: (..._args: unknown[]) => ({
-            eq: (..._a: unknown[]) => ({
-              eq: (..._b: unknown[]) => ({
-                single: mockVideoProgressSelectSingle,
-                maybeSingle: mockVideoProgressMaybeSingle,
-              }),
-            }),
-          }),
-          upsert: (..._args: unknown[]) => ({
-            select: (..._s: unknown[]) => ({
-              single: mockVideoProgressUpsertSingle,
-            }),
-          }),
-        };
-      }
-      if (table === "lessons") {
-        return {
-          select: (..._args: unknown[]) => ({
-            eq: (..._a: unknown[]) => ({
-              single: mockLessonSelectSingle,
-            }),
-          }),
-        };
-      }
-      return {};
-    },
   })),
 }));
+
+const mockCreateAdminClient = vi.fn();
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: (...args: unknown[]) => mockCreateAdminClient(...args),
+}));
+
+const mockDbClient = {
+  from: (table: string) => {
+    if (table === "video_progress") {
+      return {
+        select: (..._args: unknown[]) => ({
+          eq: (..._a: unknown[]) => ({
+            eq: (..._b: unknown[]) => ({
+              single: mockVideoProgressSelectSingle,
+              maybeSingle: mockVideoProgressMaybeSingle,
+            }),
+          }),
+        }),
+        upsert: (..._args: unknown[]) => ({
+          select: (..._s: unknown[]) => ({
+            single: mockVideoProgressUpsertSingle,
+          }),
+        }),
+      };
+    }
+    if (table === "lessons") {
+      return {
+        select: (..._args: unknown[]) => ({
+          eq: (..._a: unknown[]) => ({
+            single: mockLessonSelectSingle,
+          }),
+        }),
+      };
+    }
+    return {};
+  },
+};
+
+mockCreateAdminClient.mockReturnValue(mockDbClient);
 
 vi.mock("@/lib/classroom/verify-enrollment", () => ({
   verifyEnrollment: (...args: unknown[]) => mockVerifyEnrollment(...args),
@@ -224,6 +235,44 @@ describe("PATCH /api/classroom/progress", () => {
     expect(json).toEqual(upsertedRow);
     expect(mockVerifyEnrollment).toHaveBeenCalledWith(USER.id, VALID_UUID);
     expect(mockComputeServerProgress).toHaveBeenCalledOnce();
+  });
+
+  // ---- transient upsert error -----------------------------------------------
+  it("returns 503 with Retry-After when the upsert fails with a statement timeout", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: USER } });
+    mockVerifyEnrollment.mockResolvedValue(ENROLLMENT_ID);
+
+    mockVideoProgressMaybeSingle.mockResolvedValue({
+      data: { max_position_seconds: 20, completed: false, completed_at: null },
+    });
+
+    mockComputeServerProgress.mockReturnValue({
+      playback_position_seconds: 30,
+      duration_seconds: 600,
+      max_position_seconds: 30,
+      watch_percentage: 5,
+      completed: false,
+      last_watched_at: new Date().toISOString(),
+    });
+
+    mockVideoProgressUpsertSingle.mockResolvedValue({
+      data: null,
+      error: { code: "57014", message: "canceling statement due to statement timeout" },
+    });
+
+    const res = await PATCH(
+      makeRequest("PATCH", {
+        lessonId: VALID_UUID,
+        playbackPositionSeconds: 30,
+        durationSeconds: 600,
+      }),
+    );
+
+    expect(res.status).toBe(503);
+    expect(res.headers.get("Retry-After")).toBe("5");
+    const json = await res.json();
+    expect(json.error).toContain("ocupado");
+    expect(mockCreateAdminClient).toHaveBeenCalledOnce();
   });
 });
 

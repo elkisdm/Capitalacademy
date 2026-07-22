@@ -42,7 +42,7 @@ const profileUpdateSchema = z.object({
     (v) => (v == null || v === "" ? null : normalizeUrl(String(v))),
     z.string().url().max(300).nullable(),
   ),
-  bio: nullableText(1000),
+  bio: nullableText(3000),
   address: nullableText(300),
   emergency_contact_name: nullableText(120),
   emergency_contact_phone: nullableText(40),
@@ -71,8 +71,12 @@ export async function PATCH(req: Request) {
 
   const parsed = profileUpdateSchema.safeParse(body);
   if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    const message = firstIssue
+      ? `${firstIssue.path.join(".")}: ${firstIssue.message}`
+      : "Validación fallida";
     return NextResponse.json(
-      { error: "Validación fallida", issues: parsed.error.issues },
+      { error: message, issues: parsed.error.issues },
       { status: 422 },
     );
   }

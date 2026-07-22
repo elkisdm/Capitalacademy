@@ -100,11 +100,11 @@ describe("PATCH /api/classroom/profile", () => {
     expect(json.error).toBe("No hay campos para actualizar");
   });
 
-  it("returns 422 when RUT is invalid", async () => {
+  it("returns 422 when RUT is invalid, with a human-readable error", async () => {
     const res = await PATCH(makeRequest({ rut: "12345678-0" }));
     expect(res.status).toBe(422);
     const json = await res.json();
-    expect(json.error).toBe("Validación fallida");
+    expect(json.error).toBe("rut: RUT inválido");
 
     const rutIssue = json.issues.find((i: { path: string[] }) =>
       i.path.includes("rut"),

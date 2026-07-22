@@ -34,7 +34,7 @@ const completeProfileSchema = z.object({
   company: optionalText(160),
   job_title: optionalText(120),
   linkedin_url: optionalUrl,
-  bio: optionalText(1000),
+  bio: optionalText(3000),
   address: optionalText(300),
   emergency_contact_name: optionalText(120),
   emergency_contact_phone: optionalText(40),

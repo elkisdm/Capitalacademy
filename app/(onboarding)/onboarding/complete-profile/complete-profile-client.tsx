@@ -73,7 +73,7 @@ function InfoIcon() {
   );
 }
 
-const BIO_MAX = 200;
+const BIO_MAX = 3000;
 
 export function CompleteProfileClient({ email, profile, brand = DEFAULT_BRAND }: CompleteProfileClientProps) {
   const router = useRouter();

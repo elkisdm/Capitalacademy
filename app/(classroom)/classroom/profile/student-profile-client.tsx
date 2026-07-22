@@ -314,13 +314,14 @@ type InfoFieldProps = {
   icon?: React.ReactNode;
   onSave: (value: string) => Promise<void>;
   type?: "text" | "tel" | "url";
+  multiline?: boolean;
 };
 
-function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps) {
+function InfoField({ label, value, icon, onSave, type = "text", multiline = false }: InfoFieldProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
   const [saving, setSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -337,7 +338,7 @@ function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSave();
+    if (!multiline && e.key === "Enter") handleSave();
     if (e.key === "Escape") {
       setDraft(value ?? "");
       setEditing(false);
@@ -351,15 +352,27 @@ function InfoField({ label, value, icon, onSave, type = "text" }: InfoFieldProps
           {label}
         </div>
         <div className="mt-1.5 flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type={type}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 text-[14px] font-medium text-ca-ink outline-none focus:border-ca-violet"
-            style={{ borderColor: "rgba(20,22,58,0.12)" }}
-          />
+          {multiline ? (
+            <textarea
+              ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+              rows={4}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 text-[14px] font-medium text-ca-ink outline-none focus:border-ca-violet"
+              style={{ borderColor: "rgba(20,22,58,0.12)" }}
+            />
+          ) : (
+            <input
+              ref={inputRef as React.RefObject<HTMLInputElement>}
+              type={type}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 text-[14px] font-medium text-ca-ink outline-none focus:border-ca-violet"
+              style={{ borderColor: "rgba(20,22,58,0.12)" }}
+            />
+          )}
           <button
             onClick={handleSave}
             disabled={saving}
@@ -457,7 +470,8 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
       if (res.ok) {
         toast("Perfil actualizado", "success");
       } else {
-        toast("Error al guardar", "error");
+        const err = await res.json().catch(() => ({}));
+        toast(err.error ?? "Error al guardar", "error");
       }
     } catch {
       toast("Error al guardar", "error");
@@ -607,6 +621,7 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
             label="Bio"
             value={profile.bio}
             onSave={(v) => saveField("bio", v)}
+            multiline
           />
         </div>
       </div>

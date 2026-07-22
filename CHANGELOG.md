@@ -30,6 +30,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Ahora puedes retirar una nota que ya publicaste (el alumno deja de verla, con confirmación antes de hacerlo), en vez de que la única forma de despublicar fuera guardar un borrador por accidente (`12d704d`)
 - El panel de notas del profesor ahora marca con una etiqueta las evaluaciones que aún están en borrador (el alumno todavía no las ve), tanto en la lista como al entrar a calificar (`7307c98`)
 
+### Fixed
+- Los mensajes de error al editar el perfil ahora se muestran en español, en vez de texto técnico en inglés (`8568b85`)
+- Editar la bio del perfil ya no deja todo el texto seleccionado al abrir el campo, y ahora muestra cuántos caracteres quedan de los 3000 disponibles (`1a1ee5e`)
+
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
 - El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)

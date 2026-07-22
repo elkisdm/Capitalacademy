@@ -104,12 +104,20 @@ describe("PATCH /api/classroom/profile", () => {
     const res = await PATCH(makeRequest({ rut: "12345678-0" }));
     expect(res.status).toBe(422);
     const json = await res.json();
-    expect(json.error).toBe("rut: RUT inválido");
+    expect(json.error).toBe("RUT: RUT inválido");
 
     const rutIssue = json.issues.find((i: { path: string[] }) =>
       i.path.includes("rut"),
     );
     expect(rutIssue).toBeDefined();
     expect(rutIssue.message).toBe("RUT inválido");
+  });
+
+  it("returns 422 with a Spanish message when bio exceeds the max length", async () => {
+    const res = await PATCH(makeRequest({ bio: "a".repeat(3001) }));
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error).toBe("Bio: máximo 3000 caracteres");
+    expect(json.error).not.toMatch(/character\(s\)|must contain/i);
   });
 });

@@ -15,6 +15,48 @@ export const runtime = "nodejs";
  * exija identidad completa.
  */
 
+/** Etiquetas legibles por campo para traducir errores de validación al español. */
+const FIELD_LABELS: Record<string, string> = {
+  full_name: "Nombre",
+  phone: "Teléfono",
+  rut: "RUT",
+  company: "Empresa",
+  job_title: "Cargo",
+  linkedin_url: "LinkedIn",
+  bio: "Bio",
+  address: "Dirección",
+  emergency_contact_name: "Contacto de emergencia",
+  emergency_contact_phone: "Teléfono de emergencia",
+  birthday: "Cumpleaños",
+};
+
+/** Traduce un issue de Zod a un mensaje en español, basado en `issue.code` (no en `issue.message`, que viene en inglés). */
+function translateIssue(issue: z.core.$ZodIssue): string {
+  const field = issue.path.join(".");
+  const label = FIELD_LABELS[field] ?? field;
+
+  switch (issue.code) {
+    case "too_big": {
+      const max = "maximum" in issue ? issue.maximum : undefined;
+      return max !== undefined
+        ? `${label}: máximo ${max} caracteres`
+        : `${label}: valor inválido`;
+    }
+    case "too_small": {
+      const min = "minimum" in issue ? issue.minimum : undefined;
+      return min !== undefined
+        ? `${label}: mínimo ${min} caracteres`
+        : `${label}: valor inválido`;
+    }
+    case "invalid_format":
+      return `${label}: debe ser un enlace válido`;
+    case "custom":
+      return `${label}: ${issue.message}`;
+    default:
+      return `${label}: valor inválido`;
+  }
+}
+
 /** Identidad (full_name/phone/rut): "" o null → "no enviado" (no nulea). */
 const identityText = (min: number, max: number) =>
   z.preprocess(
@@ -72,9 +114,7 @@ export async function PATCH(req: Request) {
   const parsed = profileUpdateSchema.safeParse(body);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
-    const message = firstIssue
-      ? `${firstIssue.path.join(".")}: ${firstIssue.message}`
-      : "Validación fallida";
+    const message = firstIssue ? translateIssue(firstIssue) : "Validación fallida";
     return NextResponse.json(
       { error: message, issues: parsed.error.issues },
       { status: 422 },

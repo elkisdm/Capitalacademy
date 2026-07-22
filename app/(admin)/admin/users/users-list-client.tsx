@@ -273,7 +273,6 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
   // Estado de búsqueda/filtros/paginación reflejado en la URL (?q=&rol=&estado=&page=)
   // para que sea compartible y respete el botón "atrás". Se deriva directamente
   // de los query params; el filtrado/paginación sigue siendo en cliente.
-  const search = searchParams.get("q") ?? "";
   const rolParam = searchParams.get("rol");
   const activeFilter: Filter =
     rolParam === "admin" || rolParam === "ops" || rolParam === "teacher" || rolParam === "student"
@@ -322,6 +321,18 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
     [updateParams],
   );
 
+  // El input de búsqueda vive en estado local (no en la URL) para que el
+  // filtrado en cliente (searchFiltered) responda al instante, sin disparar
+  // una navegación RSC por cada tecla. Se sincroniza a la URL con debounce.
+  const [searchInput, setSearchInput] = useState(() => searchParams.get("q") ?? "");
+
+  useEffect(() => {
+    const currentQ = searchParams.get("q") ?? "";
+    if (searchInput === currentQ) return;
+    const timeout = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput, searchParams, setSearch]);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
   const [drawerUser, setDrawerUser] = useState<{
@@ -352,14 +363,14 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
   } | null>(null);
 
   const searchFiltered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const q = searchInput.toLowerCase().trim();
     if (!q) return users;
     return users.filter((u) => {
       const name = (u.full_name ?? "").toLowerCase();
       const email = u.email.toLowerCase();
       return name.includes(q) || email.includes(q);
     });
-  }, [users, search]);
+  }, [users, searchInput]);
 
   // Base para los contadores de los pills de rol: aplica búsqueda + entorno +
   // estado, pero NO el rol — así cada pill muestra su conteo DENTRO del scope
@@ -386,7 +397,7 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
   const paginated = filtered.slice(paginatedStart, paginatedEnd);
 
   const hasActiveSearchOrFilter =
-    search.trim() !== "" || activeFilter !== "all" || programFilter !== "all" || statusFilter !== "all";
+    searchInput.trim() !== "" || activeFilter !== "all" || programFilter !== "all" || statusFilter !== "all";
 
   const filters: Array<{ key: Filter; label: string }> = [
     { key: "all", label: "Todos" },
@@ -525,8 +536,8 @@ export function UsersListClient({ users, cohorts, initialProgramFilter = "all" }
               </span>
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Buscar por nombre o email…"
                 aria-label="Buscar por nombre o email"
                 autoComplete="off"

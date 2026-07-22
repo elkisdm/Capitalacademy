@@ -29,6 +29,7 @@ export const TEACHER_ARTICLES: Article[] = [
     ],
     tips: [
       "Si dictas en más de un programa o cohorte, tu agenda las agrupa a todas en el mismo panel.",
+      "Puedes descargar esta guía completa en PDF desde el encabezado de tu panel, para tenerla a mano sin conexión.",
     ],
     faqs: [
       {

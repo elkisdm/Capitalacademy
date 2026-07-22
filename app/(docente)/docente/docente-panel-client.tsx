@@ -270,12 +270,22 @@ export function DocentePanelClient({
 
   return (
     <div>
-      <h1 className="mb-1 text-[28px] font-black tracking-[-0.02em] text-ca-ink">
-        Panel del profesor
-      </h1>
-      <p className="mb-6 text-[13px] text-ca-ink-soft">
-        Tus clases, asistencia y material de las cohortes donde eres docente.
-      </p>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="mb-1 text-[28px] font-black tracking-[-0.02em] text-ca-ink">
+            Panel del profesor
+          </h1>
+          <p className="text-[13px] text-ca-ink-soft">
+            Tus clases, asistencia y material de las cohortes donde eres docente.
+          </p>
+        </div>
+        <a
+          href="/api/guia/profesor/pdf"
+          className="ca-btn-interactive inline-flex shrink-0 items-center gap-2 rounded-xl border border-ca-ink/[0.1] px-4 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+        >
+          Descargar la guía (PDF)
+        </a>
+      </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="ca-card px-5 py-5">

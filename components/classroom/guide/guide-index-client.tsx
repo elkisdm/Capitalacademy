@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ArrowRight, Sparkles } from "lucide-react";
+import { Search, ArrowRight, Sparkles, Download } from "lucide-react";
 import {
   articlesByAudience,
   CATEGORIES_BY_AUDIENCE,
@@ -85,15 +85,26 @@ export function GuideIndexClient({
           <div />
         )}
 
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ca-ink-soft/60" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar en la guía…"
-            className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
-          />
+        <div className="flex items-center gap-3">
+          {tab === "teacher" && (
+            <a
+              href="/api/guia/profesor/pdf"
+              className="ca-btn-interactive inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-ca-ink/[0.14] bg-white px-3.5 py-2.5 text-[12.5px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+            >
+              <Download className="h-4 w-4" />
+              Descargar en PDF
+            </a>
+          )}
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ca-ink-soft/60" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar en la guía…"
+              className="w-full rounded-xl border border-ca-ink/[0.14] bg-white py-2.5 pl-10 pr-4 text-[13px] font-medium text-ca-ink outline-none transition-colors focus:border-ca-violet"
+            />
+          </div>
         </div>
       </div>
 

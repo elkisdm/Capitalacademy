@@ -98,21 +98,10 @@ export async function POST(req: Request) {
     }
   }
 
-  if (role === "teacher") {
-    const { data: cohort } = await supabase
-      .from("cohorts")
-      .select("program_id")
-      .eq("id", cohort_id)
-      .single();
-
-    if (cohort) {
-      await supabase
-        .from("program_modules")
-        .update({ teacher_id: user_id })
-        .eq("program_id", cohort.program_id)
-        .is("teacher_id", null);
-    }
-  }
+  // No se deriva program_modules.teacher_id de un rol de cohorte: esa columna es
+  // puramente presentacional (solo la lee la tarjeta del módulo para mostrar el
+  // nombre del profe) y se llena explícitamente, no como efecto lateral de asignar
+  // un rol.
 
   return NextResponse.json(cohortRole, { status: 201 });
 }

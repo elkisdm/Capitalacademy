@@ -160,6 +160,8 @@ function getInitials(name: string | null, email: string): string {
   return email.slice(0, 2).toUpperCase();
 }
 
+const BIO_MAX = 3000;
+
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
   ops: "Operaciones",
@@ -315,9 +317,10 @@ type InfoFieldProps = {
   onSave: (value: string) => Promise<void>;
   type?: "text" | "tel" | "url";
   multiline?: boolean;
+  maxLength?: number;
 };
 
-function InfoField({ label, value, icon, onSave, type = "text", multiline = false }: InfoFieldProps) {
+function InfoField({ label, value, icon, onSave, type = "text", multiline = false, maxLength }: InfoFieldProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
   const [saving, setSaving] = useState(false);
@@ -326,9 +329,14 @@ function InfoField({ label, value, icon, onSave, type = "text", multiline = fals
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select();
+      if (multiline) {
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
+      } else {
+        inputRef.current.select();
+      }
     }
-  }, [editing]);
+  }, [editing, multiline]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -348,8 +356,18 @@ function InfoField({ label, value, icon, onSave, type = "text", multiline = fals
   if (editing) {
     return (
       <div className="ca-card group relative overflow-hidden px-4 py-3.5">
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
-          {label}
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-ink-soft">
+            {label}
+          </div>
+          {multiline && maxLength && (
+            <span
+              className="text-[11px] font-semibold"
+              style={{ color: draft.length > maxLength ? "#e11d48" : "var(--color-ca-ink-soft)" }}
+            >
+              {draft.length}/{maxLength}
+            </span>
+          )}
         </div>
         <div className="mt-1.5 flex items-center gap-2">
           {multiline ? (
@@ -357,7 +375,11 @@ function InfoField({ label, value, icon, onSave, type = "text", multiline = fals
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               rows={4}
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                if (!maxLength || e.target.value.length <= maxLength) {
+                  setDraft(e.target.value);
+                }
+              }}
               onKeyDown={handleKeyDown}
               className="min-w-0 flex-1 rounded-lg border bg-ca-bg px-3 py-1.5 text-[14px] font-medium text-ca-ink outline-none focus:border-ca-violet"
               style={{ borderColor: "rgba(20,22,58,0.12)" }}
@@ -622,6 +644,7 @@ export function StudentProfileClient({ profile, lastSignIn, cohorts }: StudentPr
             value={profile.bio}
             onSave={(v) => saveField("bio", v)}
             multiline
+            maxLength={BIO_MAX}
           />
         </div>
       </div>

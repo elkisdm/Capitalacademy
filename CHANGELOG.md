@@ -29,10 +29,15 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Ver las clases desde el teléfono es más cómodo: doble toque a la izquierda o derecha del video para retroceder o avanzar 10 segundos, controles compactos al borde que ya no tapan la imagen ni los subtítulos, y encabezado y resumen IA más livianos en pantallas chicas (`1f14926`)
 - Ahora puedes retirar una nota que ya publicaste (el alumno deja de verla, con confirmación antes de hacerlo), en vez de que la única forma de despublicar fuera guardar un borrador por accidente (`12d704d`)
 - El panel de notas del profesor ahora marca con una etiqueta las evaluaciones que aún están en borrador (el alumno todavía no las ve), tanto en la lista como al entrar a calificar (`7307c98`)
+- el Centro de Ayuda ahora tiene una sección propia para profesores, con nueve guías que cubren su agenda de clases, el material, la asistencia por QR, las evaluaciones y las conversaciones con sus alumnos (`b5217f9`, `7f10191`)
+- los alumnos ahora tienen guía de sus notas, entregables, clases en vivo, asistencia por QR y conversaciones del programa (`f2bb309`)
+- el equipo ahora tiene guía de Evaluaciones, Alumnos, Entregables y asistencia por QR (`5223ae1`)
+- los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
 - Los mensajes de error al editar el perfil ahora se muestran en español, en vez de texto técnico en inglés (`8568b85`)
 - Editar la bio del perfil ya no deja todo el texto seleccionado al abrir el campo, y ahora muestra cuántos caracteres quedan de los 3000 disponibles (`1a1ee5e`)
+- las guías de quizzes, examen final y certificación ahora describen cómo funciona la plataforma hoy: las notas de los quizzes por clase se publican solas y cuentan para el promedio aunque no certifiquen, las alternativas llegan hasta la F, y los certificados viven en su propia sección (`f2bb309`, `5223ae1`)
 
 ### Changed
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)

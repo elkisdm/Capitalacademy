@@ -166,14 +166,14 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
     }
   };
 
-  const handleRemoveRole = async (cohortId: string, role: CohortRole) => {
+  const handleRemoveRole = async (cohortRoleId: string, role: CohortRole) => {
     const ok = window.confirm(
       "¿Quitar el rol de este usuario en la cohorte? Perderá el acceso asociado a ese rol.",
     );
     if (!ok) return;
     try {
       const res = await fetch(
-        `/api/admin/cohort-roles?id=${encodeURIComponent(cohortId)}`,
+        `/api/admin/cohort-roles?id=${encodeURIComponent(cohortRoleId)}`,
         { method: "DELETE" },
       );
       if (res.ok) {
@@ -476,7 +476,7 @@ export function UserProfileClient({ user, cohorts }: UserProfileClientProps) {
                       variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveRole(cr.cohort_id, cr.role);
+                        handleRemoveRole(cr.id, cr.role);
                       }}
                       aria-label={`Remover rol en ${cr.cohort_name}`}
                       className="relative h-8 w-8 rounded-lg p-0 hover:bg-red-50 hover:text-red-600"

@@ -10,6 +10,7 @@ export type AdminUserListItem = {
   last_sign_in_at: string | null;
   onboarding_completed_at: string | null;
   cohort_roles: Array<{
+    id: string;
     cohort_id: string;
     cohort_name: string;
     cohort_code: string;
@@ -87,7 +88,7 @@ export async function getAdminUsersList(
     const userIds = profiles.map((p) => p.id);
     const { data: roles } = await supabase
       .from("cohort_roles")
-      .select("user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
+      .select("id, user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
       .in("user_id", userIds);
 
     return assembleUsers(profiles as ProfileRow[], roles ?? []);
@@ -106,7 +107,7 @@ export async function getAdminUsersList(
     ? (
         await supabase
           .from("cohort_roles")
-          .select("user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
+          .select("id, user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
           .in("cohort_id", cohortIds)
       ).data ?? []
     : [];
@@ -138,6 +139,7 @@ export async function getAdminUsersList(
 function assembleUsers(
   profiles: ProfileRow[],
   roles: Array<{
+    id: string;
     user_id: string;
     cohort_id: string;
     role: "student" | "teacher" | "assistant";
@@ -153,6 +155,7 @@ function assembleUsers(
       programs: { name: string } | null;
     } | null;
     const entry = {
+      id: r.id,
       cohort_id: r.cohort_id,
       cohort_name: cohort?.name ?? "",
       cohort_code: cohort?.code ?? "",
@@ -193,7 +196,7 @@ export async function getAdminUserProfile(
 
   const { data: roles } = await supabase
     .from("cohort_roles")
-    .select("cohort_id, role, cohorts(name, code, program_id, programs(name))")
+    .select("id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
     .eq("user_id", userId);
 
   const cohortRoles = (roles ?? []).map((r) => {
@@ -204,6 +207,7 @@ export async function getAdminUserProfile(
       programs: { name: string } | null;
     } | null;
     return {
+      id: r.id,
       cohort_id: r.cohort_id,
       cohort_name: cohort?.name ?? "",
       cohort_code: cohort?.code ?? "",

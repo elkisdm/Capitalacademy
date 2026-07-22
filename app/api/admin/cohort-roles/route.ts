@@ -139,6 +139,10 @@ export async function DELETE(req: Request) {
     .eq("id", id)
     .maybeSingle();
 
+  if (!roleToDelete) {
+    return NextResponse.json({ error: "Rol no encontrado" }, { status: 404 });
+  }
+
   const { error } = await supabase
     .from("cohort_roles")
     .delete()

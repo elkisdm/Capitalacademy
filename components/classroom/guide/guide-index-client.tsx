@@ -5,21 +5,34 @@ import Link from "next/link";
 import { Search, ArrowRight, Sparkles } from "lucide-react";
 import {
   articlesByAudience,
-  STUDENT_CATEGORIES,
-  TEAM_CATEGORIES,
+  CATEGORIES_BY_AUDIENCE,
+  type Audience,
 } from "@/lib/guide/content";
 
+const TAB_LABEL: Record<Audience, string> = {
+  student: "Para alumnos",
+  team: "Para el equipo",
+  teacher: "Para profesores",
+};
+
 export function GuideIndexClient({
-  isStaff,
+  audiences,
   firstName,
 }: {
-  isStaff: boolean;
+  audiences: Audience[];
   firstName: string | null;
 }) {
-  const [tab, setTab] = useState<"student" | "team">("student");
+  const [tab, setTab] = useState<Audience>(audiences[0]);
   const [query, setQuery] = useState("");
 
-  const categories = tab === "student" ? STUDENT_CATEGORIES : TEAM_CATEGORIES;
+  // Defensa: si un lote de contenido se despliega parcial y una audiencia
+  // queda sin artículos, no se ofrece su pestaña.
+  const visibleTabs = useMemo(
+    () => audiences.filter((a) => articlesByAudience(a).length > 0),
+    [audiences],
+  );
+
+  const categories = CATEGORIES_BY_AUDIENCE[tab];
   const all = useMemo(() => articlesByAudience(tab), [tab]);
 
   const filtered = useMemo(() => {
@@ -52,28 +65,21 @@ export function GuideIndexClient({
 
       {/* Controles: tabs + buscador */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        {isStaff ? (
+        {visibleTabs.length > 1 ? (
           <div className="inline-flex rounded-2xl border border-ca-ink/[0.08] bg-white p-1">
-            <button
-              onClick={() => setTab("student")}
-              className="ca-btn-interactive rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
-              style={{
-                background: tab === "student" ? "var(--color-ca-violet)" : "transparent",
-                color: tab === "student" ? "#fff" : "var(--color-ca-ink-soft)",
-              }}
-            >
-              Para alumnos
-            </button>
-            <button
-              onClick={() => setTab("team")}
-              className="ca-btn-interactive rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
-              style={{
-                background: tab === "team" ? "var(--color-ca-violet)" : "transparent",
-                color: tab === "team" ? "#fff" : "var(--color-ca-ink-soft)",
-              }}
-            >
-              Para el equipo
-            </button>
+            {visibleTabs.map((a) => (
+              <button
+                key={a}
+                onClick={() => setTab(a)}
+                className="ca-btn-interactive rounded-xl px-5 py-2 text-[13px] font-bold transition-colors"
+                style={{
+                  background: tab === a ? "var(--color-ca-violet)" : "transparent",
+                  color: tab === a ? "#fff" : "var(--color-ca-ink-soft)",
+                }}
+              >
+                {TAB_LABEL[a]}
+              </button>
+            ))}
           </div>
         ) : (
           <div />

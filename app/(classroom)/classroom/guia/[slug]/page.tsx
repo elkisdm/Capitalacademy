@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink, Lightbulb, HelpCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
+import { getTeacherCohorts, isTeacherUser } from "@/lib/docente/queries";
+import { visibleAudiences } from "@/lib/guide/audience";
 import { SupportCard } from "@/components/classroom/guide/support-card";
 import {
   getArticle,
@@ -38,9 +40,10 @@ export default async function GuideArticlePage(
 
   const sysRole = profile?.system_role ?? profile?.role;
   const isStaff = sysRole === "admin" || sysRole === "ops";
+  const isTeacher = isStaff ? false : await isTeacherUser(user.id);
+  const audiences = visibleAudiences({ isStaff, isTeacher });
 
-  // Los artículos del equipo solo son visibles para staff.
-  if (article.audience === "team" && !isStaff) notFound();
+  if (!audiences.includes(article.audience)) notFound();
 
   // Contexto para resolver el enlace directo a la pantalla.
   let ctx: GuideCtx = { cohortSlug: null, adminCohortId: null };
@@ -62,6 +65,13 @@ export default async function GuideArticlePage(
         .eq("id", enrollment.cohort_id)
         .single();
       cohortSlug = cohort?.slug ?? cohort?.id ?? null;
+    }
+
+    // Fallback para docentes sin matrícula: la primera cohorte donde dicta.
+    if (!cohortSlug && isTeacher) {
+      const teacherCohorts = await getTeacherCohorts(user.id);
+      const first = teacherCohorts[0];
+      cohortSlug = first ? (first.cohortSlug ?? first.cohortId) : null;
     }
 
     let adminCohortId: string | null = null;

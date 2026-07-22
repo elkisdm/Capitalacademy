@@ -117,6 +117,16 @@ async function getTeacherCohortsImpl(userId: string): Promise<TeacherCohort[]> {
 export const getTeacherCohorts = cache(getTeacherCohortsImpl);
 export const __getTeacherCohortsUncached = getTeacherCohortsImpl;
 
+/**
+ * ¿Este usuario dicta en alguna cohorte? Fuente única con el panel /docente:
+ * si `getTeacherCohorts` devuelve algo, /docente le muestra algo. Cuando la
+ * Fase 2 del rediseño del rol docente cambie la vía "instructor" por
+ * `session_teachers`, esta función hereda el cambio sin tocarse.
+ */
+export async function isTeacherUser(userId: string): Promise<boolean> {
+  return (await getTeacherCohorts(userId)).length > 0;
+}
+
 /** Nº de alumnos activos matriculados en las cohortes del docente (conteo, sin filas). */
 export async function getTeacherStudentCount(cohortIds: string[]): Promise<number> {
   if (cohortIds.length === 0) return 0;

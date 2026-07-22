@@ -48,6 +48,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - El webhook que recibe los avisos de video de Mux ahora rechaza en producción las solicitudes sin firma válida (antes, si faltaba el secreto, procesaba igual), impidiendo que un tercero altere lecciones o dispare correos de seguimiento falsos (`8bdd6df`)
 
 ### Fixed
+- Asignar el rol de profesor en una cohorte ya no marca automáticamente a esa persona como profesora de todos los módulos del programa (`b8b0cc1`)
 - El panel del profesor ya no aparece vacío para quien dicta una clase sin tener rol de docente en la cohorte, y el acceso al panel ahora es visible en el menú del equipo (`98f9f9d`)
 - En casos puntuales de notas ponderadas, un error de precisión decimal podía mostrar "reprobado" a un alumno que en realidad había aprobado por el mínimo; el promedio ya se calcula correctamente (`b699182`)
 - Al reimportar notas con "Importar y publicar" ya no se pierde la fecha original de publicación (antes se reescribía con la fecha del reimport) (`b24e789`)

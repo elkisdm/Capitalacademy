@@ -137,6 +137,12 @@ export async function POST(req: Request) {
 
   if (error) {
     console.error("Error creating quiz question:", error);
+    if (error.code === "23514") {
+      return NextResponse.json(
+        { error: "La base de datos rechazó la pregunta (restricción). Verifica la respuesta correcta." },
+        { status: 422 },
+      );
+    }
     return NextResponse.json({ error: "Error al crear pregunta" }, { status: 500 });
   }
 
@@ -202,6 +208,12 @@ export async function PATCH(req: Request) {
 
   if (error) {
     console.error("Error updating quiz question:", error);
+    if (error.code === "23514") {
+      return NextResponse.json(
+        { error: "La base de datos rechazó la pregunta (restricción). Verifica la respuesta correcta." },
+        { status: 422 },
+      );
+    }
     return NextResponse.json({ error: "Error al actualizar pregunta" }, { status: 500 });
   }
 

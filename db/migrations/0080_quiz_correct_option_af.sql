@@ -19,7 +19,8 @@
 --
 -- Idempotente: el `do $$` es reejecutable — si el constraint ya fue
 -- reemplazado, el loop no encuentra nada que borrar y el ADD CONSTRAINT usa
--- `if not exists` implícito vía chequeo previo en pg_constraint.
+-- `if not exists` implícito vía chequeo previo en pg_constraint, acotado a
+-- public.quiz_questions (el nombre de constraint no es único a nivel global).
 -- =============================================================================
 
 do $$
@@ -40,7 +41,9 @@ end $$;
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint where conname = 'quiz_questions_correct_option_check'
+    select 1 from pg_constraint
+    where conname = 'quiz_questions_correct_option_check'
+      and conrelid = 'public.quiz_questions'::regclass
   ) then
     alter table public.quiz_questions
       add constraint quiz_questions_correct_option_check

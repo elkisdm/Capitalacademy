@@ -295,12 +295,14 @@
 | `lib/utils/` | Utilidades: `cn`, `rut`, `phone` (formato CL), `url` (normaliza https://), `zod` (UUID no-RFC), `use-focus-trap`, `time-ago` (relativo tipo "hace 2h"), `initials` (iniciales para avatar) | — | — |
 | `components/ui/markdown.tsx` | Renderer markdown compartido (contenido de clases de texto, ayuda) | — | — |
 | `components/ui/{checkbox,date-picker,file-input,radio,select}.tsx` | Componentes de formulario propios de marca (reemplazan los controles nativos del navegador) | — | — |
-| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0078`) | — | — |
+| `db/migrations/` | Migraciones SQL versionadas (`0001`–`0080`) | — | — |
 | `db/migrations/0043_seed_liderazgo.sql` | Siembra del entorno Liderazgo: programa + 4 módulos (jornada=módulo) + cohorte G1 + 4 sesiones + docente Diego de La Prida | — | 0009 |
 | `db/migrations/0049_seed_capacitaciones.sql` | Siembra del entorno Ciclo de Capacitación Comercial CI: programa gratuito interno + cohorte + 5 sesiones presenciales | — | 0012 |
 | `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |
 | `db/migrations/0069_drop_profiles_rut_unique_idx.sql` | Borra el índice único global de RUT en `profiles`: el RUT identifica a una persona, no a una cuenta, y una misma persona puede tener varias cuentas legítimas (alumna en un programa, profe en otro) | — | 0015 |
 | `db/migrations/0074_leads.sql` | Versiona `leads` (megaauditoría 16-jul, hallazgo C3): reproduce la tabla que solo existía en prod (creada por dashboard); RLS habilitada sin policies (deny-all), único escritor es `app/api/leads/route.ts` vía service-role | — | — |
+| `db/migrations/0079_rls_initplan_optimization.sql` | Corta la recursión RLS entre `video_progress`/`enrollments`/`cohort_roles` (funciones SECURITY DEFINER + policies consolidadas) y cachea `auth.uid()`/`is_platform_staff()` como initplan, cerrando los timeouts 57014 del classroom. No aplicada a prod en este ciclo | — | — |
+| `db/migrations/0080_quiz_correct_option_af.sql` | Amplía el CHECK de `quiz_questions.correct_option` de A–D a A–F (o NULL), alineando el esquema con las hasta 6 opciones que ya soporta la UI de preguntas de opción única | — | — |
 | `scripts/invite-capacitaciones.mjs` | Invitación masiva de asistentes al ciclo CAP-CI (crea usuario + matrícula + correo branded) | — | 0012 |
 | `scripts/reinvite-stuck-capacitaciones.mjs` | Segunda tanda: reenvía invitación solo a quien sigue sin activar cuenta del ciclo CAP-CI (roster 'active' vs `last_sign_in_at` nulo en Admin API) | — | 0012 |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

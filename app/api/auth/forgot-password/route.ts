@@ -4,14 +4,24 @@ import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
 import { getBrandBySlug, onboardingSetPasswordPath } from "@/lib/programs/registry";
-import { safeNextPath } from "@/lib/auth/next-path";
+import { safeNextPath } from "@/lib/auth/redirects";
 
 export const runtime = "nodejs";
 
-const limiter = createRateLimiter({ limit: 3, windowSeconds: 300 });
+/**
+ * El límite por CUENTA es lo que frena el abuso real (spamear a una persona con
+ * correos de recuperación). El límite por IP es mucho más holgado a propósito:
+ * buena parte de los alumnos entra desde la misma oficina —10 de las 24
+ * matriculadas de la G4 usan @capitalinteligente.cl— y salen por una sola IP
+ * NAT. Con 3 por IP cada 5 minutos, bastaba que tres compañeros pidieran su
+ * enlace durante una clase para que el cuarto viera "Demasiadas solicitudes"
+ * sin haber pedido nada antes.
+ */
+const perEmailLimiter = createRateLimiter({ limit: 3, windowSeconds: 300 });
+const perIpLimiter = createRateLimiter({ limit: 30, windowSeconds: 300 });
 
 export async function POST(req: Request) {
-  const rl = limiter.check(getClientIp(req));
+  const rl = perIpLimiter.check(getClientIp(req));
   if (!rl.ok) return rateLimitResponse(rl);
 
   let body: unknown;
@@ -33,6 +43,9 @@ export async function POST(req: Request) {
       { status: 422 },
     );
   }
+
+  const rlEmail = perEmailLimiter.check(`fp:${email.trim().toLowerCase()}`);
+  if (!rlEmail.ok) return rateLimitResponse(rlEmail);
 
   const admin = createAdminClient();
   const baseUrl = getPublicBaseUrl();

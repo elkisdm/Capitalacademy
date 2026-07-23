@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendInvitationEmail } from "@/lib/email/invitation";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
-import { getBaseUrl } from "@/lib/api/base-url";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     )?.name ?? "Capital Academy";
 
   const admin = createAdminClient();
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = getPublicBaseUrl();
 
   let linkData;
 

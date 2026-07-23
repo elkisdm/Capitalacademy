@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
-import { safeNextPath } from "@/lib/auth/next-path";
+import { safeNextPath } from "@/lib/auth/redirects";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 

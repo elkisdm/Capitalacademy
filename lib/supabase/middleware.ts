@@ -73,8 +73,16 @@ export async function updateSession(request: NextRequest) {
       );
     }
     const url = request.nextUrl.clone();
+    /*
+      El destino incluye el querystring (p. ej. `?t=120` de un enlace profundo a
+      una lección), y el login se arma LIMPIO: antes se clonaba la URL original
+      con sus parámetros intactos, así que un `/classroom/x?error=algo` terminaba
+      en `/login?error=algo&next=…` y pintaba un aviso de error falso.
+    */
+    const destination = pathname + url.search;
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    url.search = "";
+    url.searchParams.set("next", destination);
     return NextResponse.redirect(url);
   }
 

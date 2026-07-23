@@ -49,7 +49,52 @@ export default async function AsistenciaPage(props: {
     .eq("status", "active")
     .maybeSingle();
 
-  if (!enrollment) notFound();
+  /*
+    Sin matrícula activa NO se muestra la tarjeta (evita filtrar la metadata de
+    una sesión ajena), pero tampoco un 404 pelado: el caso frecuente es que la
+    persona quedó con la sesión de otra cuenta abierta en el teléfono, y un
+    "no se puede acceder" no le dice que el problema es con qué correo entró.
+  */
+  if (!enrollment) {
+    return (
+      <div
+        className="grid min-h-dvh place-items-center px-4 py-10"
+        style={{ background: "var(--color-ca-bg)" }}
+      >
+        <article className="ca-card w-full max-w-[440px] overflow-hidden p-6 text-center">
+          <h1 className="text-[18px] font-black tracking-tight text-ca-ink">
+            Esta clase no corresponde a tu cuenta
+          </h1>
+          <p className="mt-3 text-[13px] font-semibold text-ca-ink-soft">
+            Estás usando <strong className="text-ca-ink">{user.email}</strong>, y esa
+            cuenta no tiene una matrícula activa en el programa de esta clase.
+          </p>
+          <p className="mt-3 text-[13px] text-ca-ink-soft">
+            Si tienes otro correo inscrito, cierra sesión y vuelve a abrir este
+            enlace con esa cuenta. Si crees que es un error, avisa al equipo.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <form action="/api/auth/signout" method="post">
+              <input type="hidden" name="next" value={`/asistencia/${sessionId}`} />
+              <button
+                type="submit"
+                className="w-full rounded-xl px-4 py-3 text-[13px] font-bold text-white"
+                style={{ background: "var(--color-ca-violet)" }}
+              >
+                Cerrar sesión y entrar con otra cuenta
+              </button>
+            </form>
+            <a
+              href="/classroom"
+              className="text-[13px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
+            >
+              Ir a mi classroom
+            </a>
+          </div>
+        </article>
+      </div>
+    );
+  }
 
   // ¿Ya registró asistencia? (para mostrar el estado inicial "ya registrada")
   const { data: existing } = await admin

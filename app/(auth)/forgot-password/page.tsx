@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ForgotPasswordForm } from "./forgot-password-form";
 import { getBrandBySlug, loginPath } from "@/lib/programs/registry";
-import { safeNextPath } from "@/lib/auth/next-path";
+import { safeNextPath } from "@/lib/auth/redirects";
 
 export const metadata = {
   title: "Recuperar contraseña",

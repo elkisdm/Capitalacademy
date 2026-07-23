@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendInvitationEmail } from "@/lib/email/invitation";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
-import { getBaseUrl } from "@/lib/api/base-url";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   const auth = await authorizeAdmin();
   if ("error" in auth) return auth.error;
   const user = auth.user;
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = getPublicBaseUrl();
 
   let body: unknown;
   try {

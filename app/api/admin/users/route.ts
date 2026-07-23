@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { sendInvitationEmail } from "@/lib/email/invitation";
-import { getBaseUrl } from "@/lib/api/base-url";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = getPublicBaseUrl();
 
   const { data: linkData, error: linkError } =
     await admin.auth.admin.generateLink({

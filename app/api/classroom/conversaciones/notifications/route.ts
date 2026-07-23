@@ -24,7 +24,10 @@ export async function GET() {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
 
-  const [{ data: rows }, { count: unread }] = await Promise.all([
+  const [
+    { data: rows, error: rowsError },
+    { count: unread, error: countError },
+  ] = await Promise.all([
     supabase
       .from("conversation_notifications")
       .select("id, type, actor_id, thread_id, lesson_id, read_at, created_at")
@@ -36,11 +39,18 @@ export async function GET() {
       .is("read_at", null),
   ]);
 
-  const notifications = rows ?? [];
+  if (rowsError || countError) {
+    console.error(
+      "conversaciones notifications GET error",
+      rowsError ?? countError,
+    );
+    return NextResponse.json(
+      { error: "No se pudieron cargar las notificaciones" },
+      { status: 500 },
+    );
+  }
 
-  const actorsMap = await getPublicAuthorsMap(
-    notifications.map((n) => n.actor_id),
-  );
+  const notifications = rows ?? [];
 
   const threadIds = [
     ...new Set(
@@ -57,26 +67,24 @@ export async function GET() {
     ),
   ];
 
+  const [actorsMap, threadsResult, lessonsResult] = await Promise.all([
+    getPublicAuthorsMap(notifications.map((n) => n.actor_id)),
+    threadIds.length > 0
+      ? supabase.from("conversation_threads").select("id, title").in("id", threadIds)
+      : Promise.resolve({ data: null }),
+    lessonIds.length > 0
+      ? supabase.from("lessons").select("id, title").in("id", lessonIds)
+      : Promise.resolve({ data: null }),
+  ]);
+
   const threadTitleMap = new Map<string, string>();
-  if (threadIds.length > 0) {
-    const { data: threads } = await supabase
-      .from("conversation_threads")
-      .select("id, title")
-      .in("id", threadIds);
-    for (const t of threads ?? []) {
-      threadTitleMap.set(t.id, t.title);
-    }
+  for (const t of threadsResult.data ?? []) {
+    threadTitleMap.set(t.id, t.title);
   }
 
   const lessonTitleMap = new Map<string, string>();
-  if (lessonIds.length > 0) {
-    const { data: lessons } = await supabase
-      .from("lessons")
-      .select("id, title")
-      .in("id", lessonIds);
-    for (const l of lessons ?? []) {
-      lessonTitleMap.set(l.id, l.title);
-    }
+  for (const l of lessonsResult.data ?? []) {
+    lessonTitleMap.set(l.id, l.title);
   }
 
   return NextResponse.json({

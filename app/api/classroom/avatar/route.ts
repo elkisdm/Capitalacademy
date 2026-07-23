@@ -68,6 +68,12 @@ export async function POST(req: Request) {
 
   if (updateError) {
     console.error("Profile avatar_url update error:", updateError);
+    const { error: rollbackError } = await supabase.storage
+      .from("avatars")
+      .remove([path]);
+    if (rollbackError) {
+      console.error("Avatar storage rollback error:", rollbackError);
+    }
     return NextResponse.json(
       { error: "Imagen subida pero no se pudo actualizar el perfil" },
       { status: 500 },
@@ -92,15 +98,31 @@ export async function DELETE(req: Request) {
     .list(user.id);
 
   if (files && files.length > 0) {
-    await supabase.storage
+    const { error: removeError } = await supabase.storage
       .from("avatars")
       .remove(files.map((f) => `${user.id}/${f.name}`));
+
+    if (removeError) {
+      console.error("Avatar remove error:", removeError);
+      return NextResponse.json(
+        { error: "No se pudo eliminar la imagen" },
+        { status: 500 },
+      );
+    }
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("profiles")
     .update({ avatar_url: null })
     .eq("id", user.id);
+
+  if (updateError) {
+    console.error("Profile avatar_url clear error:", updateError);
+    return NextResponse.json(
+      { error: "No se pudo actualizar el perfil" },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ avatar_url: null });
 }

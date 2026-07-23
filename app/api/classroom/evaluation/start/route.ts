@@ -47,12 +47,19 @@ export async function POST(req: Request) {
   }
   const { evaluation, enrollmentId } = access;
 
-  const { data: attempts } = await admin
+  const { data: attempts, error: attemptsError } = await admin
     .from("quiz_attempts")
     .select("id, completed_at, questions_presented, started_at")
     .eq("enrollment_id", enrollmentId)
     .eq("evaluation_id", evaluation.id)
     .order("created_at", { ascending: false });
+  if (attemptsError) {
+    console.error("Error cargando intentos de evaluación:", attemptsError);
+    return NextResponse.json(
+      { error: "No se pudo cargar tu intento, inténtalo de nuevo" },
+      { status: 500 },
+    );
+  }
 
   const all = attempts ?? [];
   const completed = all.filter((a) => a.completed_at);

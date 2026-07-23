@@ -77,7 +77,7 @@ function antelacionLabel(kind: "24h" | "1h"): string {
 }
 
 function reminderHtml(d: SessionReminderInput): string {
-  const firstName = (d.fullName || "").split(" ")[0] || "";
+  const firstName = (d.fullName || "").trim().split(" ")[0] || "";
   const online = isOnline(d.modality);
   const dateLabel = fmtDate(d.startsAtIso);
   const timeLabel = `${fmtTime(d.startsAtIso)} – ${fmtTime(d.endsAtIso)} hrs (Chile)`;
@@ -102,7 +102,7 @@ function reminderHtml(d: SessionReminderInput): string {
 }
 
 function reminderText(d: SessionReminderInput): string {
-  const firstName = (d.fullName || "").split(" ")[0] || "";
+  const firstName = (d.fullName || "").trim().split(" ")[0] || "";
   const online = isOnline(d.modality);
   const lines = [
     `Hola${firstName ? ", " + firstName : ""}.`,

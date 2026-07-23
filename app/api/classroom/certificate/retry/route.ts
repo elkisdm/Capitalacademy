@@ -31,24 +31,25 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: enrollment } = await supabase
+  const { data: enrollment, error: enrollmentError } = await supabase
     .from("enrollments")
-    .select("id, cohort_id, cohorts(program_id)")
+    .select("id, cohort_id, cohorts!inner(program_id)")
     .eq("student_id", user.id)
+    .eq("cohorts.program_id", programId)
     .eq("status", "active")
-    .single();
+    .limit(1)
+    .maybeSingle();
+
+  if (enrollmentError) {
+    return NextResponse.json(
+      { error: "No se pudo verificar tu matrícula" },
+      { status: 500 },
+    );
+  }
 
   if (!enrollment) {
     return NextResponse.json(
       { error: "No tienes matrícula activa" },
-      { status: 403 },
-    );
-  }
-
-  const cohort = enrollment.cohorts as unknown as { program_id: string } | null;
-  if (cohort?.program_id !== programId) {
-    return NextResponse.json(
-      { error: "Programa no coincide con tu matrícula" },
       { status: 403 },
     );
   }
@@ -107,8 +108,10 @@ export async function POST(req: Request) {
       pdfUrl: cert.pdfUrl,
     }, { status: 201 });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Error desconocido";
     console.error("Certificate retry failed:", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo emitir el certificado. Intenta más tarde." },
+      { status: 500 },
+    );
   }
 }

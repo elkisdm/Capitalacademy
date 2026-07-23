@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// Nota: sin marcadores `?: never` en la rama opuesta — con ellos el operador
+// `in` no narrowea del todo (la clave sigue "presente" aunque sea `never`) y
+// TypeScript termina infiriendo `NextResponse | undefined` en `auth.error`.
 type AuthResult =
-  | { user: { id: string; email?: string }; error?: never }
-  | { error: NextResponse; user?: never };
+  | { user: { id: string; email?: string } }
+  | { error: NextResponse };
 
 export async function authorizeAdmin(): Promise<AuthResult> {
   const supabase = await createClient();

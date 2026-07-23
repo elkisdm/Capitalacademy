@@ -45,16 +45,20 @@ export default async function RecursosPage(
   const program = cohort.programs as { id: string; name: string };
 
   // 1. Recursos de lecciones grabadas, agrupados por módulo → lección.
-  const modules = await getModulesWithLessons(program.id, enrollmentId);
+  const [modules, sessions] = await Promise.all([
+    getModulesWithLessons(program.id, enrollmentId),
+    getCohortSchedule(cohortId),
+  ]);
   const lessonIds = modules.flatMap((m) => m.lessons.map((l) => l.id));
 
   const lessonResourcesByLesson = new Map<string, DisplayResource[]>();
   if (lessonIds.length > 0) {
-    const { data: rows } = await supabase
+    const { data: rows, error: rowsError } = await supabase
       .from("lesson_resources")
       .select("id, lesson_id, title, type, url, storage_path, position")
       .in("lesson_id", lessonIds)
       .order("position", { ascending: true });
+    if (rowsError) console.error("[recursos] lesson_resources", rowsError);
     const resolved = await resolveResourceUrls((rows ?? []) as LessonResource[]);
     for (const r of resolved) {
       const arr = lessonResourcesByLesson.get(r.lesson_id) ?? [];
@@ -73,7 +77,6 @@ export default async function RecursosPage(
     .filter((g) => g.lessons.length > 0);
 
   // 2. Recursos de clases en vivo (mismas sesiones que ve en su calendario).
-  const sessions = await getCohortSchedule(cohortId);
   const sessionGroups = sessions
     .map((s) => ({ session: s, resources: (s.resources ?? []) as DisplayResource[] }))
     .filter((x) => x.resources.length > 0);

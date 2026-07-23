@@ -60,6 +60,21 @@ const {
   requireEvaluationStaff,
 } = await import("@/lib/auth/authorize-admin");
 
+// Las 4 funciones comparten el mismo AuthResult (discriminado por presencia
+// de "error" o "user", sin marcadores ?: never). Estos helpers narrowean
+// antes de acceder, ya que el tipo no expone ambas claves en la misma rama.
+type AuthResult = Awaited<ReturnType<typeof authorizeAdmin>>;
+
+function errorOf(result: AuthResult) {
+  if (!("error" in result)) throw new Error("se esperaba un resultado con error");
+  return result.error;
+}
+
+function userOf(result: AuthResult) {
+  if (!("user" in result)) throw new Error("se esperaba un resultado con user");
+  return result.user;
+}
+
 function setupMocks(user: { id: string } | null, systemRole: string | null) {
   mockGetUser.mockResolvedValue({
     data: { user },
@@ -78,35 +93,35 @@ describe("authorizeAdmin", () => {
     setupMocks(null, null);
     const result = await authorizeAdmin();
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(401);
+    expect(errorOf(result).status).toBe(401);
   });
 
   it("returns 403 when user has role 'user'", async () => {
     setupMocks({ id: "user-1" }, "user");
     const result = await authorizeAdmin();
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 
   it("returns 403 when user has role 'teacher'", async () => {
     setupMocks({ id: "user-1" }, "teacher");
     const result = await authorizeAdmin();
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 
   it("returns user when role is 'admin'", async () => {
     setupMocks({ id: "user-1" }, "admin");
     const result = await authorizeAdmin();
     expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(userOf(result).id).toBe("user-1");
   });
 
   it("returns user when role is 'ops'", async () => {
     setupMocks({ id: "user-1" }, "ops");
     const result = await authorizeAdmin();
     expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(userOf(result).id).toBe("user-1");
   });
 });
 
@@ -119,21 +134,21 @@ describe("requireStaff", () => {
     setupMocks(null, null);
     const result = await requireStaff();
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(401);
+    expect(errorOf(result).status).toBe(401);
   });
 
   it("returns 403 when user has role 'user'", async () => {
     setupMocks({ id: "user-1" }, "user");
     const result = await requireStaff();
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 
   it("returns 403 when user has role 'teacher'", async () => {
     setupMocks({ id: "user-1" }, "teacher");
     const result = await requireStaff();
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 
   it("allows role 'ops'", async () => {
@@ -161,14 +176,14 @@ describe("requireSessionStaff", () => {
     setupMocks(null, null);
     const result = await requireSessionStaff("session-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(401);
+    expect(errorOf(result).status).toBe(401);
   });
 
   it("returns user directly for platform staff (ops/admin) without consultar la sesión", async () => {
     setupMocks({ id: "user-1" }, "ops");
     const result = await requireSessionStaff("session-1");
     expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(userOf(result).id).toBe("user-1");
     // No debió necesitar resolver la cohorte de la sesión: el gate corta antes.
     expect(mockAdminClassSession).not.toHaveBeenCalled();
   });
@@ -178,7 +193,7 @@ describe("requireSessionStaff", () => {
     mockAdminClassSession.mockResolvedValue({ data: null });
     const result = await requireSessionStaff("session-inexistente");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 
   it("returns user when the caller is teacher/assistant of the session's cohort", async () => {
@@ -187,7 +202,7 @@ describe("requireSessionStaff", () => {
     mockCohortRole.mockResolvedValue({ data: { id: "role-1" } });
     const result = await requireSessionStaff("session-1");
     expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(userOf(result).id).toBe("user-1");
   });
 
   it("returns 403 when the session exists but the caller has no teacher/assistant role in its cohort", async () => {
@@ -196,7 +211,7 @@ describe("requireSessionStaff", () => {
     mockCohortRole.mockResolvedValue({ data: null });
     const result = await requireSessionStaff("session-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 });
 
@@ -212,7 +227,7 @@ describe("requireEvaluationStaff", () => {
     setupMocks(null, null);
     const result = await requireEvaluationStaff("eval-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(401);
+    expect(errorOf(result).status).toBe(401);
   });
 
   it("returns user directly for platform staff (ops/admin) without consultar la evaluación", async () => {
@@ -227,7 +242,7 @@ describe("requireEvaluationStaff", () => {
     mockAdminEvaluation.mockResolvedValue({ data: null });
     const result = await requireEvaluationStaff("eval-inexistente");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(404);
+    expect(errorOf(result).status).toBe(404);
   });
 
   it("returns 422 when a cohortId is given but that cohort does not exist", async () => {
@@ -238,7 +253,7 @@ describe("requireEvaluationStaff", () => {
     mockAdminCohort.mockResolvedValue({ data: null });
     const result = await requireEvaluationStaff("eval-1", "cohort-x");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(422);
+    expect(errorOf(result).status).toBe(422);
   });
 
   it("returns 422 when the cohort belongs to a different program than the evaluation (tenant check)", async () => {
@@ -251,7 +266,7 @@ describe("requireEvaluationStaff", () => {
     });
     const result = await requireEvaluationStaff("eval-1", "cohort-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(422);
+    expect(errorOf(result).status).toBe(422);
   });
 
   it("returns user when caller is teacher/assistant of a matching cohort (cohortId branch)", async () => {
@@ -265,7 +280,7 @@ describe("requireEvaluationStaff", () => {
     mockCohortRole.mockResolvedValue({ data: { id: "role-1" } });
     const result = await requireEvaluationStaff("eval-1", "cohort-1");
     expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(userOf(result).id).toBe("user-1");
   });
 
   it("returns 403 when the cohort matches the program but caller has no role in it (cohortId branch)", async () => {
@@ -279,7 +294,7 @@ describe("requireEvaluationStaff", () => {
     mockCohortRole.mockResolvedValue({ data: null });
     const result = await requireEvaluationStaff("eval-1", "cohort-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 
   it("returns 403 when there is no cohortId and the program has no cohorts at all", async () => {
@@ -292,7 +307,7 @@ describe("requireEvaluationStaff", () => {
     mockAdminCohort.mockResolvedValue({ data: [] });
     const result = await requireEvaluationStaff("eval-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
     // Con 0 cohortes en el programa, el código ni siquiera consulta cohort_roles.
     expect(mockCohortRole).not.toHaveBeenCalled();
   });
@@ -308,7 +323,7 @@ describe("requireEvaluationStaff", () => {
     mockCohortRole.mockResolvedValue({ data: { id: "role-1" } });
     const result = await requireEvaluationStaff("eval-1");
     expect(result).toHaveProperty("user");
-    expect(result.user!.id).toBe("user-1");
+    expect(userOf(result).id).toBe("user-1");
   });
 
   it("returns 403 when there is no cohortId, the program has cohorts, but caller has a role in none of them", async () => {
@@ -322,6 +337,6 @@ describe("requireEvaluationStaff", () => {
     mockCohortRole.mockResolvedValue({ data: null });
     const result = await requireEvaluationStaff("eval-1");
     expect(result).toHaveProperty("error");
-    expect(result.error!.status).toBe(403);
+    expect(errorOf(result).status).toBe(403);
   });
 });

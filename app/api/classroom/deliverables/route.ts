@@ -165,7 +165,7 @@ export async function POST(req: Request) {
   // Correo de confirmación: no debe romper la respuesta de subida si Resend
   // falla (mismo criterio de tolerancia a fallos que el resto de los senders).
   try {
-    const [{ data: profile }, { data: program }] = await Promise.all([
+    const [{ data: profile, error: profileError }, { data: program }] = await Promise.all([
       admin.from("profiles").select("full_name, email").eq("id", user.id).single(),
       admin.from("programs").select("name").eq("id", deliverable.program_id).single(),
     ]);
@@ -181,6 +181,8 @@ export async function POST(req: Request) {
       if (!result.success) {
         console.error("deliverable received email error", result.error);
       }
+    } else {
+      console.error("deliverable received email skipped: sin email de perfil", user.id, profileError);
     }
   } catch (err) {
     console.error("deliverable received email exception", err);

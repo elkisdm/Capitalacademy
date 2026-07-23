@@ -163,9 +163,20 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("correctTranscript — validaciones de entrada", () => {
-  it("lanza si hay error al buscar el transcript", async () => {
+  it("lanza un error distinto de 'no encontrado' si la consulta del transcript falla (no confunde fallo de red con transcripción inexistente)", async () => {
     const { fromMock } = createAdminMock({
       transcript: { data: null, error: { message: "boom" } },
+    });
+    mockFrom.mockImplementation(fromMock);
+
+    await expect(correctTranscript("lesson-1")).rejects.toThrow(
+      /Failed to fetch transcript for lesson lesson-1: boom/,
+    );
+  });
+
+  it("no lanza el error crudo del proveedor cuando la consulta falla por un código distinto a 'sin filas' (PGRST116)", async () => {
+    const { fromMock } = createAdminMock({
+      transcript: { data: null, error: { message: "boom", code: "PGRST116" } },
     });
     mockFrom.mockImplementation(fromMock);
 
@@ -181,7 +192,7 @@ describe("correctTranscript — validaciones de entrada", () => {
     mockFrom.mockImplementation(fromMock);
 
     await expect(correctTranscript("lesson-1")).rejects.toThrow(
-      /No transcript found for lesson lesson-1: not found/,
+      /No transcript found for lesson lesson-1/,
     );
   });
 
@@ -294,7 +305,7 @@ describe("correctTranscript — llamada a OpenAI", () => {
 // ---------------------------------------------------------------------------
 
 describe("correctTranscript — batching de OpenAI", () => {
-  it("con <=100 segmentos hace una sola llamada a fetch", async () => {
+  it("con <=50 segmentos hace una sola llamada a fetch", async () => {
     const { fromMock } = createAdminMock({
       transcript: { data: TRANSCRIPT_ROW, error: null },
     });
@@ -553,6 +564,18 @@ describe("correctTranscript — lógica de corrección", () => {
 
     const result = await correctTranscript("lesson-1");
     expect(result.changedSegments).toBe(1);
+  });
+
+  it("lanza si falla la consulta de segmentos editados manualmente (no debe interpretar el fallo como 'nadie editó nada')", async () => {
+    const { fromMock } = createAdminMock({
+      transcript: { data: TRANSCRIPT_ROW, error: null },
+      existingSegments: { data: null, error: { message: "timeout" } },
+    });
+    mockFrom.mockImplementation(fromMock);
+
+    await expect(correctTranscript("lesson-1")).rejects.toThrow(
+      /Failed to fetch manually edited segments: timeout/,
+    );
   });
 
   it("lanza si el upsert de transcript_segments falla", async () => {

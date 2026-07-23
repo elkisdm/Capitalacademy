@@ -3,6 +3,7 @@ import { correctTranscript } from "@/lib/classroom/correct-transcript";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const auth = await authorizeAdmin();

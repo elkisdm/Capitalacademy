@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- La presentación "IA 2026" se puede descargar en PowerPoint (32 láminas en 16:9, con las notas del presentador), desde el panel de ayuda de la propia presentación o desde los recursos de la clase (`bcdbaa6`)
 - La presentación "IA 2026: de conversar a dirigir" queda publicada en la plataforma (`/presentaciones/ia-2026`): se abre en el navegador, avanza con el teclado y funciona sin internet una vez cargada (`05ec2bf`)
 - Evaluaciones ahora es una sección propia del panel admin (`/admin/evaluaciones`): creas una evaluación (quiz o nota manual) desde cero eligiendo su alcance, y la configuras en su propia pantalla; Certificados también estrena su propia sección en el menú (`e90c576`)
 - Nueva pantalla de notas para el alumno (escala chilena 1-7) y panel de calificación para el profesor: además de los quizzes autocorregidos, ahora se pueden cargar notas manuales (roleplay, guión de venta, etc.) con checklist, borrador/publicación e importación desde Excel por email (`2064943`)
@@ -36,6 +37,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- La presentación "IA 2026" ya se puede ver desde el teléfono: antes abría un instante y el navegador cerraba la pestaña, y el logo de la academia aparecía roto (`bf420b8`)
 - Segunda tanda de endurecimiento: si falla la base de datos, tu evaluación ya no dice "nunca has rendido" ni tu progreso se ve en cero — ahora se muestra el error; un módulo cuyas lecciones no tienen video ya se puede completar; el examen final corrige bien las preguntas de opción múltiple, verdadero/falso y respuesta abierta; marcar asistencia a todo el curso ya no falla en cohortes grandes; y los errores al cargar certificados, cupones y pagos de Flow dejan de quedar en pantalla en blanco (`ee58574`, `0f8f742`, `1960bbd`, `187d2cb`, `fc2a21d`, `0ee75bd`)
 - Un miembro de operación ya no puede crear cuentas con permisos de operación o administración cuando su propio perfil no se puede leer: el control de permisos ahora falla cerrado (`0ee75bd`)
 - El calendario de una cohorte ya no se ve vacío cuando falla la consulta (antes el error se ocultaba y parecía que no había clases), el examen final descarta las preguntas que la IA devuelve mal formadas en vez de darlas por buenas, y los subtítulos dejan de desalinearse cuando una clase trae fragmentos sin texto (`c22670c`)

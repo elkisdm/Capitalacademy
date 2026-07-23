@@ -76,6 +76,15 @@
       background:linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px);
       background-size:100% 4px; mix-blend-mode:soft-light;
     }
+    /* Aligeramiento para pantallas táctiles:
+       - la textura de líneas usa mix-blend-mode, que obliga a recomponer las
+         1920x1080 del deck en cada cuadro; a 16% de opacidad no se extraña;
+       - la sombra del logo es un filtro que crea su propia superficie de dibujo
+         y en Safari móvil puede terminar dibujando el logo en blanco. */
+    @media (pointer: coarse) {
+      .deck::after { display: none; }
+      .brand img { filter: none; }
+    }
     .slide {
       position: absolute; inset: 0; display: grid; align-content: stretch;
       padding: 76px 92px 68px; overflow: hidden; opacity: 0; pointer-events: none;
@@ -91,8 +100,12 @@
       content: ""; position: absolute; z-index: -1; pointer-events: none;
       width: 920px; height: 790px;
       background: url("/presentaciones/ia-2026/assets/capital-academy-mark.svg") center / contain no-repeat;
-      opacity: .075; filter: blur(.15px); transform-origin: center;
+      opacity: .075; transform-origin: center;
     }
+    /* Las láminas lejanas no se pintan: mantener las 32 vivas a la vez (cada una
+       de 1920x1080, con dos pseudo-elementos y sus revelados) hace que el
+       navegador del teléfono se quede sin memoria y cierre la pestaña. */
+    .slide.far { content-visibility: hidden; visibility: hidden; }
     .slide.current::before { animation: aurora-left 12s ease-in-out infinite alternate; }
     .slide.current::after { animation: aurora-right 15s ease-in-out infinite alternate; }
     @keyframes aurora-left { to { transform: translate3d(56px,-24px,0) rotate(7deg) scale(1.04); } }
@@ -417,7 +430,8 @@
     .snow-loop { margin-top:20px; padding:17px 20px; border-left:5px solid var(--lime); background:rgba(255,255,255,.08); font-size:19px; font-weight:700; line-height:1.4; }
 
     .flywheel { position:relative; width:760px; height:620px; margin:0 auto; }
-    .flywheel-ring { position:absolute; inset:95px 165px; border:4px dashed rgba(207,252,36,.42); border-radius:50%; animation:orbit-spin 24s linear infinite; }
+    .flywheel-ring { position:absolute; inset:95px 165px; border:4px dashed rgba(207,252,36,.42); border-radius:50%; }
+    .slide.current .flywheel-ring { animation:orbit-spin 24s linear infinite; }
     @keyframes orbit-spin { to { transform:rotate(360deg); } }
     .flywheel-core { position:absolute; left:50%; top:50%; width:270px; height:270px; transform:translate(-50%,-50%); display:grid; place-items:center; padding:30px; text-align:center; border-radius:50%; color:#25105e; background:var(--lime); box-shadow:0 0 70px rgba(207,252,36,.22); font-size:31px; line-height:1.12; font-weight:800; }
     .fly-node { position:absolute; width:245px; min-height:108px; display:grid; place-items:center; padding:18px; text-align:center; border:1px solid var(--border); border-radius:20px; background:rgba(38,8,100,.78); font-size:18px; font-weight:700; }
@@ -486,7 +500,8 @@
     .human-shift i { color:var(--lime); font-size:28px; font-style:normal; text-align:center; }
     .human-shift b { color:#fff; }
     .analogy-bridge { display:grid; align-content:center; justify-items:center; gap:12px; text-align:center; }
-    .analogy-bridge strong { width:92px; height:92px; display:grid; place-items:center; border:2px solid var(--lime); border-radius:50%; color:var(--lime); background:rgba(207,252,36,.08); box-shadow:0 0 0 12px rgba(207,252,36,.04),0 0 34px rgba(207,252,36,.2); font-size:46px; animation:analogy-pulse 2.6s ease-in-out infinite; }
+    .analogy-bridge strong { width:92px; height:92px; display:grid; place-items:center; border:2px solid var(--lime); border-radius:50%; color:var(--lime); background:rgba(207,252,36,.08); box-shadow:0 0 0 12px rgba(207,252,36,.04),0 0 34px rgba(207,252,36,.2); font-size:46px; }
+    .slide.current .analogy-bridge strong { animation:analogy-pulse 2.6s ease-in-out infinite; }
     .analogy-bridge span { color:rgba(255,255,255,.72); font-size:14px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     @keyframes analogy-pulse { 50% { transform:scale(1.06); box-shadow:0 0 0 18px rgba(207,252,36,.02),0 0 44px rgba(207,252,36,.34); } }
     .analogy-thesis { margin-top:18px; padding:18px 24px; border-left:5px solid var(--lime); border-radius:0 16px 16px 0; background:rgba(25,5,73,.36); font-size:23px; line-height:1.35; text-align:center; }
@@ -640,7 +655,11 @@
     .qa-prompts { display:grid; gap:15px; }
     .qa-prompt { padding:22px 24px; border:1px solid var(--border); border-radius:20px; background:rgba(255,255,255,.08); font-size:20px; font-weight:600; }
 
-    [data-reveal] { opacity:0; transform:translate3d(0,26px,0) scale(.985); filter:blur(4px); transition:opacity var(--motion-base) var(--ease-out), transform 520ms var(--ease-spring), filter 420ms var(--ease-out); will-change:transform,opacity; }
+    [data-reveal] { opacity:0; transform:translate3d(0,26px,0) scale(.985); filter:blur(4px); transition:opacity var(--motion-base) var(--ease-out), transform 520ms var(--ease-spring), filter 420ms var(--ease-out); }
+    /* will-change promueve cada elemento a su propia capa y la mantiene viva.
+       Con 126 elementos revelables repartidos en 32 láminas eso agota la memoria
+       del navegador móvil, así que solo se promueven los de la lámina actual. */
+    .slide.current [data-reveal] { will-change:transform,opacity; }
     [data-reveal].motion-left { transform:translate3d(-38px,0,0) scale(.99); }
     [data-reveal].motion-right { transform:translate3d(38px,0,0) scale(.99); }
     [data-reveal].motion-scale { transform:translate3d(0,8px,0) scale(.92); }
@@ -692,6 +711,8 @@
     .help-card { width:min(720px,calc(100vw - 40px)); padding:34px; border-radius:28px; background:#29105d; border:1px solid rgba(255,255,255,.2); box-shadow:0 30px 80px rgba(0,0,0,.45); }
     .help-card h2 { font-size:38px; }
     .shortcut-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    .help-download { margin:22px 0 0; padding-top:18px; border-top:1px solid rgba(255,255,255,.16); font-size:16px; line-height:1.5; color:rgba(255,255,255,.76); }
+    .help-download a { color:var(--lime); font-weight:700; }
     .shortcut { display:flex; align-items:center; gap:13px; color:rgba(255,255,255,.82); }
     kbd { min-width:48px; text-align:center; padding:7px 10px; border-radius:9px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); font-weight:800; color:#fff; }
 
@@ -727,13 +748,27 @@
       .slide, [data-reveal] { transform:none !important; }
       .slide.current::before, .slide.current::after, .progress-fill::after, .slide.current .image-frame img { animation:none !important; }
     }
+    /* Imprimir (o "Guardar como PDF") entrega las 32 láminas completas, en 16:9 y
+       con sus colores. De acá sale también el PPTX: ver docs/presentacion-ia-2026.md. */
+    @page { size: 1920px 1080px; margin: 0; }
     @media print {
-      html, body { overflow:visible; height:auto; background:#fff; }
-      .viewport { position:static; display:block; }
-      .deck { transform:none !important; width:1920px; height:auto; box-shadow:none; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { overflow:visible; height:auto; width:1920px; margin:0; background:#fff; }
+      .viewport { position:static; display:block; place-items:start; }
+      /* El deck se posiciona con left/top al 50% y se recentra con un translate
+         que el modo impresión anula: sin volverlo estático, sale corrido media
+         página y cada lámina se parte en dos. */
+      .deck { position:static !important; transform:none !important; width:1920px; height:auto; overflow:visible; box-shadow:none; }
       .slide { position:relative; width:1920px; height:1080px; opacity:1; transform:none; pointer-events:auto; page-break-after:always; }
-      [data-reveal] { opacity:1; transform:none; }
-      .chrome, .notes-panel, .overview, .help { display:none !important; }
+      .slide:last-child { page-break-after:auto; }
+      /* Al imprimir sí queremos las 32 láminas, no solo las tres pintadas. */
+      .slide.far { content-visibility:visible; visibility:visible; }
+      /* Sin !important ganan las variantes .motion-left/.motion-right, que son
+         más específicas: los elementos salían desplazados y solapados. Y sin
+         filter:none los que aún no se han revelado salen borrosos. */
+      [data-reveal] { opacity:1 !important; transform:none !important; filter:none !important; }
+      .chrome, .notes-panel, .overview, .help,
+      .chapter-hud, .slide-flash, .skip-link { display:none !important; }
     }
   </style>
 </head>
@@ -1085,7 +1120,11 @@
       <div class="shortcut"><kbd>E</kbd>Modo edición</div><div class="shortcut"><kbd>Space</kbd>Siguiente paso</div>
       <div class="shortcut"><kbd>Home</kbd>Primera</div><div class="shortcut"><kbd>End</kbd>Última</div>
       <div class="shortcut"><kbd>?</kbd>Ayuda</div><div class="shortcut"><kbd>Esc</kbd>Cerrar paneles</div>
-    </div><button class="action-button primary" style="margin-top:26px" data-close="help">Entendido</button></div>
+    </div>
+    <p class="help-download">¿Necesitas la presentación en PowerPoint?
+      <a href="/presentaciones/ia-2026/presentacion-ia-2026.pptx" download>Descargar .pptx</a>
+      · 32 láminas en 16:9, con las notas del presentador.</p>
+    <button class="action-button primary" style="margin-top:20px" data-close="help">Entendido</button></div>
   </div>
   <div class="laser" aria-hidden="true"></div>
   <div class="edit-toolbar" role="toolbar" aria-label="Edición de contenido">
@@ -1190,6 +1229,9 @@
         slides.forEach((slide, index) => {
           slide.classList.toggle('current', index === current);
           slide.classList.toggle('past', index < current);
+          // Solo la lámina actual y sus dos vecinas se pintan; el resto se marca
+          // 'far' para que el navegador no las tenga en memoria (ver CSS .slide.far).
+          slide.classList.toggle('far', Math.abs(index - current) > 1);
           slide.setAttribute('aria-hidden', index === current ? 'false' : 'true');
         });
         counter.textContent = `${current + 1} / ${slides.length}`;

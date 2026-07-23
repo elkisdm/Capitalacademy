@@ -711,6 +711,8 @@
     .help-card { width:min(720px,calc(100vw - 40px)); padding:34px; border-radius:28px; background:#29105d; border:1px solid rgba(255,255,255,.2); box-shadow:0 30px 80px rgba(0,0,0,.45); }
     .help-card h2 { font-size:38px; }
     .shortcut-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    .help-download { margin:22px 0 0; padding-top:18px; border-top:1px solid rgba(255,255,255,.16); font-size:16px; line-height:1.5; color:rgba(255,255,255,.76); }
+    .help-download a { color:var(--lime); font-weight:700; }
     .shortcut { display:flex; align-items:center; gap:13px; color:rgba(255,255,255,.82); }
     kbd { min-width:48px; text-align:center; padding:7px 10px; border-radius:9px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); font-weight:800; color:#fff; }
 
@@ -746,15 +748,27 @@
       .slide, [data-reveal] { transform:none !important; }
       .slide.current::before, .slide.current::after, .progress-fill::after, .slide.current .image-frame img { animation:none !important; }
     }
+    /* Imprimir (o "Guardar como PDF") entrega las 32 láminas completas, en 16:9 y
+       con sus colores. De acá sale también el PPTX: ver docs/presentacion-ia-2026.md. */
+    @page { size: 1920px 1080px; margin: 0; }
     @media print {
-      html, body { overflow:visible; height:auto; background:#fff; }
-      .viewport { position:static; display:block; }
-      .deck { transform:none !important; width:1920px; height:auto; box-shadow:none; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { overflow:visible; height:auto; width:1920px; margin:0; background:#fff; }
+      .viewport { position:static; display:block; place-items:start; }
+      /* El deck se posiciona con left/top al 50% y se recentra con un translate
+         que el modo impresión anula: sin volverlo estático, sale corrido media
+         página y cada lámina se parte en dos. */
+      .deck { position:static !important; transform:none !important; width:1920px; height:auto; overflow:visible; box-shadow:none; }
       .slide { position:relative; width:1920px; height:1080px; opacity:1; transform:none; pointer-events:auto; page-break-after:always; }
+      .slide:last-child { page-break-after:auto; }
       /* Al imprimir sí queremos las 32 láminas, no solo las tres pintadas. */
       .slide.far { content-visibility:visible; visibility:visible; }
-      [data-reveal] { opacity:1; transform:none; }
-      .chrome, .notes-panel, .overview, .help { display:none !important; }
+      /* Sin !important ganan las variantes .motion-left/.motion-right, que son
+         más específicas: los elementos salían desplazados y solapados. Y sin
+         filter:none los que aún no se han revelado salen borrosos. */
+      [data-reveal] { opacity:1 !important; transform:none !important; filter:none !important; }
+      .chrome, .notes-panel, .overview, .help,
+      .chapter-hud, .slide-flash, .skip-link { display:none !important; }
     }
   </style>
 </head>
@@ -1106,7 +1120,11 @@
       <div class="shortcut"><kbd>E</kbd>Modo edición</div><div class="shortcut"><kbd>Space</kbd>Siguiente paso</div>
       <div class="shortcut"><kbd>Home</kbd>Primera</div><div class="shortcut"><kbd>End</kbd>Última</div>
       <div class="shortcut"><kbd>?</kbd>Ayuda</div><div class="shortcut"><kbd>Esc</kbd>Cerrar paneles</div>
-    </div><button class="action-button primary" style="margin-top:26px" data-close="help">Entendido</button></div>
+    </div>
+    <p class="help-download">¿Necesitas la presentación en PowerPoint?
+      <a href="/presentaciones/ia-2026/presentacion-ia-2026.pptx" download>Descargar .pptx</a>
+      · 32 láminas en 16:9, con las notas del presentador.</p>
+    <button class="action-button primary" style="margin-top:20px" data-close="help">Entendido</button></div>
   </div>
   <div class="laser" aria-hidden="true"></div>
   <div class="edit-toolbar" role="toolbar" aria-label="Edición de contenido">

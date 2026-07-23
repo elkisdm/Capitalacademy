@@ -9,6 +9,37 @@ Copia publicada de la presentación HTML de la clase **"IA aplicada al rol del a
 - Se sirve como archivo estático desde `public/`. No pasa por el layout ni por la sesión de
   Supabase: cualquiera con el enlace la puede abrir.
 - Dentro del classroom se publica como recurso de tipo `link` de la clase en vivo.
+- Versión descargable: `/presentaciones/ia-2026/presentacion-ia-2026.pptx` (enlace en el
+  panel de ayuda, tecla `?`).
+
+## Exportar a PPTX
+
+El `.pptx` no se genera en cada visita: es un archivo estático que se reexporta a mano
+cuando cambian las láminas. **Si editas `index.html`, el `.pptx` queda desactualizado
+hasta que repitas estos tres pasos.**
+
+Cada lámina entra como imagen a sangre completa, así que el resultado es idéntico al
+diseño pero el texto de las láminas no es editable en PowerPoint. Lo que sí queda como
+texto son las **notas del presentador**, que salen de `data-notes`.
+
+```bash
+# 1. El deck completo a PDF, usando su propio CSS de impresión (32 páginas 16:9).
+#    Necesita el sitio corriendo en localhost:3000 y un Chrome headless.
+"$HOME/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing" \
+  --headless --disable-gpu --virtual-time-budget=15000 --no-pdf-header-footer \
+  --print-to-pdf=/tmp/deck.pdf http://localhost:3000/presentaciones/ia-2026
+
+# 2. Cada página a JPEG de 1920x1080 (96 dpi sobre una página de 20 pulgadas). Requiere poppler.
+mkdir -p /tmp/laminas && cd /tmp/laminas && pdftoppm -jpeg -jpegopt quality=82 -r 96 /tmp/deck.pdf slide
+
+# 3. Armar el .pptx. Requiere `pip install python-pptx`.
+python scripts/presentaciones/build-pptx.py \
+  public/presentaciones/ia-2026/index.html /tmp/laminas \
+  public/presentaciones/ia-2026/presentacion-ia-2026.pptx
+```
+
+Cualquiera puede obtener también un PDF con **Imprimir → Guardar como PDF** desde el
+navegador: el `@page` de 1920×1080 y el bloque `@media print` están hechos para eso.
 
 ## Diferencias con el original
 
@@ -52,6 +83,17 @@ La corrección tiene cuatro partes, todas sin cambio visual:
 - En pantallas táctiles se apagan la textura `mix-blend-mode` del deck y la sombra del logo.
 
 `@media print` reactiva las láminas lejanas para que imprimir siga dando las 32 páginas.
+
+## El modo impresión estaba roto
+
+De él sale el PPTX, así que hubo que arreglarlo. Tenía tres fallas, ninguna visible hasta
+que se intentó imprimir: el deck se posiciona con `left/top: 50%` y se recentra con un
+`translate` que el modo impresión anulaba, así que salía corrido media página y cada
+lámina se partía en dos; los elementos revelables conservaban el desplazamiento de sus
+variantes `.motion-left`/`.motion-right` (más específicas que el reset) y se solapaban
+entre sí; y los que aún no se habían revelado salían con `filter: blur(4px)`. Además
+faltaba `print-color-adjust: exact` —sin eso el navegador descarta los fondos— y un
+`@page` de 1920×1080, sin el cual todo se imprimía en tamaño carta.
 
 ## Editar
 

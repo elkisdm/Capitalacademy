@@ -3,8 +3,9 @@
 Copia publicada de la presentación HTML de la clase **"IA aplicada al rol del asesor"**
 (Diplomado, IV Generación · 22 de julio de 2026).
 
-- URL pública: `/presentaciones/ia-2026` (la URL limpia sale de un rewrite en `next.config.ts`;
-  el archivo real es `index.html`).
+- URL pública: `/presentaciones/ia-2026` (el archivo real es `index.html`). En local la URL
+  limpia funciona por el rewrite de `next.config.ts`; en Netlify, además, un 301 agrega la
+  barra final. Por eso las rutas internas del HTML son absolutas y no relativas.
 - Se sirve como archivo estático desde `public/`. No pasa por el layout ni por la sesión de
   Supabase: cualquiera con el enlace la puede abrir.
 - Dentro del classroom se publica como recurso de tipo `link` de la clase en vivo.

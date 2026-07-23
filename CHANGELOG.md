@@ -36,6 +36,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- Entrar desde el enlace de asistencia ya no falla: si el enlace del correo se abre dos veces (el escáner del correo o un segundo clic lo consumían) la plataforma te deja pasar igual, y al recuperar tu contraseña ahora vuelves a la pantalla que estabas intentando abrir en vez de al inicio del classroom (`4987dc9`)
 - Los mensajes de error al editar el perfil ahora se muestran en español, en vez de texto técnico en inglés (`8568b85`)
 - Editar la bio del perfil ya no deja todo el texto seleccionado al abrir el campo, y ahora muestra cuántos caracteres quedan de los 3000 disponibles (`1a1ee5e`)
 - las guías de quizzes, examen final y certificación ahora describen cómo funciona la plataforma hoy: las notas de los quizzes por clase se publican solas y cuentan para el promedio aunque no certifiquen, las alternativas llegan hasta la F, y los certificados viven en su propia sección (`f2bb309`, `5223ae1`)

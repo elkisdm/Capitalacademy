@@ -70,19 +70,25 @@ export async function POST(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
   }
 
-  const { data: program } = await admin
+  const { data: program, error: programError } = await admin
     .from("programs")
     .select("grade_exigencia_pct")
     .eq("id", evaluation.program_id)
     .single();
+  if (programError) {
+    return NextResponse.json({ error: "Error al cargar el programa" }, { status: 500 });
+  }
   const exigencia = program?.grade_exigencia_pct ?? DEFAULT_EXIGENCIA_PCT;
 
   // Resuelve email → enrollment DENTRO de esta cohorte (nunca global).
-  const { data: enrollments } = await admin
+  const { data: enrollments, error: enrollmentsError } = await admin
     .from("enrollments")
     .select("id, profiles(email)")
     .eq("cohort_id", cohortId)
     .in("status", ["active", "completed"]);
+  if (enrollmentsError) {
+    return NextResponse.json({ error: "Error al cargar el roster" }, { status: 500 });
+  }
 
   const enrollmentByEmail = new Map<string, string>();
   for (const e of enrollments ?? []) {

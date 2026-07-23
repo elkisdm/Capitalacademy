@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (message === "transcript_corrupted") {
+    if (message.startsWith("transcript_corrupted")) {
       return NextResponse.json(
         { error: "La transcripcion parece corrupta o incoherente" },
         { status: 422 },

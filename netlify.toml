@@ -11,3 +11,22 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Los archivos de public/ los sirve el CDN de Netlify, que ignora el headers() de
+# next.config.ts: la caché de la presentación tiene que declararse acá. Se cachean
+# un día y se revalidan en segundo plano por una semana. El index.html queda fuera
+# a propósito, para poder corregir una lámina y que se vea en la siguiente visita.
+[[headers]]
+  for = "/presentaciones/ia-2026/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/presentaciones/ia-2026/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/presentaciones/ia-2026/presentacion-ia-2026.pptx"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"

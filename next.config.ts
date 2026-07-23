@@ -63,6 +63,8 @@ const nextConfig: NextConfig = {
         // salvo que se reexporte: se cachean un día y se revalidan en segundo plano
         // durante una semana. El index.html queda fuera a propósito, para poder
         // corregir una lámina y que se vea en la siguiente visita.
+        // OJO: en producción esto no alcanza —el CDN de Netlify sirve public/ por su
+        // cuenta e ignora estas cabeceras—; la regla que manda está en netlify.toml.
         source: "/presentaciones/:slug/:path((?!index\\.html).*)",
         headers: [
           {

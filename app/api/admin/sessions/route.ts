@@ -112,11 +112,19 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
 
-  const { data: cohort } = await admin
+  const { data: cohort, error: cohortError } = await admin
     .from("cohorts")
     .select("id, program_id")
     .eq("id", cohort_id)
     .single();
+
+  if (cohortError && cohortError.code !== "PGRST116") {
+    console.error("Error al buscar cohorte:", cohortError);
+    return NextResponse.json(
+      { error: "Error al buscar la cohorte" },
+      { status: 500 },
+    );
+  }
 
   if (!cohort) {
     return NextResponse.json(

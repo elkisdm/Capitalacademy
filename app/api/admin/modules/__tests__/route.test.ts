@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextResponse } from "next/server";
 
 vi.mock("@/lib/auth/authorize-admin", () => ({
   authorizeAdmin: vi.fn(async () => ({ user: { id: "admin-1" } })),
@@ -18,6 +19,8 @@ type State = {
   progressCount: number;
   sessionCount: number;
   deleted: Res;
+  cohort: Record<string, unknown> | null;
+  modulesList: Array<Record<string, unknown>> | null;
 };
 let state: State;
 
@@ -33,8 +36,15 @@ function makeBuilder(table: string) {
   }
   const has = (m: string) => ops.some(([mm]) => mm === m);
   const eqFields = () => ops.filter(([m]) => m === "eq").map(([, a]) => a[0]);
+  const orderAscending = () => {
+    const call = ops.find(([m]) => m === "order");
+    if (!call) return undefined;
+    const opts = call[1][1] as { ascending?: boolean } | undefined;
+    return opts?.ascending;
+  };
   const resolve = () => {
     if (table === "programs") return { data: state.program, error: null };
+    if (table === "cohorts") return { data: state.cohort, error: null };
     if (table === "lessons") return { data: state.moduleLessons, error: null };
     if (table === "video_progress") return { count: state.progressCount, error: null };
     if (table === "class_sessions") return { count: state.sessionCount, error: null };
@@ -43,7 +53,12 @@ function makeBuilder(table: string) {
       if (has("update")) return state.updated;
       if (has("delete")) return state.deleted;
       if (has("not")) return { data: state.slugRows, error: null };
-      if (has("order")) return { data: state.lastPos, error: null };
+      if (has("order")) {
+        // El listado GET ordena ascendente; la búsqueda de última posición
+        // del POST ordena descendente. Se distingue por ese flag.
+        if (orderAscending() === true) return { data: state.modulesList, error: null };
+        return { data: state.lastPos, error: null };
+      }
       if (has("neq")) return { data: state.patchDupe, error: null };
       if (eqFields().includes("code")) return { data: state.postDupe, error: null };
       return { data: state.patchCurrent, error: null };
@@ -61,7 +76,8 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({ from: (table: string) => makeBuilder(table) })),
 }));
 
-const { POST } = await import("@/app/api/admin/modules/route");
+const { authorizeAdmin } = await import("@/lib/auth/authorize-admin");
+const { GET, POST } = await import("@/app/api/admin/modules/route");
 const { PATCH, DELETE } = await import("@/app/api/admin/modules/[moduleId]/route");
 
 const PROGRAM_ID = "aaaaaaaa-bbbb-4ccc-8ddd-111111111111";
@@ -91,10 +107,73 @@ beforeEach(() => {
     progressCount: 0,
     sessionCount: 0,
     deleted: { data: [{ id: MODULE_ID }], error: null },
+    cohort: { program_id: PROGRAM_ID },
+    modulesList: [{ id: MODULE_ID, title: "M1", position: 1 }],
   };
 });
 
+const COHORT_ID = "aaaaaaaa-bbbb-4ccc-8ddd-333333333333";
+
+describe("GET /api/admin/modules (listar por cohorte)", () => {
+  it("401/403 cuando authorizeAdmin rechaza", async () => {
+    vi.mocked(authorizeAdmin).mockResolvedValueOnce({
+      error: NextResponse.json({ error: "No autorizado" }, { status: 403 }),
+    });
+    const res = await GET(new Request(`http://x/api/admin/modules?cohortId=${COHORT_ID}`));
+    expect(res!.status).toBe(403);
+  });
+
+  it("422 cuando falta cohortId", async () => {
+    const res = await GET(new Request("http://x/api/admin/modules"));
+    expect(res!.status).toBe(422);
+    const json = await res!.json();
+    expect(json.error).toContain("cohortId");
+  });
+
+  it("404 cuando la cohorte no existe", async () => {
+    state.cohort = null;
+    const res = await GET(new Request(`http://x/api/admin/modules?cohortId=${COHORT_ID}`));
+    expect(res!.status).toBe(404);
+  });
+
+  it("200 devuelve los módulos del programa de la cohorte, mapeados", async () => {
+    state.modulesList = [
+      { id: MODULE_ID, title: "M1", position: 1, code: "extra-no-deberia-filtrarse" },
+    ];
+    const res = await GET(new Request(`http://x/api/admin/modules?cohortId=${COHORT_ID}`));
+    expect(res!.status).toBe(200);
+    const json = await res!.json();
+    expect(json).toEqual([{ id: MODULE_ID, title: "M1", position: 1 }]);
+  });
+
+  it("200 con lista vacía cuando el programa no tiene módulos", async () => {
+    state.modulesList = null;
+    const res = await GET(new Request(`http://x/api/admin/modules?cohortId=${COHORT_ID}`));
+    expect(res!.status).toBe(200);
+    const json = await res!.json();
+    expect(json).toEqual([]);
+  });
+});
+
 describe("POST /api/admin/modules (crear)", () => {
+  it("401/403 cuando authorizeAdmin rechaza", async () => {
+    vi.mocked(authorizeAdmin).mockResolvedValueOnce({
+      error: NextResponse.json({ error: "No autenticado" }, { status: 401 }),
+    });
+    const res = await POST(jsonReq("POST", { programId: PROGRAM_ID, code: "M2", title: "X" }));
+    expect(res!.status).toBe(401);
+  });
+
+  it("400 cuando el body no es JSON válido", async () => {
+    const req = new Request("http://x/api/admin/modules", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{no-es-json",
+    });
+    const res = await POST(req);
+    expect(res!.status).toBe(400);
+  });
+
   it("422 cuando falta code o title", async () => {
     const res = await POST(jsonReq("POST", { programId: PROGRAM_ID, title: "X" }));
     expect(res!.status).toBe(422);
@@ -117,6 +196,34 @@ describe("POST /api/admin/modules (crear)", () => {
     expect(res!.status).toBe(201);
     const json = await res!.json();
     expect(json.position).toBe(3);
+  });
+
+  it("201 con description explícita", async () => {
+    const res = await POST(
+      jsonReq("POST", { programId: PROGRAM_ID, code: "M2", title: "Nuevo", description: "desc" }),
+    );
+    expect(res!.status).toBe(201);
+  });
+
+  it("posición 1 cuando el programa aún no tiene módulos", async () => {
+    state.lastPos = null;
+    state.inserted = { data: { id: MODULE_ID, code: "M2", title: "Nuevo", position: 1 }, error: null };
+    const res = await POST(jsonReq("POST", { programId: PROGRAM_ID, code: "M2", title: "Nuevo" }));
+    expect(res!.status).toBe(201);
+    const json = await res!.json();
+    expect(json.position).toBe(1);
+  });
+
+  it("403 cuando el insert falla por RLS (42501)", async () => {
+    state.inserted = { data: null, error: { code: "42501", message: "denied" } };
+    const res = await POST(jsonReq("POST", { programId: PROGRAM_ID, code: "M2", title: "Nuevo" }));
+    expect(res!.status).toBe(403);
+  });
+
+  it("500 cuando el insert falla por otra razón", async () => {
+    state.inserted = { data: null, error: { code: "23505", message: "otro error" } };
+    const res = await POST(jsonReq("POST", { programId: PROGRAM_ID, code: "M2", title: "Nuevo" }));
+    expect(res!.status).toBe(500);
   });
 });
 

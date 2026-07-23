@@ -137,13 +137,17 @@ export async function POST(req: Request) {
       }
     }
 
-    await sendInvitationEmail({
+    const emailResult = await sendInvitationEmail({
       email,
       fullName: full_name ?? email,
       inviteUrl,
       programName,
       cohortName,
     });
+
+    if (!emailResult.success) {
+      console.error("invitation email failed", emailResult.error);
+    }
 
     await admin
       .from("invitation_log")
@@ -152,10 +156,18 @@ export async function POST(req: Request) {
         sent_by: auth.user.id,
         sent_at: new Date().toISOString(),
         email,
+        status: emailResult.success ? "sent" : "failed",
       })
       .then(({ error: logErr }) => {
         if (logErr) console.error("invitation_log insert failed:", logErr);
       });
+
+    if (!emailResult.success) {
+      return NextResponse.json(
+        { ...profile, invite_error: emailResult.error },
+        { status: 201 },
+      );
+    }
   }
 
   return NextResponse.json(profile, { status: 201 });

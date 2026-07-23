@@ -125,21 +125,29 @@ export function SessionAttendancePanel({
     setBulkBusy(true);
     setError(null);
     try {
-      const res = await fetch(`${base}/bulk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentIds: targets.map((row) => row.studentId),
-          attended,
-        }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(data?.error ?? "No se pudo actualizar.");
+      // El schema del servidor tope a 200 ids por request; se parte en trozos
+      // para que "Marcar todos" funcione también con cohortes grandes.
+      const chunkSize = 200;
+      let lastReport: Report | null = null;
+      for (let i = 0; i < targets.length; i += chunkSize) {
+        const chunk = targets.slice(i, i + chunkSize);
+        const res = await fetch(`${base}/bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentIds: chunk.map((row) => row.studentId),
+            attended,
+          }),
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          throw new Error(data?.error ?? "No se pudo actualizar.");
+        }
+        lastReport = await res.json();
       }
-      setReport(await res.json());
+      if (lastReport) setReport(lastReport);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar.");
     } finally {

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- La presentación "IA 2026" se puede descargar en PowerPoint (32 láminas en 16:9, con las notas del presentador), desde el panel de ayuda de la propia presentación o desde los recursos de la clase (`bcdbaa6`)
 - La presentación "IA 2026: de conversar a dirigir" queda publicada en la plataforma (`/presentaciones/ia-2026`): se abre en el navegador, avanza con el teclado y funciona sin internet una vez cargada (`05ec2bf`)
 - Evaluaciones ahora es una sección propia del panel admin (`/admin/evaluaciones`): creas una evaluación (quiz o nota manual) desde cero eligiendo su alcance, y la configuras en su propia pantalla; Certificados también estrena su propia sección en el menú (`e90c576`)
 - Nueva pantalla de notas para el alumno (escala chilena 1-7) y panel de calificación para el profesor: además de los quizzes autocorregidos, ahora se pueden cargar notas manuales (roleplay, guión de venta, etc.) con checklist, borrador/publicación e importación desde Excel por email (`2064943`)

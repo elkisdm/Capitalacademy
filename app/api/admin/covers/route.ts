@@ -134,10 +134,19 @@ export async function DELETE(req: Request) {
       .remove(files.map((f) => `${target}/${id}/${f.name}`));
   }
 
-  await supabase
+  const { data: updated, error: updateError } = await supabase
     .from(targetTable(target))
     .update({ cover_image_url: null })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
+
+  if (updateError || !updated || updated.length === 0) {
+    console.error("cover_image_url update error:", updateError);
+    return NextResponse.json(
+      { error: "Error al quitar la portada" },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ cover_image_url: null });
 }

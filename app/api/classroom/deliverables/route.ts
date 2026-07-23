@@ -56,7 +56,16 @@ export async function POST(req: Request) {
   const slash = storagePath.lastIndexOf("/");
   const dir = storagePath.slice(0, slash);
   const name = storagePath.slice(slash + 1);
-  const { data: listed } = await admin.storage.from(DELIVERABLES_BUCKET).list(dir, { search: name });
+  const { data: listed, error: listError } = await admin.storage
+    .from(DELIVERABLES_BUCKET)
+    .list(dir, { search: name });
+  if (listError) {
+    console.error("[deliverables] error al listar Storage", listError);
+    return NextResponse.json(
+      { error: "No se pudo verificar el archivo, reintenta en unos segundos" },
+      { status: 503 },
+    );
+  }
   const obj = listed?.find((f) => f.name === name);
   if (!obj) {
     return NextResponse.json({ error: "El archivo no se encontró en Storage" }, { status: 422 });
@@ -156,7 +165,7 @@ export async function POST(req: Request) {
   // Correo de confirmación: no debe romper la respuesta de subida si Resend
   // falla (mismo criterio de tolerancia a fallos que el resto de los senders).
   try {
-    const [{ data: profile }, { data: program }] = await Promise.all([
+    const [{ data: profile, error: profileError }, { data: program }] = await Promise.all([
       admin.from("profiles").select("full_name, email").eq("id", user.id).single(),
       admin.from("programs").select("name").eq("id", deliverable.program_id).single(),
     ]);
@@ -172,6 +181,8 @@ export async function POST(req: Request) {
       if (!result.success) {
         console.error("deliverable received email error", result.error);
       }
+    } else {
+      console.error("deliverable received email skipped: sin email de perfil", user.id, profileError);
     }
   } catch (err) {
     console.error("deliverable received email exception", err);

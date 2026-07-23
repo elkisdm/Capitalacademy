@@ -234,7 +234,7 @@ export async function getModulesWithLessons(
 ): Promise<ModuleWithLessons[]> {
   const supabase = await createClient();
 
-  const { data: modules } = await supabase
+  const { data: modules, error } = await supabase
     .from("program_modules")
     .select(
       `
@@ -247,6 +247,15 @@ export async function getModulesWithLessons(
     )
     .eq("program_id", programId)
     .order("position", { ascending: true });
+
+  if (error) {
+    console.error("[classroom] getModulesWithLessons falló", {
+      programId,
+      code: error.code,
+      message: error.message,
+    });
+    throw error;
+  }
 
   if (!modules) return [];
 
@@ -320,13 +329,17 @@ export async function getModuleSessionsForCohort(
 ): Promise<ScheduleSession[]> {
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("class_sessions")
     .select("*")
     .eq("cohort_id", cohortId)
     .eq("module_id", moduleId)
     .neq("status", "cancelled")
     .order("starts_at", { ascending: true });
+  if (error) {
+    console.error("[getModuleSessionsForCohort] class_sessions query error", error);
+    throw error;
+  }
 
   const sessions = (data ?? []) as unknown as ClassSession[];
   if (sessions.length === 0) return [];
@@ -397,6 +410,7 @@ export async function getCohortSchedule(
     // Fallo del dato CORE: se registra y se propaga vía el error boundary
     // (ahora con digest visible). El enriquecimiento de abajo sí degrada.
     console.error("[getCohortSchedule] class_sessions query error", error);
+    throw error;
   }
 
   const sessions = (data ?? []) as unknown as ClassSession[];
@@ -494,11 +508,19 @@ export async function getSessionForStudent(
 ): Promise<StudentSession | null> {
   const supabase = await createClient();
 
-  const { data: session } = await supabase
+  const { data: session, error } = await supabase
     .from("class_sessions")
     .select("*")
     .eq("id", sessionId)
     .maybeSingle();
+  if (error) {
+    console.error("[getSessionForStudent] class_sessions error", {
+      sessionId,
+      code: error.code,
+      message: error.message,
+    });
+    throw error;
+  }
   if (!session) return null;
   const s = session as unknown as ClassSession;
 

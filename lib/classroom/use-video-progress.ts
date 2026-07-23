@@ -67,6 +67,14 @@ export function useVideoProgress({
 
   const flushOnUnload = useCallback(() => {
     if (durationSeconds <= 0) return;
+    if (isFlushing.current) {
+      // Respeta el mismo mutex que flush(): si ya hay un PATCH en vuelo
+      // (p.ej. el del timer de 15s), no disparamos uno independiente —
+      // se re-encola y corre con la posición más reciente.
+      flushPending.current = true;
+      return;
+    }
+    isFlushing.current = true;
     try {
       fetch("/api/classroom/progress", {
         method: "PATCH",
@@ -77,11 +85,21 @@ export function useVideoProgress({
           durationSeconds,
         }),
         keepalive: true,
-      });
+      })
+        .catch(() => {
+          // Best-effort save on unload
+        })
+        .finally(() => {
+          isFlushing.current = false;
+          if (flushPending.current) {
+            flushPending.current = false;
+            flush();
+          }
+        });
     } catch {
-      // Best-effort save on unload
+      isFlushing.current = false;
     }
-  }, [lessonId, durationSeconds]);
+  }, [lessonId, durationSeconds, flush]);
 
   const handleTimeUpdate = useCallback((currentTime: number) => {
     positionRef.current = Math.floor(currentTime);

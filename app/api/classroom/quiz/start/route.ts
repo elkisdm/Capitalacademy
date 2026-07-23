@@ -78,12 +78,19 @@ export async function POST(req: Request) {
 
   // Intentos del FINAL: anclados a la evaluación final (config.id), NO a program_id
   // —los intentos formativos por clase comparten program_id y contaminarían el gate.
-  const { data: attempts } = await admin
+  const { data: attempts, error: attemptsError } = await admin
     .from("quiz_attempts")
     .select("id, passed, completed_at, questions_presented, started_at")
     .eq("enrollment_id", enrollment.id)
     .eq("evaluation_id", config.id)
     .order("created_at", { ascending: false });
+  if (attemptsError) {
+    console.error("Error cargando intentos de quiz:", attemptsError);
+    return NextResponse.json(
+      { error: "No se pudo cargar tu intento, inténtalo de nuevo" },
+      { status: 500 },
+    );
+  }
 
   const all = attempts ?? [];
   const completed = all.filter((a) => a.completed_at);
@@ -103,7 +110,16 @@ export async function POST(req: Request) {
   const incomplete = all.find((a) => !a.completed_at);
   if (incomplete) {
     const presentedIds = (incomplete.questions_presented as string[]) ?? [];
-    const questions = await getPresentedEvaluationQuestions(admin, config.id, presentedIds);
+    let questions;
+    try {
+      questions = await getPresentedEvaluationQuestions(admin, config.id, presentedIds);
+    } catch (error) {
+      console.error("Error rehidratando intento de quiz:", error);
+      return NextResponse.json(
+        { error: "No se pudo cargar tu intento, inténtalo de nuevo" },
+        { status: 500 },
+      );
+    }
     return NextResponse.json({
       attemptId: incomplete.id,
       questions,
@@ -122,7 +138,16 @@ export async function POST(req: Request) {
   }
 
   // Gate de completitud server-side (no confiar en el cliente).
-  const { currentPct } = await getCompletion(admin, programId, enrollment.id);
+  let currentPct: number;
+  try {
+    ({ currentPct } = await getCompletion(admin, programId, enrollment.id));
+  } catch (error) {
+    console.error("[quiz/start] error al calcular completitud", error);
+    return NextResponse.json(
+      { error: "Servicio ocupado, reintenta en unos segundos" },
+      { status: 503 },
+    );
+  }
   if (currentPct < minCompletion) {
     return NextResponse.json(
       {

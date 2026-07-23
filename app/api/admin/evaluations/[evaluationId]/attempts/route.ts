@@ -55,11 +55,16 @@ export async function GET(_req: Request, { params }: Ctx) {
   const { evaluationId } = await params;
   const admin = createAdminClient();
 
-  const { data: questionsRaw } = await admin
+  const { data: questionsRaw, error: questionsError } = await admin
     .from("quiz_questions")
     .select("id, question_text, question_type, options, correct_answer, correct_option")
     .eq("evaluation_id", evaluationId)
     .order("sort_order", { ascending: true });
+
+  if (questionsError) {
+    console.error("Error fetching evaluation questions:", questionsError);
+    return NextResponse.json({ error: "Error al obtener las preguntas" }, { status: 500 });
+  }
 
   const questions = (questionsRaw ?? []) as DbQuestion[];
   const byId = new Map(questions.map((q) => [q.id, q]));

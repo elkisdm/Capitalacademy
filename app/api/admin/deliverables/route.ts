@@ -26,11 +26,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "programId es requerido" }, { status: 422 });
   }
 
+  const parsedProgramId = uuidLike.safeParse(programId);
+  if (!parsedProgramId.success) {
+    return NextResponse.json({ error: "programId debe ser un UUID válido" }, { status: 422 });
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("deliverables")
     .select("*, deliverable_submissions(count)")
-    .eq("program_id", programId)
+    .eq("program_id", parsedProgramId.data)
     .order("opens_at", { ascending: true });
 
   if (error) {

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PROMPT_VERSION = 1;
+const MODEL = "gpt-5.4-mini";
 
 const SYSTEM_PROMPT = `Eres un asistente educativo especializado en el sector inmobiliario chileno. Tu tarea es generar un resumen estructurado de una clase grabada a partir de su transcripcion.
 
@@ -56,7 +57,7 @@ async function callOpenAI(
   const userMessage = `Titulo de la leccion: ${lessonTitle}\n\nTranscripcion:\n${transcriptText}`;
 
   const requestBody = {
-    model: "gpt-5.4-mini",
+    model: MODEL,
     response_format: { type: "json_object" },
     temperature: 0.3,
     max_completion_tokens: 2000,
@@ -145,8 +146,8 @@ export async function generateLessonSummary(
     }
   }
 
-  if ("error" in parsed && parsed.error === "transcript_corrupted") {
-    throw new Error("transcript_corrupted");
+  if ("error" in parsed) {
+    throw new Error(`transcript_corrupted: ${parsed.error}`);
   }
 
   const summary = parsed as SummaryPayload;
@@ -167,7 +168,7 @@ export async function generateLessonSummary(
         key_points: summary.key_points,
         summary_text: summary.summary_text,
         glossary: summary.glossary,
-        model_used: "gpt-5.4-mini",
+        model_used: MODEL,
         prompt_version: PROMPT_VERSION,
         generation_count: generationCount,
         is_manually_edited: false,

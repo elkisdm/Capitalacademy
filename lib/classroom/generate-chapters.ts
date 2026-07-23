@@ -109,7 +109,7 @@ export async function generateLessonChapters(
     throw new Error(`Lesson not found: ${lessonId}`);
   }
 
-  if (!lesson.video_duration_seconds) {
+  if (lesson.video_duration_seconds === null || lesson.video_duration_seconds === undefined) {
     throw new Error(`Lesson ${lessonId} has no video duration`);
   }
 
@@ -149,11 +149,18 @@ export async function generateLessonChapters(
     }
   }
 
-  if ("error" in parsed && parsed.error === "transcript_corrupted") {
-    throw new Error("transcript_corrupted");
+  if ("error" in parsed) {
+    if (parsed.error === "transcript_corrupted") {
+      throw new Error("transcript_corrupted");
+    }
+    throw new Error(`OpenAI reporto un error al generar capitulos: ${parsed.error}`);
   }
 
-  const { chapters } = parsed as ChaptersPayload;
+  if (!("chapters" in parsed) || !Array.isArray(parsed.chapters)) {
+    throw new Error("OpenAI no devolvio la clave 'chapters' esperada");
+  }
+
+  const { chapters } = parsed;
   const duration = lesson.video_duration_seconds;
 
   const validChapters = chapters.filter(

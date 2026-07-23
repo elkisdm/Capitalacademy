@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// Nota: sin marcadores `?: never` en la rama opuesta — con ellos el operador
+// `in` no narrowea del todo (la clave sigue "presente" aunque sea `never`) y
+// TypeScript termina infiriendo `NextResponse | undefined` en `auth.error`.
 type AuthResult =
-  | { user: { id: string; email?: string }; error?: never }
-  | { error: NextResponse; user?: never };
+  | { user: { id: string; email?: string } }
+  | { error: NextResponse };
 
 export async function authorizeAdmin(): Promise<AuthResult> {
   const supabase = await createClient();
@@ -39,47 +42,12 @@ export async function authorizeAdmin(): Promise<AuthResult> {
   return { user };
 }
 
-export async function requireStaff(): Promise<AuthResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return {
-      error: NextResponse.json(
-        { error: "No autenticado" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("system_role")
-    .eq("id", user.id)
-    .single();
-
-  if (
-    !profile ||
-    !["ops", "admin"].includes(profile.system_role)
-  ) {
-    return {
-      error: NextResponse.json(
-        { error: "No autorizado" },
-        { status: 403 },
-      ),
-    };
-  }
-
-  return { user };
-}
+export const requireStaff = authorizeAdmin;
 
 /**
  * Gate por-sesión: platform staff (ops/admin) O teacher/assistant de la
  * cohorte a la que pertenece `sessionId`. A diferencia de `requireStaff`
- * (global, solo ops/admin — la rama "teacher" es código muerto porque ese
- * `system_role` no existe), esto habilita al docente real (que vive en
+ * (global, solo ops/admin), esto habilita al docente real (que vive en
  * `cohort_roles`) a operar SOLO sobre las sesiones de sus propias cohortes.
  */
 export async function requireSessionStaff(

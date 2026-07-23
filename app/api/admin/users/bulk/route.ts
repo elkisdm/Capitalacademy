@@ -169,13 +169,21 @@ export async function POST(req: Request) {
         succeededUserIds.push({ rowIndex: index, userId: targetUserId });
 
         if (send_invitations) {
-          await sendInvitationEmail({
+          const emailResult = await sendInvitationEmail({
             email: row.email,
             fullName: row.full_name,
-            inviteUrl: linkData.properties.action_link,
+            inviteUrl: `${baseUrl}/auth/confirm?token_hash=${encodeURIComponent(linkData.properties.hashed_token)}&type=${linkData.properties.verification_type ?? "invite"}&next=${encodeURIComponent("/onboarding/set-password")}`,
             programName,
             cohortName,
           });
+
+          if (!emailResult.success) {
+            errors.push({
+              row: rowNum,
+              email: row.email,
+              reason: `Invitación no enviada: ${emailResult.error ?? "error desconocido"}`,
+            });
+          }
         }
       }
     } catch (err) {

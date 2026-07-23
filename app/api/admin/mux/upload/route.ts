@@ -76,10 +76,23 @@ export async function POST(req: Request) {
   }
 
   // Limpia cualquier error previo: esta es una subida nueva para la lección.
-  await supabase
+  const { data: linked, error: linkError } = await supabase
     .from("lessons")
     .update({ mux_upload_id: upload.id, mux_error: null })
-    .eq("id", lessonId);
+    .eq("id", lessonId)
+    .select("id");
+
+  if (linkError || !linked?.length) {
+    console.error("No se pudo guardar mux_upload_id", {
+      lessonId,
+      uploadId: upload.id,
+      linkError,
+    });
+    return NextResponse.json(
+      { error: "No se pudo enlazar la subida con la lección. Intenta de nuevo." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({
     uploadUrl: upload.url,

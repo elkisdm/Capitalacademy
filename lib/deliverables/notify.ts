@@ -76,11 +76,16 @@ export async function notifyDeliverableOpen(deliverableId: string): Promise<Noti
     .eq("id", reserved.program_id)
     .single();
 
-  const { data: enrollments } = await admin
+  const { data: enrollments, error: enrollmentsError } = await admin
     .from("enrollments")
     .select("student_id, profiles(email, full_name), cohorts!inner(program_id)")
     .eq("cohorts.program_id", reserved.program_id)
     .eq("status", "active");
+
+  if (enrollmentsError) {
+    console.error("notifyDeliverableOpen enrollments error", enrollmentsError);
+    return { skipped: true };
+  }
 
   const byStudent = new Map<string, { email: string; fullName: string }>();
   for (const e of (enrollments ?? []) as Array<{

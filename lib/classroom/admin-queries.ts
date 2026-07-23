@@ -47,13 +47,15 @@ export async function getCohortProgressReport(cohortId: string) {
 
   if (!modules) return { cohort, program, students: [] };
 
-  const { data: lessons } = await supabase
+  const { data: lessons, error: lessonsError } = await supabase
     .from("lessons")
     .select("id, module_id, mux_playback_id")
     .in(
       "module_id",
       modules.map((m) => m.id),
     );
+
+  if (lessonsError) throw lessonsError;
 
   const enrollmentIds = enrollments.map((e) => e.id);
   let allProgress: Array<{
@@ -65,10 +67,11 @@ export async function getCohortProgressReport(cohortId: string) {
   }> = [];
 
   if (enrollmentIds.length > 0) {
-    const { data: progress } = await supabase
+    const { data: progress, error: progressError } = await supabase
       .from("video_progress")
       .select("enrollment_id, lesson_id, watch_percentage, completed, last_watched_at")
       .in("enrollment_id", enrollmentIds);
+    if (progressError) throw progressError;
     allProgress = (progress ?? []) as typeof allProgress;
   }
 
@@ -78,6 +81,13 @@ export async function getCohortProgressReport(cohortId: string) {
     const list = lessonsByModule.get(l.module_id) ?? [];
     list.push(l.id);
     lessonsByModule.set(l.module_id, list);
+  }
+
+  const progressByEnrollment = new Map<string, typeof allProgress>();
+  for (const p of allProgress) {
+    const list = progressByEnrollment.get(p.enrollment_id) ?? [];
+    list.push(p);
+    progressByEnrollment.set(p.enrollment_id, list);
   }
 
   const students: CohortStudentProgress[] = enrollments.map((enr) => {
@@ -90,9 +100,7 @@ export async function getCohortProgressReport(cohortId: string) {
       .slice(0, 2)
       .toUpperCase();
 
-    const studentProgress = allProgress.filter(
-      (p) => p.enrollment_id === enr.id,
-    );
+    const studentProgress = progressByEnrollment.get(enr.id) ?? [];
 
     const moduleProgress = modules.map((mod) => {
       const modLessons = lessonsByModule.get(mod.id) ?? [];

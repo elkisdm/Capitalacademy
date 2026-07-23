@@ -130,7 +130,7 @@ async function callOpenAIBatched(
 ): Promise<CorrectionItem[]> {
   const input = segments.map((s) => ({ index: s.index, text: s.text }));
 
-  if (input.length <= 100) {
+  if (input.length <= BATCH_SIZE) {
     return callOpenAI(input);
   }
 
@@ -161,6 +161,7 @@ function rebuildVTT(
   const blocks = cleaned.split(/\n\n+/);
 
   const TIMESTAMP_RE = /^[\d:.]+\s*-->\s*[\d:.]+/;
+  const HTML_TAG_RE = /<[^>]+>/g;
   let segmentIdx = 0;
   const result: string[] = [];
 
@@ -177,6 +178,20 @@ function rebuildVTT(
 
     if (timeLine === -1) {
       // Header block (e.g. "WEBVTT") — keep as-is
+      result.push(block);
+      continue;
+    }
+
+    // Replicar el mismo filtro de texto vacío que usa parseVTT: un cue cuyo
+    // único contenido es una etiqueta HTML (ej. '<i></i>') no genera segmento
+    // ahí, así que tampoco debe consumir un índice de `segments` acá.
+    const textLines = lines
+      .slice(timeLine + 1)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    const text = textLines.join(" ").replace(HTML_TAG_RE, "").trim();
+
+    if (text.length === 0) {
       result.push(block);
       continue;
     }
@@ -213,10 +228,14 @@ export async function correctTranscript(
     .eq("status", "ready")
     .single();
 
-  if (fetchError || !transcript) {
+  if (fetchError && fetchError.code !== "PGRST116") {
     throw new Error(
-      `No transcript found for lesson ${lessonId}: ${fetchError?.message ?? "not found"}`,
+      `Failed to fetch transcript for lesson ${lessonId}: ${fetchError.message}`,
     );
+  }
+
+  if (!transcript) {
+    throw new Error(`No transcript found for lesson ${lessonId}`);
   }
 
   if (!transcript.content_vtt) {
@@ -231,11 +250,17 @@ export async function correctTranscript(
   }
 
   // 3. Fetch existing segments that were manually edited (don't overwrite)
-  const { data: existingSegments } = await admin
+  const { data: existingSegments, error: editedError } = await admin
     .from("transcript_segments")
     .select("segment_index")
     .eq("transcript_id", transcript.id)
     .eq("manually_edited", true);
+
+  if (editedError) {
+    throw new Error(
+      `Failed to fetch manually edited segments: ${editedError.message}`,
+    );
+  }
 
   const manuallyEditedIndices = new Set(
     (existingSegments ?? []).map((s) => s.segment_index),

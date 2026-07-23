@@ -313,7 +313,9 @@ function confirmationHtml(d: CapacitacionConfirmationInput, program: string): st
         ? d.meetingUrl
           ? "El enlace de conexión es el mismo botón de arriba. Te enviaremos recordatorios antes de la clase."
           : "Esta clase es online. Te enviaremos el enlace de conexión en los recordatorios previos."
-        : "Esta clase es presencial. Revisa la ubicación en tu calendario dentro de la plataforma. Te enviaremos recordatorios antes de la clase.",
+        : d.modality === "recorded"
+          ? "Esta clase es grabada. Podrás verla en la plataforma cuando esté disponible."
+          : "Esta clase es presencial. Revisa la ubicación en tu calendario dentro de la plataforma. Te enviaremos recordatorios antes de la clase.",
     );
   return shell("Inscripción confirmada", body);
 }
@@ -336,6 +338,8 @@ function confirmationText(d: CapacitacionConfirmationInput, program: string): st
     lines.push(`Enlace de conexión: ${d.meetingUrl}`);
   } else if (online) {
     lines.push("Te enviaremos el enlace de conexión en los recordatorios previos.");
+  } else if (d.modality === "recorded") {
+    lines.push("Clase grabada. Podrás verla en la plataforma cuando esté disponible.");
   } else {
     lines.push("Clase presencial. Revisa la ubicación en tu calendario dentro de la plataforma.");
   }
@@ -367,7 +371,9 @@ function reminderHtml(d: CapacitacionReminderInput): string {
         ? d.meetingUrl
           ? "El botón te lleva directo a la sala. Conéctate unos minutos antes."
           : "Esta clase es online. El enlace de conexión estará disponible en tu calendario dentro de la plataforma."
-        : "Esta clase es presencial. Revisa la ubicación y los materiales en tu calendario dentro de la plataforma.",
+        : d.modality === "recorded"
+          ? "Esta clase es grabada. Podrás verla en la plataforma cuando esté disponible."
+          : "Esta clase es presencial. Revisa la ubicación y los materiales en tu calendario dentro de la plataforma.",
     );
   return shell("Recordatorio de clase", body);
 }
@@ -390,6 +396,8 @@ function reminderText(d: CapacitacionReminderInput): string {
     lines.push(`Enlace de conexión: ${d.meetingUrl}`);
   } else if (online) {
     lines.push("El enlace de conexión estará disponible en tu calendario dentro de la plataforma.");
+  } else if (d.modality === "recorded") {
+    lines.push("Clase grabada. Podrás verla en la plataforma cuando esté disponible.");
   } else {
     lines.push("Clase presencial. Revisa la ubicación y materiales en tu calendario dentro de la plataforma.");
   }

@@ -62,8 +62,9 @@ export async function PATCH(req: Request) {
     .maybeSingle();
 
   if (error) {
+    console.error("enrollment-segment update error", error);
     return NextResponse.json(
-      { error: `No se pudo actualizar el segmento: ${error.message}` },
+      { error: "No se pudo actualizar el segmento" },
       { status: 500 },
     );
   }

@@ -42,6 +42,9 @@
 | `docs/marketing/telefonos-bd-externa.csv` | Base externa Diplomado 4ª gen: 169 teléfonos E.164 (canal WhatsApp) | — | — |
 | `scripts/send-test-brevo.mjs` | Envío de prueba del correo (Brevo transaccional); el blast masivo va por dashboard Brevo | — | — |
 | `scripts/send-novedades-alumnos.mjs` | Envío one-off por Resend del correo de novedades (2026-07-12) a alumnos activos, segmentado por programa; idempotente vía log local | `--list` / `--dry-run` / `preview` / `send` | — |
+| `scripts/send-encuesta-ia.mjs` | Envío one-off de la encuesta de diagnóstico de IA (2026-07-22) a alumnos activos por programa; idempotente vía log local | `--list` / `--dry-run` / `preview` / `send` | — |
+| `scripts/send-encuesta-feedback-clase-ia.mjs` | Envío one-off de la encuesta ANÓNIMA de feedback post-clase de IA (2026-07-22); correo personalizado, formulario sin identificador | `--list` / `--dry-run` / `preview` / `send` | — |
+| `scripts/export-class-planning-context.mjs` | Snapshot sanitizado para planificación docente (sin transcripciones completas ni IDs de alumnos), hacia `../capital-context/academia/snapshots` | `--out-dir` | — |
 
 ## Acceso / Onboarding
 
@@ -254,6 +257,7 @@
 | `components/admin/env-switcher.tsx` | Selector global de entorno + toggle "Ver como Admin/Alumno" (en el sidebar, solo staff) | — | — |
 | `lib/admin/session-module.ts` | Valida que el módulo de una sesión pertenezca al programa de la cohorte (POST/PATCH de sesiones) | — | — |
 | `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada, modelo de roles y `requireSessionStaff` (gate por-sesión: staff o docente/asistente de la cohorte de esa sesión) | — | 0004, 0013 |
+| `lib/auth/redirects.ts` | Saneamiento del `next` post-autenticación (`safeNextPath`, anti open-redirect) y origen canónico de los enlaces; compartido por `/auth/confirm`, login y set-password | — | — |
 
 ## Landing (público)
 

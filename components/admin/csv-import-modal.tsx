@@ -335,6 +335,21 @@ export function CsvImportModal({ open, onClose, cohorts, existingEmails = [] }: 
 
       const data = await res.json();
 
+      if (!res.ok) {
+        setResult({
+          created: 0,
+          skipped: rows.filter((r) => !r.selected).length,
+          invalid: selected.length,
+          details: selected.map((r) => ({
+            email: r.email,
+            status: "invalid",
+            reason: data?.error ?? "Error al importar",
+          })),
+        });
+        setStep(2);
+        return;
+      }
+
       const errorMap = new Map<string, string>();
       for (const err of data.errors ?? []) {
         const raw: string = err.reason ?? "";

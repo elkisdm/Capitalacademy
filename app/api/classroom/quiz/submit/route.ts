@@ -5,13 +5,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
 import { uuidLike } from "@/lib/utils/zod";
 import { syncQuizGrade } from "@/lib/grades/sync-quiz-grade";
+import { scoreAnswer, type QuestionType, type ScorableQuestion } from "@/lib/classroom/quiz-runtime";
 
 export const runtime = "nodejs";
 
 const submitSchema = z.object({
   programId: uuidLike,
   attemptId: uuidLike,
-  answers: z.record(uuidLike, z.enum(["A", "B", "C", "D"])),
+  // Valor único (single_choice/true_false/short_answer) o set (multiple_choice).
+  answers: z.record(uuidLike, z.union([z.string(), z.array(z.string())])),
 });
 
 /**
@@ -129,7 +131,7 @@ export async function POST(req: Request) {
   // (3) Respuestas correctas solo de las presentadas, acotadas a la evaluación final.
   const { data: correctQuestions, error: questionsError } = await admin
     .from("quiz_questions")
-    .select("id, correct_option, explanation")
+    .select("id, question_type, correct_answer, correct_option, explanation")
     .eq("evaluation_id", config.id)
     .in("id", presented);
 
@@ -143,19 +145,28 @@ export async function POST(req: Request) {
   }
 
   // Score sobre el set PRESENTADO; las no respondidas cuentan como incorrectas.
+  // Puntúa por tipo con `scoreAnswer` (compartido con evaluation/submit): el panel
+  // admin genérico permite crear preguntas multiple_choice/true_false/short_answer
+  // también en evaluaciones scope='final', no solo single_choice.
   let correctCount = 0;
   const correctAnswers: Record<
     string,
     { correct_option: string; explanation: string | null; is_correct: boolean }
   > = {};
   for (const q of correctQuestions) {
-    const studentAnswer = answers[q.id];
-    // Flujo final: preguntas single_choice legacy, correct_option siempre presente.
-    const correctOption = q.correct_option ?? "";
-    const isCorrect = studentAnswer === correctOption;
+    // Compat: si correct_answer aún no está poblado, cae a correct_option (legacy).
+    const correctAnswerValue = q.correct_answer ?? q.correct_option;
+    const scorable: ScorableQuestion = {
+      id: q.id,
+      question_type: (q.question_type as QuestionType) ?? "single_choice",
+      correct_answer: correctAnswerValue,
+    };
+    const isCorrect = scoreAnswer(scorable, answers[q.id]);
     if (isCorrect) correctCount++;
     correctAnswers[q.id] = {
-      correct_option: correctOption,
+      correct_option: Array.isArray(correctAnswerValue)
+        ? correctAnswerValue.join(", ")
+        : String(correctAnswerValue ?? ""),
       explanation: q.explanation,
       is_correct: isCorrect,
     };

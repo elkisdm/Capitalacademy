@@ -24,6 +24,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
+  if (typeof body !== "object" || body === null) {
+    return NextResponse.json({ error: "Body inválido" }, { status: 400 });
+  }
+
   const { user_id, cohort_id, role } = body as AssignRoleBody;
 
   if (!user_id || !cohort_id || !role) {
@@ -78,7 +82,7 @@ export async function POST(req: Request) {
   if (role === "student") {
     const { data: existingEnrollment } = await supabase
       .from("enrollments")
-      .select("id")
+      .select("id, status")
       .eq("student_id", user_id)
       .eq("cohort_id", cohort_id)
       .maybeSingle();
@@ -94,6 +98,15 @@ export async function POST(req: Request) {
 
       if (enrollError) {
         console.error("enrollment insert error", enrollError);
+      }
+    } else if (existingEnrollment.status !== "active") {
+      const { error: enrollError } = await supabase
+        .from("enrollments")
+        .update({ status: "active" })
+        .eq("id", existingEnrollment.id);
+
+      if (enrollError) {
+        console.error("enrollment reactivate error", enrollError);
       }
     }
   }

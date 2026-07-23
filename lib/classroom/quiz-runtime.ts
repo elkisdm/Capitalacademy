@@ -94,22 +94,34 @@ export async function getCompletion(
   programId: string,
   enrollmentId: string,
 ): Promise<{ currentPct: number; completedLessons: number; totalLessons: number }> {
-  const { data: modules } = await admin
+  const { data: modules, error: modulesError } = await admin
     .from("program_modules")
     .select("id")
     .eq("program_id", programId);
+  if (modulesError) {
+    console.error("[getCompletion] error al leer program_modules", modulesError);
+    throw modulesError;
+  }
   const moduleIds = (modules ?? []).map((m) => m.id as string);
 
-  const { count: totalCount } = await admin
+  const { count: totalCount, error: totalError } = await admin
     .from("lessons")
     .select("id", { count: "exact", head: true })
     .in("module_id", moduleIds.length ? moduleIds : [NIL_UUID]);
+  if (totalError) {
+    console.error("[getCompletion] error al contar lessons", totalError);
+    throw totalError;
+  }
 
-  const { count: completedCount } = await admin
+  const { count: completedCount, error: completedError } = await admin
     .from("video_progress")
     .select("id", { count: "exact", head: true })
     .eq("enrollment_id", enrollmentId)
     .eq("completed", true);
+  if (completedError) {
+    console.error("[getCompletion] error al contar video_progress", completedError);
+    throw completedError;
+  }
 
   const totalLessons = totalCount ?? 0;
   const completedLessons = completedCount ?? 0;
@@ -147,10 +159,14 @@ export async function selectRandomQuestions(
     }));
   }
 
-  const { data: all } = await admin
+  const { data: all, error: poolError } = await admin
     .from("quiz_questions")
     .select("id, question_text, options, question_type")
     .eq("program_id", programId);
+  if (poolError) {
+    console.error("[selectRandomQuestions] fallo el pool", { programId, error: poolError });
+    throw poolError;
+  }
 
   const pool = [...(all ?? [])];
   for (let i = pool.length - 1; i > 0; i--) {
@@ -172,11 +188,15 @@ export async function getPresentedQuestions(
   questionIds: string[],
 ): Promise<QuizQuestionPublic[]> {
   if (questionIds.length === 0) return [];
-  const { data } = await admin
+  const { data, error } = await admin
     .from("quiz_questions")
     .select("id, question_text, options, question_type")
     .eq("program_id", programId)
     .in("id", questionIds);
+  if (error) {
+    console.error("[getPresentedQuestions] error al rehidratar preguntas", error);
+    throw error;
+  }
 
   const byId = new Map((data ?? []).map((q) => [q.id as string, q]));
   return questionIds
@@ -203,10 +223,14 @@ export async function selectEvaluationQuestions(
   evaluationId: string,
   limit?: number | null,
 ): Promise<QuizQuestionPublic[]> {
-  const { data: all } = await admin
+  const { data: all, error } = await admin
     .from("quiz_questions")
     .select("id, question_text, options, question_type")
     .eq("evaluation_id", evaluationId);
+  if (error) {
+    console.error("[selectEvaluationQuestions] fallo el pool", { evaluationId, error });
+    throw error;
+  }
 
   const pool = [...(all ?? [])];
   for (let i = pool.length - 1; i > 0; i--) {
@@ -229,11 +253,15 @@ export async function getPresentedEvaluationQuestions(
   questionIds: string[],
 ): Promise<QuizQuestionPublic[]> {
   if (questionIds.length === 0) return [];
-  const { data } = await admin
+  const { data, error } = await admin
     .from("quiz_questions")
     .select("id, question_text, options, question_type")
     .eq("evaluation_id", evaluationId)
     .in("id", questionIds);
+  if (error) {
+    console.error("[getPresentedEvaluationQuestions] error al rehidratar preguntas", error);
+    throw error;
+  }
 
   const byId = new Map((data ?? []).map((q) => [q.id as string, q]));
   return questionIds

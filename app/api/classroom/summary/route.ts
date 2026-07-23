@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json(summary, {
     headers: {
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "private, max-age=3600",
     },
   });
 }

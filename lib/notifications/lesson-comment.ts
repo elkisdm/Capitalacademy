@@ -1,12 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProgramStaffIds } from "@/lib/profiles/program-staff";
 import { sendConversacionNotificationEmail } from "@/lib/email/conversacion-notification";
-
-const BASE_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ||
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://capitalacademy.cl"
-).replace(/\/$/, "");
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 const EMAIL_COOLDOWN_MS = 60 * 60 * 1000;
 
@@ -37,7 +32,7 @@ export type NotifyLessonCommentParams = {
  */
 export async function notifyLessonComment(params: NotifyLessonCommentParams): Promise<void> {
   const admin = createAdminClient();
-  const url = `${BASE_URL}/classroom/go/lesson/${params.lessonId}`;
+  const url = `${getPublicBaseUrl()}/classroom/go/lesson/${params.lessonId}`;
 
   let replyRecipientId: string | null = null;
   if (params.parentId) {

@@ -6,6 +6,7 @@ import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { uuidLike } from "@/lib/utils/zod";
 import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 import { sendConversacionNotificationEmail } from "@/lib/email/conversacion-notification";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 export const runtime = "nodejs";
 
@@ -22,12 +23,6 @@ const commentPatchSchema = z.object({
   id: uuidLike,
   body: z.string().trim().min(1, "El comentario no puede estar vacío").max(5000),
 });
-
-const BASE_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ||
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://capitalacademy.cl"
-).replace(/\/$/, "");
 
 const EMAIL_COOLDOWN_MS = 60 * 60 * 1000; // 1 hora
 
@@ -76,7 +71,7 @@ async function notifyAndEmail(params: {
 }) {
   const admin = createAdminClient();
 
-  const url = `${BASE_URL}/classroom/go/thread/${params.threadId}`;
+  const url = `${getPublicBaseUrl()}/classroom/go/thread/${params.threadId}`;
 
   // Destinatarios de 'reply' (autor del hilo y autor del comentario padre, si
   // aplica): el trigger de BD ya les insertó la notificación in-app; acá solo

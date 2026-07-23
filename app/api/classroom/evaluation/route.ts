@@ -30,12 +30,20 @@ export async function GET(req: Request) {
   }
   const { evaluation, enrollmentId } = access;
 
-  const { data: attempts } = await admin
+  const { data: attempts, error: attemptsError } = await admin
     .from("quiz_attempts")
     .select("id, passed, score_pct, completed_at")
     .eq("enrollment_id", enrollmentId)
     .eq("evaluation_id", evaluationId)
     .order("created_at", { ascending: false });
+
+  if (attemptsError) {
+    console.error("evaluation status error", attemptsError);
+    return NextResponse.json(
+      { error: "No se pudo cargar tu intento, inténtalo de nuevo" },
+      { status: 500 },
+    );
+  }
 
   const all = attempts ?? [];
   const completed = all.filter((a) => a.completed_at);

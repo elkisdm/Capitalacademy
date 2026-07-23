@@ -23,12 +23,19 @@ const bodySchema = z.object({
   utm_content: z.string().trim().max(160).optional().or(z.literal("")),
   utm_term: z.string().trim().max(160).optional().or(z.literal("")),
   // Honeypot anti-bot
-  website: z.string().max(0).optional(),
+  website: z.string().optional(),
 });
 
 function emptyToNull<T extends string | undefined>(v: T) {
   return v && v.length > 0 ? v : null;
 }
+
+const FIELD_LABELS: Record<string, string> = {
+  full_name: "nombre",
+  email: "correo electrónico",
+  phone: "teléfono",
+  program_interest: "programa de interés",
+};
 
 export async function POST(req: Request) {
   const rl = limiter.check(getClientIp(req));
@@ -43,8 +50,11 @@ export async function POST(req: Request) {
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
+    const field = String(parsed.error.issues[0]?.path[0] ?? "");
+    const label = FIELD_LABELS[field];
+    const error = label ? `Revisa el campo: ${label}` : "Validación fallida";
     return NextResponse.json(
-      { error: "Validación fallida", issues: parsed.error.issues },
+      { error, issues: parsed.error.issues },
       { status: 422 },
     );
   }

@@ -14,6 +14,7 @@ export async function getCertificateSignedUrl(
   const { data, error } = await supabase.storage
     .from("certificates")
     .createSignedUrl(storagePath, expiresIn);
+  if (error) console.error("[getCertificateSignedUrl] firma fallida", storagePath, error);
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
 }

@@ -46,17 +46,19 @@ export async function getSessionAttendance(
     .single();
   if (!session) return null;
 
-  const { data: enrollmentsRaw } = await admin
+  const { data: enrollmentsRaw, error: enrollmentsError } = await admin
     .from("enrollments")
     .select("student_id, profiles(full_name, email)")
     .eq("cohort_id", session.cohort_id)
     .eq("status", "active");
+  if (enrollmentsError) throw new Error("No se pudo cargar la asistencia");
   const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentRow[];
 
-  const { data: attendance } = await admin
+  const { data: attendance, error: attendanceError } = await admin
     .from("session_attendance")
     .select("student_id, method, marked_at")
     .eq("session_id", sessionId);
+  if (attendanceError) throw new Error("No se pudo cargar la asistencia");
 
   const byStudent = new Map(
     (attendance ?? []).map((a) => [
@@ -287,10 +289,11 @@ export async function getStudentsAtAbsenceThreshold(
   if (enrollments.length === 0) return [];
 
   const sessionIds = sessions.map((s) => s.id);
-  const { data: attendanceRaw } = await admin
+  const { data: attendanceRaw, error: attendanceError } = await admin
     .from("session_attendance")
     .select("session_id, student_id")
     .in("session_id", sessionIds);
+  if (attendanceError) return [];
   const attended = new Set(
     ((attendanceRaw ?? []) as Array<{ session_id: string; student_id: string }>).map(
       (a) => `${a.session_id}:${a.student_id}`,

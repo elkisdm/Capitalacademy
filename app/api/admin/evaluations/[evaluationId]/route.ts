@@ -110,16 +110,27 @@ export async function PATCH(req: Request, { params }: Ctx) {
   // evaluaciones MANUALES (roleplay, guión de venta, etc.) nunca tienen
   // preguntas — el guard no aplica (fix §0.5 del brief evaluaciones/notas 1-7).
   if (v.isActive === true) {
-    const { data: current } = await admin
+    const { data: current, error: currentError } = await admin
       .from("evaluations")
       .select("kind")
       .eq("id", evaluationId)
-      .single();
-    if (current?.kind !== "manual") {
-      const { count } = await admin
+      .maybeSingle();
+    if (currentError) {
+      console.error("Error checking evaluation kind:", currentError);
+      return NextResponse.json({ error: "No se pudo verificar la evaluación" }, { status: 500 });
+    }
+    if (!current) {
+      return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
+    }
+    if (current.kind !== "manual") {
+      const { count, error: countError } = await admin
         .from("quiz_questions")
         .select("id", { count: "exact", head: true })
         .eq("evaluation_id", evaluationId);
+      if (countError) {
+        console.error("Error counting quiz questions:", countError);
+        return NextResponse.json({ error: "No se pudo verificar la evaluación" }, { status: 500 });
+      }
       if ((count ?? 0) === 0) {
         return NextResponse.json(
           { error: "No se puede activar una evaluación sin preguntas" },
@@ -158,7 +169,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     .update(updates)
     .eq("id", evaluationId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     if ((error as { code?: string }).code === "23505") {
@@ -176,6 +187,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
     }
     console.error("Error updating evaluation:", error);
     return NextResponse.json({ error: "Error al actualizar la evaluación" }, { status: 500 });
+  }
+  if (!updated) {
+    return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
   }
 
   return NextResponse.json({ evaluation: updated });

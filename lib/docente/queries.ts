@@ -159,11 +159,15 @@ export async function getTeacherSessions(userId: string): Promise<TeacherSession
   const instructorIds =
     instructorOnlyCohortIds.size > 0 ? await getInstructorIdsForProfile(userId) : [];
 
-  const { data: sessions } = await admin
+  const { data: sessions, error: sessionsError } = await admin
     .from("class_sessions")
     .select("id, cohort_id, title, starts_at, ends_at, modality, status, teacher_id")
     .in("cohort_id", cohortIds)
     .order("starts_at");
+  if (sessionsError) {
+    console.error("[getTeacherSessions] class_sessions error", sessionsError);
+    throw sessionsError;
+  }
 
   const sessionRows = ((sessions ?? []) as unknown as ClassSession[]).filter((s) => {
     if (!instructorOnlyCohortIds.has(s.cohort_id)) return true;
@@ -171,13 +175,16 @@ export async function getTeacherSessions(userId: string): Promise<TeacherSession
   });
   const sessionIds = sessionRows.map((s) => s.id);
 
-  const { data: resources } =
+  const { data: resources, error: resourcesError } =
     sessionIds.length > 0
       ? await admin
           .from("session_resources")
           .select("id, session_id, title, type, url, storage_path, position")
           .in("session_id", sessionIds)
-      : { data: [] as SessionResource[] };
+      : { data: [] as SessionResource[], error: null };
+  if (resourcesError) {
+    console.error("[getTeacherSessions] session_resources error", resourcesError);
+  }
 
   const resourcesBySession = new Map<string, SessionResource[]>();
   for (const r of (resources ?? []) as unknown as SessionResource[]) {

@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
+import { getBrandBySlug, onboardingSetPasswordPath } from "@/lib/programs/registry";
+import { safeNextPath } from "@/lib/auth/next-path";
 
 export const runtime = "nodejs";
 
@@ -19,7 +21,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { email } = body as { email?: string };
+  const { email, next, brand: brandSlug } = body as {
+    email?: string;
+    next?: string;
+    brand?: string;
+  };
 
   if (!email || typeof email !== "string") {
     return NextResponse.json(
@@ -31,12 +37,25 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
   const baseUrl = getPublicBaseUrl();
 
+  /*
+    El destino original del alumno (p. ej. `/asistencia/<id>`) viaja dentro del
+    enlace de recuperación: set-password lo lee y lo usa al terminar. Sin esto,
+    quien llegaba desde un QR de asistencia y tenía que resetear su contraseña
+    aterrizaba en `/classroom` y creía que el registro no había funcionado.
+  */
+  const brand = getBrandBySlug(brandSlug);
+  const dest = safeNextPath(next, "");
+  const setPassword = onboardingSetPasswordPath(brand);
+  const afterConfirm = dest
+    ? `${setPassword}?next=${encodeURIComponent(dest)}`
+    : setPassword;
+
   const { data: linkData, error: linkError } =
     await admin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-        redirectTo: `${baseUrl}/onboarding/set-password`,
+        redirectTo: `${baseUrl}${setPassword}`,
       },
     });
 
@@ -45,7 +64,7 @@ export async function POST(req: Request) {
   }
 
   const hashedToken = linkData.properties.hashed_token;
-  const resetUrl = `${baseUrl}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&next=${encodeURIComponent("/onboarding/set-password")}`;
+  const resetUrl = `${baseUrl}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&brand=${brand.slug}&next=${encodeURIComponent(afterConfirm)}`;
 
   try {
     const resend = getResendClient();

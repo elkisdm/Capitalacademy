@@ -2,18 +2,26 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ForgotPasswordForm } from "./forgot-password-form";
+import { getBrandBySlug, loginPath } from "@/lib/programs/registry";
+import { safeNextPath } from "@/lib/auth/next-path";
 
 export const metadata = {
   title: "Recuperar contraseña",
   description: "Solicita un enlace para restablecer tu contraseña.",
 };
 
-export default async function ForgotPasswordPage() {
+export default async function ForgotPasswordPage(
+  props: { searchParams: Promise<{ next?: string; brand?: string }> },
+) {
+  const { next, brand: brandSlug } = await props.searchParams;
+  const brand = getBrandBySlug(brandSlug);
+  const dest = safeNextPath(next, "");
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/classroom");
+    redirect(dest || "/classroom");
   }
 
   return (
@@ -42,7 +50,15 @@ export default async function ForgotPasswordPage() {
         </div>
 
         <div className="ca-card overflow-hidden p-7">
-          <ForgotPasswordForm />
+          <ForgotPasswordForm
+            next={dest}
+            brand={brand.slug}
+            backToLoginHref={
+              dest
+                ? `${loginPath(brand)}?next=${encodeURIComponent(dest)}`
+                : loginPath(brand)
+            }
+          />
         </div>
 
         <p className="mt-6 text-center text-[11px] font-semibold" style={{ color: "var(--color-ca-ink-soft)" }}>

@@ -49,13 +49,18 @@ export function LoginScreen({
 
         {/* Card */}
         <div className="ca-card overflow-hidden p-7">
-          {error && (
-            <div role="alert" className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-600">
-              {error === "invalid" ? "Email o contraseña incorrectos." : "Ocurrió un error. Intenta de nuevo."}
-            </div>
-          )}
-
-          <LoginForm redirectTo={redirectTo} accent={brand.accent} />
+          {/*
+            El aviso de error NO se renderiza acá: lo dibuja `LoginForm` como
+            estado inicial. Antes se pintaban dos cajas rojas a la vez (la del
+            `?error=` del servidor y la del intento fallido del formulario) y el
+            alumno veía dos diagnósticos contradictorios apilados.
+          */}
+          <LoginForm
+            redirectTo={redirectTo}
+            accent={brand.accent}
+            initialError={error}
+            forgotHref={`/forgot-password?next=${encodeURIComponent(redirectTo)}&brand=${brand.slug}`}
+          />
         </div>
 
         {/* Footer */}

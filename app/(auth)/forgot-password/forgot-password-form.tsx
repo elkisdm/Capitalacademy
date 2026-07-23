@@ -5,7 +5,17 @@ import Link from "next/link";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({
+  next = "",
+  brand,
+  backToLoginHref = "/login",
+}: {
+  /** Destino original del alumno; viaja dentro del enlace de recuperación. */
+  next?: string;
+  /** Slug del entorno, para brandear el enlace y el set-password. */
+  brand?: string;
+  backToLoginHref?: string;
+} = {}) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -20,7 +30,7 @@ export function ForgotPasswordForm() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, next, brand }),
       });
 
       if (!res.ok) {
@@ -56,7 +66,7 @@ export function ForgotPasswordForm() {
           Si existe una cuenta con <strong>{email}</strong>, recibirás un enlace para restablecer tu contraseña.
         </p>
         <Link
-          href="/login"
+          href={backToLoginHref}
           className="mt-6 inline-block text-[13px] font-bold text-ca-violet transition-colors hover:text-ca-violet-deep"
         >
           Volver al login
@@ -111,7 +121,7 @@ export function ForgotPasswordForm() {
       </Button>
 
       <Link
-        href="/login"
+        href={backToLoginHref}
         className="mt-1 text-center text-[13px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
       >
         Volver al login

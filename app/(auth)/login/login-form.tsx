@@ -24,19 +24,43 @@ function EyeOffIcon() {
   );
 }
 
+/**
+ * Mensajes por código de error de la cadena de acceso. Los códigos los emite
+ * `/auth/confirm` cuando el enlace del correo no sirve; el alumno necesita
+ * saber que debe pedir uno nuevo, no "intentar de nuevo".
+ */
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid: "Email o contraseña incorrectos.",
+  link_expired:
+    "Ese enlace ya se usó o venció. Entra con tu contraseña, o pide uno nuevo en «¿Olvidaste tu contraseña?».",
+  missing_token:
+    "El enlace del correo llegó incompleto. Entra con tu contraseña, o pide uno nuevo en «¿Olvidaste tu contraseña?».",
+  confirm_failed: "No pudimos validar el enlace. Intenta entrar con tu contraseña.",
+};
+
 export function LoginForm({
   redirectTo,
   accent,
+  initialError,
+  forgotHref = "/forgot-password",
 }: {
   redirectTo: string;
   /** Acento de marca (hex) para el botón principal. Default ca-violet. */
   accent?: string;
+  /** Código de error que viene por `?error=` (enlace vencido, etc.). */
+  initialError?: string;
+  /** Recuperar contraseña conservando destino y marca del entorno. */
+  forgotHref?: string;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    initialError
+      ? (ERROR_MESSAGES[initialError] ?? ERROR_MESSAGES.confirm_failed)
+      : "",
+  );
   const router = useRouter();
 
   const supabase = createBrowserClient(
@@ -49,13 +73,23 @@ export function LoginForm({
     setLoading(true);
     setError("");
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error: authError } = await supabase.auth
+      .signInWithPassword({ email: email.trim(), password })
+      .catch((err: unknown) => ({ error: err as { status?: number; code?: string } }));
 
     if (authError) {
-      setError("Email o contraseña incorrectos.");
+      /*
+        No todo fallo es "contraseña incorrecta": si el Auth server no responde
+        (red del alumno, corte de Supabase) el mensaje anterior mandaba a la
+        persona a reescribir una contraseña que sí era correcta.
+      */
+      const status = (authError as { status?: number }).status;
+      const isCredentials = status === 400 || status === 401;
+      setError(
+        isCredentials
+          ? ERROR_MESSAGES.invalid
+          : "No pudimos conectar con el servidor. Revisa tu conexión e intenta de nuevo.",
+      );
       setLoading(false);
       return;
     }
@@ -125,7 +159,7 @@ export function LoginForm({
 
       <div className="flex justify-end">
         <Link
-          href="/forgot-password"
+          href={forgotHref}
           className="text-[12px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
         >
           ¿Olvidaste tu contraseña?

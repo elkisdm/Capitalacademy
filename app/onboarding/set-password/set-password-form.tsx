@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_BRAND, type ProgramBrand } from "@/lib/programs/registry";
+import { safeNextPath } from "@/lib/auth/next-path";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
@@ -132,7 +133,12 @@ export function SetPasswordForm({
         .eq("id", currentUser.id)
         .single();
       if (profile?.onboarding_completed_at) {
-        redirectPath = "/classroom";
+        /*
+          Destino original del alumno (p. ej. `/asistencia/<id>`) arrastrado
+          desde el login → forgot-password → enlace del correo. Solo aplica con
+          el onboarding ya completo: si falta el perfil, ese paso va primero.
+        */
+        redirectPath = safeNextPath(searchParams.get("next"));
       }
     }
     setTimeout(() => router.push(redirectPath), 1500);

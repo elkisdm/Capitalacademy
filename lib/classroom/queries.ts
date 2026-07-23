@@ -397,6 +397,7 @@ export async function getCohortSchedule(
     // Fallo del dato CORE: se registra y se propaga vía el error boundary
     // (ahora con digest visible). El enriquecimiento de abajo sí degrada.
     console.error("[getCohortSchedule] class_sessions query error", error);
+    throw error;
   }
 
   const sessions = (data ?? []) as unknown as ClassSession[];

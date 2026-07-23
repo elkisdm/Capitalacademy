@@ -161,6 +161,7 @@ function rebuildVTT(
   const blocks = cleaned.split(/\n\n+/);
 
   const TIMESTAMP_RE = /^[\d:.]+\s*-->\s*[\d:.]+/;
+  const HTML_TAG_RE = /<[^>]+>/g;
   let segmentIdx = 0;
   const result: string[] = [];
 
@@ -177,6 +178,20 @@ function rebuildVTT(
 
     if (timeLine === -1) {
       // Header block (e.g. "WEBVTT") — keep as-is
+      result.push(block);
+      continue;
+    }
+
+    // Replicar el mismo filtro de texto vacío que usa parseVTT: un cue cuyo
+    // único contenido es una etiqueta HTML (ej. '<i></i>') no genera segmento
+    // ahí, así que tampoco debe consumir un índice de `segments` acá.
+    const textLines = lines
+      .slice(timeLine + 1)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    const text = textLines.join(" ").replace(HTML_TAG_RE, "").trim();
+
+    if (text.length === 0) {
       result.push(block);
       continue;
     }

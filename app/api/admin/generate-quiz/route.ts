@@ -50,6 +50,22 @@ interface GeneratedPayload {
   questions: GeneratedQuestion[];
 }
 
+const VALID_OPTION_KEYS = ["A", "B", "C", "D"];
+
+// Valida que la pregunta cumpla el contrato exigido en el prompt: exactamente
+// 4 opciones (A-D) y correct_option apuntando a una de esas claves. OpenAI no
+// siempre respeta el prompt al pie de la letra, así que esto evita que una
+// respuesta mal formada termine calificando el quiz final con la letra 'A'
+// por defecto, en silencio.
+function isValidQuestion(question: GeneratedQuestion): boolean {
+  const keys = Object.keys(question.options);
+  return (
+    keys.length === 4 &&
+    VALID_OPTION_KEYS.every((k) => keys.includes(k)) &&
+    Object.prototype.hasOwnProperty.call(question.options, question.correct_option)
+  );
+}
+
 function shuffleOptions(question: GeneratedQuestion): GeneratedQuestion {
   const entries = Object.entries(question.options);
   const correctText = question.options[question.correct_option];
@@ -262,6 +278,21 @@ export async function POST(req: Request) {
     );
   }
 
+  // --- Descarta preguntas que no cumplen el contrato del prompt --------------
+  const validQuestions = parsed.questions.filter(isValidQuestion);
+  if (validQuestions.length !== parsed.questions.length) {
+    console.error(
+      `OpenAI devolvio ${parsed.questions.length - validQuestions.length} pregunta(s) con formato invalido (options u correct_option incorrectos), se descartaron`,
+    );
+  }
+
+  if (validQuestions.length === 0) {
+    return NextResponse.json(
+      { error: "OpenAI no genero preguntas" },
+      { status: 502 },
+    );
+  }
+
   // La evaluación final del programa (migrada en 0033) es la dueña del pool del
   // quiz final. La aseguramos ANTES de chequear/borrar/insertar; el scoping por
   // evaluation_id evita tocar intentos/preguntas de los quizzes formativos por
@@ -339,7 +370,7 @@ export async function POST(req: Request) {
   }
 
   // --- Shuffle options to eliminate LLM positional bias ----------------------
-  const shuffledQuestions = parsed.questions.map(shuffleOptions);
+  const shuffledQuestions = validQuestions.map(shuffleOptions);
 
   // --- Insert new questions, linking to lesson_id where possible -------------
   const questionsToInsert = shuffledQuestions.map((q, idx) => {

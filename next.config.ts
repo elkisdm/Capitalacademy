@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "igatsyghbadccbrjiurl.supabase.co" },
     ],
   },
+  // Presentaciones estáticas en public/presentaciones/<slug>/index.html:
+  // permite la URL limpia /presentaciones/<slug> sin el index.html.
+  async rewrites() {
+    return [
+      {
+        source: "/presentaciones/:slug",
+        destination: "/presentaciones/:slug/index.html",
+      },
+    ];
+  },
   async headers() {
     return [
       {

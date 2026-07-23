@@ -1,0 +1,1473 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3a1688">
+  <title>IA 2026 · De conversar a dirigir · Capital Academy</title>
+  <link rel="icon" href="/presentaciones/ia-2026/assets/capital-academy-logo.png">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preload" href="/presentaciones/ia-2026/fonts/be-vietnam-pro-700.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    /* Be Vietnam Pro auto-hospedada (subset latin). La CSP del sitio no permite
+       hojas de estilo externas, y así la presentación no depende de internet
+       durante la clase. */
+    @font-face { font-family: "Be Vietnam Pro"; font-style: normal; font-weight: 400; font-display: swap; src: url("/presentaciones/ia-2026/fonts/be-vietnam-pro-400.woff2") format("woff2"); }
+    @font-face { font-family: "Be Vietnam Pro"; font-style: normal; font-weight: 500; font-display: swap; src: url("/presentaciones/ia-2026/fonts/be-vietnam-pro-500.woff2") format("woff2"); }
+    @font-face { font-family: "Be Vietnam Pro"; font-style: normal; font-weight: 600; font-display: swap; src: url("/presentaciones/ia-2026/fonts/be-vietnam-pro-600.woff2") format("woff2"); }
+    @font-face { font-family: "Be Vietnam Pro"; font-style: normal; font-weight: 700; font-display: swap; src: url("/presentaciones/ia-2026/fonts/be-vietnam-pro-700.woff2") format("woff2"); }
+    @font-face { font-family: "Be Vietnam Pro"; font-style: normal; font-weight: 800; font-display: swap; src: url("/presentaciones/ia-2026/fonts/be-vietnam-pro-800.woff2") format("woff2"); }
+
+    :root {
+      --violet-primary: #7b59c6;
+      --violet-vivid: #6d13b1;
+      --violet-deep: #2a126b;
+      --blue-dark: #184683;
+      --lime: #cffc24;
+      --lime-alt: #c5f122;
+      --pink-pale: #f7cdd0;
+      --blue-light: #d2ecf8;
+      --white: #fff;
+      --text-muted: rgba(255,255,255,.74);
+      --glass: rgba(91,46,170,.30);
+      --glass-strong: rgba(48,20,120,.62);
+      --border: rgba(255,255,255,.25);
+      --shadow: 0 24px 70px rgba(15,4,55,.34);
+      --radius-sm: 16px;
+      --radius-md: 24px;
+      --radius-lg: 34px;
+      --ease-out: cubic-bezier(.22,1,.36,1);
+      --ease-spring: cubic-bezier(.16,1.25,.3,1);
+      --motion-fast: 180ms;
+      --motion-base: 420ms;
+      --motion-slide: 680ms;
+      --font: "Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      color: var(--white);
+      background: #12062f;
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+    button, a { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, a:focus-visible {
+      outline: 4px solid var(--lime);
+      outline-offset: 4px;
+    }
+    .skip-link {
+      position: fixed; z-index: 1000; left: 18px; top: -80px;
+      background: var(--lime); color: #1d0a4f; padding: 12px 18px; border-radius: 12px;
+      font-weight: 800; transition: transform 160ms ease;
+    }
+    .skip-link:focus { transform: translateY(96px); }
+
+    .viewport { position: fixed; inset: 0; display: grid; place-items: center; }
+    .deck {
+      position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; overflow: hidden;
+      transform-origin: center; background: var(--violet-deep);
+      box-shadow: 0 30px 120px rgba(0,0,0,.55);
+    }
+    .deck::after {
+      content:""; position:absolute; inset:0; z-index:40; pointer-events:none; opacity:.16;
+      background:linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size:100% 4px; mix-blend-mode:soft-light;
+    }
+    .slide {
+      position: absolute; inset: 0; display: grid; align-content: stretch;
+      padding: 76px 92px 68px; overflow: hidden; opacity: 0; pointer-events: none;
+      transform: translate3d(72px,0,0) scale(.985);
+      transition: opacity var(--motion-slide) var(--ease-out), transform var(--motion-slide) var(--ease-out), filter var(--motion-slide) var(--ease-out);
+      background:
+        radial-gradient(circle at 82% 22%, rgba(222,165,255,.50), transparent 28%),
+        radial-gradient(circle at 18% 110%, rgba(135,73,255,.55), transparent 37%),
+        linear-gradient(135deg, var(--violet-vivid), var(--violet-primary));
+      isolation: isolate;
+    }
+    .slide::before, .slide::after {
+      content: ""; position: absolute; z-index: -1; pointer-events: none;
+      width: 920px; height: 790px;
+      background: url("/presentaciones/ia-2026/assets/capital-academy-mark.svg") center / contain no-repeat;
+      opacity: .075; filter: blur(.15px); transform-origin: center;
+    }
+    .slide.current::before { animation: aurora-left 12s ease-in-out infinite alternate; }
+    .slide.current::after { animation: aurora-right 15s ease-in-out infinite alternate; }
+    @keyframes aurora-left { to { transform: translate3d(56px,-24px,0) rotate(7deg) scale(1.04); } }
+    @keyframes aurora-right { to { transform: translate3d(-46px,34px,0) rotate(-6deg) scale(.97); } }
+    .slide::before { left: -410px; bottom: -390px; transform: rotate(-13deg); }
+    .slide::after { right: -380px; top: -350px; opacity: .06; transform: rotate(10deg); }
+    .slide.current { opacity: 1; pointer-events: auto; transform: translate3d(0,0,0) scale(1); }
+    .slide.past { transform: translate3d(-72px,0,0) scale(.985); }
+    .slide.enter-forward { animation:slide-enter-forward var(--motion-slide) var(--ease-out) both; }
+    .slide.enter-back { animation:slide-enter-back var(--motion-slide) var(--ease-out) both; }
+    @keyframes slide-enter-forward { from { opacity:0; transform:translate3d(96px,0,0) scale(.975); filter:blur(7px); } to { opacity:1; transform:none; filter:none; } }
+    @keyframes slide-enter-back { from { opacity:0; transform:translate3d(-96px,0,0) scale(.975); filter:blur(7px); } to { opacity:1; transform:none; filter:none; } }
+    .slide.section-slide { place-items: center; text-align: center; }
+    .slide.image-right { grid-template-columns: 1.12fr .88fr; gap: 56px; }
+    .slide.image-left { grid-template-columns: .72fr 1.28fr; gap: 58px; }
+    .slide.light-panel {
+      background:
+        radial-gradient(circle at 90% 10%, rgba(207,252,36,.17), transparent 24%),
+        linear-gradient(135deg, #2a126b, #6d13b1 54%, #9d78df);
+    }
+    .slide[data-theme="deep"] {
+      background:
+        radial-gradient(circle at 80% 18%, rgba(123,89,198,.55), transparent 30%),
+        radial-gradient(circle at 16% 92%, rgba(109,19,177,.48), transparent 34%),
+        linear-gradient(135deg, #150739, #31107b 58%, #5d2fb4);
+    }
+    .slide[data-theme="lime"] {
+      background:
+        radial-gradient(circle at 88% 15%, rgba(207,252,36,.16), transparent 25%),
+        linear-gradient(135deg, #1a0b48, #4d1496 62%, #7b59c6);
+    }
+
+    .topline { position: absolute; top: 42px; left: 92px; right: 92px; display: flex; align-items: flex-start; justify-content: space-between; z-index: 3; }
+    .cohort { font-size: 16px; line-height: 1.25; letter-spacing: .09em; text-transform: uppercase; font-weight: 700; }
+    .cohort strong { display: block; color: var(--lime); }
+    .duration-chip { display:inline-flex; margin-top:9px; padding:5px 9px; border:1px solid rgba(255,255,255,.22); border-radius:999px; color:rgba(255,255,255,.72); font-size:11px; letter-spacing:.08em; background:rgba(20,5,64,.18); }
+    .brand { display: inline-flex; align-items: center; gap: 12px; }
+    .brand img { width: 74px; height: 74px; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,.16)); }
+    .brand-word { text-align: right; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.82); }
+
+    .content { position: relative; z-index: 2; min-width: 0; align-self: center; }
+    .eyebrow { color: var(--lime); text-transform: uppercase; letter-spacing: .16em; font-size: 19px; font-weight: 700; margin: 0 0 16px; }
+    .overline { font-size: 30px; font-weight: 400; margin: 0 0 -4px; color: rgba(255,255,255,.95); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: 102px; line-height: .96; letter-spacing: -.055em; margin-bottom: 28px; text-wrap: balance; }
+    h2 { font-size: 66px; line-height: 1.02; letter-spacing: -.04em; margin-bottom: 26px; text-wrap: balance; }
+    h3 { font-size: 28px; line-height: 1.2; margin-bottom: 14px; }
+    .thin { font-weight: 400; }
+    .accent { color: var(--lime); }
+    .slide.current .accent { text-shadow: 0 0 34px rgba(207,252,36,.16); }
+    .muted { color: var(--text-muted); }
+    .lede { font-size: 29px; line-height: 1.48; max-width: 1180px; color: rgba(255,255,255,.91); }
+    .compact-lede { font-size: 24px; line-height: 1.46; color: rgba(255,255,255,.88); }
+    .mega { font-size: 134px; line-height: .82; letter-spacing: -.07em; text-transform: uppercase; }
+    .formula { font-size: 52px; line-height: 1.2; font-weight: 700; text-align: center; text-wrap: balance; }
+    .quote-line { border-left: 6px solid var(--lime); padding-left: 26px; font-size: 31px; font-weight: 600; line-height: 1.36; }
+
+    .cover-inner { min-height: 100%; display: grid; place-items: center; text-align: center; }
+    .cover-inner .eyebrow { color: rgba(255,255,255,.74); }
+    .cover-title { font-size: 120px; line-height: .88; letter-spacing: -.065em; text-transform: uppercase; margin: 0; }
+    .cover-title span { display: block; color: var(--lime); }
+    .cover-subtitle { margin-top: 30px; font-size: 26px; text-transform: uppercase; letter-spacing: .13em; }
+    .cover-footer { position: absolute; bottom: 92px; left: 92px; right: 92px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 600; }
+
+    .profile-layout { display:grid; grid-template-columns: .92fr 1.08fr; gap:48px; align-items:center; height:760px; }
+    .portrait-placeholder { position:relative; overflow:hidden; border-radius:34px; border:1px solid rgba(255,255,255,.28); background:linear-gradient(155deg,rgba(207,252,36,.16),rgba(34,8,92,.56)); box-shadow:var(--shadow); display:grid; place-items:center; }
+    .portrait-placeholder::before { content:""; position:absolute; width:720px; height:620px; left:-210px; bottom:-160px; background:url("/presentaciones/ia-2026/assets/capital-academy-mark.svg") center/contain no-repeat; opacity:.13; transform:rotate(-8deg); }
+    .portrait-placeholder .photo-label { position:relative; z-index:1; display:grid; place-items:center; gap:14px; padding:28px; text-align:center; color:rgba(255,255,255,.76); }
+    .profile-carousel { position:relative; align-self:center; width:100%; height:560px; overflow:hidden; border-radius:34px; border:1px solid rgba(255,255,255,.28); background:#24105d; box-shadow:var(--shadow); isolation:isolate; cursor:pointer; outline:none; }
+    .profile-carousel:focus-visible { box-shadow:0 0 0 5px var(--lime),var(--shadow); }
+    .profile-carousel::after { content:""; position:absolute; z-index:3; inset:0; pointer-events:none; background:linear-gradient(180deg,transparent 58%,rgba(18,6,47,.62)); }
+    .profile-photo { position:absolute; inset:-1px; width:calc(100% + 2px); height:calc(100% + 2px); object-fit:cover; opacity:0; transform:scale(1.045); transition:opacity 360ms ease,transform 650ms var(--ease-out); }
+    .profile-photo.active { opacity:1; transform:scale(1); }
+    .profile-photo:nth-child(1) { object-position:50% 48%; }
+    .profile-photo:nth-child(2) { object-position:51% 50%; }
+    .profile-photo:nth-child(3) { object-position:50% 32%; }
+    .profile-carousel-label { position:absolute; z-index:4; left:20px; bottom:18px; display:flex; gap:8px; align-items:center; padding:8px 12px; border:1px solid rgba(255,255,255,.24); border-radius:999px; background:rgba(18,6,47,.64); backdrop-filter:blur(12px); font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .profile-carousel-label::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--lime); box-shadow:0 0 14px var(--lime); }
+    .profile-carousel-hint { position:absolute; z-index:4; right:20px; bottom:18px; padding:8px 12px; border:1px solid rgba(255,255,255,.24); border-radius:999px; background:rgba(18,6,47,.64); backdrop-filter:blur(12px); color:#fff; font-size:13px; font-weight:800; letter-spacing:.04em; }
+    .photo-label .photo-icon { width:94px; height:94px; display:grid; place-items:center; border:2px dashed rgba(255,255,255,.42); border-radius:50%; font-size:36px; }
+    .photo-label strong { color:#fff; font-size:22px; }
+    .profile-copy { align-self:center; min-width:0; }
+    .profile-copy h2 { margin-bottom:16px; }
+    .profile-bio { font-size:23px; line-height:1.46; color:rgba(255,255,255,.86); margin-bottom:22px; }
+    .profile-proof { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+    .proof-card { min-height:135px; padding:20px; border:1px solid rgba(255,255,255,.2); border-radius:20px; background:rgba(26,6,73,.34); }
+    .proof-card strong { display:block; color:var(--lime); font-size:31px; line-height:1; margin-bottom:10px; }
+    .proof-card span { display:block; font-size:16px; line-height:1.4; color:rgba(255,255,255,.78); }
+    .profile-role { display:flex; align-items:center; gap:14px; padding:16px 20px; margin-bottom:18px; border-left:5px solid var(--lime); background:rgba(255,255,255,.08); border-radius:0 16px 16px 0; font-size:19px; line-height:1.38; }
+    .profile-role b { color:var(--lime); }
+    .profile-interests { display:flex; flex-wrap:wrap; gap:10px; }
+    .profile-interest { padding:8px 13px; border:1px solid rgba(255,255,255,.24); border-radius:999px; font-size:14px; font-weight:700; color:rgba(255,255,255,.82); }
+
+    .image-frame { position: relative; min-width: 0; height: 100%; align-self: stretch; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow); background: #27105e; }
+    .image-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .image-frame::after { content:""; position:absolute; inset:0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); pointer-events:none; }
+    .image-frame.soft img { filter: saturate(.8) contrast(.98); }
+    .slide.current .image-frame img { animation:image-drift 16s ease-in-out both; }
+    @keyframes image-drift { from { transform:scale(1.025) translate3d(-.4%,.2%,0); } to { transform:scale(1.08) translate3d(1.2%,-.8%,0); } }
+    .floating-quote { position: absolute; right: 50px; bottom: 48px; max-width: 470px; background: #fff; color: #2e2440; padding: 24px 28px; border-radius: 18px; box-shadow: 0 18px 44px rgba(0,0,0,.24); font-size: 21px; line-height: 1.35; font-style: italic; }
+
+    .cards { display: grid; gap: 22px; }
+    .cards.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .cards.four { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .cards.two { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .glass-card { position:relative; overflow:hidden; padding: 28px; border-radius: var(--radius-md); border: 1px solid var(--border); background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(66,17,145,.24)); backdrop-filter: blur(16px); box-shadow: 0 16px 34px rgba(29,5,80,.18); min-width: 0; }
+    .glass-card::after { content:""; position:absolute; top:-30%; bottom:-30%; left:-55%; width:35%; transform:skewX(-16deg); background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent); opacity:0; pointer-events:none; }
+    .glass-card.revealed::after { animation:card-sheen 720ms 120ms var(--ease-out) both; }
+    @keyframes card-sheen { 0% { opacity:0; transform:translateX(0) skewX(-16deg); } 20% { opacity:1; } 100% { opacity:0; transform:translateX(520%) skewX(-16deg); } }
+    .glass-card .num { font-size: 46px; font-weight: 800; line-height: 1; color: var(--lime); margin-bottom: 22px; }
+    .glass-card p { margin: 0; font-size: 21px; line-height: 1.42; color: rgba(255,255,255,.82); }
+    .glass-card strong { color: #fff; }
+    .mini-card { padding: 20px 22px; border-radius: 18px; background: rgba(20,5,64,.28); border: 1px solid rgba(255,255,255,.18); }
+    .mini-card h3 { font-size: 24px; }
+    .mini-card p { font-size: 18px; line-height: 1.4; margin: 0; color: var(--text-muted); }
+
+    .number-list { display: grid; gap: 16px; margin-top: 26px; }
+    .number-row { display: grid; grid-template-columns: 72px 1fr; align-items: start; gap: 22px; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.18); }
+    .number-row .n { color: var(--lime); font-size: 23px; font-weight: 800; }
+    .number-row .label { font-size: 24px; line-height: 1.3; font-weight: 600; }
+    .number-row .detail { display: block; color: var(--text-muted); font-size: 18px; font-weight: 400; margin-top: 4px; }
+
+    .pills { display: flex; flex-wrap: wrap; gap: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 18px; border: 1px solid rgba(255,255,255,.40); border-radius: 999px; font-size: 17px; font-weight: 700; background: rgba(255,255,255,.07); }
+    .pill::before { content:""; width: 9px; height: 9px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 18px rgba(207,252,36,.8); }
+
+    .split-change { display: grid; grid-template-columns: 1fr 110px 1fr; align-items: center; gap: 26px; width: 100%; }
+    .change-box { padding: 58px 44px; border: 1px solid var(--border); border-radius: 30px; background: rgba(20,6,68,.26); text-align: center; }
+    .change-box span { display:block; font-size: 22px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .14em; }
+    .change-box strong { display:block; margin-top: 16px; font-size: 74px; line-height: 1; }
+    .arrow { font-size: 72px; color: var(--lime); text-align:center; }
+
+    .system-flow { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); align-items: center; gap: 12px; margin-top: 42px; }
+    .system-node { min-height: 126px; display:grid; place-items:center; padding:18px; text-align:center; border-radius:22px; border:1px solid var(--border); background: rgba(32,8,92,.34); font-size:20px; font-weight:700; }
+    .system-node.owner { background: var(--lime); color:#27105e; }
+    .plus { text-align:center; font-size:34px; color:rgba(255,255,255,.6); }
+
+    .fail-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+    .fail-item { display:grid; grid-template-columns: 52px 1fr; gap:16px; padding:22px; border:1px solid rgba(255,255,255,.2); border-radius:20px; background:rgba(36,8,93,.25); }
+    .fail-icon { width:48px; height:48px; display:grid; place-items:center; border-radius:50%; background:rgba(247,205,208,.18); color:var(--pink-pale); font-size:28px; }
+    .fail-item p { margin:0; font-size:20px; line-height:1.38; }
+
+    .contract-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:16px; }
+    .contract-grid .glass-card { padding:23px; min-height:176px; }
+    .contract-grid .glass-card:last-child { grid-column: span 2; }
+
+    .tabbar { display:flex; gap:12px; margin-bottom:24px; }
+    .tab-button { border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.08); border-radius:999px; padding:12px 20px; cursor:pointer; font-weight:700; }
+    .tab-button[aria-selected="true"] { background:var(--lime); color:#25105e; border-color:var(--lime); }
+    .demo-panel { display:none; }
+    .demo-panel.active { display:grid; grid-template-columns:.82fr 1.18fr; gap:20px; }
+    .demo-panel.active .prompt-box { animation:panel-in-left 420ms var(--ease-out) both; }
+    .demo-panel.active .output-box { animation:panel-in-right 480ms 60ms var(--ease-out) both; }
+    @keyframes panel-in-left { from { opacity:0; transform:translateX(-26px); } }
+    @keyframes panel-in-right { from { opacity:0; transform:translateX(26px); } }
+    .prompt-box, .output-box { min-height:410px; padding:28px; border-radius:24px; border:1px solid var(--border); background:rgba(26,6,73,.44); }
+    .prompt-box code { white-space:pre-wrap; font-family:var(--font); font-size:21px; line-height:1.5; }
+    .output-box ul { margin:0; padding-left:24px; font-size:20px; line-height:1.62; }
+    .badge { display:inline-flex; align-items:center; gap:8px; padding:7px 11px; border-radius:999px; font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; background:rgba(255,255,255,.12); margin-bottom:18px; }
+    .badge.bad { color:var(--pink-pale); }
+    .badge.good { color:var(--lime); }
+
+    .matrix { display:grid; grid-template-columns: 80px 1fr 1fr; grid-template-rows: 1fr 1fr 64px; gap:12px; height:650px; margin-top:18px; }
+    .axis-y { grid-row:1 / 3; writing-mode:vertical-rl; transform:rotate(180deg); display:grid; place-items:center; font-size:17px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); }
+    .axis-x { grid-column:2 / 4; display:grid; place-items:center; font-size:17px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); }
+    .quadrant { position:relative; border:1px solid var(--border); border-radius:22px; background:rgba(28,6,78,.28); text-align:left; padding:27px; cursor:pointer; transition:transform 170ms ease, background 170ms ease, border-color 170ms ease; }
+    .quadrant:hover { transform:translateY(-4px); }
+    .quadrant.active { border-color:var(--lime); background:rgba(207,252,36,.16); box-shadow:0 0 0 3px rgba(207,252,36,.12); }
+    .quadrant span { display:block; color:var(--lime); font-size:15px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; margin-bottom:10px; }
+    .quadrant strong { display:block; font-size:25px; line-height:1.18; }
+    .quadrant small { display:block; margin-top:10px; font-size:17px; line-height:1.4; color:var(--text-muted); }
+
+    .value-zone { min-height:300px; display:grid; align-content:end; position:relative; overflow:hidden; }
+    .value-zone .ghost { position:absolute; top:6px; right:16px; font-size:110px; font-weight:800; color:rgba(255,255,255,.08); }
+
+    .compare-table { width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:22px; border:1px solid var(--border); font-size:18px; }
+    .compare-table th, .compare-table td { padding:18px 20px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); text-align:left; }
+    .compare-table th { background:rgba(47,8,109,.64); color:var(--lime); font-size:19px; }
+    .compare-table tr:last-child td { border-bottom:0; }
+    .compare-table th:last-child, .compare-table td:last-child { border-right:0; }
+
+    .case-grid { display:grid; grid-template-columns:.74fr 1.26fr; gap:28px; }
+    .case-aside { padding:28px; border-radius:24px; background:var(--lime); color:#241056; }
+    .case-aside h3 { font-size:34px; }
+    .case-aside p { font-size:20px; line-height:1.48; }
+    .case-questions { display:grid; gap:13px; }
+    .case-question { padding:19px 22px; border:1px solid var(--border); border-radius:18px; background:rgba(30,7,85,.28); font-size:20px; font-weight:600; }
+
+    .tool-radar { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+    .radar-card { min-height:210px; display:grid; align-content:space-between; padding:28px; border:1px solid var(--border); border-radius:24px; background:rgba(255,255,255,.09); }
+    .radar-card strong { font-size:30px; }
+    .radar-card span { color:var(--text-muted); font-size:18px; }
+
+    .lead-board { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+    .lead-card { position:relative; overflow:hidden; padding:16px; min-height:128px; border:1px solid rgba(255,255,255,.2); border-radius:16px; background:rgba(31,7,85,.36); transition:transform 180ms ease, border-color 180ms ease, background 240ms ease, box-shadow 240ms ease; }
+    .lead-card:hover { transform:translateY(-4px); border-color:var(--lime); }
+    .lead-card strong { display:block; font-size:20px; }
+    .lead-card span { display:block; margin-top:8px; color:var(--text-muted); font-size:16px; line-height:1.35; }
+    .demo-runbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:-6px 0 14px; }
+    .demo-status { display:flex; align-items:center; gap:10px; color:var(--text-muted); font-size:15px; font-weight:600; }
+    .demo-status::before { content:""; width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.34); }
+    .lead-demo.running .demo-status::before { background:var(--lime); box-shadow:0 0 18px rgba(207,252,36,.8); animation:status-pulse 700ms ease-in-out infinite alternate; }
+    .lead-demo.complete .demo-status::before { background:var(--lime); box-shadow:0 0 12px rgba(207,252,36,.5); }
+    @keyframes status-pulse { to { transform:scale(1.55); opacity:.5; } }
+    .lead-card.processing { border-color:rgba(207,252,36,.52); animation:card-scan 520ms var(--ease-out) both; }
+    .lead-card.priority { border-color:var(--lime); background:linear-gradient(145deg,rgba(207,252,36,.20),rgba(48,16,110,.5)); transform:translateY(-7px); box-shadow:0 16px 34px rgba(11,2,42,.28); }
+    .lead-card.priority::after { content:"Prioridad"; position:absolute; right:10px; top:9px; padding:4px 7px; border-radius:999px; color:#25105e; background:var(--lime); font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    @keyframes card-scan { 0% { transform:scale(.96); opacity:.55; } 55% { transform:scale(1.035); } 100% { transform:none; opacity:1; } }
+    .lead-output { margin-top:18px; display:grid; grid-template-columns:repeat(6,1fr); gap:10px; transition:opacity 260ms ease, transform 360ms var(--ease-out); }
+    .lead-output div { padding:14px; text-align:center; border-radius:14px; background:rgba(207,252,36,.12); border:1px solid rgba(207,252,36,.28); font-size:15px; font-weight:700; }
+    .lead-demo.complete .lead-output { transform:translateY(-4px); }
+
+    .prompt-master { display:grid; grid-template-columns:.94fr 1.06fr; gap:30px; }
+    .prompt-master pre { margin:0; white-space:pre-wrap; font-family:var(--font); font-size:20px; line-height:1.55; padding:28px; border:1px solid var(--border); border-radius:24px; background:rgba(16,4,53,.42); }
+    .sequence { display:grid; gap:14px; }
+    .sequence-step { display:grid; grid-template-columns:54px 1fr; align-items:center; gap:16px; padding:18px; border:1px solid var(--border); border-radius:18px; background:rgba(255,255,255,.08); }
+    .sequence-step b { width:48px; height:48px; display:grid; place-items:center; border-radius:50%; background:var(--lime); color:#261058; }
+
+    .workshop-layout { display:grid; grid-template-columns:1fr 430px; gap:34px; }
+    .workshop-items { display:grid; grid-template-columns:repeat(2,1fr); gap:13px; }
+    .workshop-items div { padding:17px; border-radius:16px; border:1px solid var(--border); background:rgba(255,255,255,.08); font-size:18px; }
+    .timer-card { --timer-progress:1; display:grid; place-items:center; align-content:center; min-height:430px; padding:30px; border-radius:28px; background:rgba(25,5,74,.42); border:1px solid var(--border); }
+    .timer-ring { width:260px; height:260px; display:grid; place-items:center; border-radius:50%; background:conic-gradient(var(--lime) calc(var(--timer-progress) * 1turn), rgba(255,255,255,.12) 0); position:relative; box-shadow:0 0 60px rgba(207,252,36,.08); }
+    .timer-ring::before { content:""; position:absolute; inset:13px; border-radius:50%; background:linear-gradient(145deg,#2b0c70,#17063e); border:1px solid rgba(255,255,255,.14); }
+    .timer-value { font-size:94px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.05em; }
+    .timer-ring .timer-value { position:relative; z-index:1; font-size:69px; }
+    .timer-controls { display:flex; gap:12px; margin-top:20px; }
+    .action-button { border:1px solid rgba(255,255,255,.38); border-radius:999px; background:rgba(255,255,255,.08); padding:12px 18px; cursor:pointer; font-weight:700; }
+    .action-button.primary { background:var(--lime); border-color:var(--lime); color:#241055; }
+    .action-button, .control, .tab-button, .edit-button { transition:transform var(--motion-fast) var(--ease-out), background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, opacity var(--motion-fast) ease; touch-action:manipulation; }
+    .action-button:hover, .control:hover, .tab-button:hover, .edit-button:hover { transform:translateY(-2px); border-color:rgba(207,252,36,.72); }
+    .action-button:active, .control:active, .tab-button:active, .edit-button:active { transform:translateY(0) scale(.96); }
+    .action-button:disabled { opacity:.64; cursor:progress; transform:none; }
+
+    .audit-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    .check-item { text-align:left; display:grid; grid-template-columns:42px 1fr; gap:16px; align-items:center; min-height:92px; padding:16px 20px; border-radius:18px; border:1px solid var(--border); background:rgba(255,255,255,.08); cursor:pointer; }
+    .check-mark { width:36px; height:36px; display:grid; place-items:center; border-radius:50%; border:2px solid rgba(255,255,255,.44); color:transparent; }
+    .check-item[aria-pressed="true"] { border-color:var(--lime); background:rgba(207,252,36,.12); }
+    .check-item[aria-pressed="true"] .check-mark { background:var(--lime); border-color:var(--lime); color:#241055; }
+    .check-item > span:last-child { font-size:18px; line-height:1.35; }
+    .audit-head { display:flex; align-items:center; gap:20px; margin-bottom:16px; }
+    .audit-meter { --audit-progress:0; flex:1; height:10px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.12); }
+    .audit-meter::before { content:""; display:block; height:100%; width:calc(var(--audit-progress) * 100%); border-radius:inherit; background:linear-gradient(90deg,var(--violet-primary),var(--lime)); transition:width 320ms var(--ease-out); }
+    .audit-count { min-width:100px; color:var(--lime); font-size:18px; font-weight:800; text-align:right; font-variant-numeric:tabular-nums; }
+
+    .timeline { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; position:relative; }
+    .timeline::before { content:""; position:absolute; left:10%; right:10%; top:38px; height:3px; background:linear-gradient(90deg,var(--lime),rgba(255,255,255,.22)); }
+    .week { position:relative; padding-top:72px; }
+    .week::before { content:""; position:absolute; top:24px; left:24px; width:30px; height:30px; border-radius:50%; background:var(--lime); box-shadow:0 0 0 10px rgba(207,252,36,.12); }
+    .week .glass-card { min-height:260px; }
+
+    .closing-principles { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:32px; }
+    .closing-principles .glass-card { min-height:190px; display:grid; align-content:center; }
+    .closing-principles strong { font-size:28px; line-height:1.25; }
+    .final-line { margin-top:34px; font-size:34px; line-height:1.34; font-weight:700; color:var(--lime); text-align:center; }
+
+    .source-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px 26px; }
+    .source { padding:14px 0; border-bottom:1px solid rgba(255,255,255,.16); font-size:17px; line-height:1.38; color:rgba(255,255,255,.82); }
+    .source b { color:var(--lime); }
+
+    .outcome-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:28px; }
+    .outcome { min-height:310px; padding:30px; display:grid; align-content:space-between; border:1px solid var(--border); border-radius:26px; background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(44,12,111,.28)); }
+    .outcome .num { color:var(--lime); font-size:48px; line-height:1; font-weight:800; }
+    .outcome h3 { font-size:29px; margin:42px 0 12px; }
+    .outcome p { margin:0; color:var(--text-muted); font-size:20px; line-height:1.42; }
+
+    .history-timeline { position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:12px; height:486px; margin-top:18px; padding:8px 2px; align-items:center; }
+    .history-timeline::before { content:""; position:absolute; z-index:0; left:1.2%; right:1.2%; top:50%; height:5px; border-radius:999px; background:linear-gradient(90deg,rgba(207,252,36,.35),var(--lime) 18%,#fff 52%,var(--lime) 82%,rgba(207,252,36,.35)); box-shadow:0 0 24px rgba(207,252,36,.36); transform:scaleX(0); transform-origin:left center; }
+    .history-timeline::after { content:""; position:absolute; z-index:5; top:calc(50% - 8px); left:1.2%; width:16px; height:16px; border:3px solid #fff; border-radius:50%; background:var(--lime); box-shadow:0 0 0 8px rgba(207,252,36,.14),0 0 30px rgba(207,252,36,.9); opacity:0; }
+    .slide.current .history-timeline::before { animation:timeline-draw 1.05s .18s var(--ease-out) forwards; }
+    .slide.current .history-timeline::after { animation:timeline-runner 6s 1.15s ease-in-out infinite; }
+    @keyframes timeline-draw { to { transform:scaleX(1); } }
+    @keyframes timeline-runner { 0% { left:1.2%; opacity:0; } 7%,92% { opacity:1; } 100% { left:97.2%; opacity:0; } }
+    .milestone { position:relative; z-index:2; height:184px; padding:17px 14px 14px; border:1px solid rgba(255,255,255,.22); border-top:4px solid var(--lime); border-radius:18px; background:linear-gradient(155deg,rgba(31,7,84,.78),rgba(76,32,143,.58)); box-shadow:0 16px 34px rgba(24,4,67,.18); overflow:visible; }
+    .milestone:nth-child(odd) { align-self:start; margin-top:4px; }
+    .milestone:nth-child(even) { align-self:end; margin-bottom:4px; }
+    .milestone::before { content:""; position:absolute; left:50%; width:2px; height:51px; background:linear-gradient(var(--lime),rgba(255,255,255,.38)); transform:translateX(-50%) scaleY(0); opacity:0; }
+    .milestone::after { content:""; position:absolute; z-index:3; left:50%; width:15px; height:15px; border:3px solid #fff; border-radius:50%; background:var(--lime); box-shadow:0 0 0 6px rgba(207,252,36,.14),0 0 22px rgba(207,252,36,.7); transform:translateX(-50%) scale(.25); opacity:0; }
+    .milestone:nth-child(odd)::before { top:100%; transform-origin:top; }
+    .milestone:nth-child(odd)::after { top:calc(100% + 43px); }
+    .milestone:nth-child(even)::before { bottom:100%; transform-origin:bottom; background:linear-gradient(rgba(255,255,255,.38),var(--lime)); }
+    .milestone:nth-child(even)::after { bottom:calc(100% + 43px); }
+    .milestone.revealed::before { opacity:1; transform:translateX(-50%) scaleY(1); transition:opacity 260ms ease,transform 480ms 120ms var(--ease-out); }
+    .milestone.revealed::after { opacity:1; transform:translateX(-50%) scale(1); transition:opacity 220ms 380ms ease,transform 420ms 360ms var(--ease-spring); animation:timeline-node-pulse 2.2s 900ms ease-in-out infinite; }
+    @keyframes timeline-node-pulse { 0%,100% { box-shadow:0 0 0 6px rgba(207,252,36,.12),0 0 18px rgba(207,252,36,.55); } 50% { box-shadow:0 0 0 10px rgba(207,252,36,.04),0 0 30px rgba(207,252,36,.9); } }
+    .milestone time { display:block; color:var(--lime); font-size:23px; line-height:1; font-weight:850; letter-spacing:.01em; }
+    .milestone h3 { margin:10px 0 7px; font-size:18px; line-height:1.14; }
+    .milestone p { margin:0; color:rgba(255,255,255,.74); font-size:12.5px; line-height:1.34; }
+
+    .era-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+    .era { position:relative; min-height:360px; padding:32px; overflow:hidden; border:1px solid var(--border); border-radius:28px; background:rgba(25,6,73,.28); }
+    .era .era-year { color:var(--lime); font-size:18px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; }
+    .era h3 { margin-top:54px; font-size:37px; }
+    .era p { font-size:20px; line-height:1.5; color:var(--text-muted); }
+    .era .ghost { position:absolute; right:-6px; bottom:-48px; font-size:180px; line-height:1; font-weight:800; color:rgba(255,255,255,.055); }
+
+    .horizon-chart { display:grid; grid-template-columns:250px 1fr; gap:16px 30px; align-items:center; margin-top:34px; }
+    .horizon-label { font-size:20px; font-weight:700; }
+    .horizon-label small { display:block; color:var(--text-muted); font-size:14px; font-weight:500; margin-top:4px; }
+    .horizon-bar { position:relative; height:66px; border-radius:16px; background:rgba(255,255,255,.08); overflow:hidden; border:1px solid rgba(255,255,255,.16); }
+    .horizon-fill { height:100%; width:var(--size); display:flex; align-items:center; justify-content:flex-end; padding-right:18px; color:#241055; background:linear-gradient(90deg,var(--violet-primary),var(--lime)); border-radius:inherit; font-size:20px; font-weight:800; transform-origin:left; }
+    .revealed .horizon-fill { animation:bar-grow 780ms var(--ease-out) both; }
+    @keyframes bar-grow { from { transform:scaleX(.04); opacity:.35; } }
+    .method-note { margin-top:28px; padding:18px 22px; border-left:5px solid var(--lime); background:rgba(18,5,58,.24); color:var(--text-muted); font-size:17px; line-height:1.45; }
+
+    .frontier-note { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-top:18px; padding:15px 18px; border:1px solid rgba(207,252,36,.32); border-radius:18px; background:rgba(207,252,36,.09); }
+    .frontier-note strong { color:var(--lime); font-size:18px; }
+    .frontier-note span { color:var(--text-muted); font-size:15px; line-height:1.4; }
+
+    .snowball-layout { display:grid; grid-template-columns:.78fr 1.22fr; gap:34px; align-items:center; }
+    .snow-copy p { max-width:650px; color:var(--text-muted); font-size:22px; line-height:1.48; }
+    .snow-visual { position:relative; width:850px; height:600px; margin-left:auto; }
+    .snow-visual::before { content:""; position:absolute; left:36px; right:16px; top:300px; height:150px; border-top:4px solid rgba(207,252,36,.46); background:linear-gradient(180deg,rgba(207,252,36,.08),transparent); transform:rotate(19deg); transform-origin:left center; border-radius:50%; }
+    .snowball-step { position:absolute; display:grid; place-items:center; padding:16px; border-radius:50%; text-align:center; color:#25105e; background:linear-gradient(145deg,#fff,var(--lime) 72%); box-shadow:0 18px 46px rgba(21,4,58,.28), inset 0 0 0 5px rgba(255,255,255,.38); font-weight:800; line-height:1.16; }
+    .snowball-step small { display:block; margin-top:6px; font-size:12px; line-height:1.25; font-weight:600; opacity:.72; }
+    .snow-one { width:128px; height:128px; left:16px; top:70px; font-size:16px; }
+    .snow-two { width:164px; height:164px; left:190px; top:145px; font-size:18px; }
+    .snow-three { width:216px; height:216px; left:386px; top:236px; font-size:21px; }
+    .snow-four { width:286px; height:286px; right:0; bottom:0; font-size:27px; box-shadow:0 0 72px rgba(207,252,36,.22), inset 0 0 0 7px rgba(255,255,255,.42); }
+    .snow-arrow { position:absolute; color:var(--lime); font-size:42px; font-weight:800; }
+    .snow-arrow.a { left:140px; top:155px; }.snow-arrow.b { left:346px; top:265px; }.snow-arrow.c { right:246px; bottom:155px; }
+    .snow-loop { margin-top:20px; padding:17px 20px; border-left:5px solid var(--lime); background:rgba(255,255,255,.08); font-size:19px; font-weight:700; line-height:1.4; }
+
+    .flywheel { position:relative; width:760px; height:620px; margin:0 auto; }
+    .flywheel-ring { position:absolute; inset:95px 165px; border:4px dashed rgba(207,252,36,.42); border-radius:50%; animation:orbit-spin 24s linear infinite; }
+    @keyframes orbit-spin { to { transform:rotate(360deg); } }
+    .flywheel-core { position:absolute; left:50%; top:50%; width:270px; height:270px; transform:translate(-50%,-50%); display:grid; place-items:center; padding:30px; text-align:center; border-radius:50%; color:#25105e; background:var(--lime); box-shadow:0 0 70px rgba(207,252,36,.22); font-size:31px; line-height:1.12; font-weight:800; }
+    .fly-node { position:absolute; width:245px; min-height:108px; display:grid; place-items:center; padding:18px; text-align:center; border:1px solid var(--border); border-radius:20px; background:rgba(38,8,100,.78); font-size:18px; font-weight:700; }
+    .fly-feedback { left:0; top:62px; }
+    .fly-investment { right:0; top:62px; }
+    .fly-models { right:-52px; bottom:78px; }
+    .fly-products { left:257px; bottom:-6px; }
+    .fly-adoption { left:-52px; bottom:78px; }
+    .flywheel-copy { display:grid; grid-template-columns:.78fr 1.22fr; align-items:center; gap:40px; }
+    .flywheel-copy .content-copy p { font-size:23px; line-height:1.48; color:var(--text-muted); }
+
+    .stat-wall { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .big-stat { min-height:285px; padding:28px; display:grid; align-content:space-between; border-radius:26px; border:1px solid var(--border); background:rgba(255,255,255,.09); }
+    .big-stat strong { color:var(--lime); font-size:62px; line-height:.95; letter-spacing:-.055em; }
+    .big-stat span { font-size:19px; line-height:1.42; color:rgba(255,255,255,.86); }
+    .stat-source { display:block; margin-top:10px; color:rgba(255,255,255,.52); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+
+    .adoption-layout { display:grid; grid-template-columns:1.12fr .88fr; gap:28px; align-items:stretch; }
+    .adoption-map { display:grid; gap:12px; align-content:center; }
+    .adoption-band { min-height:82px; display:grid; grid-template-columns:120px 1fr auto; gap:20px; align-items:center; padding:16px 22px; border-radius:20px; border:1px solid rgba(255,255,255,.18); background:linear-gradient(90deg,rgba(123,89,198,.28),rgba(255,255,255,.07)); }
+    .adoption-band:nth-child(2) { margin-left:55px; background:linear-gradient(90deg,rgba(154,91,219,.34),rgba(255,255,255,.08)); }
+    .adoption-band:nth-child(3) { margin-left:110px; background:linear-gradient(90deg,rgba(188,179,54,.30),rgba(207,252,36,.08)); }
+    .adoption-band:nth-child(4) { margin-left:165px; border-color:rgba(207,252,36,.55); background:linear-gradient(90deg,rgba(207,252,36,.27),rgba(207,252,36,.09)); }
+    .adoption-band b { color:var(--lime); font-size:15px; letter-spacing:.08em; text-transform:uppercase; }
+    .adoption-band strong { font-size:22px; }
+    .adoption-band span { color:var(--text-muted); font-size:15px; text-align:right; }
+    .usage-data { padding:30px; border-radius:28px; color:#25105e; background:var(--lime); }
+    .usage-data h3 { font-size:34px; }
+    .usage-number { display:grid; grid-template-columns:90px 1fr; gap:14px; align-items:center; padding:15px 0; border-bottom:1px solid rgba(37,16,94,.2); }
+    .usage-number strong { font-size:39px; }
+    .usage-number span { font-size:16px; line-height:1.35; }
+    .usage-data small { display:block; margin-top:16px; font-size:12px; line-height:1.4; opacity:.7; }
+
+    .jobs-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .jobs-panel { min-height:300px; padding:32px; border:1px solid var(--border); border-radius:28px; background:rgba(255,255,255,.08); }
+    .jobs-panel .metric { color:var(--lime); font-size:72px; line-height:1; font-weight:800; }
+    .jobs-panel h3 { margin-top:22px; font-size:30px; }
+    .jobs-panel p { color:var(--text-muted); font-size:19px; line-height:1.48; }
+    .jobs-thesis { grid-column:1/3; padding:22px 28px; border-radius:20px; color:#241055; background:var(--lime); font-size:26px; font-weight:800; text-align:center; }
+
+    .exposure-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+    .exposure-card { min-height:300px; padding:28px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .exposure-card h3 { color:var(--lime); font-size:27px; }
+    .exposure-card ul { margin:20px 0 0; padding-left:22px; }
+    .exposure-card li { margin:11px 0; color:var(--text-muted); font-size:17px; line-height:1.35; }
+    .exposure-card.lower { background:rgba(24,70,131,.22); }
+
+    .electric-history { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .electric-step { min-height:360px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .electric-step time { color:var(--lime); font-size:19px; font-weight:800; }
+    .electric-step h3 { margin-top:38px; font-size:29px; }
+    .electric-step p { color:var(--text-muted); font-size:18px; line-height:1.48; }
+    .electric-step .mini-diagram { height:72px; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:22px; border-radius:14px; background:rgba(20,5,64,.24); color:var(--lime); font-size:31px; }
+
+    .tech-analogy { display:grid; grid-template-columns:1fr 150px 1fr; align-items:stretch; gap:24px; margin-top:18px; }
+    .analogy-card { position:relative; min-height:365px; padding:30px 34px; overflow:hidden; border:1px solid var(--border); border-radius:28px; background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(43,9,112,.32)); box-shadow:0 18px 42px rgba(20,4,60,.18); }
+    .analogy-card::after { content:""; position:absolute; right:-70px; bottom:-90px; width:230px; height:230px; border:34px solid rgba(207,252,36,.07); border-radius:50%; }
+    .analogy-top { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+    .analogy-top time { color:var(--lime); font-size:16px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+    .analogy-icon { width:66px; height:66px; display:grid; place-items:center; flex:0 0 auto; border-radius:20px; color:#25105e; background:var(--lime); box-shadow:0 0 28px rgba(207,252,36,.28); font-size:32px; font-weight:800; }
+    .analogy-card h3 { margin:26px 0 8px; font-size:35px; }
+    .analogy-card > p { max-width:620px; margin-bottom:22px; font-size:21px; line-height:1.38; color:rgba(255,255,255,.82); }
+    .human-shift { position:relative; z-index:1; display:grid; grid-template-columns:1fr 42px 1fr; align-items:center; gap:10px; padding:17px 18px; border-radius:18px; background:rgba(18,4,58,.34); }
+    .human-shift span,.human-shift b { display:block; font-size:17px; line-height:1.3; }
+    .human-shift span { color:rgba(255,255,255,.62); }
+    .human-shift i { color:var(--lime); font-size:28px; font-style:normal; text-align:center; }
+    .human-shift b { color:#fff; }
+    .analogy-bridge { display:grid; align-content:center; justify-items:center; gap:12px; text-align:center; }
+    .analogy-bridge strong { width:92px; height:92px; display:grid; place-items:center; border:2px solid var(--lime); border-radius:50%; color:var(--lime); background:rgba(207,252,36,.08); box-shadow:0 0 0 12px rgba(207,252,36,.04),0 0 34px rgba(207,252,36,.2); font-size:46px; animation:analogy-pulse 2.6s ease-in-out infinite; }
+    .analogy-bridge span { color:rgba(255,255,255,.72); font-size:14px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    @keyframes analogy-pulse { 50% { transform:scale(1.06); box-shadow:0 0 0 18px rgba(207,252,36,.02),0 0 44px rgba(207,252,36,.34); } }
+    .analogy-thesis { margin-top:18px; padding:18px 24px; border-left:5px solid var(--lime); border-radius:0 16px 16px 0; background:rgba(25,5,73,.36); font-size:23px; line-height:1.35; text-align:center; }
+    .analogy-thesis strong { color:var(--lime); }
+
+    .llm-machine { display:grid; grid-template-columns:1fr 72px 1fr 72px 1fr; align-items:center; gap:14px; }
+    .llm-stage { min-height:300px; padding:30px; border-radius:28px; border:1px solid var(--border); background:rgba(25,6,73,.32); }
+    .llm-stage .stage-num { color:var(--lime); font-size:18px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+    .llm-stage h3 { margin-top:58px; font-size:31px; }
+    .llm-stage p { color:var(--text-muted); font-size:18px; line-height:1.5; }
+    .token-cloud { display:flex; flex-wrap:wrap; gap:9px; margin-top:24px; }
+    .token { padding:8px 11px; border:1px solid rgba(255,255,255,.25); border-radius:10px; background:rgba(255,255,255,.08); font-size:15px; }
+    .token.next { color:#25105e; border-color:var(--lime); background:var(--lime); }
+    .machine-arrow { color:var(--lime); font-size:54px; text-align:center; }
+
+    .stack-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .stack-layer { min-height:300px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .stack-layer .num { color:var(--lime); font-size:44px; font-weight:800; }
+    .stack-layer h3 { margin-top:42px; font-size:30px; }
+    .stack-layer p { color:var(--text-muted); font-size:18px; line-height:1.48; }
+
+    .jagged-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:28px; }
+    .jagged-list { display:grid; gap:14px; }
+    .jagged-row { display:grid; grid-template-columns:190px 1fr 78px; align-items:center; gap:16px; padding:18px 20px; border:1px solid rgba(255,255,255,.18); border-radius:18px; background:rgba(255,255,255,.07); }
+    .jagged-row strong { font-size:18px; }
+    .jagged-meter { height:12px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; }
+    .jagged-meter i { display:block; height:100%; width:var(--score); border-radius:inherit; background:linear-gradient(90deg,var(--violet-primary),var(--lime)); }
+    .jagged-row span { color:var(--lime); text-align:right; font-weight:800; }
+    .not-mind { padding:34px; border-radius:28px; color:#241055; background:var(--lime); }
+    .not-mind h3 { font-size:40px; }
+    .not-mind p { font-size:20px; line-height:1.5; }
+
+    .actor-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .actor { min-height:225px; padding:24px; border:1px solid var(--border); border-radius:24px; background:rgba(255,255,255,.08); }
+    .actor .actor-mark { width:62px; height:62px; display:grid; place-items:center; border-radius:18px; color:#25105e; background:var(--lime); font-size:24px; font-weight:800; }
+    .actor .actor-logo { width:58px; height:58px; display:grid; place-items:center; padding:12px; border-radius:17px; background:rgba(255,255,255,.12); }
+    .actor .actor-logo img { width:100%; height:100%; object-fit:contain; }
+    .actor:first-child .actor-logo img { filter:brightness(0) invert(1); transform:scale(1.08); }
+    .actor h3 { margin:24px 0 8px; font-size:25px; }
+    .actor p { margin:0; color:var(--text-muted); font-size:15px; line-height:1.4; }
+
+    .evolution { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .evolution-step { position:relative; min-height:350px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(25,6,73,.28); }
+    .evolution-step:not(:last-child)::after { content:"→"; position:absolute; right:-28px; top:50%; z-index:2; color:var(--lime); font-size:38px; }
+    .evolution-step time { color:var(--lime); font-size:24px; font-weight:800; }
+    .evolution-step h3 { margin-top:54px; font-size:31px; }
+    .evolution-step p { color:var(--text-muted); font-size:18px; line-height:1.45; }
+
+    .tool-map { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+    .tool-family { min-height:210px; padding:26px; border:1px solid var(--border); border-radius:24px; background:rgba(255,255,255,.08); }
+    .tool-family h3 { color:var(--lime); font-size:25px; }
+    .tool-family p { color:var(--text-muted); font-size:17px; line-height:1.46; }
+    .tool-family .examples { display:block; margin-top:20px; color:#fff; font-size:16px; font-weight:700; }
+    .tool-map.five { grid-template-columns:repeat(5,1fr); }
+    .tool-map.five .tool-family { min-height:320px; }
+    .tool-map.five .tool-family p { font-size:16px; }
+
+    .level-table { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .level-card { min-height:390px; padding:32px; border:1px solid var(--border); border-radius:28px; background:rgba(255,255,255,.08); }
+    .level-card .level { color:var(--lime); text-transform:uppercase; letter-spacing:.12em; font-size:15px; font-weight:800; }
+    .level-card h3 { margin-top:50px; font-size:34px; }
+    .level-card p { color:var(--text-muted); font-size:19px; line-height:1.48; }
+    .level-card .example { display:block; margin-top:28px; padding-top:20px; border-top:1px solid rgba(255,255,255,.18); color:#fff; font-size:16px; font-weight:600; }
+    .level-facts { display:grid; gap:9px; margin-top:20px; padding-top:18px; border-top:1px solid rgba(255,255,255,.16); }
+    .level-facts span { font-size:15px; line-height:1.35; color:var(--text-muted); }
+    .level-facts b { color:#fff; }
+
+    .source-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .source-card { min-height:300px; padding:28px; border:1px solid var(--border); border-radius:24px; background:rgba(255,255,255,.08); }
+    .source-card h3 { color:var(--lime); font-size:27px; }
+    .source-card p { color:var(--text-muted); font-size:18px; line-height:1.48; }
+
+    .thinking-loop { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .thinking-step { min-height:320px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .thinking-step .num { color:var(--lime); font-size:48px; font-weight:800; }
+    .thinking-step h3 { margin-top:44px; font-size:30px; }
+    .thinking-step p { color:var(--text-muted); font-size:18px; line-height:1.48; }
+
+    .advisor-day { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; }
+    .day-step { min-height:330px; padding:24px 20px; border:1px solid var(--border); border-radius:22px; background:rgba(255,255,255,.07); }
+    .day-step .time { color:var(--lime); font-size:16px; font-weight:800; }
+    .day-step h3 { margin-top:46px; font-size:23px; }
+    .day-step p { color:var(--text-muted); font-size:16px; line-height:1.45; }
+    .day-step .pain { display:block; margin-top:24px; color:var(--pink-pale); font-size:14px; font-weight:700; }
+
+    .work-better { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .work-column { min-height:360px; padding:32px; border:1px solid var(--border); border-radius:28px; background:rgba(255,255,255,.08); }
+    .work-column .work-icon { width:62px; height:62px; display:grid; place-items:center; border-radius:18px; background:var(--lime); color:#25105e; font-size:29px; font-weight:800; }
+    .work-column h3 { margin-top:40px; font-size:31px; }
+    .work-column p { color:var(--text-muted); font-size:19px; line-height:1.48; }
+
+    .account-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .account-step { min-height:330px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .account-step > span { display:block; color:var(--lime); font-size:42px; line-height:1; font-weight:800; }
+    .account-step h3 { margin-top:28px; font-size:28px; }
+    .account-step p { color:var(--text-muted); font-size:18px; line-height:1.45; }
+
+    .demo-layout { display:grid; grid-template-columns:.86fr 1.14fr; gap:24px; align-items:stretch; }
+    .demo-brief { min-height:470px; padding:30px; border:1px solid var(--border); border-radius:28px; background:rgba(25,6,73,.35); }
+    .demo-brief h3 { font-size:29px; }
+    .demo-brief pre { white-space:pre-wrap; font-family:var(--font); color:rgba(255,255,255,.82); font-size:17px; line-height:1.52; }
+    .demo-sequence { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
+    .demo-step { min-height:220px; padding:24px; border:1px solid rgba(255,255,255,.18); border-radius:22px; background:rgba(255,255,255,.08); }
+    .demo-step b { color:var(--lime); font-size:15px; letter-spacing:.08em; text-transform:uppercase; }
+    .demo-step h3 { margin-top:24px; font-size:25px; }
+    .demo-step p { margin:0; color:var(--text-muted); font-size:16px; line-height:1.42; }
+
+    .skill-flow { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .skill-step { position:relative; min-height:330px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .skill-step:not(:last-child)::after { content:"→"; position:absolute; right:-28px; top:48%; z-index:2; color:var(--lime); font-size:38px; }
+    .skill-step > span { display:block; color:var(--lime); font-size:42px; line-height:1; font-weight:800; }
+    .skill-step h3 { margin-top:28px; font-size:28px; }
+    .skill-step p { color:var(--text-muted); font-size:17px; line-height:1.44; }
+
+    .ad-demo { display:grid; grid-template-columns:.84fr 1.16fr; gap:28px; }
+    .ad-instructions { display:grid; gap:14px; align-content:center; }
+    .ad-instruction { padding:20px 22px; border:1px solid var(--border); border-radius:20px; background:rgba(255,255,255,.08); }
+    .ad-instruction > span { display:block; color:var(--lime); font-size:22px; line-height:1; font-weight:800; }
+    .ad-instruction p { margin:7px 0 0; color:var(--text-muted); font-size:16px; line-height:1.4; }
+    .ad-instruction strong { color:#fff; }
+    .ad-frame { position:relative; min-height:560px; overflow:hidden; border:1px solid var(--border); border-radius:32px; background:url("/presentaciones/ia-2026/assets/propiedad-demo.webp") center 58%/cover no-repeat; box-shadow:var(--shadow); }
+    .ad-frame::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(15,4,45,.92) 0%,rgba(15,4,45,.68) 38%,rgba(15,4,45,.08) 73%),linear-gradient(180deg,transparent 44%,rgba(12,4,35,.88)); }
+    .slide.current .ad-frame { animation:ad-frame-drift 9s ease-in-out infinite alternate; }
+    @keyframes ad-frame-drift { from { background-position:center 55%; } to { background-position:center 64%; } }
+    .ad-brand { position:absolute; top:28px; left:28px; color:var(--lime); font-size:16px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; }
+    .ad-copy { position:absolute; left:34px; right:34px; bottom:34px; }
+    .ad-copy h3 { font-size:48px; line-height:1.02; margin-bottom:12px; }
+    .ad-copy p { font-size:19px; color:rgba(255,255,255,.8); }
+    .ad-cta { display:inline-flex; padding:12px 18px; border-radius:999px; color:#25105e; background:var(--lime); font-weight:800; }
+
+    .case-before-after { display:grid; grid-template-columns:1fr 90px 1fr; align-items:stretch; gap:22px; }
+    .case-column { min-height:430px; padding:32px; border:1px solid var(--border); border-radius:28px; background:rgba(25,6,73,.28); }
+    .case-column.good { border-color:rgba(207,252,36,.55); background:rgba(207,252,36,.10); }
+    .case-column h3 { font-size:32px; }
+    .case-column ul { margin:28px 0 0; padding-left:24px; }
+    .case-column li { margin:16px 0; color:var(--text-muted); font-size:19px; line-height:1.42; }
+    .case-arrow { display:grid; place-items:center; color:var(--lime); font-size:58px; }
+
+    .artifact-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .artifact { min-height:360px; padding:30px; border:1px solid var(--border); border-radius:26px; background:rgba(255,255,255,.08); }
+    .artifact .artifact-icon { width:60px; height:60px; display:grid; place-items:center; border-radius:18px; color:#25105e; background:var(--lime); font-size:24px; font-weight:800; }
+    .artifact h3 { margin-top:48px; font-size:29px; }
+    .artifact p { color:var(--text-muted); font-size:18px; line-height:1.48; }
+
+    .lab-output { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:18px; }
+    .lab-output div { padding:18px; border-radius:17px; border:1px solid rgba(207,252,36,.28); background:rgba(207,252,36,.10); }
+    .lab-output strong { display:block; color:var(--lime); font-size:16px; }
+    .lab-output span { display:block; margin-top:8px; color:var(--text-muted); font-size:15px; line-height:1.4; }
+
+    .qa-layout { display:grid; grid-template-columns:1fr 430px; gap:34px; }
+    .qa-prompts { display:grid; gap:15px; }
+    .qa-prompt { padding:22px 24px; border:1px solid var(--border); border-radius:20px; background:rgba(255,255,255,.08); font-size:20px; font-weight:600; }
+
+    [data-reveal] { opacity:0; transform:translate3d(0,26px,0) scale(.985); filter:blur(4px); transition:opacity var(--motion-base) var(--ease-out), transform 520ms var(--ease-spring), filter 420ms var(--ease-out); will-change:transform,opacity; }
+    [data-reveal].motion-left { transform:translate3d(-38px,0,0) scale(.99); }
+    [data-reveal].motion-right { transform:translate3d(38px,0,0) scale(.99); }
+    [data-reveal].motion-scale { transform:translate3d(0,8px,0) scale(.92); }
+    [data-reveal].motion-rise { transform:translate3d(0,42px,0) rotateX(5deg); transform-origin:50% 100%; }
+    [data-reveal].revealed { opacity:1; transform:translate3d(0,0,0) scale(1) rotateX(0); filter:none; }
+    .compare-table tr[data-reveal] { transform:translateX(-30px); }
+    .compare-table tr[data-reveal].revealed { transform:none; }
+    .sequence-step.revealed b { animation:step-pop 420ms 100ms var(--ease-spring) both; }
+    @keyframes step-pop { from { transform:scale(.45) rotate(-16deg); opacity:.2; } }
+
+    .slide[data-density="dense"] h2 { font-size:59px; margin-bottom:20px; }
+    .slide[data-density="dense"] .overline { font-size:26px; }
+    .slide[data-density="dense"] .content { width:100%; }
+    .slide[data-density="focus"] .content { max-width:1560px; }
+    .chapter-hud { position:fixed; z-index:52; left:18px; top:16px; display:flex; align-items:center; gap:10px; pointer-events:none; }
+    .chapter-name { padding:9px 13px; border:1px solid rgba(255,255,255,.18); border-radius:999px; background:rgba(18,6,47,.70); backdrop-filter:blur(12px); color:rgba(255,255,255,.84); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .chapter-step { color:var(--lime); font-size:12px; font-weight:800; font-variant-numeric:tabular-nums; }
+    .slide-flash { position:fixed; z-index:48; inset:0; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 50%,rgba(207,252,36,.08),transparent 46%); }
+    .slide-flash.run { animation:flash-in 520ms var(--ease-out) both; }
+    @keyframes flash-in { 0% { opacity:0; transform:scale(.92); } 35% { opacity:1; } 100% { opacity:0; transform:scale(1.08); } }
+
+    .chrome { position:fixed; z-index:50; left:18px; right:18px; bottom:16px; display:flex; align-items:center; gap:12px; pointer-events:none; }
+    .progress-track { flex:1; height:5px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.16); }
+    .progress-fill { height:100%; width:4%; border-radius:inherit; background:var(--lime); transition:width 280ms var(--ease-out); }
+    .progress-fill::after { content:""; display:block; margin-left:auto; width:48px; height:100%; background:linear-gradient(90deg,transparent,#fff); filter:blur(1px); animation:progress-pulse 1.8s ease-in-out infinite; }
+    @keyframes progress-pulse { 0%,100% { opacity:.2; } 50% { opacity:.9; } }
+    .controls { display:flex; align-items:center; gap:8px; pointer-events:auto; }
+    .control { width:42px; height:42px; display:grid; place-items:center; border-radius:50%; border:1px solid rgba(255,255,255,.22); background:rgba(18,6,47,.68); backdrop-filter:blur(12px); cursor:pointer; font-size:20px; }
+    .counter { min-width:84px; text-align:center; font-size:14px; font-weight:700; color:rgba(255,255,255,.78); }
+
+    .notes-panel { position:fixed; z-index:80; right:22px; bottom:78px; width:min(460px,calc(100vw - 44px)); max-height:52vh; overflow:auto; padding:24px; border-radius:22px; background:rgba(15,5,44,.92); border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(18px); box-shadow:0 20px 60px rgba(0,0,0,.4); transform:translateY(24px); opacity:0; pointer-events:none; transition:opacity 180ms ease, transform 220ms ease; }
+    .notes-panel.open { opacity:1; transform:translateY(0); pointer-events:auto; }
+    .notes-panel h2 { font-size:23px; margin-bottom:14px; }
+    .notes-panel p { margin:0; color:rgba(255,255,255,.78); font-size:16px; line-height:1.5; white-space:pre-line; }
+
+    .overview { position:fixed; z-index:90; inset:0; display:none; padding:34px; overflow:auto; background:rgba(10,3,30,.96); }
+    .overview.open { display:block; }
+    .overview-header { display:flex; align-items:center; justify-content:space-between; max-width:1480px; margin:0 auto 24px; }
+    .overview-header h2 { margin:0; font-size:32px; }
+    .overview-grid { max-width:1480px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; }
+    .overview-card { position:relative; aspect-ratio:16/9; overflow:hidden; padding:20px; text-align:left; border-radius:18px; border:1px solid rgba(255,255,255,.17); background:linear-gradient(135deg,#371081,#7957c8); cursor:pointer; }
+    .overview-card::after { content:""; position:absolute; width:200px; height:200px; border:35px solid rgba(255,255,255,.07); border-radius:50%; right:-100px; bottom:-120px; }
+    .overview-card span { color:var(--lime); font-size:13px; font-weight:800; }
+    .overview-card strong { display:block; max-width:90%; margin-top:16px; font-size:20px; line-height:1.16; }
+    .overview-card.current-card { outline:3px solid var(--lime); outline-offset:2px; }
+
+    .help { position:fixed; z-index:100; inset:0; display:none; place-items:center; background:rgba(10,3,30,.88); }
+    .help.open { display:grid; }
+    .help-card { width:min(720px,calc(100vw - 40px)); padding:34px; border-radius:28px; background:#29105d; border:1px solid rgba(255,255,255,.2); box-shadow:0 30px 80px rgba(0,0,0,.45); }
+    .help-card h2 { font-size:38px; }
+    .shortcut-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    .shortcut { display:flex; align-items:center; gap:13px; color:rgba(255,255,255,.82); }
+    kbd { min-width:48px; text-align:center; padding:7px 10px; border-radius:9px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); font-weight:800; color:#fff; }
+
+    .laser {
+      position:fixed; z-index:120; left:0; top:0; width:18px; height:18px; border-radius:50%;
+      background:var(--lime); box-shadow:0 0 0 10px rgba(207,252,36,.12), 0 0 36px 12px rgba(207,252,36,.5);
+      transform:translate(-50%,-50%) scale(0); opacity:0; pointer-events:none;
+      transition:opacity 120ms ease, transform 160ms var(--ease-out);
+    }
+    .laser.active { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    body.laser-mode { cursor:none; }
+    .quadrant::after, .check-item::after {
+      content:""; position:absolute; inset:50%; border-radius:inherit; background:rgba(207,252,36,.16); opacity:0; transform:scale(.2); pointer-events:none;
+    }
+    .quadrant:active::after, .check-item:active::after { inset:0; opacity:1; transform:scale(1); transition:inset 180ms ease, opacity 180ms ease, transform 180ms ease; }
+    .check-item { position:relative; overflow:hidden; }
+
+    .edit-toolbar {
+      position:fixed; z-index:110; top:18px; left:50%; display:flex; align-items:center; gap:9px;
+      padding:9px 12px; border:1px solid rgba(255,255,255,.22); border-radius:999px;
+      background:rgba(15,5,44,.9); backdrop-filter:blur(16px); box-shadow:0 14px 40px rgba(0,0,0,.3);
+      opacity:0; pointer-events:none; transform:translate(-50%,-16px); transition:opacity 160ms ease, transform 200ms var(--ease-out);
+    }
+    .edit-toolbar.open { opacity:1; pointer-events:auto; transform:translate(-50%,0); }
+    .edit-status { padding:0 8px; color:var(--lime); font-size:13px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+    .edit-button { border:1px solid rgba(255,255,255,.25); border-radius:999px; background:rgba(255,255,255,.08); padding:8px 13px; cursor:pointer; font-size:13px; font-weight:700; }
+    .edit-button.primary { color:#241055; background:var(--lime); border-color:var(--lime); }
+    body.edit-mode [contenteditable="true"] { border-radius:8px; outline:2px dashed rgba(207,252,36,.48); outline-offset:5px; cursor:text; }
+    body.edit-mode [contenteditable="true"]:focus { outline:3px solid var(--lime); background:rgba(20,5,64,.22); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; }
+      .slide, [data-reveal] { transform:none !important; }
+      .slide.current::before, .slide.current::after, .progress-fill::after, .slide.current .image-frame img { animation:none !important; }
+    }
+    @media print {
+      html, body { overflow:visible; height:auto; background:#fff; }
+      .viewport { position:static; display:block; }
+      .deck { transform:none !important; width:1920px; height:auto; box-shadow:none; }
+      .slide { position:relative; width:1920px; height:1080px; opacity:1; transform:none; pointer-events:auto; page-break-after:always; }
+      [data-reveal] { opacity:1; transform:none; }
+      .chrome, .notes-panel, .overview, .help { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#presentation">Saltar a la presentación</a>
+  <main class="viewport" id="presentation" tabindex="-1">
+    <div class="deck" aria-live="polite">
+
+      <section class="slide current" data-title="IA 2026 · De conversar a dirigir" data-notes="Abre con la transformación: en cuatro años pasamos de pedir respuestas a encargar trabajo. No te presentes todavía. Duración: 1 minuto.">
+        <div class="topline"><div class="cohort"><strong>Cuarta generación</strong>Capital Academy</div><div class="brand"><div class="brand-word">Capital<br>Academy</div><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt="Capital Academy"></div></div>
+        <div class="cover-inner"><div><p class="eyebrow">IA aplicada al rol del asesor inmobiliario</p><h1 class="cover-title">IA 2026<span>De conversar<br>a dirigir</span></h1><p class="cover-subtitle">Comprender · elegir · aplicar · verificar</p></div></div>
+        <div class="cover-footer"><span>Presentado por: Elkis Daza</span><span>22 de julio de 2026 · 120 min</span></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Lo que te llevarás de esta clase" data-notes="Expón resultados comprensibles para una audiencia que aún no conoce chat, workflow o agente. Haz énfasis en comprender, distinguir y aplicar. Duración: 2 minutos.">
+        <div class="topline"><div class="cohort"><strong>01 · Promesa</strong>Resultado de aprendizaje</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Al terminar esta clase</p><h2>Sabrás qué puede hacer la IA y <span class="accent">cómo empezar a usarla</span></h2><div class="outcome-grid">
+          <article class="outcome" data-reveal><div class="num">01</div><div><h3>Entender lo esencial</h3><p>Qué cambió en 2026 y por qué afecta al trabajo, los negocios y la economía.</p></div></article>
+          <article class="outcome" data-reveal><div class="num">02</div><div><h3>Distinguir sus formas</h3><p>Cuándo estás conversando, encargando un proyecto o dejando actuar a un agente.</p></div></article>
+          <article class="outcome" data-reveal><div class="num">03</div><div><h3>Probarla en tu trabajo</h3><p>Crear una pieza, completar un formulario y enseñar una tarea repetitiva.</p></div></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Quién es Elkis Daza" data-notes="Ahora sí preséntate. No leas la lámina: cuenta la transición desde servicio, cocina y mixología hacia marketing, corretaje y construcción con IA. Duración: 2 minutos.">
+        <div class="topline"><div class="cohort"><strong>02 · Profesor</strong>Quién te acompaña hoy</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content profile-layout"><div class="profile-carousel" role="button" tabindex="0" aria-label="Fotografías de Elkis Daza. Haz clic para mostrar la siguiente"><img class="profile-photo active" data-profile-photo src="/presentaciones/ia-2026/assets/elkis-obra.webp" alt="Elkis Daza durante una visita a una obra inmobiliaria"><img class="profile-photo" data-profile-photo src="/presentaciones/ia-2026/assets/elkis-viaje.webp" alt="Elkis Daza viajando en las cataratas del Iguazú"><img class="profile-photo" data-profile-photo src="/presentaciones/ia-2026/assets/elkis-retrato.webp" alt="Retrato profesional de Elkis Daza"><span class="profile-carousel-label">Trabajo · viajes · tecnología</span><span class="profile-carousel-hint" aria-live="polite">Foto <b data-profile-counter>1 / 3</b> · clic para cambiar</span></div><div class="profile-copy"><p class="overline">Colombovenezolano · 29 años · 4 años en Chile</p><h2>Soy <span class="accent">Elkis Elihu Daza Mota</span></h2><p class="profile-bio">Estratega de marketing, corredor de propiedades y constructor de software con IA. Antes estudié cocina y fui mixólogo durante diez años: servicio, ventas y creatividad siempre han sido parte de mi trabajo.</p><div class="profile-proof">
+          <div class="proof-card" data-reveal><strong>6 años</strong><span>Estrategia de marketing y más de US$250.000 en publicidad gestionada.</span></div>
+          <div class="proof-card" data-reveal><strong>1,5 años</strong><span>Desarrollando software, agentes y lógica de negocio con IA.</span></div>
+          <div class="proof-card" data-reveal><strong>500+</strong><span>Propiedades colocadas en arriendo durante mi etapa como corredor.</span></div>
+        </div><div class="profile-role" data-reveal><span><b>Hoy:</b> ingeniero de prompt y lógica de negocio en Capital Inteligente, y profesor de este módulo.</span></div><div class="profile-interests" data-reveal><span class="profile-interest">Tecnología</span><span class="profile-interest">Startups</span><span class="profile-interest">Viajes</span><span class="profile-interest">Mercados</span><span class="profile-interest">Videojuegos</span><span class="profile-interest">Crear con software</span></div><p class="quote-line" style="font-size:22px;margin-top:18px">Me mueve construir cosas con propósito y un impacto positivo.</p></div></div>
+      </section>
+
+      <section class="slide" data-title="Historia breve de la inteligencia artificial" data-notes="Recorre los diez hitos sin convertirlos en una clase de historia. Corrige el mito: Arthur Samuel acuñó machine learning en 1959. ImageNet 2009 conecta Deep Blue con AlexNet. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>03 · Historia</strong>De Turing a los agentes</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">La IA no nació con ChatGPT</p><h2>Diez momentos que explican <span class="accent">cómo llegamos hasta aquí</span></h2><div class="history-timeline">
+          <article class="milestone" data-reveal><time>1950</time><h3>Turing</h3><p>Propone una prueba para conversar con una máquina.</p></article>
+          <article class="milestone" data-reveal><time>1956</time><h3>Dartmouth</h3><p>El campo recibe el nombre inteligencia artificial.</p></article>
+          <article class="milestone" data-reveal><time>1959</time><h3>Machine learning</h3><p>Arthur Samuel acuña el término mientras enseña damas a una computadora.</p></article>
+          <article class="milestone" data-reveal><time>1997</time><h3>Deep Blue</h3><p>IBM derrota al campeón mundial Garry Kasparov.</p></article>
+          <article class="milestone" data-reveal><time>2009</time><h3>ImageNet</h3><p>Millones de imágenes aceleran el aprendizaje visual.</p></article>
+          <article class="milestone" data-reveal><time>2012</time><h3>AlexNet</h3><p>Las redes profundas dan un salto en reconocimiento de imágenes.</p></article>
+          <article class="milestone" data-reveal><time>2017</time><h3>Transformer</h3><p>Attention Is All You Need cambia el lenguaje.</p></article>
+          <article class="milestone" data-reveal><time>2022</time><h3>ChatGPT</h3><p>La IA generativa llega a una audiencia masiva.</p></article>
+          <article class="milestone" data-reveal><time>2024</time><h3>Razonamiento</h3><p>Los modelos dedican más cómputo antes de responder.</p></article>
+          <article class="milestone" data-reveal><time>2025–26</time><h3>Agentes</h3><p>Investigan, usan herramientas y completan procesos.</p></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Tres etapas de la IA moderna" data-notes="Explica reconocer, crear y actuar con ejemplos cotidianos. Son capacidades acumulativas. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>04 · Evolución</strong>Tres capacidades acumulativas</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Primero reconocía patrones. Después empezó a crear.</p><h2>Ahora también puede <span class="accent">usar herramientas y avanzar sola</span></h2><div class="era-grid">
+          <article class="era" data-reveal><span class="era-year">Durante años</span><h3>Reconocer</h3><p>Clasificar, recomendar, puntuar un lead o detectar una imagen.</p><span class="ghost">R</span></article>
+          <article class="era" data-reveal><span class="era-year">Desde 2022</span><h3>Crear</h3><p>Escribir, diseñar, hablar, programar y producir video.</p><span class="ghost">C</span></article>
+          <article class="era" data-reveal><span class="era-year">2025–2026</span><h3>Actuar</h3><p>Abrir aplicaciones, investigar, comprobar y completar varios pasos.</p><span class="ghost">A</span></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-title="Las tareas que puede sostener son más largas" data-notes="Explica METR con precisión: duración que tomaría a un experto humano y 50% de éxito en tareas técnicas bien especificadas. Los modelos actuales GPT-5.6 Sol, Claude Fable 5 y Opus 4.8 aún no tienen una medición METR comparable publicada. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>05 · Autonomía</strong>Horizonte de tarea medido por METR</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Una misma tarea, mantenida de principio a fin</p><h2>De unos minutos a casi <span class="accent">12 horas de trabajo humano</span></h2><div class="horizon-chart">
+          <div class="horizon-label">GPT‑4o<small>Mayo 2024</small></div><div class="horizon-bar" data-reveal><div class="horizon-fill" style="--size:8%">6 min</div></div>
+          <div class="horizon-label">Claude 3.7 Sonnet<small>Febrero 2025</small></div><div class="horizon-bar" data-reveal><div class="horizon-fill" style="--size:20%">60 min</div></div>
+          <div class="horizon-label">GPT‑5<small>Agosto 2025</small></div><div class="horizon-bar" data-reveal><div class="horizon-fill" style="--size:45%">3,4 h</div></div>
+          <div class="horizon-label">Claude Opus 4.6<small>Febrero 2026</small></div><div class="horizon-bar" data-reveal><div class="horizon-fill" style="--size:96%">≈12 h</div></div>
+        </div><div class="frontier-note" data-reveal><strong>Frontera actual: GPT‑5.6 Sol · Claude Fable 5 · Claude Opus 4.8</strong><span>Son más recientes, pero METR todavía no publicó una medición comparable. No les asignamos horas inventadas.</span></div><div class="method-note" data-reveal>La cifra no significa “cualquier jornada de 12 horas”. METR prueba software, ML y ciberseguridad con tareas claras y mide 50% de probabilidad de éxito.</div></div>
+      </section>
+
+      <section class="slide" data-theme="lime" data-title="El efecto bola de nieve" data-notes="Cuenta una vuelta completa: IA ayuda a crear software; las personas construyen más rápido; aparecen más productos y uso; esa experiencia financia y mejora la siguiente generación. No digas que la IA se mejora sola. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>06 · Aceleración</strong>Por qué todo avanza tan rápido</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content snowball-layout"><div class="snow-copy"><p class="overline">Cada vuelta empieza más adelante que la anterior</p><h2>La IA ayuda a construir el software que <span class="accent">acelera la siguiente vuelta</span></h2><p>Las personas siguen diseñando, invirtiendo, evaluando y decidiendo. Lo que crece es la velocidad con la que podemos convertir una idea en un sistema útil.</p><div class="snow-loop" data-reveal>Más capacidad → más productos → más uso → más inversión y aprendizaje → todavía más capacidad.</div></div><div class="snow-visual" aria-label="Bola de nieve de capacidad tecnológica">
+          <div class="snowball-step snow-one" data-reveal>IA escribe y revisa código</div><span class="snow-arrow a">↘</span>
+          <div class="snowball-step snow-two" data-reveal>Equipos construyen más rápido</div><span class="snow-arrow b">↘</span>
+          <div class="snowball-step snow-three" data-reveal>Más software, uso y evaluación</div><span class="snow-arrow c">↘</span>
+          <div class="snowball-step snow-four" data-reveal>Mejores modelos<br>y más capacidades<small>La siguiente vuelta arranca aquí</small></div>
+        </div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="La IA ya está dentro de las empresas" data-notes="Da contexto a cada cifra. McKinsey encuestó a 1.993 participantes de 105 países, de distintas industrias, tamaños y funciones. 88% reportó uso regular, pero solo cerca de un tercio está escalando. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>07 · Economía</strong>Adopción empresarial real</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Ya no es una prueba reservada a empresas tecnológicas</p><h2>Está entrando en <span class="accent">todas las áreas del negocio</span></h2><div class="stat-wall">
+          <article class="big-stat" data-reveal><strong>US$285,9B</strong><span>Inversión privada en IA en Estados Unidos durante 2025.<small class="stat-source">Stanford AI Index 2026</small></span></article>
+          <article class="big-stat" data-reveal><strong>88%</strong><span>Reporta uso regular de IA en al menos una función del negocio.<small class="stat-source">McKinsey Global Survey 2025</small></span></article>
+          <article class="big-stat" data-reveal><strong>1.993</strong><span>Participantes de 105 países, múltiples industrias, funciones y tamaños de empresa.<small class="stat-source">Encuesta online · junio–julio 2025</small></span></article>
+          <article class="big-stat" data-reveal><strong>≈1/3</strong><span>Dice que su organización ya empezó a escalar la IA más allá de los primeros pilotos.<small class="stat-source">La mayoría todavía experimenta</small></span></article>
+        </div><div class="method-note" data-reveal>Marketing y ventas, TI, servicio, operaciones, finanzas, recursos humanos, manufactura y desarrollo de productos aparecen en la encuesta.</div></div>
+      </section>
+
+      <section class="slide" data-title="Cómo está usando la gente la IA" data-notes="Separa evidencia de interpretación. Los porcentajes provienen de 1,5 millones de conversaciones de consumidores en ChatGPT. El mapa de madurez es conceptual: no existe una encuesta global única que mida esas cuatro etapas con la misma muestra. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>08 · Adopción</strong>Del uso casual a construir</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">La mayoría empieza preguntando</p><h2>El salto ocurre cuando la IA entra en <span class="accent">la forma de trabajar</span></h2><div class="adoption-layout"><div class="adoption-map">
+          <div class="adoption-band" data-reveal><b>Más común</b><strong>Preguntar y aprender</strong><span>Dudas, consejos, búsquedas</span></div>
+          <div class="adoption-band" data-reveal><b>Frecuente</b><strong>Crear borradores</strong><span>Correos, textos, imágenes</span></div>
+          <div class="adoption-band" data-reveal><b>En crecimiento</b><strong>Integrarla al trabajo diario</strong><span>Procesos, datos y documentos</span></div>
+          <div class="adoption-band" data-reveal><b>Más avanzado</b><strong>Construir con IA</strong><span>Software, agentes y nuevos productos</span></div>
+        </div><aside class="usage-data" data-reveal><h3>Uso observado</h3><div class="usage-number"><strong>49%</strong><span>de los mensajes pide información o consejo.</span></div><div class="usage-number"><strong>40%</strong><span>pide producir algo o completar una tarea.</span></div><div class="usage-number"><strong>30%</strong><span>del uso de consumidores está relacionado con trabajo.</span></div><small>OpenAI + NBER, análisis privado de 1,5 millones de conversaciones. Programación sigue siendo minoritaria dentro de ChatGPT, aunque crece con fuerza vía API y herramientas de desarrollo.</small></aside></div></div>
+      </section>
+
+      <section class="slide" data-title="Qué tareas y empleos están más expuestos" data-notes="Exposición no equivale a despido. La OIT la usa como señal de qué tareas podrían cambiar. Los trabajos administrativos están más expuestos; los trabajos físicos, presenciales y variables, menos. WEF es un escenario de múltiples tendencias, no solo IA. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>09 · Trabajo</strong>Primero cambian las tareas</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline"><strong class="accent">1 de cada 4 empleos</strong> tiene algún grado de exposición a IA generativa</p><h2>No significa que desaparezca: significa que <span class="accent">parte del trabajo puede cambiar</span></h2><div class="exposure-grid">
+          <article class="exposure-card" data-reveal><h3>Mayor exposición hoy</h3><ul><li>Ingreso de datos y digitación.</li><li>Contabilidad, teneduría de libros y apoyo administrativo.</li><li>Secretaría y preparación de documentos.</li><li>También crece en análisis financiero, programación y asesoría de inversión.</li></ul></article>
+          <article class="exposure-card lower" data-reveal><h3>Menor exposición directa</h3><ul><li>Trabajo físico en entornos cambiantes.</li><li>Construcción, mantenimiento y oficios presenciales.</li><li>Cuidado personal y situaciones con alto contexto humano.</li><li>Tareas donde observar el mundo real importa más que producir información.</li></ul></article>
+        </div><div class="method-note" data-reveal>La OIT considera más probable la transformación que el reemplazo total. El WEF proyecta +78 millones de empleos netos hacia 2030 por varias tendencias globales combinadas.</div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Electricidad e IA: dos ampliaciones de la capacidad humana" data-notes="Haz una analogía humana y sencilla. La electricidad redujo nuestra dependencia de la fuerza física y llevó energía a hogares, ciudades y máquinas. La IA generativa reduce nuestra dependencia del tiempo y conocimiento individual para crear, analizar y producir. No son tecnologías idénticas: comparten el patrón de ampliar lo que una persona puede hacer. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>10 · Perspectiva</strong>De la electricidad a la IA</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Dos tecnologías que ampliaron lo que una persona puede hacer</p><h2>La electricidad multiplicó nuestros <span class="accent">músculos</span>. La IA multiplica nuestra <span class="accent">mente</span>.</h2><div class="tech-analogy">
+          <article class="analogy-card" data-reveal><div class="analogy-top"><span class="analogy-icon">⚡</span><time>Electricidad</time></div><h3>Energía para todos</h3><p>Extendió el día, redujo el esfuerzo físico y permitió que hogares, ciudades y máquinas hicieran mucho más.</p><div class="human-shift"><span>Dependíamos de nuestra fuerza</span><i>→</i><b>Amplificamos la capacidad física</b></div></article>
+          <div class="analogy-bridge" data-reveal><strong>≈</strong><span>Mismo patrón humano</span></div>
+          <article class="analogy-card" data-reveal><div class="analogy-top"><span class="analogy-icon">✦</span><time>IA generativa</time></div><h3>Capacidad cognitiva para todos</h3><p>Acelera escribir, analizar, crear y programar; permite que una persona convierta una idea en resultados con mucha más velocidad.</p><div class="human-shift"><span>Dependíamos de nuestro tiempo y conocimiento</span><i>→</i><b>Amplificamos la capacidad mental</b></div></article>
+        </div><div class="analogy-thesis" data-reveal><strong>La verdadera transformación:</strong> no cambia solo la herramienta; cambia lo que cada ser humano puede lograr.</div></div>
+      </section>
+
+      <section class="slide" data-theme="lime" data-title="Uso de IA entre corredores inmobiliarios" data-notes="Contextualiza: RPR encuestó a 225 miembros de la National Association of REALTORS en Estados Unidos. Es un pulso sectorial, no una medición de Chile. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>11 · Inmobiliario</strong>Encuesta RPR · Estados Unidos</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">225 corredores miembros de la NAR · febrero de 2026</p><h2>Ya la usan para ahorrar tiempo, pero <span class="accent">todavía revisan su exactitud</span></h2><div class="stat-wall">
+          <article class="big-stat" data-reveal><strong>92%</strong><span>Ya usa IA o tiene previsto comenzar a usarla.<small class="stat-source">Encuesta RPR / NAR</small></span></article>
+          <article class="big-stat" data-reveal><strong>71%</strong><span>Menciona el ahorro de tiempo como su principal valor.<small class="stat-source">Profesionales inmobiliarios de EE. UU.</small></span></article>
+          <article class="big-stat" data-reveal><strong>68%</strong><span>Dice ahorrar al menos una hora por semana.<small class="stat-source">Autorreporte de los participantes</small></span></article>
+          <article class="big-stat" data-reveal><strong>63%</strong><span>Señala la exactitud de las respuestas como su mayor preocupación.<small class="stat-source">Publicado el 12 de febrero de 2026</small></span></article>
+        </div><div class="method-note" data-reveal>La encuesta muestra adopción y percepción entre miembros de NAR. No describe automáticamente el mercado chileno.</div></div>
+      </section>
+
+      <section class="slide" data-title="Cómo produce una respuesta un modelo de lenguaje" data-notes="Aclara que token no equivale a palabra. La separación mostrada es ilustrativa porque cada modelo usa un tokenizador distinto. Atención relaciona cada parte con el resto del contexto. Duración: 5 minutos.">
+        <div class="topline"><div class="cohort"><strong>12 · Fundamentos</strong>Qué ocurre bajo el chat</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Un modelo de lenguaje no guarda una lista de respuestas</p><h2>Lee unidades pequeñas y calcula <span class="accent">qué puede venir después</span></h2><div class="llm-machine">
+          <article class="llm-stage" data-reveal><span class="stage-num">01 · Divide</span><h3>Convierte el texto en tokens</h3><p>Un token puede ser una palabra, una parte de palabra, un número o un signo.</p><div class="token-cloud"><span class="token">in</span><span class="token">mobili</span><span class="token">ario</span><span class="token">.</span></div><small class="muted">Ejemplo ilustrativo: cambia según el modelo.</small></article>
+          <div class="machine-arrow" data-reveal>→</div>
+          <article class="llm-stage" data-reveal><span class="stage-num">02 · Relaciona</span><h3>Compara cada parte con el contexto</h3><p>La atención pondera instrucciones, conversación, documentos y tokens anteriores para decidir qué información importa ahora.</p></article>
+          <div class="machine-arrow" data-reveal>→</div>
+          <article class="llm-stage" data-reveal><span class="stage-num">03 · Continúa</span><h3>Elige un token y repite</h3><p>Calcula probabilidades, selecciona una unidad, la añade al contexto y vuelve a empezar hasta terminar.</p><div class="token-cloud"><span class="token next">Primero</span><span class="token">revisemos</span><span class="token">los</span><span class="token">datos</span></div></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Cuatro ideas para entender cualquier herramienta" data-notes="Modelo, contexto, tokens y herramientas. Token es unidad de procesamiento, no una moneda. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>13 · Anatomía</strong>Cuatro conceptos útiles</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">No necesitas saber programar</p><h2>Estas cuatro ideas explican <span class="accent">casi cualquier producto de IA</span></h2><div class="stack-grid">
+          <article class="stack-layer" data-reveal><div class="num">01</div><h3>Modelo</h3><p>El motor entrenado. Distintos modelos optimizan calidad, velocidad, costo o especialización.</p></article>
+          <article class="stack-layer" data-reveal><div class="num">02</div><h3>Contexto</h3><p>La información disponible ahora: conversación, archivos, instrucciones, memoria y datos conectados.</p></article>
+          <article class="stack-layer" data-reveal><div class="num">03</div><h3>Tokens</h3><p>Las unidades que lee y genera. Determinan cuánto contexto puede procesar, cuánto tarda y cuánto cuesta.</p></article>
+          <article class="stack-layer" data-reveal><div class="num">04</div><h3>Herramientas</h3><p>Navegador, correo, archivos, CRM o cálculos que convierten una respuesta en una acción.</p></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-title="Puede acertar en algo difícil y fallar en algo sencillo" data-notes="Define contexto tácito: señales no escritas como intención, historia de la relación, ironía, presión, miedo o una excepción que todos conocen. No hay evidencia de conciencia; operativamente es un sistema probabilístico. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>14 · Límites</strong>No funciona como una persona</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">La fluidez de la respuesta puede engañarnos</p><h2>Su capacidad es <span class="accent">muy desigual</span></h2><div class="jagged-grid"><div class="jagged-list">
+          <div class="jagged-row" data-reveal><strong>Matemática avanzada</strong><div class="jagged-meter"><i style="--score:94%"></i></div><span>Alta</span></div>
+          <div class="jagged-row" data-reveal><strong>Generación de código</strong><div class="jagged-meter"><i style="--score:90%"></i></div><span>Alta</span></div>
+          <div class="jagged-row" data-reveal><strong>Uso del computador</strong><div class="jagged-meter"><i style="--score:66%"></i></div><span>66%</span></div>
+          <div class="jagged-row" data-reveal><strong>Leer un reloj analógico</strong><div class="jagged-meter"><i style="--score:51%"></i></div><span>50,6%</span></div>
+          <div class="jagged-row" data-reveal><strong>Señales humanas no escritas</strong><div class="jagged-meter"><i style="--score:28%"></i></div><span>Frágil</span></div>
+        </div><aside class="not-mind" data-reveal><h3>¿Qué son señales no escritas?</h3><p>La historia de la relación, una ironía, el miedo del cliente, una presión familiar o una excepción que todos entienden, pero nadie escribió.</p><strong>No hay evidencia de conciencia.</strong><p>Puede explicar y razonar de forma útil, pero también inventar o aplicar el criterio equivocado con mucha seguridad.</p></aside></div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="No existe una sola IA" data-notes="Presenta empresas por especialidad, no como ranking. Usa las marcas como orientación visual. OpenAI, Anthropic y Google son generalistas; el ecosistema abierto ofrece control; Higgsfield y ElevenLabs destacan en creación visual y voz. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>15 · Ecosistema</strong>Empresas y especialidades</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Cada empresa combina modelos, productos y herramientas</p><h2>El liderazgo cambia según <span class="accent">lo que quieres hacer</span></h2><div class="actor-grid">
+          <article class="actor" data-reveal><div class="actor-logo"><img src="/presentaciones/ia-2026/assets/logo-openai.svg?v=2" alt="OpenAI"></div><h3>OpenAI</h3><p>ChatGPT, GPT‑5.6, trabajo profesional, agentes y creación multimodal.</p></article>
+          <article class="actor" data-reveal><div class="actor-logo"><img src="/presentaciones/ia-2026/assets/logo-anthropic.svg" alt="Anthropic"></div><h3>Anthropic</h3><p>Claude, Fable, Opus, Cowork y trabajo con código, archivos y agentes.</p></article>
+          <article class="actor" data-reveal><div class="actor-logo"><img src="/presentaciones/ia-2026/assets/logo-gemini.svg" alt="Google Gemini"></div><h3>Google</h3><p>Gemini, búsqueda, documentos, video y Gemini Notebook.</p></article>
+          <article class="actor" data-reveal><div class="actor-logo"><img src="/presentaciones/ia-2026/assets/logo-meta.svg" alt="Meta"></div><h3>Modelos abiertos</h3><p>Meta, DeepSeek, Mistral, Alibaba y otros ofrecen más opciones de control y despliegue.</p></article>
+          <article class="actor" data-reveal><div class="actor-logo"><img src="/presentaciones/ia-2026/assets/logo-higgsfield.ico" alt="Higgsfield"></div><h3>Higgsfield</h3><p>Estudio creativo que reúne modelos líderes para imagen, video y campañas.</p></article>
+          <article class="actor" data-reveal><div class="actor-logo"><img src="/presentaciones/ia-2026/assets/logo-elevenlabs.svg" alt="ElevenLabs"></div><h3>ElevenLabs</h3><p>Voz conversacional, síntesis, doblaje, música y agentes de voz.</p></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-title="De pedir una respuesta a encargar trabajo" data-notes="La idea es concreta: cambió el tamaño del encargo. En 2022 pedías un texto. En 2026 puedes pedir un conjunto conectado de entregables, revisión y uso de herramientas. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>16 · Capacidades</strong>Qué cambió en cuatro años</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">El cambio no es solo que escriba mejor</p><h2>Ahora podemos pedir <span class="accent">trabajo más completo</span></h2><div class="evolution">
+          <article class="evolution-step" data-reveal><time>2022</time><h3>Una respuesta</h3><p>“Escribe este correo”, “resume este texto”, “dame ideas”.</p></article>
+          <article class="evolution-step" data-reveal><time>2024</time><h3>Un análisis</h3><p>Comparar opciones, planificar y dedicar más tiempo a un problema difícil.</p></article>
+          <article class="evolution-step" data-reveal><time>2025</time><h3>Una ejecución</h3><p>Buscar, navegar, usar herramientas y completar una secuencia de pasos.</p></article>
+          <article class="evolution-step" data-reveal><time>2026</time><h3>Un resultado terminado</h3><p>Documento, presentación, sitio, análisis y archivos conectados alrededor del mismo objetivo.</p></article>
+        </div></div>
+      </section>
+
+      <section class="slide section-slide" data-title="Elige la herramienta por el trabajo" data-notes="Transición: ya entendimos qué es y por qué importa. Ahora elegiremos herramientas a partir del resultado, no de la popularidad de una marca. Duración: 20 segundos.">
+        <div class="topline"><div class="cohort"><strong>Bloque 02</strong>Herramientas</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="eyebrow">No necesitas memorizar marcas</p><h1 class="mega">Elige por<br><span class="accent">el trabajo</span></h1><p class="lede">¿Qué quieres lograr, con qué información y en qué formato?</p></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Cinco familias de herramientas" data-notes="Recorre las categorías, no fichas técnicas. Una misma herramienta puede aparecer en más de una. Los productos y planes cambian; la función es la parte durable. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>18 · Mapa</strong>Herramientas por función</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Una herramienta puede servir para varias cosas</p><h2>Cinco familias para <span class="accent">orientarte</span></h2><div class="tool-map five">
+          <article class="tool-family" data-reveal><h3>Conversar y analizar</h3><p>Preguntar, redactar, comparar, planificar y trabajar con archivos.</p><span class="examples">ChatGPT · Claude · Gemini</span></article>
+          <article class="tool-family" data-reveal><h3>Investigar y aprender</h3><p>Buscar fuentes, estudiar documentos y convertir material propio en conocimiento.</p><span class="examples">Gemini Notebook · Deep Research · Perplexity</span></article>
+          <article class="tool-family" data-reveal><h3>Crear contenido</h3><p>Producir y editar imágenes, video, voz, anuncios y presentaciones.</p><span class="examples">Higgsfield · ChatGPT Images · Sora · ElevenLabs · Canva</span></article>
+          <article class="tool-family" data-reveal><h3>Construir</h3><p>Crear sitios, aplicaciones, análisis y herramientas internas.</p><span class="examples">ChatGPT Work · Claude Cowork · Codex</span></article>
+          <article class="tool-family" data-reveal><h3>Automatizar y operar</h3><p>Conectar aplicaciones, repetir procesos y activar tareas con reglas o eventos.</p><span class="examples">Make · n8n · MCP · agentes de navegador</span></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-title="Conversación, proyecto o agente" data-notes="Aclara dos confusiones: un proyecto puede producir varias piezas, pero comienza cuando la persona lo pide; un agente sostiene varios pasos. Solo es proactivo si existe un disparador o un horario. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>19 · Niveles</strong>Tres formas de trabajar</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">La diferencia está en quién decide el siguiente paso</p><h2>Conversación, proyecto o <span class="accent">agente</span></h2><div class="level-table">
+          <article class="level-card" data-reveal><span class="level">01 · Conversación</span><h3>Tú marcas cada turno</h3><p>Preguntas, recibes una respuesta y el sistema espera. Tú aportas contexto y decides cómo continuar.</p><span class="example">Comparar dos propiedades o redactar un correo.</span><span class="level-fact">Reactivo · un paso cada vez</span></article>
+          <article class="level-card" data-reveal><span class="level">02 · Proyecto o trabajo</span><h3>Le encargas un entregable</h3><p>Recibe un objetivo y fuentes; conecta varias piezas en un documento, análisis, presentación o sitio.</p><span class="example">Crear una propuesta con comparación y presentación.</span><span class="level-fact">Reactivo · empieza cuando lo pides</span></article>
+          <article class="level-card" data-reveal><span class="level">03 · Agente</span><h3>Sostiene una secuencia</h3><p>Decide el siguiente paso, observa el resultado, usa herramientas y comprueba si terminó.</p><span class="example">Revisar una bandeja, actualizar el CRM y preparar seguimiento.</span><span class="level-fact">Puede ser proactivo con horario o disparador</span></article>
+        </div></div>
+      </section>
+
+      <section class="slide" data-theme="lime" data-title="Mantenerse actualizado sin perseguir cada novedad" data-notes="Empieza por el motivo: funciones y modelos nuevos aparecen continuamente. Después propone una rutina sostenible. La prueba semanal debe hacerse con una tarea real y sin datos sensibles. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>20 · Actualización</strong>Una rutina sostenible</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Nuevos modelos y funciones aparecen cada mes</p><h2>Conviene estar al día, pero <span class="accent">no seguirlo todo</span></h2><div class="source-cards">
+          <article class="source-card" data-reveal><h3>1 · Revisa lo oficial</h3><p>Lee el anuncio o la documentación antes de repetir un titular.</p></article>
+          <article class="source-card" data-reveal><h3>2 · Elige un buen resumen</h3><p>Una fuente confiable en español puede filtrar el ruido de la semana.</p></article>
+          <article class="source-card" data-reveal><h3>3 · Prueba una tarea real</h3><p>Usa veinte minutos semanales para comparar la novedad con tu forma actual de trabajar.</p></article>
+          <article class="source-card" data-reveal><h3>4 · Guarda lo aprendido</h3><p>Anota qué mejoró, qué falló y para qué sí volverías a usarlo.</p></article>
+        </div><p class="quote-line" data-reveal>Lo importante no es conocer cada herramienta: es saber evaluar rápidamente si una nueva te sirve.</p></div>
+      </section>
+
+      <section class="slide section-slide" data-title="Pensar en IA" data-notes="Transición al rol inmobiliario. Pregunta al grupo cuál tarea repetida les quita más energía cada semana. Duración: 20 segundos.">
+        <div class="topline"><div class="cohort"><strong>Bloque 03</strong>Aplicación inmobiliaria</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="eyebrow">Una forma distinta de mirar el trabajo</p><h1 class="mega">Pensar<br><span class="accent">con IA</span></h1><p class="lede">Ver una tarea tediosa y preguntarse: ¿qué parte podría hacer mejor una máquina?</p></div>
+      </section>
+
+      <section class="slide" data-title="Cuatro preguntas antes de abrir una herramienta" data-notes="Haz que respondan las preguntas con una tarea propia. Si no pueden describir la tarea, la información y el resultado, todavía no necesitan elegir una aplicación. Duración: 4 minutos.">
+        <div class="topline"><div class="cohort"><strong>22 · Método</strong>Antes de elegir la herramienta</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Empieza por el trabajo, no por el prompt</p><h2>Cuatro preguntas <span class="accent">muy concretas</span></h2><div class="thinking-loop">
+          <article class="thinking-step" data-reveal><div class="num">01</div><h3>¿Qué me está quitando tiempo?</h3><p>Una tarea repetida, tediosa, lenta o fácil de olvidar.</p></article>
+          <article class="thinking-step" data-reveal><div class="num">02</div><h3>¿Qué información ya tengo?</h3><p>Mensajes, documentos, reglas, ejemplos o una plantilla.</p></article>
+          <article class="thinking-step" data-reveal><div class="num">03</div><h3>¿Qué debe quedar listo?</h3><p>Un formulario, una comparación, un anuncio o una acción concreta.</p></article>
+          <article class="thinking-step" data-reveal><div class="num">04</div><h3>¿Qué debo revisar yo?</h3><p>Datos, promesas, criterio comercial, privacidad y tono.</p></article>
+        </div><p class="quote-line" data-reveal>Si puedes responder estas cuatro preguntas, ya puedes diseñar un buen uso de IA.</p></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Hacer el mismo trabajo mejor y en menos tiempo" data-notes="La idea no es quitar al asesor de la relación. La IA prepara y ordena; la persona entiende al cliente, negocia, decide y responde por lo que comunica. Duración: 3 minutos.">
+        <div class="topline"><div class="cohort"><strong>23 · Trabajo</strong>Una mejor división de tareas</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Delegar lo repetitivo deja más tiempo para vender mejor</p><h2>El mismo trabajo, <span class="accent">mejor repartido</span></h2><div class="work-better">
+          <article class="work-column" data-reveal><span class="badge good">La IA puede preparar</span><h3>Lo repetitivo</h3><ul><li>Copiar y ordenar datos</li><li>Resumir conversaciones</li><li>Dar formato y clasificar</li><li>Crear primeros borradores</li></ul></article>
+          <article class="work-column human" data-reveal><span class="badge good">El asesor conserva</span><h3>El criterio y la relación</h3><ul><li>Entender al cliente</li><li>Negociar y decidir</li><li>Hacer promesas</li><li>Construir confianza</li></ul></article>
+          <article class="work-column" data-reveal><span class="badge good">Lo medimos con</span><h3>Resultados reales</h3><ul><li>Tiempo ahorrado</li><li>Menos errores</li><li>Respuesta más rápida</li><li>Mejor experiencia</li></ul></article>
+        </div></div>
+      </section>
+
+      <section class="slide section-slide" data-title="Manos a la obra" data-notes="Transición. Los próximos ejercicios se hacen en vivo y con información ficticia. Duración: 20 segundos.">
+        <div class="topline"><div class="cohort"><strong>Bloque 04</strong>Práctica en vivo</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="eyebrow">Ahora vamos a hacerlo</p><h1 class="mega">Manos a<br><span class="accent">la obra</span></h1><p class="lede">Cuenta · formulario · skill · anuncio</p></div>
+      </section>
+
+      <section class="slide" data-title="Crea tu espacio de trabajo" data-notes="Hazlo en vivo. Quien ya tenga cuenta puede crear un proyecto para la clase. Muestra los controles de datos y recuerda no subir información real de clientes sin política y autorización. Duración: 2 minutos.">
+        <div class="topline"><div class="cohort"><strong>25 · Preparación</strong>Dos minutos</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Primero, un lugar ordenado para practicar</p><h2>Crea tu <span class="accent">espacio de trabajo</span></h2><div class="account-steps">
+          <article class="account-step" data-reveal><span>01</span><h3>Entra</h3><p>Abre ChatGPT e inicia sesión o crea tu cuenta.</p></article>
+          <article class="account-step" data-reveal><span>02</span><h3>Revisa</h3><p>Configura idioma, perfil y controles de datos.</p></article>
+          <article class="account-step" data-reveal><span>03</span><h3>Organiza</h3><p>Crea un proyecto llamado “IA inmobiliaria”.</p></article>
+          <article class="account-step" data-reveal><span>04</span><h3>Prueba</h3><p>Haz una primera tarea usando datos ficticios.</p></article>
+        </div><div class="method-note" data-reveal>No subas datos reales de clientes hasta que tu empresa defina privacidad, permisos y herramientas autorizadas.</div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Práctica 1 · De una conversación a un formulario" data-notes="Usa una transcripción y una plantilla ficticias. Primero pide extraer, después rastrear cada campo a una frase y finalmente listar faltantes o contradicciones. Revisa antes de copiar al sistema oficial. Duración: 6 minutos.">
+        <div class="topline"><div class="cohort"><strong>26 · Práctica 1</strong>Transcripción → formulario</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">La información ya fue dicha una vez</p><h2>Extraer sin <span class="accent">inventar</span></h2><div class="demo-layout">
+          <article class="demo-brief" data-reveal><span class="badge good">Instrucción para copiar</span><pre>Usa esta transcripción ficticia y la plantilla.
+
+• Extrae solo hechos explícitos.
+• Para cada campo, cita la frase que lo respalda.
+• Si falta un dato, escribe “NO INFORMADO”.
+• Señala contradicciones y preguntas pendientes.
+• No completes nada por sentido común.</pre></article>
+          <div class="demo-sequence">
+            <article class="demo-step" data-reveal><span>01</span><p>Pega la transcripción ficticia.</p></article>
+            <article class="demo-step" data-reveal><span>02</span><p>Adjunta la plantilla del formulario.</p></article>
+            <article class="demo-step" data-reveal><span>03</span><p>Revisa campos, fuentes y faltantes.</p></article>
+            <article class="demo-step" data-reveal><span>04</span><p>Confirma antes de usar el resultado.</p></article>
+          </div>
+        </div></div>
+      </section>
+
+      <section class="slide" data-title="Práctica 2 · Enseña una tarea que repites" data-notes="Explica que una skill es una instrucción reutilizable con pasos, reglas, ejemplos y criterios. Para mostrar uso del computador, emplea archivos ficticios en una carpeta de práctica. Duración: 7 minutos.">
+        <div class="topline"><div class="cohort"><strong>27 · Práctica 2</strong>Crear una skill</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Una skill es una forma de enseñar tu método</p><h2>Muéstrale cómo haces una tarea y <span class="accent">guárdala para repetirla</span></h2><div class="skill-flow">
+          <article class="skill-step" data-reveal><span>01</span><h3>Muestra el final</h3><p>Enseña un ejemplo correcto de carpeta, ficha o documento.</p></article>
+          <article class="skill-step" data-reveal><span>02</span><h3>Explica tu método</h3><p>Pasos, nombres, reglas, excepciones y cuándo debe detenerse.</p></article>
+          <article class="skill-step" data-reveal><span>03</span><h3>Haz una prueba</h3><p>Usa un caso ficticio, observa el resultado y corrige lo necesario.</p></article>
+          <article class="skill-step" data-reveal><span>04</span><h3>Guárdala</h3><p>Conserva la instrucción, ejemplos y lista de revisión.</p></article>
+        </div><div class="method-note" data-reveal><strong>Demo:</strong> ordenar archivos de una propiedad, renombrar documentos y crear un resumen de lo que falta.</div></div>
+      </section>
+
+      <section class="slide" data-theme="lime" data-title="Práctica 3 · Crea un anuncio desde un brief" data-notes="Genera una imagen o anuncio en vivo con datos ficticios. Primero fija hechos, público y estilo; después pide variantes y revisa que el modelo no invente características. Duración: 7 minutos.">
+        <div class="topline"><div class="cohort"><strong>28 · Práctica 3</strong>Brief → anuncio</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">La calidad empieza antes de generar la imagen</p><h2>Un brief claro produce <span class="accent">mejores variantes</span></h2><div class="ad-demo">
+          <div class="ad-instructions">
+            <article class="ad-instruction" data-reveal><span>01</span><p><strong>Hechos:</strong> ubicación, precio, atributos y restricciones.</p></article>
+            <article class="ad-instruction" data-reveal><span>02</span><p><strong>Público:</strong> para quién es y qué necesita entender.</p></article>
+            <article class="ad-instruction" data-reveal><span>03</span><p><strong>Marca:</strong> colores, tono, logo, formato y canal.</p></article>
+            <article class="ad-instruction" data-reveal><span>04</span><p><strong>Itera:</strong> pide tres rutas, elige una y corrige.</p></article>
+          </div>
+          <div class="ad-frame" data-reveal><div class="ad-brand">CAPITAL <span>ACADEMY</span></div><div class="ad-copy"><small>NUEVO INGRESO</small><h3>Departamento<br>en Ñuñoa</h3><p>2D · 2B · terraza</p><button class="ad-cta">Agenda una visita</button></div></div>
+        </div><div class="method-note" data-reveal>Antes de publicar: comprueba cada dato y elimina cualquier atributo que la IA haya inventado.</div></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Preguntas y respuestas" data-notes="Abre la conversación. Pide describir tareas sin datos sensibles y usa las cuatro preguntas como guía. Agrupa preguntas similares. Duración: 20 minutos.">
+        <div class="topline"><div class="cohort"><strong>29 · Conversación</strong>Preguntas del grupo</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Trae una tarea real de tu semana</p><h2>Preguntas y <span class="accent">respuestas</span></h2><div class="qa-layout"><div class="qa-prompts">
+          <div class="qa-prompt" data-reveal>1. ¿Qué tarea quieres mejorar?</div>
+          <div class="qa-prompt" data-reveal>2. ¿Qué información tienes disponible?</div>
+          <div class="qa-prompt" data-reveal>3. ¿Qué debería quedar listo al final?</div>
+          <div class="qa-prompt" data-reveal>4. ¿Qué necesitas revisar tú?</div>
+        </div><div class="timer-card" data-minutes="20"><div class="timer-ring"><div class="timer-value" aria-live="polite">20:00</div></div><p class="muted">Preguntas y respuestas</p><div class="timer-controls"><button class="action-button primary" data-timer="toggle">Iniciar</button><button class="action-button" data-timer="reset">Reiniciar</button></div></div></div></div>
+      </section>
+
+      <section class="slide image-right" data-title="Cierre · el criterio sigue siendo humano" data-notes="Cierra con la división de trabajo que atravesó toda la clase: la IA prepara lo repetitivo; el asesor entiende, decide y responde por la relación. Duración: 2 minutos.">
+        <div class="topline"><div class="cohort"><strong>30 · Cierre</strong>La idea que debe quedar</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Una mejor división del trabajo</p><h1 class="mega">Que la IA haga<br><span class="accent">lo repetitivo</span></h1><p class="lede">Tú encárgate de entender al cliente, decidir y construir confianza.</p><div class="pills" data-reveal><span class="pill">Elkis Daza</span><span class="pill">Capital Academy</span><span class="pill">Julio 2026</span></div></div>
+        <div class="image-frame"><img src="/presentaciones/ia-2026/assets/equipo.webp" width="1024" height="1536" alt="Participantes de Capital Academy en una sesión de formación"></div>
+      </section>
+
+      <section class="slide" data-theme="deep" data-title="Fuentes y criterio editorial" data-notes="Apéndice. No necesita tiempo docente. Verifica nuevamente productos, precios y disponibilidad si reutilizas la clase después de julio de 2026.">
+        <div class="topline"><div class="cohort"><strong>Apéndice</strong>Fuentes verificadas</div><div class="brand"><img src="/presentaciones/ia-2026/assets/capital-academy-logo.png" width="74" height="74" alt=""></div></div>
+        <div class="content"><p class="overline">Vigencia editorial</p><h2>22 de julio de <span class="accent">2026</span></h2><div class="source-grid">
+          <div class="source"><b>Historia</b> · Dartmouth; Arthur Samuel; IBM Deep Blue; ImageNet; AlexNet; Attention Is All You Need; ChatGPT.</div>
+          <div class="source"><b>Modelos actuales</b> · OpenAI GPT‑5.6 Sol; Anthropic Claude Opus 4.8 y Fable 5; documentación oficial.</div>
+          <div class="source"><b>Capacidades</b> · METR Time Horizon 1.1. Los modelos más recientes aún no tienen una medición comparable publicada.</div>
+          <div class="source"><b>Economía y adopción</b> · Stanford AI Index 2026; McKinsey State of AI 2025; OpenAI/NBER, 1,5 millones de conversaciones.</div>
+          <div class="source"><b>Empleo</b> · OIT–NASK 2025; World Economic Forum, Future of Jobs 2025.</div>
+          <div class="source"><b>Electricidad</b> · NBER, Electrifying Productivity, manufactura estadounidense 1890–1940.</div>
+          <div class="source"><b>Inmobiliario</b> · RPR, encuesta a 225 corredores miembros de NAR, publicada en febrero de 2026.</div>
+          <div class="source"><b>Criterio</b> · Usar datos ficticios en clase; verificar hechos, permisos, privacidad y cualquier salida sensible.</div>
+        </div></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="chapter-hud" aria-live="polite"><span class="chapter-name">Apertura</span><span class="chapter-step">01</span></div>
+  <div class="slide-flash" aria-hidden="true"></div>
+
+  <div class="chrome" aria-label="Controles de presentación">
+    <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+    <div class="controls">
+      <button class="control" data-nav="prev" aria-label="Diapositiva anterior">←</button>
+      <span class="counter" aria-live="polite">1 / 32</span>
+      <button class="control" data-nav="next" aria-label="Siguiente paso">→</button>
+      <button class="control" data-nav="overview" aria-label="Vista general">▦</button>
+      <button class="control" data-nav="fullscreen" aria-label="Pantalla completa">⛶</button>
+      <button class="control" data-nav="notes" aria-label="Notas del presentador">N</button>
+    </div>
+  </div>
+
+  <aside class="notes-panel" aria-label="Notas del presentador"><h2>Notas</h2><p>Sin notas para esta diapositiva.</p></aside>
+  <div class="overview" role="dialog" aria-modal="true" aria-label="Vista general de diapositivas"><div class="overview-header"><h2>Vista general</h2><button class="action-button" data-close="overview">Cerrar · Esc</button></div><div class="overview-grid"></div></div>
+  <div class="help" role="dialog" aria-modal="true" aria-label="Atajos de teclado">
+    <div class="help-card"><h2>Atajos</h2><div class="shortcut-grid">
+      <div class="shortcut"><kbd>→</kbd>Siguiente paso</div><div class="shortcut"><kbd>←</kbd>Anterior</div>
+      <div class="shortcut"><kbd>O</kbd>Vista general</div><div class="shortcut"><kbd>N</kbd>Notas</div>
+      <div class="shortcut"><kbd>F</kbd>Pantalla completa</div><div class="shortcut"><kbd>L</kbd>Puntero láser</div>
+      <div class="shortcut"><kbd>E</kbd>Modo edición</div><div class="shortcut"><kbd>Space</kbd>Siguiente paso</div>
+      <div class="shortcut"><kbd>Home</kbd>Primera</div><div class="shortcut"><kbd>End</kbd>Última</div>
+      <div class="shortcut"><kbd>?</kbd>Ayuda</div><div class="shortcut"><kbd>Esc</kbd>Cerrar paneles</div>
+    </div><button class="action-button primary" style="margin-top:26px" data-close="help">Entendido</button></div>
+  </div>
+  <div class="laser" aria-hidden="true"></div>
+  <div class="edit-toolbar" role="toolbar" aria-label="Edición de contenido">
+    <span class="edit-status" aria-live="polite">Modo edición</span>
+    <button class="edit-button primary" data-edit="save">Guardar</button>
+    <button class="edit-button" data-edit="export">Exportar</button>
+    <button class="edit-button" data-edit="import">Importar</button>
+    <button class="edit-button" data-edit="reset">Restaurar</button>
+    <button class="edit-button" data-edit="close">Cerrar</button>
+    <input type="file" accept="application/json" data-edit-file hidden>
+  </div>
+
+  <script>
+    (() => {
+      const deck = document.querySelector('.deck');
+      const slides = [...document.querySelectorAll('.slide')];
+      const counter = document.querySelector('.counter');
+      const progress = document.querySelector('.progress-fill');
+      const notesPanel = document.querySelector('.notes-panel');
+      const notesText = notesPanel.querySelector('p');
+      const overview = document.querySelector('.overview');
+      const overviewGrid = overview.querySelector('.overview-grid');
+      const help = document.querySelector('.help');
+      const laser = document.querySelector('.laser');
+      const chapterName = document.querySelector('.chapter-name');
+      const chapterStep = document.querySelector('.chapter-step');
+      const slideFlash = document.querySelector('.slide-flash');
+      const editToolbar = document.querySelector('.edit-toolbar');
+      const editStatus = document.querySelector('.edit-status');
+      const editFile = document.querySelector('[data-edit-file]');
+      const editableSelector = 'h1,h2,h3,p,li,code,pre,.number-row .label,.case-question,.radar-card strong,.radar-card span,.lead-card strong,.lead-card span,.lead-output div,.workshop-items div,.source,.cover-footer span';
+      const storageKey = 'capital-academy-ia-2026-content-v5';
+      let editing = false;
+      let saveTimer = null;
+      const revealState = slides.map(() => 0);
+      let current = Math.max(0, Number(location.hash.replace('#','')) - 1 || 0);
+      let renderedIndex = current;
+
+      const chapterFor = index => {
+        if (index <= 2) return 'Apertura · crear relevancia';
+        if (index <= 16) return 'Bloque 01 · comprender';
+        if (index <= 20) return 'Bloque 02 · herramientas';
+        if (index <= 23) return 'Bloque 03 · pensar con IA';
+        if (index <= 28) return 'Bloque 04 · práctica';
+        return 'Cierre · conversación y síntesis';
+      };
+
+      const prepareSlides = () => {
+        const denseSlides = new Set([3, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 22, 23, 25, 26, 27, 28, 29, 31]);
+        const focusSlides = new Set([0, 1, 2, 17, 21, 24, 30]);
+        slides.forEach((slide, slideIndex) => {
+          slide.dataset.density = denseSlides.has(slideIndex) ? 'dense' : focusSlides.has(slideIndex) ? 'focus' : 'standard';
+          slide.dataset.chapter = chapterFor(slideIndex);
+          const duration = slide.dataset.notes?.match(/Duración:\s*([^\.]+)/i)?.[1];
+          const cohort = slide.querySelector('.cohort');
+          if (duration && cohort && !cohort.querySelector('.duration-chip')) {
+            const chip = document.createElement('span');
+            chip.className = 'duration-chip';
+            chip.textContent = `⏱ ${duration}`;
+            cohort.append(chip);
+          }
+          [...slide.querySelectorAll('[data-reveal]')].forEach((item, itemIndex) => {
+            item.style.setProperty('--reveal-order', itemIndex);
+            if (item.matches('.glass-card,.value-zone,.radar-card,.lead-card,.outcome,.big-stat,.analogy-card,.actor,.tool-family,.level-card,.source-card,.artifact,.adoption-band,.snowball-step,.exposure-card,.electric-step,.account-step,.work-column')) item.classList.add('motion-scale');
+            else if (item.matches('tr,.number-row,.fail-item,.sequence-step,.milestone,.horizon-bar,.jobs-panel,.stack-layer,.evolution-step,.thinking-step,.day-step,.case-column,.qa-prompt,.demo-step,.skill-step,.ad-instruction')) item.classList.add(itemIndex % 2 ? 'motion-right' : 'motion-left');
+            else if (item.matches('.pill,.quote-line,.lead-output,.week,.fly-node,.llm-stage,.era')) item.classList.add('motion-rise');
+            else item.classList.add(itemIndex % 2 ? 'motion-right' : 'motion-left');
+          });
+        });
+      };
+
+      const fitDeck = () => {
+        const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+        deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      };
+
+      const updateReveals = () => {
+        slides.forEach((slide, slideIndex) => {
+          const items = [...slide.querySelectorAll('[data-reveal]')];
+          items.forEach((item, itemIndex) => item.classList.toggle('revealed', itemIndex < revealState[slideIndex]));
+        });
+        const revealTotal = slides[current].querySelectorAll('[data-reveal]').length;
+        const revealFraction = revealTotal ? revealState[current] / revealTotal : 1;
+        progress.style.width = `${((current + revealFraction) / slides.length) * 100}%`;
+      };
+
+      const animateSlideEntry = direction => {
+        const slide = slides[current];
+        slide.classList.remove('enter-forward', 'enter-back');
+        slideFlash.classList.remove('run');
+        requestAnimationFrame(() => {
+          slide.classList.add(direction > 0 ? 'enter-forward' : 'enter-back');
+          slideFlash.classList.add('run');
+        });
+        setTimeout(() => slide.classList.remove('enter-forward', 'enter-back'), 760);
+        setTimeout(() => slideFlash.classList.remove('run'), 600);
+      };
+
+      const render = ({ updateHash = true } = {}) => {
+        const direction = current >= renderedIndex ? 1 : -1;
+        const changedSlide = current !== renderedIndex;
+        slides.forEach((slide, index) => {
+          slide.classList.toggle('current', index === current);
+          slide.classList.toggle('past', index < current);
+          slide.setAttribute('aria-hidden', index === current ? 'false' : 'true');
+        });
+        counter.textContent = `${current + 1} / ${slides.length}`;
+        chapterName.textContent = slides[current].dataset.chapter;
+        chapterStep.textContent = String(current + 1).padStart(2, '0');
+        notesText.textContent = slides[current].dataset.notes || 'Sin notas para esta diapositiva.';
+        document.title = `${current + 1}/${slides.length} · ${slides[current].dataset.title} · Capital Academy`;
+        if (updateHash) history.replaceState(null, '', `#${current + 1}`);
+        updateReveals();
+        [...overviewGrid.children].forEach((card, index) => card.classList.toggle('current-card', index === current));
+        if (editing) applyEditingState();
+        if (changedSlide) animateSlideEntry(direction);
+        renderedIndex = current;
+      };
+
+      const next = () => {
+        const reveals = slides[current].querySelectorAll('[data-reveal]').length;
+        if (revealState[current] < reveals) {
+          revealState[current] += 1;
+          updateReveals();
+          return;
+        }
+        if (current < slides.length - 1) { current += 1; render(); }
+      };
+
+      const prev = () => {
+        if (revealState[current] > 0) {
+          revealState[current] -= 1;
+          updateReveals();
+          return;
+        }
+        if (current > 0) { current -= 1; render(); }
+      };
+
+      const goTo = (index) => { current = Math.max(0, Math.min(slides.length - 1, index)); render(); };
+      const toggleOverview = (force) => {
+        const shouldOpen = force ?? !overview.classList.contains('open');
+        overview.classList.toggle('open', shouldOpen);
+        if (shouldOpen) overview.querySelector('.current-card')?.focus();
+      };
+      const toggleNotes = () => notesPanel.classList.toggle('open');
+      const toggleHelp = (force) => help.classList.toggle('open', force ?? !help.classList.contains('open'));
+      const toggleFullscreen = async () => {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+        else await document.exitFullscreen?.();
+      };
+      const toggleLaser = () => {
+        const active = !laser.classList.contains('active');
+        laser.classList.toggle('active', active);
+        document.body.classList.toggle('laser-mode', active);
+      };
+      const getEditableNodes = slide => [...slide.querySelectorAll(editableSelector)].filter(node => !node.closest('.topline .brand'));
+      const sanitizeEditableHtml = html => {
+        const template = document.createElement('template');
+        template.innerHTML = String(html);
+        const allowedTags = new Set(['SPAN', 'STRONG', 'B', 'EM', 'I', 'BR']);
+        const allowedClasses = new Set(['accent', 'detail', 'muted', 'thin']);
+        [...template.content.querySelectorAll('*')].forEach(node => {
+          if (!allowedTags.has(node.tagName)) { node.replaceWith(document.createTextNode(node.textContent)); return; }
+          const classes = [...node.classList].filter(name => allowedClasses.has(name));
+          [...node.attributes].forEach(attribute => node.removeAttribute(attribute.name));
+          if (classes.length) node.className = classes.join(' ');
+        });
+        return template.innerHTML;
+      };
+      const snapshotContent = () => slides.map(slide => getEditableNodes(slide).map(node => node.innerHTML));
+      const applyContent = content => {
+        if (!Array.isArray(content)) return false;
+        content.forEach((texts, slideIndex) => {
+          if (!slides[slideIndex] || !Array.isArray(texts)) return;
+          getEditableNodes(slides[slideIndex]).forEach((node, nodeIndex) => {
+            if (typeof texts[nodeIndex] === 'string') node.innerHTML = sanitizeEditableHtml(texts[nodeIndex]);
+          });
+        });
+        return true;
+      };
+      const saveContent = () => {
+        localStorage.setItem(storageKey, JSON.stringify({ version: 5, savedAt: new Date().toISOString(), slides: snapshotContent() }));
+        editStatus.textContent = 'Guardado';
+        setTimeout(() => { if (editing) editStatus.textContent = 'Modo edición'; }, 1200);
+      };
+      const applyEditingState = () => {
+        if (editing) revealState[current] = slides[current].querySelectorAll('[data-reveal]').length;
+        updateReveals();
+        slides.forEach(slide => getEditableNodes(slide).forEach(node => node.setAttribute('contenteditable', editing ? 'true' : 'false')));
+        document.body.classList.toggle('edit-mode', editing);
+        editToolbar.classList.toggle('open', editing);
+      };
+      const toggleEditing = force => {
+        editing = force ?? !editing;
+        applyEditingState();
+        if (editing) notesPanel.classList.remove('open');
+      };
+      const exportContent = () => {
+        const payload = JSON.stringify({ version: 5, exportedAt: new Date().toISOString(), slides: snapshotContent() }, null, 2);
+        const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url; link.download = 'ia-2026-asesor-contenido-editado.json'; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      };
+
+      slides.forEach((slide, index) => {
+        const card = document.createElement('button');
+        card.className = 'overview-card';
+        card.innerHTML = `<span>${String(index + 1).padStart(2,'0')} · ${chapterFor(index).split('·')[0].trim()}</span><strong>${slide.dataset.title}</strong>`;
+        card.addEventListener('click', () => { goTo(index); toggleOverview(false); });
+        overviewGrid.append(card);
+      });
+
+      document.querySelectorAll('[data-nav]').forEach(button => button.addEventListener('click', () => {
+        const action = button.dataset.nav;
+        if (action === 'next') next();
+        if (action === 'prev') prev();
+        if (action === 'overview') toggleOverview();
+        if (action === 'fullscreen') toggleFullscreen();
+        if (action === 'notes') toggleNotes();
+      }));
+      document.querySelectorAll('[data-close="overview"]').forEach(button => button.addEventListener('click', () => toggleOverview(false)));
+      document.querySelectorAll('[data-close="help"]').forEach(button => button.addEventListener('click', () => toggleHelp(false)));
+
+      document.addEventListener('keydown', event => {
+        const interactive = event.target.closest('button, a, input, textarea, select, [contenteditable="true"]');
+        if (event.key === 'Escape') { toggleOverview(false); toggleHelp(false); notesPanel.classList.remove('open'); return; }
+        if (interactive && [' ', 'Enter'].includes(event.key)) return;
+        if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); next(); }
+        if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); prev(); }
+        if (event.key === 'Home') { event.preventDefault(); goTo(0); }
+        if (event.key === 'End') { event.preventDefault(); goTo(slides.length - 1); }
+        if (event.key.toLowerCase() === 'o') toggleOverview();
+        if (event.key.toLowerCase() === 'n') toggleNotes();
+        if (event.key.toLowerCase() === 'f') toggleFullscreen();
+        if (event.key.toLowerCase() === 'l') toggleLaser();
+        if (event.key.toLowerCase() === 'e' && !interactive) toggleEditing();
+        if (event.key === '?') toggleHelp();
+      });
+      document.addEventListener('pointermove', event => {
+        laser.style.left = `${event.clientX}px`;
+        laser.style.top = `${event.clientY}px`;
+      }, { passive: true });
+      document.addEventListener('input', event => {
+        if (!editing || !event.target.closest('[contenteditable="true"]')) return;
+        editStatus.textContent = 'Cambios sin guardar';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveContent, 900);
+      });
+      document.querySelector('[data-edit="save"]').addEventListener('click', saveContent);
+      document.querySelector('[data-edit="export"]').addEventListener('click', exportContent);
+      document.querySelector('[data-edit="import"]').addEventListener('click', () => editFile.click());
+      document.querySelector('[data-edit="close"]').addEventListener('click', () => toggleEditing(false));
+      document.querySelector('[data-edit="reset"]').addEventListener('click', () => {
+        if (!confirm('¿Restaurar el contenido original y descartar los cambios guardados en este navegador?')) return;
+        localStorage.removeItem(storageKey); location.reload();
+      });
+      editFile.addEventListener('change', async () => {
+        const file = editFile.files?.[0];
+        if (!file) return;
+        try {
+          const payload = JSON.parse(await file.text());
+          if (!applyContent(payload.slides)) throw new Error('Formato inválido');
+          saveContent(); render();
+        } catch (error) {
+          editStatus.textContent = 'Archivo inválido';
+        } finally { editFile.value = ''; }
+      });
+
+      document.querySelectorAll('[data-demo-toggle]').forEach(button => button.addEventListener('click', () => {
+        const key = button.dataset.demoToggle;
+        document.querySelectorAll('[data-demo-toggle]').forEach(item => item.setAttribute('aria-selected', String(item === button)));
+        document.querySelectorAll('[data-demo-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.demoPanel === key));
+      }));
+      document.querySelectorAll('.quadrant').forEach(button => button.addEventListener('click', () => {
+        document.querySelectorAll('.quadrant').forEach(item => { item.classList.toggle('active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
+      }));
+      document.querySelectorAll('.check-item').forEach(button => button.addEventListener('click', () => {
+        const nextState = button.getAttribute('aria-pressed') !== 'true';
+        button.setAttribute('aria-pressed', String(nextState));
+        updateAuditProgress();
+      }));
+
+      const auditItems = [...document.querySelectorAll('.check-item')];
+      const auditMeter = document.querySelector('.audit-meter');
+      const auditCount = document.querySelector('.audit-count');
+      const updateAuditProgress = () => {
+        const checked = auditItems.filter(item => item.getAttribute('aria-pressed') === 'true').length;
+        auditMeter?.style.setProperty('--audit-progress', checked / Math.max(1, auditItems.length));
+        if (auditCount) auditCount.textContent = `${checked} / ${auditItems.length}`;
+        if (checked === auditItems.length) {
+          slideFlash.classList.remove('run');
+          requestAnimationFrame(() => slideFlash.classList.add('run'));
+        }
+      };
+
+      const leadDemo = document.querySelector('.lead-demo');
+      const leadDemoButton = document.querySelector('[data-lead-demo]');
+      const leadDemoStatus = leadDemo?.querySelector('.demo-status');
+      const leadCards = [...(leadDemo?.querySelectorAll('.lead-card') || [])];
+      const priorityIndexes = new Set([1, 7, 9]);
+      let leadDemoRunning = false;
+      leadDemoButton?.addEventListener('click', () => {
+        if (leadDemoRunning) return;
+        const wasComplete = leadDemo.classList.contains('complete');
+        leadCards.forEach(card => card.classList.remove('processing', 'priority'));
+        leadDemo.classList.remove('complete');
+        if (wasComplete) {
+          leadDemoButton.textContent = 'Analizar lote ficticio';
+          leadDemoStatus.textContent = '10 registros listos · sin decisiones automáticas';
+          return;
+        }
+        leadDemoRunning = true;
+        leadDemo.classList.add('running');
+        leadDemoButton.disabled = true;
+        leadDemoButton.textContent = 'Inspeccionando…';
+        leadDemoStatus.textContent = 'Separando señales, faltantes y riesgos';
+        leadCards.forEach((card, index) => setTimeout(() => {
+          card.classList.add('processing');
+          if (priorityIndexes.has(index)) card.classList.add('priority');
+        }, index * 95));
+        setTimeout(() => {
+          leadDemoRunning = false;
+          leadDemo.classList.remove('running');
+          leadDemo.classList.add('complete');
+          leadDemoButton.disabled = false;
+          leadDemoButton.textContent = 'Reiniciar demo';
+          leadDemoStatus.textContent = '3 prioridades preparadas · confirmación humana pendiente';
+        }, 1250);
+      });
+
+      document.querySelectorAll('.profile-carousel').forEach(carousel => {
+        const photos = [...carousel.querySelectorAll('[data-profile-photo]')];
+        const counter = carousel.querySelector('[data-profile-counter]');
+        let photoIndex = 0;
+        const advancePhoto = () => {
+          photoIndex = (photoIndex + 1) % photos.length;
+          photos.forEach((photo, index) => photo.classList.toggle('active', index === photoIndex));
+          if (counter) counter.textContent = `${photoIndex + 1} / ${photos.length}`;
+        };
+        carousel.addEventListener('click', advancePhoto);
+        carousel.addEventListener('keydown', event => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          advancePhoto();
+        });
+      });
+
+      const timerCard = document.querySelector('.timer-card');
+      const timerMinutes = Math.max(1, Number(timerCard?.dataset.minutes || 15));
+      let timerSeconds = timerMinutes * 60;
+      let timerId = null;
+      const timerValue = timerCard?.querySelector('.timer-value');
+      const timerToggle = timerCard?.querySelector('[data-timer="toggle"]');
+      const updateTimer = () => {
+        if (!timerCard || !timerValue || !timerToggle) return;
+        const minutes = Math.floor(timerSeconds / 60);
+        const seconds = timerSeconds % 60;
+        timerValue.textContent = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+        timerCard.style.setProperty('--timer-progress', timerSeconds / (timerMinutes * 60));
+        if (timerSeconds === 0 && timerId) { clearInterval(timerId); timerId = null; timerToggle.textContent = 'Iniciar'; }
+      };
+      timerToggle?.addEventListener('click', () => {
+        if (timerId) { clearInterval(timerId); timerId = null; timerToggle.textContent = 'Continuar'; return; }
+        timerToggle.textContent = 'Pausar';
+        timerId = setInterval(() => { timerSeconds = Math.max(0, timerSeconds - 1); updateTimer(); }, 1000);
+      });
+      timerCard?.querySelector('[data-timer="reset"]')?.addEventListener('click', () => {
+        if (timerId) clearInterval(timerId);
+        timerId = null; timerSeconds = timerMinutes * 60; timerToggle.textContent = 'Iniciar'; updateTimer();
+      });
+
+      addEventListener('resize', fitDeck);
+      addEventListener('hashchange', () => { current = Math.max(0, Number(location.hash.replace('#','')) - 1 || 0); render({ updateHash: false }); });
+      fitDeck();
+      prepareSlides();
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+        if (saved?.slides) applyContent(saved.slides);
+      } catch (_) { localStorage.removeItem(storageKey); }
+      render();
+    })();
+  </script>
+</body>
+</html>

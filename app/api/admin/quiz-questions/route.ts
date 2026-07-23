@@ -164,16 +164,20 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Body invalido" }, { status: 400 });
   }
 
-  const { questionId, sortOrder } = body as {
-    questionId?: string;
-    sortOrder?: number;
-  };
-
-  if (!questionId) {
-    return NextResponse.json({ error: "questionId es requerido" }, { status: 422 });
+  const parsed = z
+    .object({ questionId: uuidLike, sortOrder: z.number().int().optional() })
+    .safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validación fallida", issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
+  const { questionId, sortOrder } = parsed.data;
 
   const updates: Database["public"]["Tables"]["quiz_questions"]["Update"] = {};
+
+  const admin = createAdminClient();
 
   // Si viene un payload de pregunta completo (con questionType), se revalida por
   // tipo y se reemplazan tipo/opciones/respuesta de forma coherente.
@@ -185,6 +189,44 @@ export async function PATCH(req: Request) {
         { status: 422 },
       );
     }
+
+    // Guard: no reescribir tipo/opciones/respuesta si la evaluación dueña tiene
+    // intentos EN CURSO — mismo guard que el DELETE (ver más abajo), porque
+    // cambiar el tipo deja correct_option en null y rompe el scoring de los
+    // intentos que ya tienen esta pregunta presentada.
+    const { data: q, error: qError } = await admin
+      .from("quiz_questions")
+      .select("evaluation_id")
+      .eq("id", questionId)
+      .maybeSingle();
+    if (qError) {
+      console.error("Error checking quiz question before update:", qError);
+      return NextResponse.json(
+        { error: "No se pudo verificar si hay intentos en curso, reintenta" },
+        { status: 503 },
+      );
+    }
+    if (q?.evaluation_id) {
+      const { count, error: countError } = await admin
+        .from("quiz_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("evaluation_id", q.evaluation_id)
+        .is("completed_at", null);
+      if (countError) {
+        console.error("Error checking quiz attempts before update:", countError);
+        return NextResponse.json(
+          { error: "No se pudo verificar si hay intentos en curso, reintenta" },
+          { status: 503 },
+        );
+      }
+      if ((count ?? 0) > 0) {
+        return NextResponse.json(
+          { error: "No se puede editar: hay intentos en curso de esta evaluación" },
+          { status: 409 },
+        );
+      }
+    }
+
     Object.assign(updates, payloadToDbFields(payload.data), {
       question_text: payload.data.questionText,
       explanation: payload.data.explanation ?? null,
@@ -197,14 +239,12 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "No se enviaron campos para actualizar" }, { status: 422 });
   }
 
-  const admin = createAdminClient();
-
   const { data: updated, error } = await admin
     .from("quiz_questions")
     .update(updates)
     .eq("id", questionId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Error updating quiz question:", error);
@@ -215,6 +255,10 @@ export async function PATCH(req: Request) {
       );
     }
     return NextResponse.json({ error: "Error al actualizar pregunta" }, { status: 500 });
+  }
+
+  if (!updated) {
+    return NextResponse.json({ error: "Pregunta no encontrada" }, { status: 404 });
   }
 
   return NextResponse.json({ question: updated });
@@ -239,17 +283,31 @@ export async function DELETE(req: Request) {
 
   // Guard: no borrar una pregunta cuya evaluación tiene intentos EN CURSO —
   // rompería el `questions_presented` de ese intento (submit fallaría con 500).
-  const { data: q } = await admin
+  const { data: q, error: qError } = await admin
     .from("quiz_questions")
     .select("evaluation_id")
     .eq("id", id)
     .maybeSingle();
+  if (qError) {
+    console.error("Error checking quiz question before delete:", qError);
+    return NextResponse.json(
+      { error: "No se pudo verificar si hay intentos en curso, reintenta" },
+      { status: 503 },
+    );
+  }
   if (q?.evaluation_id) {
-    const { count } = await admin
+    const { count, error: countError } = await admin
       .from("quiz_attempts")
       .select("id", { count: "exact", head: true })
       .eq("evaluation_id", q.evaluation_id)
       .is("completed_at", null);
+    if (countError) {
+      console.error("Error checking quiz attempts before delete:", countError);
+      return NextResponse.json(
+        { error: "No se pudo verificar si hay intentos en curso, reintenta" },
+        { status: 503 },
+      );
+    }
     if ((count ?? 0) > 0) {
       return NextResponse.json(
         { error: "No se puede eliminar: hay intentos en curso de esta evaluación" },

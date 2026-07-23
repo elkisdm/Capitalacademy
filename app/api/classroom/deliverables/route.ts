@@ -56,7 +56,16 @@ export async function POST(req: Request) {
   const slash = storagePath.lastIndexOf("/");
   const dir = storagePath.slice(0, slash);
   const name = storagePath.slice(slash + 1);
-  const { data: listed } = await admin.storage.from(DELIVERABLES_BUCKET).list(dir, { search: name });
+  const { data: listed, error: listError } = await admin.storage
+    .from(DELIVERABLES_BUCKET)
+    .list(dir, { search: name });
+  if (listError) {
+    console.error("[deliverables] error al listar Storage", listError);
+    return NextResponse.json(
+      { error: "No se pudo verificar el archivo, reintenta en unos segundos" },
+      { status: 503 },
+    );
+  }
   const obj = listed?.find((f) => f.name === name);
   if (!obj) {
     return NextResponse.json({ error: "El archivo no se encontró en Storage" }, { status: 422 });

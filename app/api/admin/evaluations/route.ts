@@ -181,6 +181,17 @@ export async function POST(req: Request) {
     }
   }
 
+  // Invariante "activa ⇒ respondible" (espeja el guard del PATCH): una
+  // evaluación recién creada nunca tiene preguntas, así que activarla al
+  // crearla dejaría un quiz publicado e irrespondible. Las MANUALES no
+  // llevan preguntas y quedan fuera del guard.
+  if (v.isActive === true && (v.kind ?? "quiz") !== "manual") {
+    return NextResponse.json(
+      { error: "No se puede activar una evaluación sin preguntas" },
+      { status: 422 },
+    );
+  }
+
   const { data: created, error } = await admin
     .from("evaluations")
     .insert({

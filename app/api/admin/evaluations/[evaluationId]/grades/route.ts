@@ -40,29 +40,41 @@ export async function GET(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
   }
 
-  const { data: criteria } = await admin
+  const { data: criteria, error: criteriaError } = await admin
     .from("evaluation_criteria")
     .select("*")
     .eq("evaluation_id", evaluationId)
     .order("position", { ascending: true });
+  if (criteriaError) {
+    console.error("[grades] evaluation_criteria falló", criteriaError);
+    return NextResponse.json({ error: "Error al cargar las notas" }, { status: 500 });
+  }
 
   // RN vigente en el resto del repo (resolveEvaluationAccess, etc.): active +
   // completed ven/tienen contenido; nunca invited/suspended.
-  const { data: enrollments } = await admin
+  const { data: enrollments, error: enrollmentsError } = await admin
     .from("enrollments")
     .select("id, student_id, profiles(full_name, email)")
     .eq("cohort_id", cohortId)
     .in("status", ["active", "completed"]);
+  if (enrollmentsError) {
+    console.error("[grades] enrollments falló", enrollmentsError);
+    return NextResponse.json({ error: "Error al cargar el roster" }, { status: 500 });
+  }
 
   const enrollmentIds = (enrollments ?? []).map((e) => e.id);
-  const { data: grades } =
+  const { data: grades, error: gradesError } =
     enrollmentIds.length > 0
       ? await admin
           .from("evaluation_grades")
           .select("*")
           .eq("evaluation_id", evaluationId)
           .in("enrollment_id", enrollmentIds)
-      : { data: [] as Database["public"]["Tables"]["evaluation_grades"]["Row"][] };
+      : { data: [] as Database["public"]["Tables"]["evaluation_grades"]["Row"][], error: null };
+  if (gradesError) {
+    console.error("[grades] evaluation_grades falló", gradesError);
+    return NextResponse.json({ error: "Error al cargar las notas" }, { status: 500 });
+  }
 
   const gradeByEnrollment = new Map((grades ?? []).map((g) => [g.enrollment_id, g]));
 
@@ -217,10 +229,17 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const admin = createAdminClient();
 
-  const { data: enrollments } = await admin
+  // RN vigente en el resto del repo (ver GET más arriba y grades/bulk): active +
+  // completed ven/tienen contenido; nunca invited/suspended.
+  const { data: enrollments, error: enrollmentsError } = await admin
     .from("enrollments")
     .select("id")
-    .eq("cohort_id", cohortId);
+    .eq("cohort_id", cohortId)
+    .in("status", ["active", "completed"]);
+  if (enrollmentsError) {
+    console.error("Error publicando notas:", enrollmentsError);
+    return NextResponse.json({ error: "Error al publicar las notas" }, { status: 500 });
+  }
   const enrollmentIds = (enrollments ?? []).map((e) => e.id);
   if (enrollmentIds.length === 0) {
     return NextResponse.json({ published: 0 });

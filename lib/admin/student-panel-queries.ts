@@ -84,18 +84,26 @@ export async function getStudentPanelReport(
   const now = Date.now();
   const nowIso = new Date().toISOString();
 
-  const { data: program } = await admin
+  const { data: program, error: programError } = await admin
     .from("programs")
     .select("id, name")
     .eq("id", programId)
     .single();
+  if (programError && programError.code !== "PGRST116") {
+    console.error("[student-panel] programs falló", { programId, code: programError.code, message: programError.message });
+    throw programError;
+  }
   if (!program) return null;
 
-  const { data: cohortsRaw } = await admin
+  const { data: cohortsRaw, error: cohortsError } = await admin
     .from("cohorts")
     .select("id, name, code")
     .eq("program_id", programId)
     .order("created_at", { ascending: false });
+  if (cohortsError) {
+    console.error("[student-panel] cohorts falló", { programId, code: cohortsError.code, message: cohortsError.message });
+    throw cohortsError;
+  }
   const cohorts = cohortsRaw ?? [];
 
   const scopeCohortIds =
@@ -103,17 +111,21 @@ export async function getStudentPanelReport(
       ? [cohortId]
       : cohorts.map((c) => c.id);
 
-  const { data: enrollmentsRaw } =
+  const { data: enrollmentsRaw, error: enrollmentsError } =
     scopeCohortIds.length > 0
       ? await admin
           .from("enrollments")
           .select("id, student_id, cohort_id, segment, enrolled_at, profiles(full_name, email)")
           .in("cohort_id", scopeCohortIds)
           .eq("status", "active")
-      : { data: [] as EnrollmentRow[] };
+      : { data: [] as EnrollmentRow[], error: null };
+  if (enrollmentsError) {
+    console.error("[student-panel] enrollments falló", { programId, code: enrollmentsError.code, message: enrollmentsError.message });
+    throw enrollmentsError;
+  }
   const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentRow[];
 
-  const { data: sessionsRaw } =
+  const { data: sessionsRaw, error: sessionsError } =
     scopeCohortIds.length > 0
       ? await admin
           .from("class_sessions")
@@ -122,10 +134,14 @@ export async function getStudentPanelReport(
           .neq("status", "cancelled")
           .neq("modality", "recorded")
           .lt("ends_at", nowIso)
-      : { data: [] };
+      : { data: [], error: null };
+  if (sessionsError) {
+    console.error("[student-panel] class_sessions falló", { programId, code: sessionsError.code, message: sessionsError.message });
+    throw sessionsError;
+  }
   const closedSessions = (sessionsRaw ?? []).filter((s) => isSessionClosed(s, now));
 
-  const { data: attendanceRaw } =
+  const { data: attendanceRaw, error: attendanceError } =
     closedSessions.length > 0
       ? await admin
           .from("session_attendance")
@@ -134,19 +150,27 @@ export async function getStudentPanelReport(
             "session_id",
             closedSessions.map((s) => s.id),
           )
-      : { data: [] };
+      : { data: [], error: null };
+  if (attendanceError) {
+    console.error("[student-panel] session_attendance falló", { programId, code: attendanceError.code, message: attendanceError.message });
+    throw attendanceError;
+  }
   const presentSet = new Set(
     (attendanceRaw ?? []).map((a) => `${a.student_id}:${a.session_id}`),
   );
 
-  const { data: modules } = await admin
+  const { data: modules, error: modulesError } = await admin
     .from("program_modules")
     .select("id, title, position")
     .eq("program_id", programId)
     .order("position", { ascending: true });
+  if (modulesError) {
+    console.error("[student-panel] program_modules falló", { programId, code: modulesError.code, message: modulesError.message });
+    throw modulesError;
+  }
   const moduleTitleById = new Map((modules ?? []).map((m) => [m.id, m.title]));
 
-  const { data: lessonsRaw } =
+  const { data: lessonsRaw, error: lessonsError } =
     (modules ?? []).length > 0
       ? await admin
           .from("lessons")
@@ -155,18 +179,26 @@ export async function getStudentPanelReport(
             "module_id",
             (modules ?? []).map((m) => m.id),
           )
-      : { data: [] };
+      : { data: [], error: null };
+  if (lessonsError) {
+    console.error("[student-panel] lessons falló", { programId, code: lessonsError.code, message: lessonsError.message });
+    throw lessonsError;
+  }
   const completableLessons = (lessonsRaw ?? []).filter((l) => l.mux_playback_id);
   const totalLessons = completableLessons.length;
 
   const enrollmentIds = enrollments.map((e) => e.id);
-  const { data: videoProgressRaw } =
+  const { data: videoProgressRaw, error: videoProgressError } =
     enrollmentIds.length > 0
       ? await admin
           .from("video_progress")
           .select("enrollment_id, lesson_id, completed")
           .in("enrollment_id", enrollmentIds)
-      : { data: [] };
+      : { data: [], error: null };
+  if (videoProgressError) {
+    console.error("[student-panel] video_progress falló", { programId, code: videoProgressError.code, message: videoProgressError.message });
+    throw videoProgressError;
+  }
   const progressByEnrollment = new Map<string, Map<string, boolean>>();
   for (const p of videoProgressRaw ?? []) {
     const map = progressByEnrollment.get(p.enrollment_id) ?? new Map();
@@ -179,14 +211,18 @@ export async function getStudentPanelReport(
   // evaluaciones PUBLICADAS para el panel del profesor, no un gate de acceso —
   // si se filtrara por ventana, una evaluación ya cerrada desaparecería del
   // reporte junto con el registro de quién la rindió y aprobó.
-  const { data: evalsRaw } = await admin
+  const { data: evalsRaw, error: evalsError } = await admin
     .from("evaluations")
     .select("id, title, scope")
     .eq("program_id", programId)
     .eq("is_active", true);
+  if (evalsError) {
+    console.error("[student-panel] evaluations falló", { programId, code: evalsError.code, message: evalsError.message });
+    throw evalsError;
+  }
   const evaluations = evalsRaw ?? [];
 
-  const { data: attemptsRaw } =
+  const { data: attemptsRaw, error: attemptsError } =
     evaluations.length > 0 && enrollmentIds.length > 0
       ? await admin
           .from("quiz_attempts")
@@ -197,7 +233,11 @@ export async function getStudentPanelReport(
           )
           .in("enrollment_id", enrollmentIds)
           .eq("passed", true)
-      : { data: [] };
+      : { data: [], error: null };
+  if (attemptsError) {
+    console.error("[student-panel] quiz_attempts falló", { programId, code: attemptsError.code, message: attemptsError.message });
+    throw attemptsError;
+  }
   const passedByEnrollment = new Map<string, Set<string>>();
   for (const a of attemptsRaw ?? []) {
     if (!a.evaluation_id) continue;

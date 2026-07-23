@@ -4,10 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { uuidLike } from "@/lib/utils/zod";
 import { extensionAllowed } from "@/lib/deliverables/file-types";
+import { DELIVERABLES_BUCKET } from "@/lib/deliverables/storage";
 
 export const runtime = "nodejs";
-
-const BUCKET = "deliverables";
 
 const schema = z.object({
   deliverableId: uuidLike,
@@ -96,7 +95,7 @@ export async function POST(req: Request) {
   // Path student-scoped: nunca confía en un student_id del cliente.
   const path = `${deliverableId}/${user.id}/${crypto.randomUUID()}-${safeName(filename)}`;
 
-  const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
+  const { data, error } = await admin.storage.from(DELIVERABLES_BUCKET).createSignedUploadUrl(path);
   if (error || !data) {
     console.error("deliverable upload-url error", error);
     return NextResponse.json({ error: "No se pudo iniciar la subida" }, { status: 500 });

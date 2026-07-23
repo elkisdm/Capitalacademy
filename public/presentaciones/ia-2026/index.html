@@ -76,6 +76,15 @@
       background:linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px);
       background-size:100% 4px; mix-blend-mode:soft-light;
     }
+    /* Aligeramiento para pantallas táctiles:
+       - la textura de líneas usa mix-blend-mode, que obliga a recomponer las
+         1920x1080 del deck en cada cuadro; a 16% de opacidad no se extraña;
+       - la sombra del logo es un filtro que crea su propia superficie de dibujo
+         y en Safari móvil puede terminar dibujando el logo en blanco. */
+    @media (pointer: coarse) {
+      .deck::after { display: none; }
+      .brand img { filter: none; }
+    }
     .slide {
       position: absolute; inset: 0; display: grid; align-content: stretch;
       padding: 76px 92px 68px; overflow: hidden; opacity: 0; pointer-events: none;
@@ -91,8 +100,12 @@
       content: ""; position: absolute; z-index: -1; pointer-events: none;
       width: 920px; height: 790px;
       background: url("/presentaciones/ia-2026/assets/capital-academy-mark.svg") center / contain no-repeat;
-      opacity: .075; filter: blur(.15px); transform-origin: center;
+      opacity: .075; transform-origin: center;
     }
+    /* Las láminas lejanas no se pintan: mantener las 32 vivas a la vez (cada una
+       de 1920x1080, con dos pseudo-elementos y sus revelados) hace que el
+       navegador del teléfono se quede sin memoria y cierre la pestaña. */
+    .slide.far { content-visibility: hidden; visibility: hidden; }
     .slide.current::before { animation: aurora-left 12s ease-in-out infinite alternate; }
     .slide.current::after { animation: aurora-right 15s ease-in-out infinite alternate; }
     @keyframes aurora-left { to { transform: translate3d(56px,-24px,0) rotate(7deg) scale(1.04); } }
@@ -417,7 +430,8 @@
     .snow-loop { margin-top:20px; padding:17px 20px; border-left:5px solid var(--lime); background:rgba(255,255,255,.08); font-size:19px; font-weight:700; line-height:1.4; }
 
     .flywheel { position:relative; width:760px; height:620px; margin:0 auto; }
-    .flywheel-ring { position:absolute; inset:95px 165px; border:4px dashed rgba(207,252,36,.42); border-radius:50%; animation:orbit-spin 24s linear infinite; }
+    .flywheel-ring { position:absolute; inset:95px 165px; border:4px dashed rgba(207,252,36,.42); border-radius:50%; }
+    .slide.current .flywheel-ring { animation:orbit-spin 24s linear infinite; }
     @keyframes orbit-spin { to { transform:rotate(360deg); } }
     .flywheel-core { position:absolute; left:50%; top:50%; width:270px; height:270px; transform:translate(-50%,-50%); display:grid; place-items:center; padding:30px; text-align:center; border-radius:50%; color:#25105e; background:var(--lime); box-shadow:0 0 70px rgba(207,252,36,.22); font-size:31px; line-height:1.12; font-weight:800; }
     .fly-node { position:absolute; width:245px; min-height:108px; display:grid; place-items:center; padding:18px; text-align:center; border:1px solid var(--border); border-radius:20px; background:rgba(38,8,100,.78); font-size:18px; font-weight:700; }
@@ -486,7 +500,8 @@
     .human-shift i { color:var(--lime); font-size:28px; font-style:normal; text-align:center; }
     .human-shift b { color:#fff; }
     .analogy-bridge { display:grid; align-content:center; justify-items:center; gap:12px; text-align:center; }
-    .analogy-bridge strong { width:92px; height:92px; display:grid; place-items:center; border:2px solid var(--lime); border-radius:50%; color:var(--lime); background:rgba(207,252,36,.08); box-shadow:0 0 0 12px rgba(207,252,36,.04),0 0 34px rgba(207,252,36,.2); font-size:46px; animation:analogy-pulse 2.6s ease-in-out infinite; }
+    .analogy-bridge strong { width:92px; height:92px; display:grid; place-items:center; border:2px solid var(--lime); border-radius:50%; color:var(--lime); background:rgba(207,252,36,.08); box-shadow:0 0 0 12px rgba(207,252,36,.04),0 0 34px rgba(207,252,36,.2); font-size:46px; }
+    .slide.current .analogy-bridge strong { animation:analogy-pulse 2.6s ease-in-out infinite; }
     .analogy-bridge span { color:rgba(255,255,255,.72); font-size:14px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     @keyframes analogy-pulse { 50% { transform:scale(1.06); box-shadow:0 0 0 18px rgba(207,252,36,.02),0 0 44px rgba(207,252,36,.34); } }
     .analogy-thesis { margin-top:18px; padding:18px 24px; border-left:5px solid var(--lime); border-radius:0 16px 16px 0; background:rgba(25,5,73,.36); font-size:23px; line-height:1.35; text-align:center; }
@@ -640,7 +655,11 @@
     .qa-prompts { display:grid; gap:15px; }
     .qa-prompt { padding:22px 24px; border:1px solid var(--border); border-radius:20px; background:rgba(255,255,255,.08); font-size:20px; font-weight:600; }
 
-    [data-reveal] { opacity:0; transform:translate3d(0,26px,0) scale(.985); filter:blur(4px); transition:opacity var(--motion-base) var(--ease-out), transform 520ms var(--ease-spring), filter 420ms var(--ease-out); will-change:transform,opacity; }
+    [data-reveal] { opacity:0; transform:translate3d(0,26px,0) scale(.985); filter:blur(4px); transition:opacity var(--motion-base) var(--ease-out), transform 520ms var(--ease-spring), filter 420ms var(--ease-out); }
+    /* will-change promueve cada elemento a su propia capa y la mantiene viva.
+       Con 126 elementos revelables repartidos en 32 láminas eso agota la memoria
+       del navegador móvil, así que solo se promueven los de la lámina actual. */
+    .slide.current [data-reveal] { will-change:transform,opacity; }
     [data-reveal].motion-left { transform:translate3d(-38px,0,0) scale(.99); }
     [data-reveal].motion-right { transform:translate3d(38px,0,0) scale(.99); }
     [data-reveal].motion-scale { transform:translate3d(0,8px,0) scale(.92); }
@@ -732,6 +751,8 @@
       .viewport { position:static; display:block; }
       .deck { transform:none !important; width:1920px; height:auto; box-shadow:none; }
       .slide { position:relative; width:1920px; height:1080px; opacity:1; transform:none; pointer-events:auto; page-break-after:always; }
+      /* Al imprimir sí queremos las 32 láminas, no solo las tres pintadas. */
+      .slide.far { content-visibility:visible; visibility:visible; }
       [data-reveal] { opacity:1; transform:none; }
       .chrome, .notes-panel, .overview, .help { display:none !important; }
     }
@@ -1190,6 +1211,9 @@
         slides.forEach((slide, index) => {
           slide.classList.toggle('current', index === current);
           slide.classList.toggle('past', index < current);
+          // Solo la lámina actual y sus dos vecinas se pintan; el resto se marca
+          // 'far' para que el navegador no las tenga en memoria (ver CSS .slide.far).
+          slide.classList.toggle('far', Math.abs(index - current) > 1);
           slide.setAttribute('aria-hidden', index === current ? 'false' : 'true');
         });
         counter.textContent = `${current + 1} / ${slides.length}`;

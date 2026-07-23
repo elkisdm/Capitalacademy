@@ -36,6 +36,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- La presentación "IA 2026" ya se puede ver desde el teléfono: antes abría un instante y el navegador cerraba la pestaña, y el logo de la academia aparecía roto (`bf420b8`)
 - Recuperar el acceso es más confiable: pedir tu enlace ya no se bloquea porque un compañero de oficina pidió el suyo hace un rato, las invitaciones por correo siempre apuntan a capitalacademy.cl, y si abres el enlace de una clase con una cuenta que no está inscrita ahora se te explica con qué correo entraste en vez de mostrar un "no se puede acceder" (`a2aad25`)
 - Entrar desde el enlace de asistencia ya no falla: si el enlace del correo se abre dos veces (el escáner del correo o un segundo clic lo consumían) la plataforma te deja pasar igual, y al recuperar tu contraseña ahora vuelves a la pantalla que estabas intentando abrir en vez de al inicio del classroom (`4987dc9`)
 - Los mensajes de error al editar el perfil ahora se muestran en español, en vez de texto técnico en inglés (`8568b85`)

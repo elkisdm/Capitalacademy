@@ -124,10 +124,18 @@ export async function POST(req: Request) {
   }
 
   // Estado nuevo: conteo agrupado por emoji para este target + reacción del viewer.
-  const { data: rows } = await supabase
+  const { data: rows, error: rowsError } = await supabase
     .from("conversation_reactions")
     .select("emoji, user_id")
     .eq(targetColumn, targetId);
+
+  if (rowsError) {
+    console.error("conversaciones reactions recount error", rowsError);
+    return NextResponse.json(
+      { error: "Error al procesar la reacción" },
+      { status: 500 },
+    );
+  }
 
   const counts = new Map<string, number>();
   let viewerReaction: string | null = null;

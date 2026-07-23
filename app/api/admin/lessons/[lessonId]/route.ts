@@ -80,18 +80,29 @@ export async function PATCH(
   // Mover a otro módulo: el destino debe ser del MISMO programa (no se cruzan
   // tenants), y la lección se ubica al final del módulo destino.
   if (moduleId !== undefined) {
-    const { data: lessonRow } = await supabase
+    const { data: lessonRow, error: lessonRowError } = await supabase
       .from("lessons")
       .select("module_id")
       .eq("id", lessonId)
       .maybeSingle();
+    if (lessonRowError) {
+      console.error("lesson move lookup error", lessonRowError);
+      return NextResponse.json({ error: "Error al validar el módulo destino" }, { status: 500 });
+    }
     if (!lessonRow) {
       return NextResponse.json({ error: "Lección no encontrada" }, { status: 404 });
     }
-    const [{ data: curMod }, { data: tgtMod }] = await Promise.all([
+    const [
+      { data: curMod, error: curModError },
+      { data: tgtMod, error: tgtModError },
+    ] = await Promise.all([
       supabase.from("program_modules").select("program_id").eq("id", lessonRow.module_id).maybeSingle(),
       supabase.from("program_modules").select("program_id").eq("id", moduleId).maybeSingle(),
     ]);
+    if (curModError || tgtModError) {
+      console.error("lesson move module lookup error", curModError ?? tgtModError);
+      return NextResponse.json({ error: "Error al validar el módulo destino" }, { status: 500 });
+    }
     if (!tgtMod) {
       return NextResponse.json({ error: "El módulo destino no existe" }, { status: 422 });
     }
@@ -160,10 +171,18 @@ export async function DELETE(
 
   // Guarda de seguridad de datos: no borrar una lección con progreso de alumnos
   // (el borrado cascadearía video_progress). Soft-delete/archivar queda como futuro.
-  const { count: progressCount } = await supabase
+  const { count: progressCount, error: countError } = await supabase
     .from("video_progress")
     .select("id", { count: "exact", head: true })
     .eq("lesson_id", lessonId);
+
+  if (countError) {
+    console.error("lesson delete progress count error", countError);
+    return NextResponse.json(
+      { error: "No se pudo verificar el progreso de la lección" },
+      { status: 500 },
+    );
+  }
 
   if ((progressCount ?? 0) > 0) {
     return NextResponse.json(

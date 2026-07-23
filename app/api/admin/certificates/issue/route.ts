@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { uuidLike } from "@/lib/utils/zod";
 
 export const runtime = "nodejs";
 
@@ -21,8 +23,25 @@ export async function POST(req: Request) {
 
   const { enrollmentId } = body as { enrollmentId?: string };
 
-  if (!enrollmentId) {
-    return NextResponse.json({ error: "enrollmentId es requerido" }, { status: 422 });
+  if (!enrollmentId || !uuidLike.safeParse(enrollmentId).success) {
+    return NextResponse.json(
+      { error: "enrollmentId es requerido y debe ser un UUID válido" },
+      { status: 422 },
+    );
+  }
+
+  const admin = createAdminClient();
+  const { data: existingCert } = await admin
+    .from("certificates")
+    .select("id")
+    .eq("enrollment_id", enrollmentId)
+    .maybeSingle();
+
+  if (existingCert) {
+    return NextResponse.json(
+      { error: "Esta matrícula ya tiene un certificado emitido" },
+      { status: 409 },
+    );
   }
 
   try {

@@ -1,319 +1,359 @@
 ---
 tipo: "Análisis pedagógico interno"
 audiencia: "Solo Elkis Daza — no distribuir"
-clase: "IA aplicada al rol de asesor inmobiliario — De conversar a dirigir"
+clase: "IA aplicada al rol del asesor — De conversar a dirigir"
 fecha_clase: 2026-07-22
-cobertura: "0:00 – 1:03:47 (primera mitad)"
-estado: "PARCIAL"
+cobertura: "Clase completa (2:21:49)"
+estado: "FINAL"
 ---
 
-# Análisis objetivo — Clase de IA aplicada al rol de asesor inmobiliario
+# Análisis objetivo — Clase de IA aplicada al rol del asesor
 
-> **Documento interno.** Evaluación franca de la primera mitad. Cubre 64 de los
-> ~128 minutos estimados. Los juicios sobre cierre, práctica y logro final del
-> objetivo 4 son **provisionales**: varias de las carencias que señalo pueden
-> resolverse en el tramo que falta.
+> **Documento interno.** Evaluación franca de la clase completa, 2h21m49s.
+>
+> **Corrección respecto de la versión preliminar.** El análisis anterior se hizo sobre el
+> 45% inicial de la clase y penalizaba fuerte el anclaje inmobiliario y la ausencia de
+> aplicación. La segunda mitad corrige buena parte de eso: **la nota sube de 6,2 a 7,4**.
+> Los criterios que se movieron están marcados con ↑.
 
 ---
 
 ## Veredicto en una línea
 
-**Clase fuerte en contenido y arquitectura conceptual, débil en didáctica activa y
-descuidada en el rigor de las cifras.** Es una buena conferencia; todavía no es una
-buena clase de diplomado.
+**Clase de contenido excepcional y ejecución desigual.** La segunda mitad es de las mejores
+capacitaciones aplicadas de IA que se pueden dar hoy a un equipo comercial. Lo que la
+frena no es el qué, sino tres cosas concretas: cifras improvisadas, cero práctica del
+alumno y una respuesta imprudente sobre datos personales.
 
-**Nota global: 6,2/10 — equivalente a 5,0 en escala 1–7.**
+**Nota global: 7,4/10 — equivalente a 5,8 en escala 1–7.**
 
 ---
 
 ## Evaluación por criterio
 
-| # | Criterio | Nota | Síntesis |
-| --- | --- | --- | --- |
-| 1 | Claridad de objetivos | **9** | Cuatro objetivos explícitos en el minuto 6 |
-| 2 | Estructura y progresión | **8** | Arco coherente: historia → concepto → herramientas → automatización |
-| 3 | Rigor y precisión factual | **5** | Fuentes buenas, ejecución en vivo con errores evitables |
-| 4 | Anclaje al rol inmobiliario | **5** | Prometido en los objetivos, minoritario en la ejecución |
-| 5 | Práctica y transferencia | **3** | Cero ejercicios ejecutados por el alumno |
-| 6 | Interacción y chequeo de comprensión | **5** | 3 intervenciones sustantivas en 64 min, con 19 personas |
-| 7 | Ejecución técnica de demos | **6** | 5 de 6 exitosas, pero una falla de 4 minutos en mal momento |
-| 8 | Oralidad y economía del lenguaje | **6** | Muletillas marcadas y frases largas sin cierre |
-| 9 | Gestión del tiempo | **6** | ~11 min de los 64 sin valor didáctico |
-| 10 | Encuadre honesto y ético | **9** | Lo mejor de la clase: expectativas, límites y costos reales |
+| # | Criterio | Nota | Δ | Síntesis |
+| --- | --- | --- | --- | --- |
+| 1 | Claridad de objetivos | **9** | = | Cuatro objetivos explícitos en el minuto 6, todos cumplidos |
+| 2 | Estructura y progresión | **8** | = | Arco coherente de teoría → herramientas → agentes → aplicación |
+| 3 | Rigor y precisión factual | **5** | = | Fuentes buenas, ejecución en vivo con errores evitables |
+| 4 | Anclaje al rol inmobiliario | **9** | ↑ +4 | 14 aplicaciones, 6 demostradas end-to-end |
+| 5 | Práctica y transferencia | **4** | ↑ +1 | Sigue sin práctica en vivo, pero cierra con herramientas entregables |
+| 6 | Interacción y chequeo | **7** | ↑ +2 | 11 intervenciones; la 2ª mitad es casi dialogada |
+| 7 | Ejecución técnica de demos | **6** | = | 9 exitosas, 4 parciales, 1 fallida |
+| 8 | Oralidad y economía del lenguaje | **6** | = | Muletillas marcadas, frases largas sin cierre |
+| 9 | Gestión del tiempo | **6** | = | Arranque lento y final apretado contra el reloj |
+| 10 | Encuadre honesto y ético | **7** | ↓ −2 | Excelente en expectativas y costos; **imprudente en datos personales** |
+| 11 | Valor práctico entregado | **9** | nuevo | Skills, prompts y flujos que se usan al día siguiente |
 
 ---
 
 ## Lo que está genuinamente bien
 
-**1. El andamiaje de las 4 ideas es excelente.**
-Modelo / contexto / tokens / herramientas es un marco mental que el alumno se lleva y
-puede aplicar a cualquier herramienta que aparezca el año que viene. Es la decisión
-pedagógica más inteligente de toda la clase. La mayoría de las capacitaciones de IA
-enseñan botones; tú enseñaste un modelo mental. Eso envejece bien.
+**1. La segunda mitad es el contenido de mayor valor comercial que he visto documentado en este diplomado.**
+No es una exageración. El flujo carpeta-por-cliente → propuesta personalizada → presentación
+con diseño → seguimiento automatizado de leads es un sistema de trabajo completo, no una
+demo de herramienta. Un asesor que lo implemente cambia su semana.
 
-**2. El título cumple lo que promete.**
-"De conversar a dirigir" no es decorativo: el arco va literalmente de preguntas sueltas
-a tareas programadas autónomas. La estructura ejecuta la tesis del título.
+**2. El andamiaje de las 4 ideas, y su pago posterior.**
+Modelo / contexto / tokens / herramientas se enseña en el minuto 27 y **se cobra en el
+1:34**, cuando explicas que la carpeta del cliente *es* el contexto. Esa es la marca de
+una clase bien diseñada: el concepto abstracto vuelve convertido en procedimiento. Muy
+pocos capacitadores cierran ese círculo.
 
-**3. La respuesta a la pregunta sobre tokens fue la mejor enseñanza de la clase.**
-La cadena *tokens → cómputo → servidores → electricidad → costo real* convierte un
-concepto abstracto en algo físico y comprensible. Fue improvisada, en respuesta a una
-alumna, y salió mejor que varios bloques preparados. Vale la pena que dejes de tratarla
-como respuesta y la conviertas en contenido fijo de la slide.
+**3. El intercambio con la alumna de las carpetas (1:26–1:31).**
+Ella te plantea la objeción más difícil posible —"ya lo hice a mano, ¿de qué me sirve?"—
+y en lugar de defender la herramienta, redefines dónde está el valor: no en crear las
+carpetas, sino en trabajar sobre ellas. Es el mejor momento pedagógico de la clase. La
+llevaste de escéptica a *"vamos a hacerlo mañana con algún cliente"*.
 
-**4. La honestidad sobre el subsidio de la IA.**
-Decirle a un grupo que las herramientas están hoy artificialmente baratas y que eso
-puede cambiar es poco común y muy valioso. Los protege de construir procesos sobre un
-supuesto de costo que no se sostiene.
+**4. La honestidad sobre cuándo la IA no conviene.**
+*"Para un contacto es más tedioso decírselo a la IA, prefiero hacerlo yo."* Reconocer el
+límite de tu propia demo, en vivo, mientras la estás vendiendo, es lo que separa a un
+capacitador de un vendedor de humo. Los alumnos lo registran aunque no lo digan.
 
-**5. El bloque de límites, bien ubicado.**
-"No reconoce la ironía ni el miedo de un cliente" es exactamente el mensaje correcto
-para un diplomado de ventas. Delimita dónde el asesor sigue siendo insustituible y
-desactiva la ansiedad sin negar el cambio. El encuadre *expertise + IA* es el correcto.
+**5. "Nunca podemos delegar el criterio de un asesor inmobiliario."**
+Ubicado en el cierre, después de dos horas mostrando automatización. Es exactamente el
+mensaje que evita que alguien se vaya a generar propuestas sin revisarlas.
 
-**6. La demo de tareas programadas.**
-"Radar Inmobiliario Chile" fue la mejor demo: real, ejecutada en vivo, del rubro, y con
-un remate potente —el modelo agregó estructura que no le pediste—. Esa demo sola
-justifica el bloque.
+**6. La cadena tokens → cómputo → electricidad.**
+Improvisada en respuesta a Nancy y mejor que varios bloques preparados. Conviértela en
+contenido fijo.
 
-**7. Usaste la encuesta previa para calibrar.**
-Mencionaste explícitamente los niveles mixtos y respondiste al miedo laboral que alguien
-declaró. Eso es diseño instruccional real, no improvisación.
+**7. La demo de skills, aun con el traspié.**
+Grabar una tarea real —CRM, WhatsApp, mensaje— y mostrar los 285 pasos capturados es
+tangible de una forma que ninguna slide logra. Que se trabara al guardar el contacto casi
+no importó: la audiencia ya había entendido el mecanismo.
+
+**8. Ingeniería inversa de diseño.**
+*"Para la IA no tenemos que saber de diseño, solo tenemos que tener buen gusto."* Frase
+memorable y técnica útil, generalizada correctamente a contenido.
 
 ---
 
 ## Los problemas, por severidad
 
-### 🔴 ALTO — Cero práctica del alumno
+### 🔴 ALTO — La respuesta sobre datos personales fue imprudente
 
-En 64 minutos el alumno **no ejecutó absolutamente nada**. Vio tu pantalla, escuchó tu
-explicación y quedó "anonadado" (textual de Nancy). Anonadado no es competente.
+Este es el problema que **subió** de severidad al ver la clase completa, y el único que
+tiene consecuencias fuera del aula.
 
-Anunciaste práctica en el minuto 32 (*"ya después vamos a pasar quizás a algunos
-ejercicios prácticos"*) y a 1:03 seguía siendo demo tuya. El "quizás" en esa frase
-delata que la práctica no estaba agendada como bloque firme, sino como relleno
-condicional al tiempo sobrante.
+Una alumna preguntó, con precisión, si es seguro subir el RUT, nombre completo,
+domicilio y renta de un arrendatario. Respondiste:
 
-**Consecuencia medible:** una alumna dijo que no paga porque *"si no la sé ocupar, ¿para
-qué voy a pagar?"*. Esa es exactamente la persona que la clase debía desbloquear, y en
-esta mitad no le diste ni una sola oportunidad de hacer algo con sus manos.
+> *"Lo que nunca va a pasar es que la inteligencia artificial va a filtrar tu información
+> de forma pública… eso no sucede porque es como una regla básica de las aplicaciones de
+> inteligencia artificial, que es completamente auditable."*
 
-**Qué hacer:** un ejercicio de 5 minutos, ejecutado por ellos, después de cada bloque
-conceptual. El más barato y potente: *"abre tu chat ahora y pregúntale cómo puede
-ayudarte en tu rol de asesor inmobiliario; en 3 minutos me leen la mejor respuesta"*.
-Ya propusiste ese ejercicio verbalmente en el minuto 25 — pero como sugerencia al aire,
-no como actividad cronometrada con puesta en común. La diferencia entre esas dos cosas
-es toda la clase.
+Tres problemas:
+
+1. **"Nunca" no es defendible.** Ha habido incidentes de exposición de datos en
+   proveedores de IA. La probabilidad es baja; la certeza que transmitiste no existe.
+2. **"Completamente auditable" no significa nada verificable** y suena a garantía.
+3. **Falta el marco legal.** Son datos personales **de terceros**, no del asesor. En Chile
+   rigen la Ley 19.628 y la Ley 21.719, que exige base de licitud para el tratamiento y
+   entra en plena vigencia en diciembre de 2026 con una agencia con potestad
+   sancionatoria. Un asesor que suba la carpeta completa de un cliente a una herramienta
+   con entrenamiento activado está tratando datos de terceros sin haberlo pensado.
+
+Lo que sí dijiste bien: que los datos pueden usarse para entrenar, dónde se desactiva, y
+que los modelos locales son la mitigación total. **El contenido técnico era correcto; el
+encuadre de riesgo, no.**
+
+**Qué hacer:** cambia "nunca va a pasar" por *"el riesgo de filtración pública es bajo,
+pero no es cero"*, y agrega una línea sobre que son datos de terceros y conviene tener el
+consentimiento del cliente y el entrenamiento desactivado. Son 30 segundos. Es la
+diferencia entre una recomendación profesional y una que puede meter a un alumno en un
+problema. Por eso reformulé la pregunta 16 del quiz en vez de evaluarla como se dijo.
 
 ---
 
 ### 🔴 ALTO — Errores factuales evitables
 
-Verifiqué las cifras que citaste. **La mayoría de tus fuentes son correctas** —y eso
-hace más frustrantes los errores, porque son de ejecución en vivo, no de investigación.
+Verifiqué las cifras. **La mayoría de tus fuentes son correctas**, y eso hace más
+frustrantes los errores: son de ejecución en vivo, no de investigación.
 
-**Datos que están bien** (crédito donde corresponde):
+**Datos correctos** (crédito donde corresponde):
 
-| Dato dicho | Estado |
+| Dato | Estado |
 | --- | --- |
-| 88 % de los negocios usa IA en alguna función (McKinsey) | ✅ Correcto |
-| 49 % pide información/consejo, 40 % pide producir algo, 30 % lo usa para trabajo (OpenAI) | ✅ Correcto |
-| Horizonte de tareas: ~6 min → 1 hora con Claude 3.7 Sonnet en feb-2025 | ✅ Correcto |
-| 1 de cada 4 empleos con algún grado de exposición | ✅ Plausible y bien matizado |
+| 88% de los negocios usa IA en alguna función (McKinsey) | ✅ |
+| 49% pide información/consejo, 40% producir algo, 30% uso laboral (OpenAI) | ✅ |
+| Horizonte de tareas: ~6 min → 1 hora con Claude 3.7 Sonnet (feb-2025) | ✅ |
+| 1 de cada 4 empleos con algún grado de exposición | ✅ Bien matizado |
+| Claude Skills como estándar de Anthropic | ✅ |
+| Microsoft como gran inversor de OpenAI / Copilot sobre sus modelos | ✅ |
 
-**Errores que sí hay que corregir:**
+**Errores a corregir:**
 
-| # | Lo que dijiste | El problema | Severidad |
+| # | Lo dicho | El problema | Severidad |
 | --- | --- | --- | --- |
-| 1 | *"Alan Turing… fue la primera persona que acuñó este término"* (inteligencia artificial) | El término lo acuñó **John McCarthy** en 1955–56, en la propuesta de Dartmouth. Turing planteó "¿pueden pensar las máquinas?" en 1950 — enorme, pero no es lo mismo. Te contradices tú mismo dos frases después al mencionar Dartmouth | Alta |
-| 2 | *"en mayo de 2024, con GPT-4, que fue el primer modelo pensador"* | GPT-4 no es un modelo razonador. El primero fue **o1**, en septiembre de 2024. Además GPT-4 es de marzo de 2023 | Alta |
-| 3 | *"el 90 o casi un 199 % del código de quien construye la IA es la misma IA"* | 199 % es imposible y se te notó. Y 90 % es una cifra muy fuerte para afirmarla sin fuente: las declaraciones públicas verificables son bastante menores | Alta |
-| 4 | *"285 mil billones de dólares"* | Error de unidad al traducir *billion*. Son **285 mil millones**. Lo que dijiste supera el PIB mundial, y a un alumno atento le rompe la credibilidad de todo el bloque | Media |
-| 5 | *"ya 225 corredores, miembros de la NAR, utilizan la IA para ahorrar tiempo"* | "225 corredores" no es una estadística — como dato es irrelevante. Casi seguro la slide decía **25 %** o **22,5 %**. Lo leíste mal | Media |
-| 6 | *"cuando salieron los modelos pensadores, la calidad subió un 90 %"* | Cifra sin respaldo. La mejora es real y grande, pero ese número parece inventado en vivo | Media |
-| 7 | *"Cloud lo llama… ¿Programado? No, lo llama diferente. Artefactos."* | Artefactos es otra función (documentos y código generados). Te enredaste en vivo y dejaste el nombre incorrecto flotando | Baja |
-| 8 | *"El Canva no sirve para eso"* | Lapsus Canvas/Canva. Riesgo real de que alguien se vaya creyendo que Canva, la herramienta de diseño, hace esto | Baja |
+| 1 | *"Alan Turing… la primera persona que acuñó este término"* | Lo acuñó **John McCarthy** (1955–56, Dartmouth). Turing planteó "¿pueden pensar las máquinas?" en 1950. Te contradices dos frases después al mencionar Dartmouth | Alta |
+| 2 | *"en mayo de 2024, con GPT-4, que fue el primer modelo pensador"* | GPT-4 no es razonador; el primero fue **o1** (sept-2024). Además GPT-4 es de marzo de 2023 | Alta |
+| 3 | *"el 90 o casi un 199% del código… es la misma IA"* | 199% es imposible y se notó. 90% es muy fuerte sin fuente | Alta |
+| 4 | *"285 mil billones de dólares"* | Error de traducción de *billion*: son **285 mil millones**. Lo dicho supera el PIB mundial | Media |
+| 5 | *"225 corredores, miembros de la NAR"* | No es una estadística. Casi seguro la slide decía **25%** o **22,5%** | Media |
+| 6 | *"la calidad de los resultados subió un 90%"* | Cifra sin respaldo | Media |
+| 7 | *"en Cloud se llama… Artefactos"* (por tareas programadas) | Artefactos es otra función. Quedó el nombre incorrecto flotando | Baja |
+| 8 | *"El Canva no sirve para eso"* | Lapsus Canvas/Canva; riesgo de confusión con la herramienta de diseño | Baja |
+| 9 | *"un estándar que se generó hace mucho por Anthropic"* (skills) | Skills es reciente, no "hace mucho" | Baja |
 
-**Patrón de fondo:** ninguno de estos es un error de conocimiento. Son errores de
-**lectura de slide en vivo** y de **improvisar cifras**. La corrección es de proceso, no
-de estudio: lleva los números escritos con su fuente en la nota del orador, y cuando no
-recuerdes una cifra, di el orden de magnitud sin inventar el decimal.
+**Patrón:** ninguno es error de conocimiento. Son **lectura de slide en vivo** e
+**improvisación de cifras**. La corrección es de proceso: números escritos con su fuente
+en la nota del orador, y cuando no recuerdes una cifra, di el orden de magnitud sin
+inventar el decimal.
 
-**Impacto directo en el quiz:** tuve que excluir 6 temas del quiz porque su "respuesta
-correcta" según la clase sería un error. Corrige esos puntos con los alumnos antes de
-evaluar, o estarás calificando como correcto algo que es falso.
-
----
-
-### 🟠 MEDIO — El anclaje inmobiliario es minoritario
-
-El objetivo 4 era aplicarla al rol de asesor inmobiliario. En 64 minutos, el contenido
-específico del rubro fue:
-
-1. Radar de noticias inmobiliarias — **demostrado** ✅
-2. Decorar un piloto vacío — **derivado al vuelo** de tu ejemplo doméstico
-3. Roleplay de cliente — **mencionado**, demo diferida
-4. Plusvalía por comuna — **mencionado** como ejemplo de Deep Research
-5. Contratos — **lo aportó un alumno**, no lo desarrollaste
-6. Propuesta a cliente — usado como ejemplo para explicar "contexto"
-
-Es decir: **un caso demostrado y cinco menciones**, en una clase de un diplomado
-inmobiliario. El resto fue IA genérica bien explicada.
-
-El caso más claro es la demo de imágenes. Es tu mejor demo visual y la gastaste en tu
-living, tu mueble de TV y las luces de tu departamento. Rescataste el ángulo profesional
-al final —*"un piloto que esté vacío, decorado al gusto del cliente"*— pero llegó como
-apéndice después de tres minutos de contenido personal. **Ese rescate era el ejemplo
-principal.** Invierte el orden: parte del piloto vacío, y si sobra tiempo, cuenta que lo
-descubriste mudándote.
+**Impacto en el quiz:** excluí 6 temas porque su "respuesta correcta" según la clase sería
+falsa. Corrige esos puntos antes de aplicar la evaluación.
 
 ---
 
-### 🟠 MEDIO — La demo fallida de tokens
+### 🟠 MEDIO — Sigue sin haber práctica del alumno
 
-De 36:16 a 40:25: cuatro minutos buscando dónde se muestra el consumo de tokens, sin
-encontrarlo, con el computador lento por aplicaciones abiertas, y cerrando con *"no
-tengo ni idea de eso"* y *"si me acuerdo de dónde se muestra, les expando allí"*.
+En 2h22m el alumno **no ejecutó nada**. Vio, escuchó y se maravilló —*"parece un mago"*,
+*"quedamos con la boca abierta"*—. Pero la maravilla no es competencia.
 
-Son 4 de 64 minutos —6 % de la clase— pero el costo real no es el tiempo: es **dónde**
-ocurrió. Venías de la mejor explicación de la sesión, respondiendo a la única pregunta
-conceptual profunda que te hicieron, y el momento se disolvió buscando un menú.
+La segunda mitad mejora el panorama porque termina entregando herramientas concretas
+(skills, prompt de roleplay, flujo de carpetas) y porque el intercambio con las alumnas
+fue casi coaching. Por eso el criterio sube de 3 a 4, no más.
 
-Dos causas, ambas prevenibles:
-- **Entorno sin preparar.** Computador cargado, aplicaciones abiertas, *"no estoy
-  acostumbrado a utilizar tanto el zoom"*. Un ensayo de 10 minutos con la pantalla
-  limpia y una ventana dedicada a demos elimina esto.
-- **Demo improvisada.** No estaba en el guion; la intentaste porque venía a cuento.
+El síntoma más claro: *"me vuelve loca, tengo un millón de dudas para poder configurar
+esto"*. Esa alumna vio dos horas de demos y no sabe dar el primer paso. Con 10 minutos de
+práctica guiada —abrir la app, crear una carpeta, elegirla como proyecto— se habría ido
+con el flujo andando.
 
-**Regla práctica:** si una demo no está ensayada, no se hace en vivo. Se promete —*"les
-mando captura por el classroom"*— y se sigue. Ese compromiso, además, quedó abierto: lo
-prometiste en 40:25 y conviene que lo cierres, aunque sea por el foro.
+**El costo real:** entre la clase y el momento en que efectivamente lo intenten se pierde
+la mayoría de la transferencia. Lo que se hace en clase se retiene; lo que se promete
+hacer después compite con la semana laboral.
 
----
-
-### 🟠 MEDIO — Interacción baja y sin chequeo estructurado
-
-Con 19 personas, en 64 minutos hubo **3 intervenciones sustantivas** (Nancy por tokens,
-Álvaro por el prompt inicial, Álvaro por contratos). El primer chequeo explícito de
-comprensión —*"¿tienen alguna duda, vamos bien?"*— llegó en **1:03:43**. Es decir, una
-hora de exposición continua sin verificar si te seguían.
-
-Hay una señal que dejaste pasar: en el minuto 34 pediste *"levanten la manito, ¿cuántos
-pagan hoy ChatGPT?"* y **nunca recogiste la respuesta** — seguiste con la explicación.
-La pregunta quedó huérfana. A los 44:50 volviste a preguntar algo similar y ahí sí
-obtuviste respuestas útiles, que además te dieron el mejor insumo de la clase (la alumna
-que no paga porque no sabe usarlo). Cuando preguntas y esperas, funciona.
-
-El contexto en contra es real y lo verbalizaron los propios alumnos antes de que
-llegaras: nadie prende la cámara y les parece incómodo para el profesor. No es tu culpa,
-pero sí es tu problema a gestionar.
-
-**Qué hacer:** encuestas de Zoom (2 clics, anónimas, funcionan con cámara apagada), o
-pedir respuestas por chat con un plazo — *"escriban en el chat una tarea de su semana
-que les gustaría automatizar; les doy 60 segundos"*. Y si preguntas, **espera**. El
-silencio de 5 segundos es incómodo y es exactamente lo que hace que alguien hable.
+**Qué hacer:** tres pausas de 5 minutos. La más rentable, después del bloque de carpetas:
+*"abran su computador ahora, creen la carpeta Clientes y una subcarpeta con un cliente
+real; les doy 5 minutos y me avisan por el chat"*. Sale más barato que cualquier demo
+adicional.
 
 ---
 
-### 🟡 BAJO — Gestión del tiempo del arranque
+### 🟠 MEDIO — Gestión del tiempo: arranque lento, final apretado
 
-- **0:00–6:24** — sala de espera. Llegaste cuando ya llevaban 3:45 conversando. Los
-  alumnos usaron ese rato para comentar las notas del roleplay, así que no fue tiempo
-  perdido socialmente, pero son 6 minutos de una clase de una hora.
-- **6:24–12:00** — 5,5 minutos de presentación personal: colombo-venezolano, 29 años,
-  cocina y mixología durante 10 años, cartas de coctelería, marketing con Vilma Núñez,
-  250 mil dólares en publicidad, tu novia, Atlas.
+El desbalance es medible:
 
-La bio construye autoridad y el arco *"yo tampoco era técnico y la IA me derribó la
-barrera"* es genuinamente persuasivo para este público — funciona. Pero **10 años de
-mixología y las cartas de coctelería no aportan a ninguno de los 4 objetivos**. Dos
-minutos bastan: de dónde vienes, por qué estás calificado, y el punto de "yo tampoco
-sabía programar".
+- **12 minutos** entre sala de espera y bio personal, con 10 años de mixología y cartas de coctelería que no aportan a ningún objetivo.
+- **1:35:42** — *"me quedan 30 minutos, así que voy a ir a full"*.
+- **1:43:33** — *"quedan 20 minutos"*.
+- **2:03:12** — *"ya nos estamos quedando cortos de tiempo, se los mostré de esta forma"*, y la demo de la extensión se muestra por la vía rápida en lugar de la buena.
+- **2:10:16** — cierre, y aun así agregas 8 minutos de bonus de roleplay.
 
-Recuperas ~9 minutos entre arranque y bio. Con eso financias dos ejercicios prácticos.
+Es decir: el contenido de mayor valor de la clase se dio contra el reloj, y una demo
+tuvo que degradarse. Los 12 minutos del arranque financiaban exactamente eso.
+
+El bonus de roleplay al final, después del cierre formal, es la señal más clara: sabías
+que faltaba tiempo para algo importante y lo metiste a presión cuando varios ya se habían
+despedido.
+
+**Qué hacer:** bio en 2 minutos, arranque puntual, y mover el roleplay a su propio bloque
+con 10 minutos. Recuperas ~10 minutos que van directo a práctica.
+
+---
+
+### 🟠 MEDIO — Demos frágiles en los momentos importantes
+
+| Demo | Qué pasó | Costo |
+| --- | --- | --- |
+| Consumo de tokens (0:36–0:40) | 4 min buscando sin encontrar; *"no tengo ni idea de eso"* | Disolvió el mejor momento conceptual |
+| Guardar contacto en WhatsApp (1:50) | Se trabó, hubo que reintentar con otro contacto | Menor: el mecanismo ya se entendía |
+| Extensión de Chrome (2:00) | Abrió un navegador equivocado | Obligó a mostrar la versión degradada |
+| Roleplay con voz (2:17) | Audio del computador casi inaudible | La demo más emotiva se escuchó a medias |
+
+Causa común: **entorno sin preparar**. Computador lento con aplicaciones abiertas,
+*"no estoy acostumbrado a utilizar tanto el zoom"*, audio del sistema sin ruteo.
+
+**Qué hacer:** un ensayo técnico de 15 minutos con pantalla limpia, ventana dedicada a
+demos y audio del sistema ruteado (BlackHole o similar) elimina las cuatro. Y regla dura:
+demo no ensayada, no se hace en vivo — se promete y se manda después.
+
+---
+
+### 🟡 BAJO — Interacción: mejora clara, con un hábito pendiente
+
+La segunda mitad es notoriamente más dialogada: 6 intervenciones sustantivas contra 3 en
+la primera. Las preguntas de privacidad, del CRM y del segundo mensaje de seguimiento son
+buenas y las respondiste bien.
+
+Persiste un hábito: en el minuto 34 pediste *"levanten la manito, ¿cuántos pagan hoy
+ChatGPT?"* y **nunca recogiste la respuesta**. Cuando preguntas y esperas (44:50 en
+adelante), funciona y te da el mejor insumo de la clase.
+
+El primer chequeo explícito de comprensión llegó en **1:09:30** — una hora de exposición
+sin verificar. En la segunda mitad ya no hizo falta porque preguntaban solas.
+
+**Qué hacer:** encuestas de Zoom cada 15 minutos en la parte teórica, donde el silencio no
+significa comprensión. Y si preguntas, espera los 5 segundos incómodos.
 
 ---
 
 ### 🟡 BAJO — Oralidad
 
-- **"Básicamente"** aparece decenas de veces. Es tu muletilla dominante y se nota.
-- Frases muy largas que se encadenan sin cerrar, con la idea principal enterrada al
-  final. Ejemplo típico: el párrafo sobre el bucle de auto-mejora de la IA (20:00–22:00)
-  es conceptualmente potente y sintácticamente agotador.
-- **"En pocas palabras"** seguido de una explicación larga.
+- **"Básicamente"** decenas de veces; muletilla dominante.
+- **"Este"** como relleno, muy frecuente en la segunda mitad cuando trabajas y hablas a la vez.
+- Frases largas encadenadas con la idea principal al final.
+- *"En pocas palabras"* seguido de explicaciones largas.
 
-Es la palanca más barata de todas: grábate 10 minutos, cuenta los "básicamente" y
-reemplaza la mitad por una pausa. La pausa además da tiempo al alumno para procesar,
-que es justo lo que falta en una clase de esta densidad.
+Palanca barata: grábate 10 minutos, cuenta las muletillas y reemplaza la mitad por pausas.
+La pausa además da tiempo de procesar, que es lo que falta en una clase de esta densidad.
 
 ---
 
 ## Ritmo y densidad
 
-| Bloque | Duración | Densidad conceptual | Práctica |
+| Bloque | Duración | Densidad | Práctica |
 | --- | --- | --- | --- |
 | Informal + bio | 12 min | Baja | — |
 | Historia | 5,5 min | Media | — |
-| Industria y empleo | 10 min | **Alta** (mucha cifra seguida) | — |
+| Industria y empleo | 10 min | **Alta** (cifras seguidas) | — |
 | LLM + 4 ideas | 6 min | **Muy alta** | — |
 | Tokens + demo fallida | 8,5 min | Media | — |
 | Actores + sondeo | 4,5 min | Media | — |
-| Tour de herramientas | 17 min | Alta | — |
+| Tour de paneles | 23 min | Alta | — |
+| Work + carpetas + propuesta | 25 min | **Alta y aplicada** | — |
+| Diseño + control del computador | 8 min | Media | — |
+| Skills + ejecución | 22 min | **Alta y aplicada** | — |
+| Cierre + roleplay | 11 min | Media | — |
 
-El tramo **17:00–33:40** concentra casi toda la carga conceptual de la clase en 16
-minutos corridos sin una sola pausa de asimilación. Es el punto donde con mayor
-probabilidad perdiste a la mitad de la sala —y no tienes cómo saberlo, porque el primer
-chequeo llegó media hora después.
+El tramo **17:00–33:40** sigue siendo el punto de mayor riesgo: toda la carga conceptual
+en 16 minutos corridos sin pausa. La segunda mitad, en cambio, alterna demo y diálogo, y
+por eso se sostiene pese a durar más.
 
 ---
 
 ## Plan de mejora priorizado
 
-Ordenado por impacto sobre esfuerzo.
-
 | # | Acción | Esfuerzo | Impacto |
 | --- | --- | --- | --- |
-| 1 | **Un ejercicio de 5 min ejecutado por el alumno** después de cada bloque conceptual. Mínimo 3 en la clase | Bajo | 🔴 Muy alto |
-| 2 | **Verificar toda cifra** contra su fuente y llevarla escrita en la nota del orador. Corregir los 8 puntos de la tabla de errores | Bajo | 🔴 Muy alto |
-| 3 | **Recortar la bio a 2 min** y arrancar puntual | Bajo | 🟠 Alto |
-| 4 | **Reemplazar los ejemplos personales por inmobiliarios**: el piloto vacío en vez del living | Bajo | 🟠 Alto |
-| 5 | **Ensayar el entorno de demo**: pantalla limpia, ventana dedicada, todas las demos probadas antes | Bajo | 🟠 Alto |
-| 6 | **Encuesta de Zoom cada 15 min** para chequear comprensión sin depender de cámaras | Bajo | 🟠 Alto |
-| 7 | **Partir la carga de 17:00–33:40** con una pausa de asimilación o una actividad | Medio | 🟠 Alto |
-| 8 | **Cerrar los compromisos abiertos**: dónde se ven los tokens, Chat vs Work, demo de roleplay | Bajo | 🟡 Medio |
-| 9 | **Reducir "básicamente"** a la mitad | Medio | 🟡 Medio |
-| 10 | **Entregar un one-pager** con las 4 ideas, el mapa de herramientas y 5 prompts inmobiliarios listos para copiar | Medio | 🟠 Alto |
+| 1 | **Reformular la respuesta de privacidad**: "el riesgo no es cero" + datos de terceros + marco legal chileno | Bajo | 🔴 Muy alto |
+| 2 | **Verificar toda cifra** contra su fuente en la nota del orador; corregir los 9 errores de la tabla | Bajo | 🔴 Muy alto |
+| 3 | **Tres pausas de práctica de 5 min**, la clave después del bloque de carpetas | Bajo | 🔴 Muy alto |
+| 4 | **Recortar la bio a 2 min** y arrancar puntual | Bajo | 🟠 Alto |
+| 5 | **Ensayo técnico de 15 min**: pantalla limpia, ventana dedicada, audio ruteado | Bajo | 🟠 Alto |
+| 6 | **Mover el roleplay** a bloque propio con tiempo, no como bonus post-cierre | Bajo | 🟠 Alto |
+| 7 | **One-pager entregable**: 4 ideas + flujo de carpetas + 5 prompts inmobiliarios | Medio | 🟠 Alto |
+| 8 | **Encuesta de Zoom cada 15 min** en la parte teórica | Bajo | 🟡 Medio |
+| 9 | **Partir la carga de 17:00–33:40** con una pausa o actividad | Medio | 🟡 Medio |
+| 10 | **Reducir muletillas** a la mitad | Medio | 🟡 Medio |
 
-La #10 merece un comentario: esta clase entrega mucha información y **ningún artefacto**.
-El alumno sale entusiasmado y sin nada en las manos. Un PDF de una página con los 4
-conceptos y 5 prompts del rubro listos para pegar convierte el entusiasmo en uso. Es
-además lo que más directamente ataca el caso de la alumna que no se atreve a pagar.
-
----
-
-## Compromisos que quedaron abiertos con los alumnos
-
-Anótalos, porque los dijiste en voz alta y alguien los va a recordar:
-
-- [ ] Dónde se visualiza el consumo de tokens en tiempo real (40:25)
-- [ ] Diferencia entre "Chat" y "Work" en ChatGPT (~50:00)
-- [ ] Demo de roleplay de cliente con voz (44:50)
-- [ ] *"Un par de ejemplos que estuve explorando hoy por primera vez para ustedes"* (1:03:47)
-- [ ] Explicar qué es Artefactos en Claude, ahora que quedó mal nombrado
+Sobre la #7: la clase entrega muchísimo valor y **ningún artefacto**. El one-pager es lo
+que convierte el entusiasmo en uso, y ataca directo el caso de la alumna con "un millón de
+dudas".
 
 ---
 
-## Lo que falta evaluar
+## Sobre la propuesta de un diplomado de IA
 
-Con la segunda mitad podré cerrar:
+Varias alumnas lo pidieron espontáneamente y coincidiste: *"dos horas es muy poco tiempo,
+podría estar semanas enseñándoles cosas"*.
 
-- Si hubo práctica real del alumno (cambiaría el criterio 5, el de peor nota).
-- Si el anclaje inmobiliario se densifica (criterio 4).
-- Calidad del cierre y la síntesis — no evaluada aún.
-- Si quedó tarea o transferencia al trabajo real.
-- Si se cumplieron los compromisos de arriba.
+Tienen razón, y el material lo respalda: esta clase contiene al menos **cuatro módulos**
+comprimidos en uno —fundamentos, herramientas y conectores, modo agente y carpetas,
+skills y automatización—. La densidad es la causa raíz de casi todos los problemas de
+ritmo señalados arriba.
 
-**El criterio 5 (práctica) y el 4 (anclaje) son los que más pueden moverse.** Si la
-segunda mitad es mayormente práctica guiada, la nota global sube a rango 7,5–8. Si es
-más tour de herramientas, se confirma el diagnóstico: buena conferencia, clase
-mejorable.
+Si se materializa, el orden natural sería: fundamentos + configuración (1) → contexto y
+carpetas por cliente (2) → generación de entregables comerciales (3) → automatización con
+skills (4), **cada uno con práctica guiada obligatoria**. Es una decisión de la dirección
+académica, pero la demanda es genuina y salió de los propios alumnos.
+
+---
+
+## Compromisos asumidos — para no perderlos
+
+| # | Compromiso | Momento |
+| --- | --- | --- |
+| 1 | Subir las **skills** a Recursos de la academia | 2:08:43 |
+| 2 | Subir el **prompt de roleplay** a Recursos | 2:21:05 |
+| 3 | **Generar el quiz** de la clase y avisar por correo | 2:16:29 |
+| 4 | Enviar la **encuesta anónima** de feedback | 2:12:34 |
+| 5 | Enviar una **cápsula** con la configuración paso a paso | 2:10:16 |
+| 6 | Compartir contenido adicional de IA | 2:12:34 |
+
+Pendientes sin cerrar de la primera parte:
+
+- [ ] Dónde se ve el consumo de tokens en tiempo real (0:40).
+- [ ] Qué es **Artefactos** en Claude — quedó mal nombrado.
+
+El compromiso #3 está cubierto: el quiz de 22 preguntas está listo en
+`2026-07-22-ia-asesor-inmobiliario-quiz.md`.
+
+---
+
+## Nota técnica — la transcripción de esta clase
+
+Esta evaluación se hizo sobre una transcripción generada localmente con Whisper
+`large-v3-turbo`, **no** con la de Mux.
+
+El track autogenerado por Mux para esta lección (`SGUfaBjfRl02…`) devolvió 809 líneas de
+`[Música]` y cero habla, pese a que el audio del asset está sano (mean −24,8 dB / max
+−6,8 dB). Otra clase del 21-jul transcribió correctamente, así que el fallo es específico
+de este asset.
+
+**Impacto en producción:** `lesson_transcripts` tiene esa transcripción inservible con
+status `ready`, de modo que el panel de transcripción del classroom muestra `[Música]`
+repetido durante 2h22m a cualquier alumno que abra la repetición. Requiere corrección
+aparte.

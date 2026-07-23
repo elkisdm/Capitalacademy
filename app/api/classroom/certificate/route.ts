@@ -32,13 +32,21 @@ export async function GET(req: Request) {
   }
 
   // Resolve enrollment from authenticated user — prevents IDOR
-  const { data: enrollment } = await supabase
+  const { data: enrollment, error: enrollmentError } = await supabase
     .from("enrollments")
     .select("id, cohorts!inner(program_id)")
     .eq("student_id", user.id)
     .eq("cohorts.program_id", programId)
     .limit(1)
     .single();
+
+  if (enrollmentError && enrollmentError.code !== "PGRST116") {
+    console.error("Error al verificar inscripción para certificado:", enrollmentError);
+    return NextResponse.json(
+      { error: "No se pudo verificar tu inscripción" },
+      { status: 500 },
+    );
+  }
 
   if (!enrollment) {
     return NextResponse.json(

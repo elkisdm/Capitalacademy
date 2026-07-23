@@ -212,6 +212,24 @@ export async function DELETE(
 
   const lessonId = session.lesson_id;
 
+  // Guarda de seguridad de datos: no borrar una lección con progreso de alumnos
+  // (el borrado cascadearía video_progress). Misma guarda que
+  // DELETE /api/admin/lessons/[lessonId].
+  const { count: progressCount } = await admin
+    .from("video_progress")
+    .select("id", { count: "exact", head: true })
+    .eq("lesson_id", lessonId);
+
+  if ((progressCount ?? 0) > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "No se puede eliminar: la lección ya tiene progreso de alumnos. Edítala u ocúltala en su lugar.",
+      },
+      { status: 409 },
+    );
+  }
+
   // Primero desenlaza para liberar el unique index, luego borra la lección.
   const { error: unlinkError } = await admin
     .from("class_sessions")

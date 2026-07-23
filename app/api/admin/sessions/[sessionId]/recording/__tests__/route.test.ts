@@ -18,6 +18,7 @@ type State = {
   linkResult: Result; // POST: class_sessions update({lesson_id}).eq(id)
   unlinkResult: Result; // DELETE: class_sessions update({lesson_id: null}).eq(id)
   lessonsDeleteResult: Result; // rollback (POST) o borrado real (DELETE) de lessons
+  progressCountResult: { count: number | null; error?: unknown }; // DELETE: video_progress select(count).eq(lesson_id)
 };
 let state: State;
 
@@ -63,6 +64,9 @@ function makeBuilder(table: string) {
       if (cols === "position") return state.lastPosResult;
       if (cols === "slug") return state.slugRowsResult;
       return state.lessonResult;
+    }
+    if (table === "video_progress") {
+      return state.progressCountResult as unknown as Result;
     }
     return { data: null, error: null };
   };
@@ -128,6 +132,7 @@ beforeEach(() => {
     linkResult: { error: null },
     unlinkResult: { error: null },
     lessonsDeleteResult: { error: null },
+    progressCountResult: { count: 0, error: null },
   };
 });
 
@@ -372,6 +377,27 @@ describe("DELETE /api/admin/sessions/[sessionId]/recording", () => {
     expect(res!.status).toBe(500);
     const json = await res!.json();
     expect(json.error).toMatch(/borrar la lección-repetición/);
+  });
+
+  it("409 cuando la lección-repetición tiene progreso de alumnos: no desenlaza ni borra", async () => {
+    state.sessionResult = {
+      data: {
+        id: SESSION_ID,
+        cohort_id: "cohort-1",
+        module_id: MODULE_ID,
+        lesson_id: LESSON_ID,
+        title: "Clase 1",
+      },
+      error: null,
+    };
+    state.progressCountResult = { count: 2, error: null };
+    // Si el desenlace se ejecutara pese a la guarda, este error lo delataría
+    // (la respuesta sería 500 "desenlazar" en vez de 409).
+    state.unlinkResult = { error: { message: "boom" } };
+    const res = await DELETE(req("DELETE"), ctx());
+    expect(res!.status).toBe(409);
+    const json = await res!.json();
+    expect(json.error).toMatch(/ya tiene progreso de alumnos/);
   });
 
   it("200 desenlaza y borra la lección-repetición", async () => {

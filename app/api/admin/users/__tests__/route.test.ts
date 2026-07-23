@@ -33,8 +33,11 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const mockGenerateLink = vi.fn();
 const mockAdminUpsertProfile = vi.fn();
+const mockProfileUpsertSingle = vi.fn();
 const mockAdminUpsertCohortRoles = vi.fn();
 const mockAdminUpsertEnrollments = vi.fn();
+const mockAdminCohortSingle = vi.fn();
+const mockInvitationLogInsert = vi.fn();
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
@@ -50,19 +53,7 @@ vi.mock("@/lib/supabase/admin", () => ({
             mockAdminUpsertProfile(...args);
             return {
               select: () => ({
-                single: () =>
-                  Promise.resolve({
-                    data: {
-                      id: "new-user-id",
-                      email: (args[0] as Record<string, unknown>)?.email,
-                      full_name:
-                        (args[0] as Record<string, unknown>)?.full_name ?? null,
-                      system_role:
-                        (args[0] as Record<string, unknown>)?.system_role ??
-                        "user",
-                    },
-                    error: null,
-                  }),
+                single: mockProfileUpsertSingle,
               }),
             };
           },
@@ -84,13 +75,33 @@ vi.mock("@/lib/supabase/admin", () => ({
           },
         };
       }
+      if (table === "cohorts") {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockAdminCohortSingle,
+            }),
+          }),
+        };
+      }
+      if (table === "invitation_log") {
+        return {
+          insert: (...args: unknown[]) => mockInvitationLogInsert(...args),
+        };
+      }
       return {};
     },
   })),
 }));
 
+const mockSendInvitationEmail = vi.fn(
+  async (
+    ..._args: unknown[]
+  ): Promise<{ success: boolean; error?: string }> => ({ success: true }),
+);
+
 vi.mock("@/lib/email/invitation", () => ({
-  sendInvitationEmail: vi.fn(async () => ({ ok: true })),
+  sendInvitationEmail: (...args: unknown[]) => mockSendInvitationEmail(...args),
 }));
 
 /* ------------------------------------------------------------------ */
@@ -140,6 +151,28 @@ describe("POST /api/admin/users", () => {
       },
       error: null,
     });
+
+    // Default: profile upsert succeeds, reflejando lo que se le pasó
+    mockProfileUpsertSingle.mockImplementation(() => {
+      const args = mockAdminUpsertProfile.mock.calls.at(-1)?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      return Promise.resolve({
+        data: {
+          id: "new-user-id",
+          email: args?.email,
+          full_name: args?.full_name ?? null,
+          system_role: args?.system_role ?? "user",
+        },
+        error: null,
+      });
+    });
+
+    // Default: no hay cohorte (solo se consulta si cohort_id + send_invite)
+    mockAdminCohortSingle.mockResolvedValue({ data: null });
+
+    // Default: invitation_log insert sin error
+    mockInvitationLogInsert.mockResolvedValue({ error: null });
   });
 
   /* ---- Auth ---- */
@@ -192,6 +225,22 @@ describe("POST /api/admin/users", () => {
 
     const res = await POST(
       makeRequest({ email: "new@admin.com", system_role: "admin" }),
+    );
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(403);
+    const json = await res!.json();
+    expect(json.error).toContain("Solo un admin");
+  });
+
+  // Si la consulta del perfil del caller falla o no devuelve fila (network
+  // hiccup, fila aún no creada, etc.), el guard debe fallar cerrado: sin
+  // confirmar que el caller es "admin", no se permite crear usuarios
+  // ops/admin.
+  it("fails closed: blocks ops-escalation guard when the caller profile query returns no row", async () => {
+    mockCallerProfileSelect.mockResolvedValue({ data: null });
+
+    const res = await POST(
+      makeRequest({ email: "escalated@test.com", system_role: "admin" }),
     );
     expect(res).toBeDefined();
     expect(res!.status).toBe(403);
@@ -254,5 +303,171 @@ describe("POST /api/admin/users", () => {
     expect(res!.status).toBe(400);
     const json = await res!.json();
     expect(json.error).toBe("User already exists");
+  });
+
+  /* ---- Body inválido ---- */
+
+  it("returns 400 when the request body is not valid JSON", async () => {
+    const badReq = new Request("http://localhost/api/admin/users", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{esto-no-es-json",
+    });
+
+    const res = await POST(badReq);
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(400);
+    const json = await res!.json();
+    expect(json.error).toBe("Body inválido");
+  });
+
+  /* ---- Falla del perfil tras crear el usuario en auth ---- */
+
+  it("returns 500 when the profile upsert fails after auth user was created", async () => {
+    mockProfileUpsertSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "constraint violation" },
+    });
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const res = await POST(makeRequest({ email: "profilefail@test.com" }));
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(500);
+    const json = await res!.json();
+    expect(json.error).toBe("Usuario creado en auth pero falló el perfil");
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  /* ---- Envío de invitación ---- */
+
+  it("sends invitation email with cohort/program names when cohort_id is present", async () => {
+    mockAdminCohortSingle.mockResolvedValueOnce({
+      data: { name: "Cohorte G5", programs: { name: "Diplomado" } },
+    });
+    mockSendInvitationEmail.mockResolvedValueOnce({ success: true });
+
+    const res = await POST(
+      makeRequest({
+        email: "invitee@test.com",
+        full_name: "Invitee Test",
+        cohort_id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        send_invite: true,
+      }),
+    );
+
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(201);
+    const json = await res!.json();
+    expect(json.invite_error).toBeUndefined();
+    expect(mockSendInvitationEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "invitee@test.com",
+        fullName: "Invitee Test",
+        programName: "Diplomado",
+        cohortName: "Cohorte G5",
+      }),
+    );
+    expect(mockInvitationLogInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "sent", email: "invitee@test.com" }),
+    );
+  });
+
+  it("falls back to default program/cohort names when the cohort lookup returns nothing", async () => {
+    mockAdminCohortSingle.mockResolvedValueOnce({ data: null });
+    mockSendInvitationEmail.mockResolvedValueOnce({ success: true });
+
+    const res = await POST(
+      makeRequest({
+        email: "orphancohort@test.com",
+        cohort_id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        send_invite: true,
+      }),
+    );
+
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(201);
+    expect(mockSendInvitationEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        programName: "Capital Academy",
+        cohortName: "Sin cohorte",
+      }),
+    );
+  });
+
+  it("falls back fullName to email when full_name is omitted and send_invite is true", async () => {
+    mockSendInvitationEmail.mockResolvedValueOnce({ success: true });
+
+    const res = await POST(
+      makeRequest({ email: "noname@test.com", send_invite: true }),
+    );
+
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(201);
+    expect(mockSendInvitationEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fullName: "noname@test.com",
+        programName: "Capital Academy",
+        cohortName: "Sin cohorte",
+      }),
+    );
+    // Sin cohort_id no se consulta la tabla cohorts
+    expect(mockAdminCohortSingle).not.toHaveBeenCalled();
+  });
+
+  it("returns 201 with invite_error when sendInvitationEmail fails, and logs the failure", async () => {
+    mockSendInvitationEmail.mockResolvedValueOnce({
+      success: false,
+      error: "Resend caído",
+    });
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const res = await POST(
+      makeRequest({ email: "emailfail@test.com", send_invite: true }),
+    );
+
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(201);
+    const json = await res!.json();
+    expect(json.invite_error).toBe("Resend caído");
+    expect(mockInvitationLogInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "failed" }),
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "invitation email failed",
+      "Resend caído",
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("logs but does not fail the request when the invitation_log insert itself fails", async () => {
+    mockInvitationLogInsert.mockResolvedValueOnce({
+      error: { message: "insert failed" },
+    });
+    mockSendInvitationEmail.mockResolvedValueOnce({ success: true });
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const res = await POST(
+      makeRequest({ email: "loginsertfail@test.com", send_invite: true }),
+    );
+
+    expect(res).toBeDefined();
+    expect(res!.status).toBe(201);
+    // Esperamos a que la promesa .then() de invitation_log corra su callback.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "invitation_log insert failed:",
+      { message: "insert failed" },
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 });

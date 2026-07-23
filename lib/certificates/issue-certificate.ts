@@ -5,6 +5,7 @@ import {
   getCertificateSignedUrl,
   CERT_URL_EXPIRY_EMAIL,
 } from "./get-certificate-url";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 
 // ---------------------------------------------------------------------------
 // Verification code generator — 8 chars alphanumeric uppercase
@@ -73,7 +74,7 @@ export async function issueCertificate(
 
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, email")
     .eq("id", enrollment.student_id)
     .single();
 
@@ -142,23 +143,21 @@ export async function issueCertificate(
     .select("id")
     .single();
 
+  if (insertErr?.code === "23505") {
+    throw new Error("Este alumno ya tiene un certificado emitido");
+  }
+
   if (insertErr || !certificate) {
     throw new Error(`Failed to insert certificate: ${insertErr?.message}`);
   }
 
   // 8. Send certificate email
-  const { data: studentProfile } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", enrollment.student_id)
-    .single();
-
-  if (studentProfile?.email) {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://capitalacademy.cl";
+  if (profile.email) {
+    const baseUrl = getPublicBaseUrl();
     const verifyUrl = `${baseUrl}/verificar/${verificationCode}`;
 
     const emailResult = await sendCertificateEmail({
-      email: studentProfile.email,
+      email: profile.email,
       studentName: profile.full_name,
       programName: cohort.programs.name,
       verificationCode,

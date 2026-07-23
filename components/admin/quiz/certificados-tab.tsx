@@ -14,6 +14,7 @@ export function CertificadosTab({ programId }: { programId: string }) {
   const [issuing, setIssuing] = useState(false);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [enrollmentId, setEnrollmentId] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const { toast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -23,7 +24,16 @@ export function CertificadosTab({ programId }: { programId: string }) {
         const res = await fetch(`/api/admin/certificates?programId=${programId}`);
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled) setCertificates(data.certificates ?? []);
+          if (!cancelled) {
+            setCertificates(data.certificates ?? []);
+            setLoadError(false);
+          }
+        } else {
+          const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+          if (!cancelled) {
+            setLoadError(true);
+            toast(err.error ?? "No se pudieron cargar los certificados", "error");
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -51,6 +61,11 @@ export function CertificadosTab({ programId }: { programId: string }) {
         if (refresh.ok) {
           const data = await refresh.json();
           setCertificates(data.certificates ?? []);
+          setLoadError(false);
+        } else {
+          const refreshErr = await refresh.json().catch(() => ({ error: "Error desconocido" }));
+          setLoadError(true);
+          toast(refreshErr.error ?? "No se pudieron cargar los certificados", "error");
         }
       } else {
         const err = await res.json().catch(() => ({ error: "Error desconocido" }));
@@ -144,9 +159,13 @@ export function CertificadosTab({ programId }: { programId: string }) {
                 <path d="M7 8h10M7 12h6" />
               </svg>
             </div>
-            <div className="mt-3 text-[14px] font-bold text-ca-ink">Sin certificados</div>
+            <div className="mt-3 text-[14px] font-bold text-ca-ink">
+              {loadError ? "No se pudieron cargar los certificados" : "Sin certificados"}
+            </div>
             <div className="text-[12px] text-ca-ink-soft">
-              Aun no se han emitido certificados para este programa.
+              {loadError
+                ? "Ocurrio un error al consultar el listado. Intenta recargar la pagina."
+                : "Aun no se han emitido certificados para este programa."}
             </div>
           </div>
         </div>

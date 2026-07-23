@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   const targetRole = system_role;
 
   if (
-    callerProfile?.system_role === "ops" &&
+    callerProfile?.system_role !== "admin" &&
     ["ops", "admin"].includes(targetRole)
   ) {
     return NextResponse.json(
@@ -101,20 +101,34 @@ export async function POST(req: Request) {
     );
   }
 
+  let enrollmentError: string | undefined;
+
   if (cohort_id) {
-    await admin
+    const { error: roleErr } = await admin
       .from("cohort_roles")
       .upsert(
         { user_id: newUser.id, cohort_id, role: "student", granted_by: auth.user.id },
         { onConflict: "user_id,cohort_id,role" },
       );
 
-    await admin
+    if (roleErr) {
+      console.error("cohort_roles upsert error", roleErr);
+      enrollmentError = roleErr.message;
+    }
+
+    const { error: enrollErr } = await admin
       .from("enrollments")
       .upsert(
         { student_id: newUser.id, cohort_id, status: "active" },
         { onConflict: "student_id,cohort_id" },
       );
+
+    if (enrollErr) {
+      console.error("enrollments upsert error", enrollErr);
+      enrollmentError = enrollmentError
+        ? `${enrollmentError}; ${enrollErr.message}`
+        : enrollErr.message;
+    }
   }
 
   if (send_invite) {
@@ -164,11 +178,18 @@ export async function POST(req: Request) {
 
     if (!emailResult.success) {
       return NextResponse.json(
-        { ...profile, invite_error: emailResult.error },
+        {
+          ...profile,
+          invite_error: emailResult.error,
+          ...(enrollmentError ? { enrollment_error: enrollmentError } : {}),
+        },
         { status: 201 },
       );
     }
   }
 
-  return NextResponse.json(profile, { status: 201 });
+  return NextResponse.json(
+    enrollmentError ? { ...profile, enrollment_error: enrollmentError } : profile,
+    { status: 201 },
+  );
 }

@@ -10,7 +10,7 @@ export function calculateModuleProgress(
   lessons: LessonWithProgress[],
 ): ModuleProgress {
   const withVideo = lessons.filter((l) => l.mux_playback_id);
-  const completed = withVideo.filter(
+  const completed = lessons.filter(
     (l) => l.video_progress?.completed === true,
   );
   const totalWithVideo = withVideo.length;

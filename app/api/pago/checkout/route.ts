@@ -58,10 +58,12 @@ export async function POST(req: Request) {
   if (couponCode) {
     const coupon = await lookupCoupon(couponCode);
     if (!coupon.ok) {
-      return NextResponse.json(
-        { error: coupon.error },
-        { status: coupon.status },
-      );
+      // Mismo criterio de uniformización que /api/pago/cupon: solo el 500
+      // conserva el mensaje real; el resto se colapsa a 404 genérico para no
+      // permitir enumerar códigos existentes por el motivo de rechazo.
+      const status = coupon.status === 500 ? 500 : 404;
+      const error = coupon.status === 500 ? coupon.error : "Cupón no válido.";
+      return NextResponse.json({ error }, { status });
     }
     const applied = applyCouponToAmount(coupon.coupon, baseAmount);
     finalAmount = applied.finalAmountClp;

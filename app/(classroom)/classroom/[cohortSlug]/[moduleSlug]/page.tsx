@@ -275,7 +275,7 @@ export default async function ModulePage(
   if (!mod) notFound();
 
   const progress = calculateModuleProgress(mod.lessons);
-  const isCompleted = progress.percentage === 100 && progress.total_with_video > 0;
+  const isCompleted = progress.percentage === 100 && progress.total_lessons > 0;
   const status = isCompleted ? "completed" : progress.percentage > 0 ? "in_progress" : "available";
   const thumb = mod.position % 3 === 1 ? "thumb-diplomado" : mod.position % 3 === 2 ? "thumb-liderazgo" : "thumb-ruta";
 

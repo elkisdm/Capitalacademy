@@ -182,7 +182,7 @@ describe("POST /api/pago/checkout", () => {
     expect(json.issues.fieldErrors ?? json.issues).toBeTruthy();
   });
 
-  it("propaga el error del cupón sin tocar la base de datos", async () => {
+  it("uniforma el error del cupón a 404 genérico sin tocar la base de datos", async () => {
     mockLookupCoupon.mockResolvedValue({
       ok: false,
       error: "Cupón expirado.",
@@ -193,12 +193,28 @@ describe("POST /api/pago/checkout", () => {
       makeRequest(validPayload({ couponCode: "VIEJO10" })),
     );
 
-    expect(res!.status).toBe(410);
+    expect(res!.status).toBe(404);
     const json = await res!.json();
-    expect(json.error).toBe("Cupón expirado.");
+    expect(json.error).toBe("Cupón no válido.");
     expect(mockLookupCoupon).toHaveBeenCalledWith("VIEJO10");
     expect(mockCreateAdminClient).not.toHaveBeenCalled();
     expect(mockCreateFlowCheckout).not.toHaveBeenCalled();
+  });
+
+  it("preserva el mensaje real cuando lookupCoupon falla con error de servidor (500)", async () => {
+    mockLookupCoupon.mockResolvedValue({
+      ok: false,
+      error: "Error de base de datos.",
+      status: 500,
+    });
+
+    const res = await POST(
+      makeRequest(validPayload({ couponCode: "PROMO10" })),
+    );
+
+    expect(res!.status).toBe(500);
+    const json = await res!.json();
+    expect(json.error).toBe("Error de base de datos.");
   });
 
   it("aplica el cupón válido: descuenta el monto e inserta los campos de cupón", async () => {

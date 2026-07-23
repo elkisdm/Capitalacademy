@@ -63,12 +63,18 @@ export async function PATCH(req: Request) {
   const db = createAdminClient();
 
   const upsertProgress = async () => {
-    const { data: existing } = await db
+    const { data: existing, error: existingError } = await db
       .from("video_progress")
       .select("max_position_seconds, completed, completed_at")
       .eq("enrollment_id", enrollment.id)
       .eq("lesson_id", lessonId)
       .maybeSingle();
+
+    if (existingError) {
+      // No seguimos con existing = null: una lectura fallida (p. ej. timeout 57014)
+      // no debe recalcular el progreso desde cero y sobreescribir completed/completed_at.
+      return { data: null, error: existingError } as const;
+    }
 
     const progress = computeServerProgress(existing, {
       playback_position_seconds: Math.floor(playbackPositionSeconds),

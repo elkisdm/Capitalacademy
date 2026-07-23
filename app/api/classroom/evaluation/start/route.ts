@@ -69,7 +69,16 @@ export async function POST(req: Request) {
   const incomplete = all.find((a) => !a.completed_at);
   if (incomplete) {
     const presentedIds = (incomplete.questions_presented as string[]) ?? [];
-    const questions = await getPresentedEvaluationQuestions(admin, evaluation.id, presentedIds);
+    let questions;
+    try {
+      questions = await getPresentedEvaluationQuestions(admin, evaluation.id, presentedIds);
+    } catch (error) {
+      console.error("Error rehidratando intento de evaluación:", error);
+      return NextResponse.json(
+        { error: "No se pudo cargar tu intento, inténtalo de nuevo" },
+        { status: 500 },
+      );
+    }
     return NextResponse.json({
       attemptId: incomplete.id,
       questions,

@@ -93,8 +93,9 @@ export async function createFlowCheckout(
   const apiKey = process.env.FLOW_API_KEY;
   const secretKey = process.env.FLOW_SECRET_KEY;
   if (!apiKey || !secretKey) {
+    console.error("Flow sin credenciales: falta FLOW_API_KEY/FLOW_SECRET_KEY");
     return {
-      errorMessage: "Falta configurar FLOW_API_KEY/FLOW_SECRET_KEY.",
+      errorMessage: "No pudimos iniciar el pago en este momento. Intenta más tarde.",
       status: 500,
     };
   }
@@ -138,12 +139,21 @@ export async function createFlowCheckout(
   const { signature, clean } = signFlowParams(params, secretKey);
   const body = new URLSearchParams({ ...clean, s: signature });
 
-  const res = await fetch(`${FLOW_API_BASE}/payment/create`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${FLOW_API_BASE}/payment/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+      cache: "no-store",
+    });
+  } catch (err) {
+    console.error("Flow payment/create network error:", err);
+    return {
+      errorMessage: "No pudimos iniciar el pago en Flow.",
+      status: 502,
+    };
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -154,7 +164,17 @@ export async function createFlowCheckout(
     };
   }
 
-  const data = (await res.json()) as FlowPaymentCreateResponse;
+  let data: FlowPaymentCreateResponse;
+  try {
+    data = (await res.json()) as FlowPaymentCreateResponse;
+  } catch {
+    const text = await res.text().catch(() => "");
+    console.error("Flow payment/create respuesta no-JSON", res.status, text.slice(0, 500));
+    return {
+      errorMessage: "Respuesta incompleta de Flow.",
+      status: 502,
+    };
+  }
   if (!data.url || !data.token || !data.flowOrder) {
     console.error("Flow payment/create incomplete response", data);
     return {

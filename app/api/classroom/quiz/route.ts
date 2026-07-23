@@ -79,11 +79,20 @@ export async function GET(req: Request) {
     return NextResponse.json({ status: "passed", attemptsUsed: completed.length, lastScore });
   }
 
-  const { currentPct, completedLessons, totalLessons } = await getCompletion(
-    admin,
-    programId,
-    enrollment.id,
-  );
+  let currentPct: number, completedLessons: number, totalLessons: number;
+  try {
+    ({ currentPct, completedLessons, totalLessons } = await getCompletion(
+      admin,
+      programId,
+      enrollment.id,
+    ));
+  } catch (error) {
+    console.error("[quiz] error al calcular completitud", error);
+    return NextResponse.json(
+      { error: "Servicio ocupado, reintenta en unos segundos" },
+      { status: 503 },
+    );
+  }
 
   // Un intento en curso siempre puede reanudarse, aunque cambie el gate.
   if (!hasInProgress && currentPct < minCompletion) {

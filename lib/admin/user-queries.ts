@@ -65,6 +65,20 @@ const PROFILE_COLUMNS =
   "id, email, full_name, phone, system_role, created_at, onboarding_completed_at";
 
 /**
+ * Lanza si Supabase reportó un error real (RLS, timeout 57014, etc.) en vez
+ * de simplemente "sin datos" — evita que un fallo real del backend se
+ * confunda con un estado legítimo vacío (ver incidente RLS del 21-jul).
+ */
+function assertNoSupabaseError(
+  error: { message: string } | null | undefined,
+  context: string,
+): void {
+  if (error) {
+    throw new Error(`user-queries: error en consulta de ${context}: ${error.message}`);
+  }
+}
+
+/**
  * Lista de usuarios para el admin. Si `programId` viene, scopea los DATOS a ese
  * entorno: solo miembros (student/teacher/assistant) de las cohortes del
  * programa, MÁS el staff transversal (admin/ops), que por modelo es agnóstico al
@@ -78,39 +92,49 @@ export async function getAdminUsersList(
 
   // --- Sin scope: todos los usuarios y todos sus roles. ---
   if (!programId) {
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select(PROFILE_COLUMNS)
       .order("created_at", { ascending: false });
+    assertNoSupabaseError(profilesError, "profiles");
 
     if (!profiles || profiles.length === 0) return [];
 
     const userIds = profiles.map((p) => p.id);
-    const { data: roles } = await supabase
+    const { data: roles, error: rolesError } = await supabase
       .from("cohort_roles")
       .select("id, user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
       .in("user_id", userIds);
+    assertNoSupabaseError(rolesError, "cohort_roles");
 
     return assembleUsers(profiles as ProfileRow[], roles ?? []);
   }
 
   // --- Scopeado a un entorno (programa). ---
   // 1) Cohortes del programa.
-  const { data: progCohorts } = await supabase
+  const { data: progCohorts, error: progCohortsError } = await supabase
     .from("cohorts")
     .select("id")
     .eq("program_id", programId);
+  assertNoSupabaseError(progCohortsError, "cohorts");
   const cohortIds = (progCohorts ?? []).map((c) => c.id);
 
   // 2) Roles en esas cohortes (solo de este programa).
-  const roles = cohortIds.length
-    ? (
-        await supabase
-          .from("cohort_roles")
-          .select("id, user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
-          .in("cohort_id", cohortIds)
-      ).data ?? []
-    : [];
+  let roles: Array<{
+    id: string;
+    user_id: string;
+    cohort_id: string;
+    role: "student" | "teacher" | "assistant";
+    cohorts: unknown;
+  }> = [];
+  if (cohortIds.length) {
+    const { data, error } = await supabase
+      .from("cohort_roles")
+      .select("id, user_id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
+      .in("cohort_id", cohortIds);
+    assertNoSupabaseError(error, "cohort_roles");
+    roles = data ?? [];
+  }
   const memberIds = [...new Set(roles.map((r) => r.user_id))];
 
   // 3) Perfiles = miembros del programa + staff transversal (admin/ops).
@@ -121,8 +145,10 @@ export async function getAdminUsersList(
       .in("system_role", ["admin", "ops"]),
     memberIds.length
       ? supabase.from("profiles").select(PROFILE_COLUMNS).in("id", memberIds)
-      : Promise.resolve({ data: [] as ProfileRow[] }),
+      : Promise.resolve({ data: [] as ProfileRow[], error: null }),
   ]);
+  assertNoSupabaseError(staffRes.error, "profiles (staff)");
+  assertNoSupabaseError(memberRes.error, "profiles (members)");
 
   const byId = new Map<string, ProfileRow>();
   for (const p of [...(staffRes.data ?? []), ...(memberRes.data ?? [])] as ProfileRow[]) {
@@ -186,18 +212,28 @@ export async function getAdminUserProfile(
 ): Promise<AdminUserProfile | null> {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", userId)
     .single();
+  // PGRST116 = "no se encontró ninguna fila" con .single(): es el 0-filas
+  // legítimo, no un error real de backend (ver assertNoSupabaseError arriba).
+  if (profileError && profileError.code !== "PGRST116") {
+    assertNoSupabaseError(profileError, "profile");
+  }
 
   if (!profile) return null;
 
-  const { data: roles } = await supabase
-    .from("cohort_roles")
-    .select("id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
-    .eq("user_id", userId);
+  const [rolesRes, enrollmentsRes] = await Promise.all([
+    supabase
+      .from("cohort_roles")
+      .select("id, cohort_id, role, cohorts(name, code, program_id, programs(name))")
+      .eq("user_id", userId),
+    supabase.from("enrollments").select("id").eq("student_id", userId),
+  ]);
+  const { data: roles, error: rolesError } = rolesRes;
+  assertNoSupabaseError(rolesError, "cohort_roles");
 
   const cohortRoles = (roles ?? []).map((r) => {
     const cohort = r.cohorts as {
@@ -217,16 +253,14 @@ export async function getAdminUserProfile(
     };
   });
 
-  const { data: enrollments } = await supabase
-    .from("enrollments")
-    .select("id")
-    .eq("student_id", userId);
+  const { data: enrollments, error: enrollmentsError } = enrollmentsRes;
+  assertNoSupabaseError(enrollmentsError, "enrollments");
 
   let recentActivity: AdminUserProfile["recent_activity"] = [];
 
   const enrollmentIds = (enrollments ?? []).map((e) => e.id);
   if (enrollmentIds.length > 0) {
-    const { data: progress } = await supabase
+    const { data: progress, error: progressError } = await supabase
       .from("video_progress")
       .select(
         "lesson_id, watch_percentage, completed, last_watched_at, lessons(title)",
@@ -234,6 +268,7 @@ export async function getAdminUserProfile(
       .in("enrollment_id", enrollmentIds)
       .order("last_watched_at", { ascending: false })
       .limit(10);
+    assertNoSupabaseError(progressError, "video_progress");
 
     recentActivity = (progress ?? []).map((p) => {
       const lesson = p.lessons as { title: string } | null;
@@ -266,23 +301,25 @@ export async function getAdminUserProfile(
 export async function getCohortMembers(cohortId: string) {
   const supabase = await createClient();
 
-  const { data: roles } = await supabase
+  const { data: roles, error: rolesError } = await supabase
     .from("cohort_roles")
     .select(
       "user_id, role, granted_at, profiles!cohort_roles_user_id_fkey(full_name, email)",
     )
     .eq("cohort_id", cohortId)
     .order("role", { ascending: true });
+  assertNoSupabaseError(rolesError, "cohort_roles");
 
   if (!roles) return { teachers: [], assistants: [], students: [] };
 
   // Segmento por alumno: vive en enrollments (no en cohort_roles). Lo traemos
   // en un solo query y lo cruzamos por student_id. `segment` se agrega en la
   // migración 0024; hasta regenerar los tipos usamos cast localizado.
-  const { data: enrollments } = await supabase
+  const { data: enrollments, error: enrollmentsError } = await supabase
     .from("enrollments")
     .select("student_id, segment")
     .eq("cohort_id", cohortId);
+  assertNoSupabaseError(enrollmentsError, "enrollments");
 
   const segmentByStudent = new Map<string, "capital_inteligente" | null>(
     ((enrollments ?? []) as unknown as Array<{

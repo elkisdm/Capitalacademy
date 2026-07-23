@@ -101,6 +101,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
     .single();
 
   if (error) {
+    if (error.code === "PGRST116") {
+      return NextResponse.json({ error: "Entregable no encontrado" }, { status: 404 });
+    }
     console.error("Error updating deliverable:", error);
     return NextResponse.json({ error: "Error al actualizar el entregable" }, { status: 500 });
   }
@@ -120,10 +123,15 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const { deliverableId } = await params;
   const admin = createAdminClient();
 
-  const { data: submissions } = await admin
+  const { data: submissions, error: submissionsError } = await admin
     .from("deliverable_submissions")
     .select("storage_path")
     .eq("deliverable_id", deliverableId);
+
+  if (submissionsError) {
+    console.error("Error reading deliverable submissions:", submissionsError);
+    return NextResponse.json({ error: "Error al eliminar el entregable" }, { status: 500 });
+  }
 
   const paths = (submissions ?? []).map((s) => s.storage_path).filter(Boolean) as string[];
   if (paths.length > 0) {

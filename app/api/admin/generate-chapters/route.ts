@@ -68,6 +68,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (message.startsWith("transcript_degraded")) {
+      return NextResponse.json(
+        {
+          error:
+            "La transcripcion automatica quedo incompleta: gran parte son marcadores de sonido ([Musica]) en vez del audio de la clase. Hay que regenerarla antes de crear capitulos.",
+        },
+        { status: 422 },
+      );
+    }
+
     if (message.includes("no genero capitulos validos")) {
       return NextResponse.json(
         { error: "OpenAI no genero capitulos validos" },

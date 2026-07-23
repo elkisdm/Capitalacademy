@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertTranscriptIsUsable } from "@/lib/classroom/transcript-quality";
 
 const PROMPT_VERSION = 1;
 
@@ -123,6 +124,8 @@ export async function generateLessonSummary(
   if (!transcript?.content_text) {
     throw new Error(`No transcript found for lesson ${lessonId}`);
   }
+
+  assertTranscriptIsUsable(transcript.content_text);
 
   let parsed: SummaryPayload | { error: string };
   let attempts = 0;

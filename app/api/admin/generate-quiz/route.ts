@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import {
+  MAX_SOUND_MARKER_RATIO,
+  soundMarkerRatio,
+} from "@/lib/classroom/transcript-quality";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -196,8 +200,23 @@ export async function POST(req: Request) {
     lessonIdByTitle.set(lesson.title.toLowerCase().trim(), lesson.id);
   }
 
-  const transcriptBlock = transcripts
-    .filter((t) => t.content_text)
+  // Una transcripcion degradada (mayoria de marcadores de sonido) no aporta
+  // contenido: incluirla solo hace que el modelo invente preguntas.
+  const usableTranscripts = transcripts.filter((t) => {
+    if (!t.content_text) return false;
+
+    if (soundMarkerRatio(t.content_text) > MAX_SOUND_MARKER_RATIO) {
+      console.warn(
+        "generate-quiz: transcripcion degradada excluida",
+        lessonTitleMap.get(t.lesson_id) ?? t.lesson_id,
+      );
+      return false;
+    }
+
+    return true;
+  });
+
+  const transcriptBlock = usableTranscripts
     .map((t) => {
       const title = lessonTitleMap.get(t.lesson_id) ?? "Sin titulo";
       return `## ${title}\n\n${t.content_text}`;
@@ -206,7 +225,7 @@ export async function POST(req: Request) {
 
   if (!transcriptBlock.trim()) {
     return NextResponse.json(
-      { error: "Las transcripciones estan vacias" },
+      { error: "Las transcripciones estan vacias o degradadas" },
       { status: 422 },
     );
   }

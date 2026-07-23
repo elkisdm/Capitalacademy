@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertTranscriptIsUsable } from "@/lib/classroom/transcript-quality";
 
 const SYSTEM_PROMPT = `Eres un asistente que analiza transcripciones de clases para identificar cambios de tema y generar marcadores de capitulos.
 
@@ -123,6 +124,8 @@ export async function generateLessonChapters(
   if (!transcript?.content_text) {
     throw new Error(`No transcript found for lesson ${lessonId}`);
   }
+
+  assertTranscriptIsUsable(transcript.content_text);
 
   let parsed: ChaptersPayload | { error: string };
   let attempts = 0;

@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import {
+  MAX_SOUND_MARKER_RATIO,
+  soundMarkerRatio,
+} from "../lib/classroom/transcript-quality";
 
 const scriptDir = new URL(".", import.meta.url).pathname;
 const envPath = resolve(scriptDir, "..", ".env");
@@ -80,6 +84,14 @@ async function main() {
     };
     const text = t.content_text as string;
     console.log(`\n=== ${lesson.title} (${text.length} chars) ===`);
+
+    const markerRatio = soundMarkerRatio(text);
+    if (markerRatio > MAX_SOUND_MARKER_RATIO) {
+      console.log(
+        `  ✗ Transcripción degradada (${Math.round(markerRatio * 100)}% marcadores de sonido), se omite.`,
+      );
+      continue;
+    }
 
     // Generate summary
     console.log("  Generando resumen...");

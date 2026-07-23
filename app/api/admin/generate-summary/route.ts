@@ -61,6 +61,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (message.startsWith("transcript_degraded")) {
+      return NextResponse.json(
+        {
+          error:
+            "La transcripcion automatica quedo incompleta: gran parte son marcadores de sonido ([Musica]) en vez del audio de la clase. Hay que regenerarla antes de crear el resumen.",
+        },
+        { status: 422 },
+      );
+    }
+
     const isOpenAI =
       message.startsWith("OpenAI") || message.includes("OpenAI API error");
     if (isOpenAI) {

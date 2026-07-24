@@ -38,6 +38,9 @@ jobs:
       - name: Tests
         run: pnpm test
 
+      - name: Coverage gate
+        run: pnpm test:coverage
+
       - name: Build
         run: pnpm build
         env:

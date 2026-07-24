@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Los alumnos ahora reciben un tercer recordatorio de clase 3 días antes, además de los de 24 horas y 1 hora que ya existían (`c0febe1`)
 - La presentación "IA 2026" se puede descargar en PowerPoint (32 láminas en 16:9, con las notas del presentador), desde el panel de ayuda de la propia presentación o desde los recursos de la clase (`bcdbaa6`)
 - La presentación "IA 2026: de conversar a dirigir" queda publicada en la plataforma (`/presentaciones/ia-2026`): se abre en el navegador, avanza con el teclado y funciona sin internet una vez cargada (`05ec2bf`)
 - Evaluaciones ahora es una sección propia del panel admin (`/admin/evaluaciones`): creas una evaluación (quiz o nota manual) desde cero eligiendo su alcance, y la configuras en su propia pantalla; Certificados también estrena su propia sección en el menú (`e90c576`)

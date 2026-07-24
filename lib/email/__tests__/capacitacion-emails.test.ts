@@ -200,6 +200,16 @@ describe("buildCapacitacionReminderEmail", () => {
     expect(content.text).toContain("Tu capacitación es mañana");
   });
 
+  it("kind '72h': subject dice 'En 3 días' y el lead menciona 'es en 3 días'", () => {
+    const content = buildCapacitacionReminderEmail(baseInput({ kind: "72h" }));
+
+    expect(content.subject).toBe(
+      "Recordatorio: En 3 días tienes Fundamentos de venta inmobiliaria",
+    );
+    expect(content.html).toContain("Tu capacitación es en 3 días");
+    expect(content.text).toContain("Tu capacitación es en 3 días");
+  });
+
   it("kind '1h': subject dice 'Hoy' y el lead menciona 'en aproximadamente 1 hora'", () => {
     const content = buildCapacitacionReminderEmail(baseInput({ kind: "1h" }));
 

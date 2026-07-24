@@ -37,6 +37,11 @@ describe("buildSessionReminderEmail", () => {
     expect(result.subject).toBe("Recordatorio: Mañana tienes Módulo 3: Cierre de venta");
   });
 
+  it("subject con kind '72h': usa 'En 3 días'", () => {
+    const result = buildSessionReminderEmail(baseInput({ kind: "72h" }));
+    expect(result.subject).toBe("Recordatorio: En 3 días tienes Módulo 3: Cierre de venta");
+  });
+
   // --- antelacionLabel: mensaje según kind, presente en html y text --------
 
   it("kind '1h': el cuerpo avisa que la clase empieza en ~1 hora", () => {
@@ -49,6 +54,12 @@ describe("buildSessionReminderEmail", () => {
     const result = buildSessionReminderEmail(baseInput({ kind: "24h" }));
     expect(result.html).toContain("Tu clase es mañana. Te dejamos los detalles para que la agendes.");
     expect(result.text).toContain("Tu clase es mañana. Te dejamos los detalles para que la agendes.");
+  });
+
+  it("kind '72h': el cuerpo avisa que la clase es en 3 días", () => {
+    const result = buildSessionReminderEmail(baseInput({ kind: "72h" }));
+    expect(result.html).toContain("Tu clase es en 3 días. Te dejamos los detalles para que la agendes.");
+    expect(result.text).toContain("Tu clase es en 3 días. Te dejamos los detalles para que la agendes.");
   });
 
   // --- modalityLabel: switch completo (4 ramas) -----------------------------

@@ -1,4 +1,4 @@
-import type { EmailContent } from "@/lib/email/send-batch";
+import type { EmailContent, ReminderKind } from "@/lib/email/send-batch";
 
 const TZ = "America/Santiago";
 
@@ -12,8 +12,8 @@ export interface SessionReminderInput {
   modality: string;
   meetingUrl: string | null;
   teacherName: string | null;
-  // '24h' | '1h' — define el encabezado de urgencia del correo.
-  kind: "24h" | "1h";
+  // '72h' | '24h' | '1h' — define el encabezado de urgencia del correo.
+  kind: ReminderKind;
 }
 
 /**
@@ -31,7 +31,8 @@ export function buildSessionReminderEmail(params: SessionReminderInput): EmailCo
 // --- Helpers de presentación -------------------------------------------------
 
 function subjectFor(d: SessionReminderInput): string {
-  const when = d.kind === "1h" ? "Hoy" : "Mañana";
+  const when =
+    d.kind === "1h" ? "Hoy" : d.kind === "24h" ? "Mañana" : "En 3 días";
   return `Recordatorio: ${when} tienes ${d.sessionTitle}`;
 }
 
@@ -70,10 +71,11 @@ function fmtTime(iso: string): string {
   }).format(new Date(iso));
 }
 
-function antelacionLabel(kind: "24h" | "1h"): string {
-  return kind === "1h"
-    ? "Tu clase comienza en aproximadamente 1 hora."
-    : "Tu clase es mañana. Te dejamos los detalles para que la agendes.";
+function antelacionLabel(kind: ReminderKind): string {
+  if (kind === "1h") return "Tu clase comienza en aproximadamente 1 hora.";
+  if (kind === "24h")
+    return "Tu clase es mañana. Te dejamos los detalles para que la agendes.";
+  return "Tu clase es en 3 días. Te dejamos los detalles para que la agendes.";
 }
 
 function reminderHtml(d: SessionReminderInput): string {

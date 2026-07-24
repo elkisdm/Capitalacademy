@@ -3,6 +3,11 @@ import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 
 /** Contenido de un correo ya armado, sin destinatario. */
 export type EmailContent = { subject: string; html: string; text: string };
+/**
+ * Antelación de un recordatorio de clase. Debe coincidir con el CHECK de
+ * `session_reminders.kind` / `session_reminder_recipients.kind` (migración 0081).
+ */
+export type ReminderKind = "72h" | "24h" | "1h";
 export type BatchMessage = EmailContent & { to: string };
 export type BatchOutcome = {
   sent: string[];

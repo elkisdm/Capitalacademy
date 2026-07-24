@@ -5,7 +5,7 @@
 // interesados y transicionarlos hacia los programas pagos. Cada sesión del ciclo
 // dispara una secuencia:
 //   1. Confirmación de inscripción a una sesión  (al registrarse)
-//   2. Recordatorio 24h antes                     (cron, ventana '24h')
+//   2. Recordatorio 3 días / 24h antes            (cron, ventanas '72h' y '24h')
 //   3. Recordatorio 1h antes / el día de          (cron, ventana '1h')
 //   4. Seguimiento post-clase                     (grabación disponible + CTA pago)
 //
@@ -18,10 +18,10 @@
 //   la sesión. Se llama directo desde el route handler / server action que crea
 //   la inscripción, igual que `sendPaymentConfirmationEmail` en el flujo de pago.
 //
-// - Recordatorios 24h/1h (2 y 3): YA existe infraestructura de cron para esto en
+// - Recordatorios 72h/24h/1h (2 y 3): YA existe infraestructura de cron para esto en
 //   `app/api/cron/session-reminders/route.ts` + la Netlify Scheduled Function
 //   `netlify/functions/session-reminders-cron.mjs` (corre cada 30 min, consulta
-//   `class_sessions` en las ventanas 24h/1h y garantiza idempotencia vía la tabla
+//   `class_sessions` en las ventanas 72h/24h/1h y garantiza idempotencia vía la tabla
 //   `session_reminders` + `session_reminder_recipients`). El cron arma el correo
 //   con `buildCapacitacionReminderEmail` cuando el programa de la cohorte es el
 //   Ciclo de Capacitación (voz de captación + CTA) y con `buildSessionReminderEmail`
@@ -34,7 +34,7 @@
 
 import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
-import type { EmailContent } from "@/lib/email/send-batch";
+import type { EmailContent, ReminderKind } from "@/lib/email/send-batch";
 
 const TZ = "America/Santiago";
 // URL base resuelta por entorno de deploy (dev/preview/prod), no hardcodeada.
@@ -88,15 +88,16 @@ export interface CapacitacionReminderInput {
   endsAtIso: string;
   modality: Modality;
   meetingUrl: string | null;
-  /** '24h' | '1h' — define la urgencia del encabezado. */
-  kind: "24h" | "1h";
+  /** '72h' | '24h' | '1h' — define la urgencia del encabezado. */
+  kind: ReminderKind;
 }
 
-/** (2 y 3) Recordatorio 24h / 1h antes de la sesión, armado para envío por lote. */
+/** (2 y 3) Recordatorio 72h / 24h / 1h antes de la sesión, armado para envío por lote. */
 export function buildCapacitacionReminderEmail(
   params: CapacitacionReminderInput,
 ): EmailContent {
-  const when = params.kind === "1h" ? "Hoy" : "Mañana";
+  const when =
+    params.kind === "1h" ? "Hoy" : params.kind === "24h" ? "Mañana" : "En 3 días";
   return {
     subject: `Recordatorio: ${when} tienes ${params.sessionTitle}`,
     html: reminderHtml(params),
@@ -349,10 +350,11 @@ function confirmationText(d: CapacitacionConfirmationInput, program: string): st
 
 // --- (2 y 3) Recordatorio 24h / 1h ------------------------------------------
 
-function antelacionLead(kind: "24h" | "1h"): string {
-  return kind === "1h"
-    ? "Tu capacitación comienza en aproximadamente 1 hora."
-    : "Tu capacitación es mañana. Te dejamos los detalles para que la agendes.";
+function antelacionLead(kind: ReminderKind): string {
+  if (kind === "1h") return "Tu capacitación comienza en aproximadamente 1 hora.";
+  if (kind === "24h")
+    return "Tu capacitación es mañana. Te dejamos los detalles para que la agendes.";
+  return "Tu capacitación es en 3 días. Te dejamos los detalles para que la agendes.";
 }
 
 function reminderHtml(d: CapacitacionReminderInput): string {

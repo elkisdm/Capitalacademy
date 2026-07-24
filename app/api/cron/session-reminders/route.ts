@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSessionReminderEmail } from "@/lib/email/session-reminder";
 import { buildCapacitacionReminderEmail } from "@/lib/email/capacitacion-emails";
-import { sendEmailBatch, type BatchMessage } from "@/lib/email/send-batch";
+import {
+  sendEmailBatch,
+  type BatchMessage,
+  type ReminderKind,
+} from "@/lib/email/send-batch";
 import { sendAttendanceWarningEmail } from "@/lib/email/attendance-warning";
 import { getStudentsAtAbsenceThreshold } from "@/lib/asistencia/queries";
 import { authorizeCron } from "@/lib/api/cron-auth";
@@ -23,8 +27,9 @@ const CAP_CI_PROGRAM_ID = "a0000000-0000-0000-0000-000000000004";
 // Ventanas de antelación. El cron debe correr al menos cada 30 min para que
 // ninguna sesión se escape de su ventana. La tolerancia (slack) cubre el jitter
 // del scheduler: una sesión entra en la ventana '24h' si starts_at cae entre
-// (ahora + 24h) y (ahora + 24h + slack); análogo para '1h'.
-const REMINDER_WINDOWS: Array<{ kind: "24h" | "1h"; leadMs: number }> = [
+// (ahora + 24h) y (ahora + 24h + slack); análogo para '72h' y '1h'.
+const REMINDER_WINDOWS: Array<{ kind: ReminderKind; leadMs: number }> = [
+  { kind: "72h", leadMs: 72 * 60 * 60 * 1000 },
   { kind: "24h", leadMs: 24 * 60 * 60 * 1000 },
   { kind: "1h", leadMs: 60 * 60 * 1000 },
 ];
@@ -67,7 +72,7 @@ type SessionRow = {
 
 async function processWindow(
   admin: ReturnType<typeof createAdminClient>,
-  kind: "24h" | "1h",
+  kind: ReminderKind,
   leadMs: number,
   now: number,
 ): Promise<{ kind: string; sessions: number; emails: number; errors: string[] }> {

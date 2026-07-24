@@ -157,10 +157,29 @@ function makeRequest() {
   });
 }
 
-// Sesión con ambas ventanas: por defecto la ventana 24h trae `sessions` y la
-// 1h queda vacía, así el flujo por-sesión solo corre una vez por test.
+// Las ventanas corren en orden 72h → 24h → 1h. Por defecto solo la 24h trae
+// `sessions`; las otras dos quedan vacías, así el flujo por-sesión solo corre
+// una vez por test y `json.windows[1]` es siempre la ventana bajo prueba.
 function withSessionsWindow24h(sessions: unknown[]): TableConfig {
-  return { selectResults: [{ data: sessions, error: null }, { data: [], error: null }] };
+  return {
+    selectResults: [
+      { data: [], error: null },
+      { data: sessions, error: null },
+      { data: [], error: null },
+    ],
+  };
+}
+
+// Igual que el anterior pero cargando la ventana 72h (la primera), para
+// ejercitar la antelación de 3 días (migración 0081).
+function withSessionsWindow72h(sessions: unknown[]): TableConfig {
+  return {
+    selectResults: [
+      { data: sessions, error: null },
+      { data: [], error: null },
+      { data: [], error: null },
+    ],
+  };
 }
 
 const BASE_SESSION = {
@@ -230,6 +249,7 @@ describe("GET /api/cron/session-reminders — autorización y forma general", ()
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
     expect(json.windows).toEqual([
+      { kind: "72h", sessions: 0, emails: 0 },
       { kind: "24h", sessions: 0, emails: 0 },
       { kind: "1h", sessions: 0, emails: 0 },
     ]);
@@ -242,14 +262,18 @@ describe("processWindow — consulta de sesiones y filtro de idempotencia", () =
   it("registra el error de consulta y deja la ventana en cero sin abortar el cron", async () => {
     adminTables = {
       class_sessions: {
-        selectResults: [{ data: null, error: { message: "timeout" } }, { data: [], error: null }],
+        selectResults: [
+          { data: [], error: null },
+          { data: null, error: { message: "timeout" } },
+          { data: [], error: null },
+        ],
       },
     };
 
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(json.errors).toContain("query sessions (24h): timeout");
     expect(json.ok).toBe(false);
   });
@@ -279,7 +303,7 @@ describe("processWindow — consulta de sesiones y filtro de idempotencia", () =
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(callCount("session_reminders.insert")).toBe(0);
   });
 
@@ -327,7 +351,7 @@ describe("processWindow — consulta de sesiones y filtro de idempotencia", () =
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 2, emails: 2 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 2, emails: 2 });
   });
 });
 
@@ -341,7 +365,7 @@ describe("processWindow — reserva del recordatorio (insert) y su conflicto (23
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(json.errors).toContain("reserve sess-1 (24h): conexión perdida");
     expect(callCount("enrollments.select")).toBe(0);
   });
@@ -361,7 +385,7 @@ describe("processWindow — reserva del recordatorio (insert) y su conflicto (23
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
     expect(callCount("session_reminders.update-claim")).toBe(1);
   });
 
@@ -383,7 +407,7 @@ describe("processWindow — reserva del recordatorio (insert) y su conflicto (23
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
     expect(callCount("session_reminders.update-claim")).toBe(2);
   });
 
@@ -402,7 +426,7 @@ describe("processWindow — reserva del recordatorio (insert) y su conflicto (23
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(json.errors).toEqual([]);
     expect(callCount("enrollments.select")).toBe(0);
   });
@@ -419,7 +443,7 @@ describe("processWindow — matrícula, audiencia y armado del correo", () => {
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(json.errors).toContain("enrollments sess-1 (24h): rls denegado");
     expect(mockSendEmailBatch).not.toHaveBeenCalled();
   });
@@ -463,7 +487,29 @@ describe("processWindow — matrícula, audiencia y armado del correo", () => {
     const json = await res.json();
 
     expect(mockSendEmailBatch.mock.calls[0][0]).toHaveLength(1);
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
+  });
+
+  it("ventana 72h: reserva la fila con kind '72h' y arma el correo con esa antelación", async () => {
+    adminTables = {
+      class_sessions: withSessionsWindow72h([BASE_SESSION]),
+      cohorts: defaultCohorts(),
+      enrollments: defaultEnrollments(),
+    };
+    mockSendEmailBatch.mockResolvedValueOnce({ sent: ["stu1@test.cl"], failed: [] });
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.windows[0]).toEqual({ kind: "72h", sessions: 1, emails: 1 });
+    expect(lastCall("session_reminders.insert")?.payload).toMatchObject({
+      session_id: "sess-1",
+      kind: "72h",
+      status: "pending",
+    });
+    expect(mockBuildSessionReminderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "72h" }),
+    );
   });
 
   it("usa el título de respaldo, resuelve el nombre del docente y enruta a la voz de captación (CAP-CI)", async () => {
@@ -517,7 +563,7 @@ describe("processWindow — bitácora por destinatario y envío", () => {
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(json.errors).toContain("ledger read sess-1 (24h): timeout ledger");
     expect(mockSendEmailBatch).not.toHaveBeenCalled();
     expect(callCount("session_reminders.update-final")).toBe(0);
@@ -537,7 +583,7 @@ describe("processWindow — bitácora por destinatario y envío", () => {
     const json = await res.json();
 
     expect(mockSendEmailBatch).toHaveBeenCalledWith([], expect.any(String));
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 1, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 1, emails: 0 });
     const finalUpdate = lastCall("session_reminders.update-final");
     expect(finalUpdate?.payload).toMatchObject({ status: "sent", recipients_count: 1 });
   });
@@ -552,7 +598,7 @@ describe("processWindow — bitácora por destinatario y envío", () => {
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 1, emails: 0 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 1, emails: 0 });
     expect(callCount("session_reminder_recipients.upsert")).toBe(0);
     const finalUpdate = lastCall("session_reminders.update-final");
     expect(finalUpdate?.payload).toMatchObject({
@@ -586,7 +632,7 @@ describe("processWindow — bitácora por destinatario y envío", () => {
     const res = await GET(makeRequest());
     const json = await res.json();
 
-    expect(json.windows[0]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
+    expect(json.windows[1]).toEqual({ kind: "24h", sessions: 1, emails: 1 });
     const finalUpdate = lastCall("session_reminders.update-final");
     expect(finalUpdate?.payload).toMatchObject({
       status: "failed",
@@ -617,6 +663,7 @@ describe("GET — agregación de errores entre ventanas y alertas", () => {
     adminTables = {
       class_sessions: {
         selectResults: [
+          { data: [], error: null },
           { data: null, error: { message: "boom 24h" } },
           { data: [], error: null },
         ],

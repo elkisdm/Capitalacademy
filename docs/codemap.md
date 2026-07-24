@@ -112,6 +112,7 @@
 |------|-----------------|---------------------------|-----|
 | `app/(docente)/layout.tsx` | Layout dedicado del panel (sin `ClassroomSidebar`); gate: platform staff o docente/asistente (`cohort_roles`) en cualquier cohorte | — | 0013 |
 | `app/(docente)/docente/page.tsx` · `docente-panel-client.tsx` | Panel de solo lectura: SUS sesiones (próximas/pasadas) con asistencia y material por clase; link a Conversaciones por programa | `/docente` | 0013 |
+| `app/(docente)/error.tsx` | Error boundary del panel: pantalla de recuperación en vez de la de error global | — | 0013 |
 | `lib/docente/queries.ts` | Lecturas por service-role: `getTeacherCohorts`/`getTeacherSessions`, siempre partiendo de `cohort_roles` del propio usuario | — | 0013 |
 
 ## Classroom (alumno)

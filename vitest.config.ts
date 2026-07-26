@@ -48,9 +48,9 @@ export default defineConfig({
         "**/{payments,pricing,billing,checkout,commission,refund,auth,session,leads,webhooks,risk}/**":
           { lines: 99, functions: 95.83, statements: 99.06, branches: 97.84 },
         autoUpdate: true,
-        lines: 92.47,
+        lines: 92.48,
         functions: 93.06,
-        branches: 86.23,
+        branches: 86.25,
         statements: 91.89,
       },
     },

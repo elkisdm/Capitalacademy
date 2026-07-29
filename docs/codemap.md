@@ -58,7 +58,7 @@
 | `lib/campaigns/send.ts` | `sendEmailCampaign`: reclamo atómico → bitácora → `sendEmailBatch` → estado terminal solo sin fallos | — | 0026, 0020 |
 | `app/api/admin/campaigns/route.ts` · `[campaignId]/route.ts` | CRUD de campañas; PATCH/DELETE dan 409 sobre una campaña ya enviada | `GET/POST/PATCH/DELETE /api/admin/campaigns` | 0026 |
 | `app/api/admin/campaigns/[campaignId]/send/route.ts` | Dispara el envío real (idempotente por bitácora) | `POST /api/admin/campaigns/[id]/send` | 0026 |
-| `app/api/admin/campaigns/[campaignId]/test/route.ts` | Correo de prueba SOLO a la casilla del admin autenticado (el destinatario no se acepta por body) | `POST /api/admin/campaigns/[id]/test` | 0026 |
+| `app/api/admin/campaigns/[campaignId]/test/route.ts` | Correo de prueba a la casilla del equipo (`CAMPAIGN_TEST_EMAIL`) + copia al autor; destinos limitados a cuentas ops/admin (no es un relay) y omite dominios sin MX (`capitalacademy.cl`) | `POST /api/admin/campaigns/[id]/test` | 0026 |
 | `app/api/admin/campaigns/audience/route.ts` | Conteo de destinatarios previo al envío + muestra corta | `GET /api/admin/campaigns/audience` | 0026 |
 | `app/(admin)/admin/comunicaciones/` · `components/admin/comunicaciones/campaigns-manager.tsx` | Panel: lista, editor Markdown, conteo de audiencia en vivo, prueba y confirmación de envío | `/admin/comunicaciones` | 0026 |
 
@@ -298,7 +298,18 @@
 | `components/landing/` | Secciones de la landing (Hero, Programas, Comparador, Syllabus, FAQ, Formulario, …) | — | — |
 | `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images`, `cohort` (fecha de inicio de la próxima cohorte del Diplomado, en vivo desde `cohorts`) | — | — |
 | `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
-| `app/api/leads/route.ts` | Captura de leads del formulario de contacto | `POST /api/leads` | — |
+| `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
+
+## Calculadora de crédito (público)
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `app/calculadora-credito/` | Página pública del simulador de dividendo (RSC + skeleton + error boundary) | `/calculadora-credito` | 0027 |
+| `components/calculadora/` | UI: `CalculadoraCredito` (formulario y estado), `CampoMonto` (input con máscara de miles), `MatrizDividendos` (tabla pie × plazo) | — | 0027 |
+| `lib/credito/calculo.ts` | Motor puro portado de la planilla: ingreso reconocido, renta final, dividendo francés, matriz de escenarios, plazo máximo por edad | — | 0027 |
+| `lib/credito/constants.ts` | Parámetros del banco: castigos por fuente, renta mínima, carga máxima 25%, tasa, pies, plazos, edad tope | — | 0027 |
+| `lib/indicadores/uf.ts` | Valor UF del día desde mindicador.cl, cacheado 12h; el fallback nunca se cachea | — | 0027 |
+| `lib/utils/money.ts` | Helper único de formateo CLP/UF y máscara de montos para inputs | — | 0027 |
 
 ## Video / Mux
 

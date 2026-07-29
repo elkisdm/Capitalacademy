@@ -166,6 +166,41 @@ un solo lugar versionado.
 - **WhatsApp solo llega por hclp** (encuestas identificadas). Capital Academy no habla con
   la Cloud API.
 
+## Amendment (2026-07-29, mismo día): el correo de prueba y el dominio sin MX
+
+Al primer uso real en producción, el correo de prueba de un comunicado no llegaba. **No era un
+defecto de código**: `capitalacademy.cl` **no tiene registros MX** (`dig +short MX capitalacademy.cl`
+→ vacío). El dominio está *verified en Resend para enviar*, pero no puede *recibir*. Como al panel se
+entra con `admin@capitalacademy.cl`, la prueba —que iba únicamente a la dirección de la cuenta
+conectada— caía en un buzón inexistente: Resend devolvía `id` sin error, la UI decía "prueba
+enviada" y no llegaba nada. El mismo correo a Gmail salió `delivered`, lo que descartó el pipeline.
+
+Decisiones derivadas:
+
+1. **La prueba va a la casilla del equipo académico + copia a quien redacta.** La casilla sale de
+   `CAMPAIGN_TEST_EMAIL` (por defecto `academia@capitalinteligente.cl`). Se puede reemplazar por
+   body (`{to}`), pero **restringido a correos de cuentas `ops`/`admin` ya existentes**: sin esa
+   lista blanca el endpoint sería un relay para enviar correo con la marca de Capital Academy a
+   cualquier dirección del mundo.
+2. **Los destinos de dominios sin MX se OMITEN del envío**, no se envían con una advertencia.
+   Mandarle a un buzón inexistente no informa a nadie y suma entregas fallidas a la reputación de
+   una cuenta de Resend compartida por toda la empresa. La respuesta los devuelve en `skipped`. Si
+   todos los destinos son inalcanzables, responde 422 en vez de llamar a Resend con lista vacía.
+3. La lista vive en `NON_RECEIVING_DOMAINS` dentro del endpoint. Es deliberadamente una constante y
+   no una consulta DNS en caliente: resolver MX por envío agrega latencia y un modo de falla nuevo
+   a un camino que hoy es determinista.
+
+**Nota de documentación:** `.env.example` está en `.gitignore` (`.env*`), así que NO se versiona.
+Las variables de este ADR se documentan aquí, que es la fuente durable. Las que hay que definir en
+Netlify son: `SURVEYS_SUPABASE_URL`, `SURVEYS_SUPABASE_SERVICE_ROLE_KEY`, `SURVEYS_PUBLIC_BASE_URL`,
+`SURVEYS_API_BASE_URL`, `SURVEYS_API_TOKEN`, `SURVEY_RECIPIENTS_INGEST_SECRET` y
+`CAMPAIGN_TEST_EMAIL`.
+
+Estado al 2026-07-29: todas configuradas y verificadas contra los sistemas reales **salvo
+`SURVEY_RECIPIENTS_INGEST_SECRET`**, que no estaba en el `.env.local` de capital-admin y vive en el
+entorno desplegado de hclp. Sin ella, las encuestas anónimas funcionan completas y las identificadas
+responden 503 nombrando la variable.
+
 ## Referencias
 
 - `docs/adr/0020-fan-out-de-correos-por-lote-e-idempotencia-por-destinatario.md` — patrón

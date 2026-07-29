@@ -40,8 +40,10 @@ const NON_RECEIVING_DOMAINS = new Set(["capitalacademy.cl"]);
  *
  * OJO — un destino puede ser válido y aun así no recibir nada: el dominio
  * `capitalacademy.cl` NO tiene registros MX (sirve para enviar, no para
- * recibir), así que `admin@capitalacademy.cl` acepta el envío y lo pierde. Por
- * eso la respuesta devuelve `to[]`: la UI muestra a dónde fue de verdad.
+ * recibir), así que `admin@capitalacademy.cl` —la cuenta con la que se entra al
+ * panel— acepta el envío y lo pierde. Esos destinos se OMITEN del envío y se
+ * devuelven en `skipped`; la respuesta trae además `to[]` con lo realmente
+ * enviado.
  *
  * No toca la bitácora de la campaña: una prueba no cuenta como entrega.
  */
@@ -80,15 +82,28 @@ export async function POST(req: Request, ctx: Ctx) {
   allowed.add(TEAM_INBOX.toLowerCase());
 
   // Casilla del equipo (o la pedida) + copia al autor, sin repetir.
-  const recipients = [...new Set(
+  const requested = [...new Set(
     [requestedTo ?? TEAM_INBOX, auth.user.email]
       .filter((e): e is string => Boolean(e && e.trim()))
       .map((e) => e.trim()),
   )];
 
+  // Se DESCARTAN los destinos cuyo dominio no puede recibir correo, en vez de
+  // enviarles y avisar: mandarle a un buzón inexistente no informa a nadie y
+  // acumula entregas fallidas en la reputación de la cuenta de Resend.
+  const skipped = requested.filter((e) =>
+    NON_RECEIVING_DOMAINS.has(e.split("@")[1]?.toLowerCase() ?? ""),
+  );
+  const recipients = requested.filter((e) => !skipped.includes(e));
+
   if (recipients.length === 0) {
     return NextResponse.json(
-      { error: "No hay ninguna casilla a la que enviar la prueba" },
+      {
+        error:
+          skipped.length > 0
+            ? `No queda ninguna casilla que pueda recibir la prueba (${skipped.join(", ")} pertenece a un dominio sin correo). Configura CAMPAIGN_TEST_EMAIL o indica otro destino.`
+            : "No hay ninguna casilla a la que enviar la prueba",
+      },
       { status: 422 },
     );
   }
@@ -146,12 +161,8 @@ export async function POST(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Error al enviar el correo de prueba" }, { status: 500 });
   }
 
-  // `undeliverable` no es un fallo del envío: son destinos que Resend acepta
-  // pero cuyo dominio no puede recibir correo (sin MX). Se avisa en vez de
-  // dejar que el equipo espere un correo que nunca va a llegar.
-  const undeliverable = recipients.filter((e) =>
-    NON_RECEIVING_DOMAINS.has(e.split("@")[1]?.toLowerCase() ?? ""),
-  );
-
-  return NextResponse.json({ ok: true, to: recipients, undeliverable });
+  // `skipped` son destinos válidos que se omitieron a propósito por pertenecer
+  // a un dominio que no recibe correo. Se informan para que quede claro por qué
+  // alguien no recibió su copia.
+  return NextResponse.json({ ok: true, to: recipients, skipped });
 }

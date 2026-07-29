@@ -162,8 +162,17 @@ la respuesta es genérica.
   datos existentes.
 - Los cambios de copy y de caminos no alteran el mecanismo verificado de recuperación; si
   algo sale mal, revertir el commit restaura el flujo actual, que **funciona**.
-- El webhook de Resend requiere darlo de alta en el dashboard y guardar
-  `RESEND_WEBHOOK_SECRET` en Netlify. Hasta que eso pase, el ledger registra `sent` pero no
+- El webhook de Resend ya está creado (id `25e7743a-1391-4bb4-a4f6-c6a0a5cfa014`, eventos
+  `email.delivered` / `bounced` / `complained`) y `RESEND_WEBHOOK_SECRET` está guardado como
+  secreto en Netlify (production, deploy-preview y branch-deploy).
+
+  **Queda en `disabled` a propósito**: el endpoint solo existe en la rama, así que en
+  producción responde 404. La cuenta de Resend es compartida y envía cientos de correos al
+  día; dejarlo activo acumularía fallos de entrega y Resend puede desactivar un endpoint que
+  falla de forma sostenida. **Al mergear a `main`, habilitarlo** con
+  `PATCH https://api.resend.com/webhooks/<id>` y `{"status":"enabled"}`.
+
+  Mientras siga deshabilitado, el ledger registra `sent`/`failed`/`no_account` pero no
   `delivered`: degrada, no rompe.
 
 ## Spec (Given/When/Then)

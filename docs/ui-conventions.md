@@ -77,9 +77,11 @@ Con feedback inline check/alert y mensaje "RUT inválido. Verifica el dígito ve
 
 ### 2.4 Moneda: locale `es-CL`, precio base desde constantes únicas
 
-**Regla:** El precio base vive en `lib/pricing.ts` (`DIPLOMADO_PRICE_CLP = 500_000`) y constantes de `lib/landing/constants.ts`; formatea con `Intl.NumberFormat("es-CL", { currency: "CLP" })`. Fechas con `Intl.DateTimeFormat("es-CL", ...)` (`lib/landing/cohort.ts:19`).
+**Regla:** El precio base vive en `lib/pricing.ts` (`DIPLOMADO_PRICE_CLP = 500_000`) y constantes de `lib/landing/constants.ts`. Formatea con los helpers de **`lib/utils/money.ts`**: `formatCLP(n)` (`$1.234.567`, redondea y tolera NaN), `formatUF(n)` (`2.500 UF`), `formatMiles(n)` y `maskMonto(input)` para inputs de monto. Fechas con `Intl.DateTimeFormat("es-CL", ...)` (`lib/landing/cohort.ts:19`).
 
-**Antipatrón (gap real):** no existe helper compartido de CLP para el cliente — hoy se hace ad-hoc con `toLocaleString("es-CL")` (`admin/cobros/page.tsx:33`) y parseo manual `input.replace(/\D/g, "")` (`cobro-generator.tsx:34`). Si generas UI nueva con montos, crea `formatCLP()` en `lib/utils/` junto a `rut.ts`/`phone.ts` y úsalo — no sumes otro formateo inline.
+**Ejemplo correcto:** `components/calculadora/CampoMonto.tsx` — `maskMonto` en el `onChange` (máscara de miles visible, número limpio hacia arriba); `components/calculadora/MatrizDividendos.tsx` — `formatCLP` en cada celda.
+
+**Antipatrón (deuda viva):** `toLocaleString("es-CL")` ad-hoc (`admin/cobros/page.tsx:33`) y parseo manual `input.replace(/\D/g, "")` (`cobro-generator.tsx:34`), anteriores al helper. Si tocas esos archivos, migra a `lib/utils/money.ts`. En código nuevo, nunca sumes otro formateo inline.
 
 ---
 
@@ -245,6 +247,6 @@ Con feedback inline check/alert y mensaje "RUT inválido. Verifica el dígito ve
 | Doble sistema de toasts | `components/admin/toast.tsx` | `ui/toast.tsx` (§1.4) |
 | `Field`/`SelectField` duplicados | `Formulario.tsx:184-211` | `ui/field.tsx` (§1.3) |
 | `inputMode` faltante en tel/RUT | `complete-profile-client.tsx:357-388` | atributos completos (§2.3) |
-| Sin helper CLP de cliente | `admin/cobros/*` | crear `formatCLP()` en `lib/utils/` (§2.4) |
+| ~~Sin helper CLP de cliente~~ — **saldada 2026-07-29**: existe `lib/utils/money.ts` | quedan por migrar `admin/cobros/*` | usar `formatCLP`/`maskMonto` (§2.4) |
 | Estilos condicionales con `style={{}}` | `complete-profile-client.tsx:379-387` | clases con `cn()` (§1.2) |
 | Botones nativos reimplementando variantes | `cobro-generator.tsx:136-140` | `Button` (§1.1) |

@@ -196,10 +196,37 @@ Netlify son: `SURVEYS_SUPABASE_URL`, `SURVEYS_SUPABASE_SERVICE_ROLE_KEY`, `SURVE
 `SURVEYS_API_BASE_URL`, `SURVEYS_API_TOKEN`, `SURVEY_RECIPIENTS_INGEST_SECRET` y
 `CAMPAIGN_TEST_EMAIL`.
 
-Estado al 2026-07-29: todas configuradas y verificadas contra los sistemas reales **salvo
-`SURVEY_RECIPIENTS_INGEST_SECRET`**, que no estaba en el `.env.local` de capital-admin y vive en el
-entorno desplegado de hclp. Sin ella, las encuestas anónimas funcionan completas y las identificadas
-responden 503 nombrando la variable.
+Estado al 2026-07-29: **las 7 configuradas y verificadas contra los sistemas reales.**
+
+### `SURVEY_RECIPIENTS_INGEST_SECRET`: no existía en ninguna parte
+
+Al buscarla se descubrió que **el enrolamiento por token nunca había funcionado en producción, para
+nadie**. El endpoint de hclp falla cerrado (`if (!expected) → 503 ingest_not_configured`) y la
+variable no estaba definida: ni en los `.env` de los cuatro repos (solo como placeholder en
+`.env.example`), ni entre las 26 variables del sitio Netlify de hclp. Comprobado en vivo: el
+endpoint respondía `503` igual con secreto que sin él.
+
+Eso afecta también a **capital-admin**, que invoca ese mismo endpoint desde su panel
+(`apps/admin/src/lib/surveys/ingest-client.ts`) y venía recibiendo 503 en silencio. No era una
+credencial que a Capital Academy le faltara: la integración estaba apagada de origen.
+
+Resolución: se generó un secreto nuevo (32 bytes aleatorios, base64url) y se instaló **en los dos
+lados**, que es el único modo en que un secreto compartido sirve:
+
+- Capital Academy — Netlify site `6a7c6f71-f9b5-48a3-b190-b26915dba3b6`.
+- hclp — Netlify site `43094d8a-0bba-4892-a2b1-03ea03233fd8` (cuenta `giovannimarisio`), más un
+  redeploy de producción para que tomara efecto. Se verificó antes que `origin/main` de hclp
+  estuviera exactamente en el commit ya desplegado (`9c8ccf0`, 0 commits pendientes), de modo que el
+  rebuild republicara el mismo código y no arrastrara trabajo sin liberar.
+
+Verificación end-to-end tras el cambio, sin crear destinatarios ni enviar correos (`clients: []`,
+`notify: false`): sin secreto → `401`; secreto incorrecto → `401`; **secreto real → `400
+validation_failed`**, es decir, autenticó y llegó a validar el cuerpo.
+
+**Consecuencia de seguridad a tener presente:** ese endpoint pasó de rechazar todo a aceptar PII de
+clientes (correo, nombre, teléfono, RUT) y disparar correo y WhatsApp. Su única defensa es el
+secreto compartido; si se filtra, hay que rotarlo **en los dos sitios a la vez** o el enrolamiento
+se rompe.
 
 ## Referencias
 

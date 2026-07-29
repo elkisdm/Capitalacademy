@@ -233,9 +233,19 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
     try {
       const res = await fetch(`/api/admin/campaigns/${id}/test`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(data.error ?? "No se pudo enviar la prueba", "error");
+        return;
+      }
+      const destinos: string[] = data.to ?? [];
+      const perdidos: string[] = data.undeliverable ?? [];
+      // Un destino sin MX se acepta y se pierde: decirlo evita que el equipo
+      // quede esperando un correo que no va a llegar.
       toast(
-        res.ok ? `Prueba enviada a ${data.to}` : (data.error ?? "No se pudo enviar la prueba"),
-        res.ok ? "success" : "error",
+        perdidos.length > 0
+          ? `Prueba enviada a ${destinos.join(", ")}. Ojo: ${perdidos.join(", ")} no recibe correo.`
+          : `Prueba enviada a ${destinos.join(", ")}`,
+        perdidos.length > 0 ? "error" : "success",
       );
     } finally {
       setTesting(false);

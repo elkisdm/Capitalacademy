@@ -238,14 +238,14 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
         return;
       }
       const destinos: string[] = data.to ?? [];
-      const perdidos: string[] = data.undeliverable ?? [];
-      // Un destino sin MX se acepta y se pierde: decirlo evita que el equipo
-      // quede esperando un correo que no va a llegar.
+      const omitidos: string[] = data.skipped ?? [];
+      // Los omitidos son casillas de dominios que no reciben correo: se dice
+      // para que nadie quede esperando una copia que nunca se envió.
       toast(
-        perdidos.length > 0
-          ? `Prueba enviada a ${destinos.join(", ")}. Ojo: ${perdidos.join(", ")} no recibe correo.`
+        omitidos.length > 0
+          ? `Prueba enviada a ${destinos.join(", ")} (se omitió ${omitidos.join(", ")}: esa casilla no recibe correo)`
           : `Prueba enviada a ${destinos.join(", ")}`,
-        perdidos.length > 0 ? "error" : "success",
+        "success",
       );
     } finally {
       setTesting(false);

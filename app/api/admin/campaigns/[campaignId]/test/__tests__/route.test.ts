@@ -95,12 +95,13 @@ describe("POST /api/admin/campaigns/[campaignId]/test", () => {
   });
 
   it("envía a la casilla del equipo y con copia a quien la crea", async () => {
+    authResult = { user: { id: "admin-1", email: "pvicuna@capitalinteligente.cl" } };
+
     const res = await POST(req(), ctx());
-    const payload = sendSpy.mock.calls[0][0];
 
     expect(res.status).toBe(200);
-    expect(payload.to).toEqual([TEAM, "admin@capitalacademy.cl"]);
-    expect((await res.json()).to).toEqual([TEAM, "admin@capitalacademy.cl"]);
+    expect(sendSpy.mock.calls[0][0].to).toEqual([TEAM, "pvicuna@capitalinteligente.cl"]);
+    expect((await res.json()).to).toEqual([TEAM, "pvicuna@capitalinteligente.cl"]);
   });
 
   it("no duplica el destinatario si el autor ES la casilla del equipo", async () => {
@@ -112,12 +113,11 @@ describe("POST /api/admin/campaigns/[campaignId]/test", () => {
   });
 
   it("permite reemplazar la casilla del equipo, manteniendo la copia al autor", async () => {
-    await POST(req({ to: "pvicuna@capitalinteligente.cl" }), ctx());
+    authResult = { user: { id: "admin-1", email: "pvicuna@capitalinteligente.cl" } };
 
-    expect(sendSpy.mock.calls[0][0].to).toEqual([
-      "pvicuna@capitalinteligente.cl",
-      "admin@capitalacademy.cl",
-    ]);
+    await POST(req({ to: "academia@capitalinteligente.cl" }), ctx());
+
+    expect(sendSpy.mock.calls[0][0].to).toEqual([TEAM, "pvicuna@capitalinteligente.cl"]);
   });
 
   // Sin la lista blanca, este endpoint sería un relay para mandar correo con la
@@ -129,30 +129,36 @@ describe("POST /api/admin/campaigns/[campaignId]/test", () => {
     expect(sendSpy).not.toHaveBeenCalled();
   });
 
-  // Un destino puede ser válido y aun así perderse: capitalacademy.cl no tiene MX.
-  it("avisa cuáles destinos no pueden recibir correo", async () => {
-    const body = await (await POST(req(), ctx())).json();
+  // capitalacademy.cl no tiene MX: es la cuenta con la que se entra al panel,
+  // así que sin este filtro la copia al autor se enviaba a un buzón inexistente.
+  it("NO envía copia al autor si su casilla no recibe correo", async () => {
+    const res = await POST(req(), ctx()); // autor = admin@capitalacademy.cl
+    const body = await res.json();
 
-    expect(body.undeliverable).toEqual(["admin@capitalacademy.cl"]);
+    expect(sendSpy.mock.calls[0][0].to).toEqual([TEAM]);
+    expect(body.to).toEqual([TEAM]);
+    expect(body.skipped).toEqual(["admin@capitalacademy.cl"]);
   });
 
-  it("no marca como perdido un dominio que sí recibe", async () => {
+  it("no omite nada cuando todos los destinos reciben correo", async () => {
     authResult = { user: { id: "admin-1", email: "pvicuna@capitalinteligente.cl" } };
 
     const body = await (await POST(req(), ctx())).json();
 
-    expect(body.undeliverable).toEqual([]);
+    expect(body.skipped).toEqual([]);
   });
 
-  it("422 si no hay ninguna casilla a la que enviar", async () => {
-    authResult = { user: { id: "admin-1" } };
-    state.staff = [];
-    const res = await POST(req({ to: " " }), ctx());
+  // Nunca se llama a Resend con una lista vacía de destinatarios.
+  it("422 si TODOS los destinos pertenecen a dominios sin correo", async () => {
+    authResult = { user: { id: "admin-1", email: "otro@capitalacademy.cl" } };
+    state.staff = [{ email: "otro@capitalacademy.cl" }];
 
-    // Sin `to` usable ni correo del autor, igual queda la casilla del equipo:
-    // lo que se verifica es que nunca se envía a una lista vacía.
-    expect([200, 403, 422]).toContain(res.status);
-    if (res.status === 200) expect(sendSpy.mock.calls[0][0].to.length).toBeGreaterThan(0);
+    const res = await POST(req({ to: "admin@capitalacademy.cl" }), ctx());
+    const body = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(body.error).toContain("dominio sin correo");
+    expect(sendSpy).not.toHaveBeenCalled();
   });
 
   it("marca el asunto como prueba", async () => {

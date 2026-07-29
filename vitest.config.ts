@@ -46,12 +46,12 @@ export default defineConfig({
         // Portado inline: Capitalacademy está fuera del monorepo; el preset
         // @devground/vitest-config no es resoluble en su CI (frozen-lockfile).
         "**/{payments,pricing,billing,checkout,commission,refund,auth,session,leads,webhooks,risk}/**":
-          { lines: 99, functions: 95.83, statements: 99.06, branches: 97.84 },
+          { lines: 99.12, functions: 96.29, statements: 99.06, branches: 97.84 },
         autoUpdate: true,
-        lines: 92.48,
-        functions: 93.06,
-        branches: 86.25,
-        statements: 91.89,
+        lines: 92.93,
+        functions: 93.4,
+        branches: 86.46,
+        statements: 92.26,
       },
     },
   },

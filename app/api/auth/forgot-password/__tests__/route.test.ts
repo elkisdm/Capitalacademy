@@ -38,10 +38,18 @@ function makeInvalidJsonRequest(ip = nextIp()) {
 
 const mockGenerateLink = vi.fn();
 const mockSend = vi.fn();
+/** Filas escritas en `access_email_log` durante el test (ver 0082). */
+const mockLogInsert = vi.fn();
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     auth: { admin: { generateLink: (...args: unknown[]) => mockGenerateLink(...args) } },
+    from: (table: string) => ({
+      insert: (row: unknown) => {
+        mockLogInsert(table, row);
+        return Promise.resolve({ error: null });
+      },
+    }),
   }),
 }));
 
@@ -61,11 +69,17 @@ const { POST } = await import("@/app/api/auth/forgot-password/route");
 beforeEach(() => {
   vi.clearAllMocks();
   mockGenerateLink.mockResolvedValue({
-    data: { properties: { hashed_token: "tok_abc123" } },
+    data: { properties: { hashed_token: "tok_abc123" }, user: { id: "user-1" } },
     error: null,
   });
   mockSend.mockResolvedValue({ data: { id: "email_1" }, error: null });
 });
+
+/** Última fila registrada en la bitácora de correos de acceso. */
+function lastLoggedRow() {
+  const calls = mockLogInsert.mock.calls.filter(([table]) => table === "access_email_log");
+  return calls.at(-1)?.[1] as Record<string, unknown> | undefined;
+}
 
 describe("POST /api/auth/forgot-password", () => {
   it("responde 400 cuando el body no se puede parsear como JSON", async () => {
@@ -217,9 +231,88 @@ describe("POST /api/auth/forgot-password", () => {
     const body = await res.json();
     expect(body).toEqual({ ok: true });
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "Password reset email error:",
-      expect.any(Error),
+      "Access link email error:",
+      "resend caído",
     );
+    consoleErrorSpy.mockRestore();
+  });
+
+  // ── Bitácora de correos de acceso (0082) ────────────────────
+  // La respuesta al cliente es idéntica en los tres desenlaces —responder
+  // distinto delataría qué correos tienen cuenta—, así que lo único que
+  // distingue "salió", "falló" y "no existe" es lo que queda registrado.
+
+  it("registra el envío exitoso con el id que devuelve Resend", async () => {
+    const email = nextEmail();
+    await POST(makeRequest({ email }));
+
+    const row = lastLoggedRow();
+    expect(row).toMatchObject({
+      email,
+      user_id: "user-1",
+      kind: "access_link",
+      status: "sent",
+      provider: "resend",
+      provider_message_id: "email_1",
+    });
+  });
+
+  it("registra 'no_account' cuando el correo no tiene cuenta, sin avisar al equipo", async () => {
+    mockGenerateLink.mockResolvedValue({ data: null, error: { message: "user not found" } });
+    const email = nextEmail();
+    const res = await POST(makeRequest({ email }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(lastLoggedRow()).toMatchObject({ email, status: "no_account" });
+    // Un correo mal escrito no es una falla operativa: no despierta a nadie.
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("registra 'failed' cuando generateLink falla por un motivo que no es 'no existe'", async () => {
+    mockGenerateLink.mockResolvedValue({
+      data: null,
+      error: { message: "database connection lost" },
+    });
+    const email = nextEmail();
+    const res = await POST(makeRequest({ email }));
+
+    expect(res.status).toBe(200);
+    expect(lastLoggedRow()).toMatchObject({
+      email,
+      status: "failed",
+      error: "database connection lost",
+    });
+  });
+
+  it("registra 'failed' cuando Resend responde con error en vez de lanzar", async () => {
+    mockSend.mockResolvedValue({ data: null, error: { message: "domain not verified" } });
+    const email = nextEmail();
+    const res = await POST(makeRequest({ email }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(lastLoggedRow()).toMatchObject({
+      email,
+      status: "failed",
+      error: "domain not verified",
+    });
+  });
+
+  it("normaliza el email al registrarlo, para que soporte lo encuentre igual", async () => {
+    await POST(makeRequest({ email: "  Mixta@Test.CL  " }));
+    expect(lastLoggedRow()).toMatchObject({ email: "mixta@test.cl" });
+  });
+
+  it("una bitácora caída no rompe la respuesta ni impide el envío", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogInsert.mockImplementationOnce(() => {
+      throw new Error("supabase caído");
+    });
+
+    const res = await POST(makeRequest({ email: nextEmail() }));
+    expect(res.status).toBe(200);
+    expect(mockSend).toHaveBeenCalledTimes(1);
     consoleErrorSpy.mockRestore();
   });
 

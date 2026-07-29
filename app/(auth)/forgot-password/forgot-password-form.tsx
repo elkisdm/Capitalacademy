@@ -8,15 +8,18 @@ import { Button } from "@/components/ui/button";
 export function ForgotPasswordForm({
   next = "",
   brand,
+  initialEmail = "",
   backToLoginHref = "/login",
 }: {
   /** Destino original del alumno; viaja dentro del enlace de recuperación. */
   next?: string;
   /** Slug del entorno, para brandear el enlace y el set-password. */
   brand?: string;
+  /** Email prellenado cuando se llega desde un enlace vencido. */
+  initialEmail?: string;
   backToLoginHref?: string;
 } = {}) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -62,8 +65,14 @@ export function ForgotPasswordForm({
         <p className="text-[15px] font-bold text-ca-ink">
           Enlace enviado
         </p>
+        {/*
+          La redacción condicional no es cautela de más: la respuesta del
+          servidor es idéntica exista o no la cuenta, justamente para no
+          delatar qué correos están registrados.
+        */}
         <p className="mt-2 text-[13px] text-ca-ink-soft">
-          Si existe una cuenta con <strong>{email}</strong>, recibirás un enlace para restablecer tu contraseña.
+          Si existe una cuenta con <strong>{email}</strong>, en un minuto recibirás un
+          enlace para entrar. Revisa también tu carpeta de spam.
         </p>
         <Link
           href={backToLoginHref}
@@ -116,7 +125,7 @@ export function ForgotPasswordForm({
             Enviando…
           </>
         ) : (
-          "Enviar enlace de recuperación"
+          "Enviarme el enlace"
         )}
       </Button>
 

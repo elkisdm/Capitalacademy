@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminUserProfile, getCohortsForPicker } from "@/lib/admin/user-queries";
 import { UserProfileClient } from "./user-profile-client";
+import { AccessHistory } from "./access-history";
 
 export default async function AdminUserProfilePage(
   props: { params: Promise<{ userId: string }> },
@@ -35,6 +36,7 @@ export default async function AdminUserProfilePage(
   return (
     <div className="ca-fade-up mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8">
       <UserProfileClient user={userProfile} cohorts={cohorts} />
+      <AccessHistory userId={userId} email={userProfile.email} />
     </div>
   );
 }

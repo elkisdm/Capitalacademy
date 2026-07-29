@@ -32,7 +32,7 @@ function EyeOffIcon() {
   );
 }
 
-type Step = "exchanging" | "form" | "success" | "error";
+type Step = "exchanging" | "form" | "success" | "error" | "resent";
 
 export function SetPasswordForm({
   brand = DEFAULT_BRAND,
@@ -57,6 +57,8 @@ export function SetPasswordForm({
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resending, setResending] = useState(false);
 
   const exchangeCode = useCallback(async () => {
     const supabase = createClient();
@@ -67,9 +69,16 @@ export function SetPasswordForm({
       return;
     }
 
+    /*
+      El camino `?code=` es un remanente: hoy los correos de invitación y de
+      acceso pasan por /auth/confirm, que canjea el token del lado servidor y
+      redirige acá con la sesión ya en la cookie. Se conserva por si sobrevive
+      algún correo antiguo con el action_link nativo de Supabase, pero en la
+      práctica llegar sin sesión significa que el enlace ya se usó o venció.
+    */
     const code = searchParams.get("code");
     if (!code) {
-      setErrorMsg("Enlace de invitación inválido o expirado.");
+      setErrorMsg("Este enlace ya se usó o venció.");
       setStep("error");
       return;
     }
@@ -79,8 +88,8 @@ export function SetPasswordForm({
     if (error) {
       setErrorMsg(
         error.message.includes("expired")
-          ? "El enlace de invitación ha expirado. Contacta al administrador para recibir uno nuevo."
-          : `Error al verificar la invitación: ${error.message}`,
+          ? "Este enlace ya se usó o venció."
+          : `No pudimos validar el enlace: ${error.message}`,
       );
       setStep("error");
       return;
@@ -88,6 +97,35 @@ export function SetPasswordForm({
 
     setStep("form");
   }, [searchParams]);
+
+  /*
+    Auto-servicio: antes esta pantalla decía "contacta al administrador", que
+    convertía un enlace vencido en un ticket de soporte. El mismo endpoint que
+    usa el login emite un enlace nuevo, sirva para activar la cuenta o para
+    recuperarla.
+  */
+  async function handleResend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resendEmail.trim() || resending) return;
+
+    setResending(true);
+    try {
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: resendEmail.trim(),
+          next: searchParams.get("next") ?? "",
+          brand: brand.slug,
+        }),
+      });
+      setStep("resent");
+    } catch {
+      setErrorMsg("No pudimos conectar. Revisa tu conexión e intenta de nuevo.");
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     exchangeCode();
@@ -176,33 +214,83 @@ export function SetPasswordForm({
         )}
 
         {step === "error" && (
-          <div className="text-center">
-            <div
-              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-              style={{ background: "#fef2f2" }}
-            >
-              <span className="text-xl">✕</span>
+          <div>
+            <div className="text-center">
+              <div
+                className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                style={{ background: "#fef2f2" }}
+              >
+                <span className="text-xl">✕</span>
+              </div>
+              <p className="mb-2 text-base font-semibold" style={{ color: "#14163a" }}>
+                {errorMsg}
+              </p>
+              <p className="text-sm" style={{ color: "#6b6e8a" }}>
+                Los enlaces sirven una sola vez y duran una hora. Escribe tu email y te
+                mandamos uno nuevo ahora mismo.
+              </p>
             </div>
-            <p className="mb-2 text-base font-semibold" style={{ color: "#14163a" }}>
-              No pudimos verificar tu invitación
-            </p>
-            <p className="text-sm" style={{ color: "#6b6e8a" }}>
-              {errorMsg}
-            </p>
-            <div className="mt-6 flex flex-col gap-2">
-              <a
-                href={loginPath}
-                className="rounded-lg px-4 py-2.5 text-sm font-bold text-white"
+
+            <form onSubmit={handleResend} className="mt-6 space-y-3">
+              <Input
+                id="resend-email"
+                type="email"
+                required
+                autoComplete="email"
+                inputMode="email"
+                spellCheck={false}
+                autoCapitalize="none"
+                value={resendEmail}
+                onChange={(e) => setResendEmail(e.target.value)}
+                className="rounded-lg"
+                style={{ borderColor: "#e5e5ea", color: "#14163a" }}
+                placeholder="tu@email.com"
+                aria-label="Tu email"
+              />
+              <Button
+                type="submit"
+                disabled={resending}
+                className="h-auto w-full rounded-lg px-4 py-3 text-sm"
                 style={{ background: brand.accent }}
               >
-                Ir al login
-              </a>
+                {resending ? "Enviando…" : "Enviarme un enlace nuevo"}
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center">
               <a
-                href="/forgot-password"
+                href={loginPath}
                 className="text-sm font-semibold"
                 style={{ color: brand.accent }}
               >
-                Recuperar contraseña
+                Volver al login
+              </a>
+            </div>
+          </div>
+        )}
+
+        {step === "resent" && (
+          <div className="text-center">
+            <div
+              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+              style={{ background: "#f0fdf4" }}
+            >
+              <span className="text-xl" style={{ color: "#22c55e" }}>{"✓"}</span>
+            </div>
+            <p className="mb-2 text-base font-semibold" style={{ color: "#14163a" }}>
+              Enlace enviado
+            </p>
+            <p className="text-sm" style={{ color: "#6b6e8a" }}>
+              Si existe una cuenta con <strong>{resendEmail}</strong>, en un minuto
+              recibirás un enlace para entrar. Revisa también tu carpeta de spam.
+            </p>
+            <div className="mt-6">
+              <a
+                href={loginPath}
+                className="text-sm font-semibold"
+                style={{ color: brand.accent }}
+              >
+                Volver al login
               </a>
             </div>
           </div>

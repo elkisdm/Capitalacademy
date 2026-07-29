@@ -7,9 +7,6 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
-### Fixed
-- El correo de prueba de un comunicado ahora llega: antes se enviaba solo a la dirección de la cuenta con la que entras al panel, y como ese dominio no recibe correo, la pantalla decía "prueba enviada" y no llegaba nada. Ahora va a la casilla del equipo académico con copia a quien redacta, y avisa si algún destino no puede recibir (`d09e748`)
-
 ### Added
 - El panel estrena Comunicaciones y Encuestas: dirección y operaciones ya pueden escribir un correo y enviarlo a los alumnos de un entorno o cohorte (viendo antes a cuántas personas llega y probándolo en su propia casilla), y crear una encuesta —anónima o identificada— para enviarla al mismo grupo y revisar las respuestas, sin depender de que alguien corra un script (`8560728`)
 - Quien nunca creó una contraseña ya puede entrar solo: un mismo enlace activa la cuenta o la recupera, y si el enlace venció la pantalla te manda uno nuevo ahí mismo en vez de pedirte que contactes al administrador. Además, cada correo de acceso queda registrado (enviado, entregado, rebotado o sin cuenta) y se puede consultar desde la ficha del alumno (`85b4aba`)
@@ -43,6 +40,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- El correo de prueba de un comunicado ahora llega: antes se enviaba solo a la dirección de la cuenta con la que entras al panel, y como ese dominio no recibe correo, la pantalla decía "prueba enviada" y no llegaba nada. Ahora va a la casilla del equipo académico con copia a quien redacta, y avisa si algún destino no puede recibir (`d09e748`)
 - La presentación "IA 2026" ya se puede ver desde el teléfono: antes abría un instante y el navegador cerraba la pestaña, y el logo de la academia aparecía roto (`bf420b8`)
 - Segunda tanda de endurecimiento: si falla la base de datos, tu evaluación ya no dice "nunca has rendido" ni tu progreso se ve en cero — ahora se muestra el error; un módulo cuyas lecciones no tienen video ya se puede completar; el examen final corrige bien las preguntas de opción múltiple, verdadero/falso y respuesta abierta; marcar asistencia a todo el curso ya no falla en cohortes grandes; y los errores al cargar certificados, cupones y pagos de Flow dejan de quedar en pantalla en blanco (`ee58574`, `0f8f742`, `1960bbd`, `187d2cb`, `fc2a21d`, `0ee75bd`)
 - Un miembro de operación ya no puede crear cuentas con permisos de operación o administración cuando su propio perfil no se puede leer: el control de permisos ahora falla cerrado (`0ee75bd`)

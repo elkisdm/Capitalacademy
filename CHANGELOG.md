@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- El panel estrena Comunicaciones y Encuestas: dirección y operaciones ya pueden escribir un correo y enviarlo a los alumnos de un entorno o cohorte (viendo antes a cuántas personas llega y probándolo en su propia casilla), y crear una encuesta —anónima o identificada— para enviarla al mismo grupo y revisar las respuestas, sin depender de que alguien corra un script (`8560728`)
 - Quien nunca creó una contraseña ya puede entrar solo: un mismo enlace activa la cuenta o la recupera, y si el enlace venció la pantalla te manda uno nuevo ahí mismo en vez de pedirte que contactes al administrador. Además, cada correo de acceso queda registrado (enviado, entregado, rebotado o sin cuenta) y se puede consultar desde la ficha del alumno (`85b4aba`)
 - Los alumnos ahora reciben un tercer recordatorio de clase 3 días antes, además de los de 24 horas y 1 hora que ya existían (`c0febe1`)
 - La presentación "IA 2026" se puede descargar en PowerPoint (32 láminas en 16:9, con las notas del presentador), desde el panel de ayuda de la propia presentación o desde los recursos de la clase (`bcdbaa6`)

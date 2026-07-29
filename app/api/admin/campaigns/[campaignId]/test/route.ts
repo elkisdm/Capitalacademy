@@ -11,17 +11,41 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ campaignId: string }> };
 
 /**
- * POST /api/admin/campaigns/[campaignId]/test
+ * Casilla del equipo académico: siempre recibe copia de las pruebas, para que
+ * la revisión no dependa de quién esté conectado. Configurable por si cambia.
+ */
+const TEAM_INBOX = process.env.CAMPAIGN_TEST_EMAIL?.trim() || "academia@capitalinteligente.cl";
+
+/**
+ * Dominios que Capital Academy usa para ENVIAR pero que no reciben correo (sin
+ * registros MX). Una dirección de estos dominios es válida y Resend la acepta,
+ * pero el correo se pierde en silencio — verificado el 2026-07-29:
+ * `dig MX capitalacademy.cl` no devuelve nada.
+ */
+const NON_RECEIVING_DOMAINS = new Set(["capitalacademy.cl"]);
+
+/**
+ * POST /api/admin/campaigns/[campaignId]/test    body opcional: { to }
  *
- * Envía UNA copia del comunicado a la casilla del propio admin autenticado.
+ * Envía una copia del comunicado a DOS destinos: la casilla del equipo
+ * académico y la de quien está creando la campaña (para que vea su propio
+ * borrador). Se deduplican si coinciden. Con `to` se reemplaza la casilla del
+ * equipo por otra; la copia al autor se mantiene siempre.
  *
- * El destinatario NO se acepta por body a propósito: si se pudiera elegir, este
- * endpoint sería un relay para mandar correo con la marca de Capital Academy a
- * cualquier dirección. Se envía a `auth.user.email` y a nadie más.
+ * Los destinatarios están restringidos a correos que ya pertenecen a una cuenta
+ * con `system_role` ops/admin (más la casilla del equipo, que es configuración
+ * del servidor). No es una lista blanca decorativa: sin ella, este endpoint
+ * sería un relay para mandar correo con la marca de Capital Academy a cualquier
+ * dirección del mundo.
+ *
+ * OJO — un destino puede ser válido y aun así no recibir nada: el dominio
+ * `capitalacademy.cl` NO tiene registros MX (sirve para enviar, no para
+ * recibir), así que `admin@capitalacademy.cl` acepta el envío y lo pierde. Por
+ * eso la respuesta devuelve `to[]`: la UI muestra a dónde fue de verdad.
  *
  * No toca la bitácora de la campaña: una prueba no cuenta como entrega.
  */
-export async function POST(_req: Request, ctx: Ctx) {
+export async function POST(req: Request, ctx: Ctx) {
   const auth = await authorizeAdmin();
   if ("error" in auth) return auth.error;
 
@@ -30,15 +54,54 @@ export async function POST(_req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "ID inválido" }, { status: 422 });
   }
 
-  const to = auth.user.email;
-  if (!to) {
+  const admin = createAdminClient();
+
+  // Body opcional: un POST sin cuerpo es válido y significa "a mí mismo".
+  let requestedTo: string | null = null;
+  try {
+    const body = (await req.json()) as { to?: unknown };
+    if (typeof body?.to === "string" && body.to.trim()) requestedTo = body.to.trim();
+  } catch {
+    // sin body
+  }
+
+  const { data: staff } = await admin
+    .from("profiles")
+    .select("email")
+    .in("system_role", ["ops", "admin"]);
+
+  const allowed = new Set(
+    ((staff ?? []) as Array<{ email: string | null }>)
+      .map((s) => s.email?.trim().toLowerCase())
+      .filter((e): e is string => Boolean(e)),
+  );
+  // La casilla del equipo viene de configuración del servidor, no del cliente:
+  // es confiable aunque no exista como perfil.
+  allowed.add(TEAM_INBOX.toLowerCase());
+
+  // Casilla del equipo (o la pedida) + copia al autor, sin repetir.
+  const recipients = [...new Set(
+    [requestedTo ?? TEAM_INBOX, auth.user.email]
+      .filter((e): e is string => Boolean(e && e.trim()))
+      .map((e) => e.trim()),
+  )];
+
+  if (recipients.length === 0) {
     return NextResponse.json(
-      { error: "Tu cuenta no tiene un correo asociado" },
+      { error: "No hay ninguna casilla a la que enviar la prueba" },
       { status: 422 },
     );
   }
 
-  const admin = createAdminClient();
+  const notAllowed = recipients.filter((e) => !allowed.has(e.toLowerCase()));
+  if (notAllowed.length > 0) {
+    return NextResponse.json(
+      {
+        error: `La prueba solo se puede enviar a casillas del equipo (rechazado: ${notAllowed.join(", ")})`,
+      },
+      { status: 403 },
+    );
+  }
   const { data: campaign } = await admin
     .from("email_campaigns")
     .select("program_id, subject, preheader, body_md, cta_label, cta_url")
@@ -69,7 +132,7 @@ export async function POST(_req: Request, ctx: Ctx) {
     const resend = getResendClient();
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to,
+      to: recipients,
       subject: content.subject,
       html: content.html,
       text: content.text,
@@ -83,5 +146,12 @@ export async function POST(_req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Error al enviar el correo de prueba" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, to });
+  // `undeliverable` no es un fallo del envío: son destinos que Resend acepta
+  // pero cuyo dominio no puede recibir correo (sin MX). Se avisa en vez de
+  // dejar que el equipo espere un correo que nunca va a llegar.
+  const undeliverable = recipients.filter((e) =>
+    NON_RECEIVING_DOMAINS.has(e.split("@")[1]?.toLowerCase() ?? ""),
+  );
+
+  return NextResponse.json({ ok: true, to: recipients, undeliverable });
 }

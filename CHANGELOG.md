@@ -40,6 +40,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- El correo de prueba de un comunicado ahora llega: antes se enviaba solo a la dirección de la cuenta con la que entras al panel, y como ese dominio no recibe correo, la pantalla decía "prueba enviada" y no llegaba nada. Ahora va a la casilla del equipo académico con copia a quien redacta, y avisa si algún destino no puede recibir (`d09e748`)
 - La presentación "IA 2026" ya se puede ver desde el teléfono: antes abría un instante y el navegador cerraba la pestaña, y el logo de la academia aparecía roto (`bf420b8`)
 - Segunda tanda de endurecimiento: si falla la base de datos, tu evaluación ya no dice "nunca has rendido" ni tu progreso se ve en cero — ahora se muestra el error; un módulo cuyas lecciones no tienen video ya se puede completar; el examen final corrige bien las preguntas de opción múltiple, verdadero/falso y respuesta abierta; marcar asistencia a todo el curso ya no falla en cohortes grandes; y los errores al cargar certificados, cupones y pagos de Flow dejan de quedar en pantalla en blanco (`ee58574`, `0f8f742`, `1960bbd`, `187d2cb`, `fc2a21d`, `0ee75bd`)
 - Un miembro de operación ya no puede crear cuentas con permisos de operación o administración cuando su propio perfil no se puede leer: el control de permisos ahora falla cerrado (`0ee75bd`)

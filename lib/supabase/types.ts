@@ -940,6 +940,145 @@ export type Database = {
           },
         ]
       }
+      email_campaign_recipients: {
+        Row: {
+          campaign_id: string
+          channel: string
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          sent_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          campaign_id: string
+          channel?: string
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          campaign_id?: string
+          channel?: string
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaign_recipients_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_campaigns: {
+        Row: {
+          audience_segment: string | null
+          audience_status: string[]
+          body_md: string
+          cohort_id: string | null
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_url: string | null
+          error: string | null
+          id: string
+          preheader: string | null
+          program_id: string
+          recipients_count: number
+          send_started_at: string | null
+          sent_at: string | null
+          sent_count: number
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          audience_segment?: string | null
+          audience_status?: string[]
+          body_md: string
+          cohort_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          error?: string | null
+          id?: string
+          preheader?: string | null
+          program_id: string
+          recipients_count?: number
+          send_started_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          audience_segment?: string | null
+          audience_status?: string[]
+          body_md?: string
+          cohort_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          error?: string | null
+          id?: string
+          preheader?: string | null
+          program_id?: string
+          recipients_count?: number
+          send_started_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaigns_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollments: {
         Row: {
           cohort_id: string
@@ -2322,6 +2461,145 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_campaign_recipients: {
+        Row: {
+          campaign_id: string
+          channel: string
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          sent_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          campaign_id: string
+          channel?: string
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          campaign_id?: string
+          channel?: string
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "survey_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_campaign_recipients_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_campaigns: {
+        Row: {
+          audience_segment: string | null
+          audience_status: string[]
+          cohort_id: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          external_survey_id: string | null
+          external_survey_slug: string
+          external_survey_url: string
+          id: string
+          mode: string
+          program_id: string
+          recipients_count: number
+          send_started_at: string | null
+          sent_at: string | null
+          sent_count: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience_segment?: string | null
+          audience_status?: string[]
+          cohort_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          external_survey_id?: string | null
+          external_survey_slug: string
+          external_survey_url: string
+          id?: string
+          mode: string
+          program_id: string
+          recipients_count?: number
+          send_started_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience_segment?: string | null
+          audience_status?: string[]
+          cohort_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          external_survey_id?: string | null
+          external_survey_slug?: string
+          external_survey_url?: string
+          id?: string
+          mode?: string
+          program_id?: string
+          recipients_count?: number
+          send_started_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_campaigns_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_campaigns_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
         ]

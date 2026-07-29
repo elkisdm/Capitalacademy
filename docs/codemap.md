@@ -46,6 +46,36 @@
 | `scripts/send-encuesta-feedback-clase-ia.mjs` | Envío one-off de la encuesta ANÓNIMA de feedback post-clase de IA (2026-07-22); correo personalizado, formulario sin identificador | `--list` / `--dry-run` / `preview` / `send` | — |
 | `scripts/export-class-planning-context.mjs` | Snapshot sanitizado para planificación docente (sin transcripciones completas ni IDs de alumnos), hacia `../capital-context/academia/snapshots` | `--out-dir` | — |
 
+## Comunicaciones (correos masivos)
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `db/migrations/0082_email_campaigns.sql` | `email_campaigns` (mensaje + audiencia) y `email_campaign_recipients` (bitácora por destinatario) + RLS solo-lectura para staff | — | 0026, 0020 |
+| `lib/email/layout.ts` | Shell de correo compartido (`emailShell`/`emailButton`/`emailGreeting`), con acento por entorno desde `lib/programs/registry.ts`. Las 4 plantillas previas siguen con su `shell()` propio | — | 0026 |
+| `lib/email/markdown.ts` | Subset Markdown → HTML email-safe con estilos inline (+ versión texto); escapa HTML y limita enlaces a http/https/mailto | — | 0026 |
+| `lib/email/campaign.ts` | `buildCampaignEmail`: arma el comunicado (saludo, cuerpo Markdown, CTA opcional) sin enviarlo | — | 0026 |
+| `lib/campaigns/audience.ts` | `resolveAudience`: alumnos por programa/cohorte/estado/segmento; excluye staff (`profiles.role`) y deduplica por correo | — | 0026 |
+| `lib/campaigns/send.ts` | `sendEmailCampaign`: reclamo atómico → bitácora → `sendEmailBatch` → estado terminal solo sin fallos | — | 0026, 0020 |
+| `app/api/admin/campaigns/route.ts` · `[campaignId]/route.ts` | CRUD de campañas; PATCH/DELETE dan 409 sobre una campaña ya enviada | `GET/POST/PATCH/DELETE /api/admin/campaigns` | 0026 |
+| `app/api/admin/campaigns/[campaignId]/send/route.ts` | Dispara el envío real (idempotente por bitácora) | `POST /api/admin/campaigns/[id]/send` | 0026 |
+| `app/api/admin/campaigns/[campaignId]/test/route.ts` | Correo de prueba SOLO a la casilla del admin autenticado (el destinatario no se acepta por body) | `POST /api/admin/campaigns/[id]/test` | 0026 |
+| `app/api/admin/campaigns/audience/route.ts` | Conteo de destinatarios previo al envío + muestra corta | `GET /api/admin/campaigns/audience` | 0026 |
+| `app/(admin)/admin/comunicaciones/` · `components/admin/comunicaciones/campaigns-manager.tsx` | Panel: lista, editor Markdown, conteo de audiencia en vivo, prueba y confirmación de envío | `/admin/comunicaciones` | 0026 |
+
+## Encuestas (federadas con capital-admin/hclp)
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `db/migrations/0083_survey_campaigns.sql` | `survey_campaigns` (envío + enlace al motor remoto, sin FK) y `survey_campaign_recipients` (bitácora, canal email/whatsapp) | — | 0026 |
+| `lib/surveys/config.ts` | Credenciales cruzadas por capacidad (`create`/`enroll`/`results`) y `SurveysNotConfiguredError` → 503 nombrando la variable faltante | — | 0026 |
+| `lib/surveys/questions.ts` | Tipos y schema Zod de pregunta (subset del contrato de capital-admin) + `toRemoteQuestions` | — | 0026 |
+| `lib/surveys/remote.ts` | Los 3 contratos remotos: crear (service_role al Supabase compartido), enrolar (ingesta de hclp) y leer resultados (API externa Bearer) | — | 0026 |
+| `lib/surveys/send.ts` | `sendSurveyCampaign`: anónima → Resend propio con enlace idéntico (`assertAnonymousUrl`); identificada → delega en hclp (correo + WhatsApp) | — | 0026, 0020 |
+| `lib/email/survey-invitation.ts` | Invitación branded a una encuesta ANÓNIMA; nunca concatena identificador a la URL | — | 0026 |
+| `app/api/admin/surveys/route.ts` | Lista encuestas + estado de configuración; POST crea primero en el motor remoto y luego la campaña local | `GET/POST /api/admin/surveys` | 0026 |
+| `app/api/admin/surveys/[campaignId]/send/route.ts` · `results/route.ts` | Envío idempotente; resultados leídos al vuelo (en modo anónimo solo el conteo, nunca el detalle por persona) | `/api/admin/surveys/[id]/{send,results}` | 0026 |
+| `app/(admin)/admin/encuestas/` · `components/admin/encuestas/{surveys-manager,question-editor}.tsx` | Panel: editor de preguntas (escala/opción/texto/NPS/separador), modo anónimo o identificado, envío y resultados | `/admin/encuestas` | 0026 |
+
 ## Acceso / Onboarding
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |

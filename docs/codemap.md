@@ -284,7 +284,10 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/(auth)/forgot-password/page.tsx` · `app/api/auth/forgot-password/route.ts` | Recuperación de contraseña (email branded vía Resend) | `/forgot-password` | — |
+| `app/(auth)/forgot-password/page.tsx` · `app/api/auth/forgot-password/route.ts` | Enlace de acceso único: activa la cuenta de quien nunca tuvo contraseña y recupera la olvidada (email branded vía Resend) | `/forgot-password` | — |
+| `lib/email/access-link.ts` | Envío del correo de enlace de acceso + registro en `access_email_log`; avisa al equipo si el envío falla | — | — |
+| `app/api/webhooks/resend/route.ts` | Webhook de Resend (firma Svix): marca entregado/rebotado/spam sobre `access_email_log` | `POST /api/webhooks/resend` | — |
+| `app/(admin)/admin/users/[userId]/access-history.tsx` | Historial de enlaces de acceso de una persona en su ficha de admin | — | — |
 | `app/auth/callback/route.ts` | Callback de sesión de Supabase | `/auth/callback` | — |
 | `app/api/auth/signout/route.ts` | Cierre de sesión | `POST /api/auth/signout` | — |
 | `lib/supabase/{client,server,admin}.ts` | Clientes Supabase: browser / server / service-role | — | — |
@@ -308,6 +311,8 @@
 | `db/migrations/0052_prevent_role_self_escalation.sql` | Trigger que bloquea la auto-escalación de `role`/`system_role` en `profiles` (solo staff/service-role puede cambiarlos) | — | — |
 | `db/migrations/0069_drop_profiles_rut_unique_idx.sql` | Borra el índice único global de RUT en `profiles`: el RUT identifica a una persona, no a una cuenta, y una misma persona puede tener varias cuentas legítimas (alumna en un programa, profe en otro) | — | 0015 |
 | `db/migrations/0074_leads.sql` | Versiona `leads` (megaauditoría 16-jul, hallazgo C3): reproduce la tabla que solo existía en prod (creada por dashboard); RLS habilitada sin policies (deny-all), único escritor es `app/api/leads/route.ts` vía service-role | — | — |
+| `db/migrations/0081_session_reminders_72h.sql` | Habilita la ventana de 72h en `session_reminders` (recordatorio de clase 3 días antes) | — | — |
+| `db/migrations/0084_access_email_log.sql` | Bitácora de los correos de acceso (enviado/falló/sin cuenta + entrega vía webhook); RLS solo staff | — | — |
 | `db/migrations/0079_rls_initplan_optimization.sql` | Corta la recursión RLS entre `video_progress`/`enrollments`/`cohort_roles` (funciones SECURITY DEFINER + policies consolidadas) y cachea `auth.uid()`/`is_platform_staff()` como initplan, cerrando los timeouts 57014 del classroom. No aplicada a prod en este ciclo | — | — |
 | `db/migrations/0080_quiz_correct_option_af.sql` | Amplía el CHECK de `quiz_questions.correct_option` de A–D a A–F (o NULL), alineando el esquema con las hasta 6 opciones que ya soporta la UI de preguntas de opción única | — | — |
 | `scripts/invite-capacitaciones.mjs` | Invitación masiva de asistentes al ciclo CAP-CI (crea usuario + matrícula + correo branded) | — | 0012 |

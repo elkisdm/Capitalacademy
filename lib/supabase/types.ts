@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_email_log: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          delivery_status: string | null
+          email: string
+          error: string | null
+          id: string
+          kind: string
+          provider: string
+          provider_message_id: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
+          email: string
+          error?: string | null
+          id?: string
+          kind?: string
+          provider?: string
+          provider_message_id?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
+          email?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          provider?: string
+          provider_message_id?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_email_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_alerts: {
         Row: {
           absences_count: number

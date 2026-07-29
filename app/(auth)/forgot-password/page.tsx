@@ -6,14 +6,14 @@ import { getBrandBySlug, loginPath } from "@/lib/programs/registry";
 import { safeNextPath } from "@/lib/auth/redirects";
 
 export const metadata = {
-  title: "Recuperar contraseña",
-  description: "Solicita un enlace para restablecer tu contraseña.",
+  title: "Enlace de acceso",
+  description: "Recibe un enlace para entrar a la plataforma.",
 };
 
 export default async function ForgotPasswordPage(
-  props: { searchParams: Promise<{ next?: string; brand?: string }> },
+  props: { searchParams: Promise<{ next?: string; brand?: string; email?: string }> },
 ) {
-  const { next, brand: brandSlug } = await props.searchParams;
+  const { next, brand: brandSlug, email } = await props.searchParams;
   const brand = getBrandBySlug(brandSlug);
   const dest = safeNextPath(next, "");
 
@@ -41,11 +41,17 @@ export default async function ForgotPasswordPage(
             priority
             className="h-14 w-auto"
           />
+          {/*
+            El copy cubre a propósito los dos casos con las mismas palabras: la
+            persona que nunca activó su cuenta y la que olvidó su contraseña
+            reciben exactamente el mismo enlace.
+          */}
           <h1 className="mt-4 text-[22px] font-black tracking-tight" style={{ color: "var(--color-ca-ink)" }}>
-            Recuperar contraseña
+            Entra con un enlace
           </h1>
           <p className="mt-1 text-center text-[13px] font-semibold" style={{ color: "var(--color-ca-ink-soft)" }}>
-            Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
+            Ingresa tu email y te mandamos un enlace para entrar. Sirve igual si es tu
+            primera vez o si olvidaste tu contraseña.
           </p>
         </div>
 
@@ -53,6 +59,7 @@ export default async function ForgotPasswordPage(
           <ForgotPasswordForm
             next={dest}
             brand={brand.slug}
+            initialEmail={email ?? ""}
             backToLoginHref={
               dest
                 ? `${loginPath(brand)}?next=${encodeURIComponent(dest)}`

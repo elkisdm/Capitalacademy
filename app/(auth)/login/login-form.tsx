@@ -32,9 +32,9 @@ function EyeOffIcon() {
 const ERROR_MESSAGES: Record<string, string> = {
   invalid: "Email o contraseña incorrectos.",
   link_expired:
-    "Ese enlace ya se usó o venció. Entra con tu contraseña, o pide uno nuevo en «¿Olvidaste tu contraseña?».",
+    "Ese enlace ya se usó o venció. Entra con tu contraseña, o pide uno nuevo en «¿No puedes entrar?».",
   missing_token:
-    "El enlace del correo llegó incompleto. Entra con tu contraseña, o pide uno nuevo en «¿Olvidaste tu contraseña?».",
+    "El enlace del correo llegó incompleto. Entra con tu contraseña, o pide uno nuevo en «¿No puedes entrar?».",
   confirm_failed: "No pudimos validar el enlace. Intenta entrar con tu contraseña.",
 };
 
@@ -157,12 +157,19 @@ export function LoginForm({
         </div>
       </div>
 
+      {/*
+        Un solo enlace cubre los dos casos, porque en el fondo son el mismo
+        mecanismo: quien nunca creó una contraseña y quien la olvidó reciben el
+        mismo enlace de acceso. Decía «¿Olvidaste tu contraseña?», que dejaba
+        fuera a las personas recién matriculadas —no puedes olvidar algo que
+        nunca tuviste— y las mandaba a pedirle ayuda a alguien.
+      */}
       <div className="flex justify-end">
         <Link
           href={forgotHref}
           className="text-[12px] font-semibold text-ca-ink-soft transition-colors hover:text-ca-violet"
         >
-          ¿Olvidaste tu contraseña?
+          ¿No puedes entrar? Te enviamos un enlace
         </Link>
       </div>
 

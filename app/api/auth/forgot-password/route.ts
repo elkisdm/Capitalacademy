@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import {
+  sendAccessLinkEmail,
+  logAccessEmail,
+  notifyAccessEmailFailure,
+} from "@/lib/email/access-link";
 import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
 import { getBrandBySlug, onboardingSetPasswordPath } from "@/lib/programs/registry";
@@ -72,50 +76,31 @@ export async function POST(req: Request) {
       },
     });
 
+  /*
+    La respuesta al cliente es siempre `ok: true` —responder distinto delataría
+    qué correos tienen cuenta— pero hacia adentro los desenlaces se distinguen.
+    Sin esta bitácora, "no me llega nada" era indistinguible de "escribí mal mi
+    correo": ver docs/specs/acceso-autoservicio-trazabilidad.md.
+  */
   if (linkError) {
+    const notFound = /not found|no user|user_not_found/i.test(linkError.message);
+    if (notFound) {
+      await logAccessEmail({ email, status: "no_account" });
+    } else {
+      await logAccessEmail({ email, status: "failed", error: linkError.message });
+      await notifyAccessEmailFailure(email, `generateLink: ${linkError.message}`);
+    }
     return NextResponse.json({ ok: true });
   }
 
   const hashedToken = linkData.properties.hashed_token;
   const resetUrl = `${baseUrl}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&brand=${brand.slug}&next=${encodeURIComponent(afterConfirm)}`;
 
-  try {
-    const resend = getResendClient();
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: "Restablecer contraseña · Capital Academy",
-      html: `
-        <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #ffffff;">
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #14163a; font-size: 22px; font-weight: 900; margin: 0;">Capital Academy</h1>
-            <p style="color: #6b6e8a; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0;">Restablecer contraseña</p>
-          </div>
-          <p style="color: #14163a; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">
-            Recibimos una solicitud para restablecer tu contraseña.
-          </p>
-          <p style="color: #6b6e8a; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
-            Haz clic en el botón para crear una nueva contraseña. Este enlace expira en 1 hora.
-          </p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${resetUrl}" style="display: inline-block; background: #5e17eb; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 12px;">
-              Restablecer contraseña
-            </a>
-          </div>
-          <p style="color: #9b9db5; font-size: 12px; line-height: 1.5; margin: 24px 0 0;">
-            Si no solicitaste este cambio, ignora este email. Tu contraseña no será modificada.
-          </p>
-          <hr style="border: none; border-top: 1px solid #f0f0f3; margin: 32px 0 16px;" />
-          <p style="color: #9b9db5; font-size: 11px; text-align: center; margin: 0;">
-            Capital Academy · Capital Inteligente
-          </p>
-        </div>
-      `,
-      text: `Restablecer contraseña - Capital Academy\n\nHaz clic en el siguiente enlace para crear una nueva contraseña:\n${resetUrl}\n\nSi no solicitaste este cambio, ignora este email.`,
-    });
-  } catch (err) {
-    console.error("Password reset email error:", err);
-  }
+  await sendAccessLinkEmail({
+    email,
+    url: resetUrl,
+    userId: linkData.user?.id ?? null,
+  });
 
   return NextResponse.json({ ok: true });
 }

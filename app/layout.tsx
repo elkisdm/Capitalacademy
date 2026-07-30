@@ -126,6 +126,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
+        {/* Analítica propia (Umami, sin cookies): alimenta las métricas de sitios en Marketing Inteligente. */}
+        <script
+          defer
+          src="https://umami-production-41e5.up.railway.app/script.js"
+          data-website-id="b6c2abc6-f596-41b7-b902-4778b1c863a9"
+        />
       </body>
     </html>
   );

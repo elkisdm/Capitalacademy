@@ -105,7 +105,8 @@
 | `app/api/admin/enrollment-segment/route.ts` | Asignación manual del segmento "Capital Inteligente" a una matrícula | `/api/admin/enrollment-segment` | 0008 |
 | `components/admin/segment-toggle.tsx` | Toggle admin del segmento de un alumno | — | 0008 |
 | `app/(classroom)/classroom/[cohortSlug]/calendario/` | Calendario de clases del alumno (vista lista + mes, recursos por sesión, CTA "Responder quiz" si la sesión tiene evaluación `scope='session'` activa) | `/classroom/[cohortSlug]/calendario` | 0008 |
-| `components/classroom/month-calendar.tsx` | Vista de mes del calendario del alumno (a11y, chips por sesión) | — | 0008 |
+| `components/classroom/month-calendar.tsx` | Vista de mes del calendario (a11y, chips por sesión); renderiza sobre `lib/calendar/month-grid.ts`, la usan el alumno y `/admin/calendario` | — | 0008 |
+| `lib/calendar/month-grid.ts` | Grilla del mes como función pura: `dayKeyOf` (día en hora de Chile, fuente única), `groupByDay`, `buildMonthCells` (las celdas de relleno traen sus sesiones), `toWeeks` | — | — |
 
 ## Recordatorios / Cron
 

@@ -1,8 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  TZ_SANTIAGO,
+  buildMonthCells,
+  dayKeyOf,
+  toWeeks,
+} from "@/lib/calendar/month-grid";
 
-const TZ = "America/Santiago";
+const TZ = TZ_SANTIAGO;
 
 // Forma mínima que la grilla necesita de cada sesión. El padre puede pasar un
 // tipo más rico (ScheduleSession, ClassSession) y lo recibe de vuelta intacto
@@ -27,20 +33,6 @@ type MonthCalendarProps<T extends CalendarEvent> = {
 };
 
 const WEEKDAYS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-/** Día calendario (YYYY-MM-DD) de un instante, en la zona de Santiago. */
-function dayKeyOf(iso: string, tz: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}
 
 function timeLabel(iso: string, tz: string): string {
   return new Intl.DateTimeFormat("es-CL", {
@@ -78,20 +70,6 @@ export function MonthCalendar<T extends CalendarEvent>({
     [timeZone],
   );
 
-  const byDay = useMemo(() => {
-    const map = new Map<string, T[]>();
-    for (const s of sessions) {
-      const key = dayKeyOf(s.starts_at, timeZone);
-      const arr = map.get(key);
-      if (arr) arr.push(s);
-      else map.set(key, [s]);
-    }
-    for (const arr of map.values()) {
-      arr.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-    }
-    return map;
-  }, [sessions, timeZone]);
-
   // Mes inicial: el de la próxima sesión no terminada; si todas pasaron, el de
   // la última; si no hay sesiones, el mes actual.
   const initial = useMemo(() => {
@@ -107,47 +85,10 @@ export function MonthCalendar<T extends CalendarEvent>({
 
   const [view, setView] = useState(initial);
 
-  const weeks = useMemo(() => {
-    const { year, month } = view;
-    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-    const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay(); // 0=dom
-    const lead = (firstDow + 6) % 7; // lunes primero
-
-    const cells: { key: string; day: number; inMonth: boolean }[] = [];
-
-    // Relleno del mes anterior.
-    const prevDays = new Date(Date.UTC(year, month, 0)).getUTCDate();
-    const prevMonth = month === 0 ? 11 : month - 1;
-    const prevYear = month === 0 ? year - 1 : year;
-    for (let i = lead - 1; i >= 0; i--) {
-      const d = prevDays - i;
-      cells.push({
-        key: `${prevYear}-${pad(prevMonth + 1)}-${pad(d)}`,
-        day: d,
-        inMonth: false,
-      });
-    }
-    // Días del mes.
-    for (let d = 1; d <= daysInMonth; d++) {
-      cells.push({ key: `${year}-${pad(month + 1)}-${pad(d)}`, day: d, inMonth: true });
-    }
-    // Relleno del mes siguiente hasta completar la última semana.
-    const nextMonth = month === 11 ? 0 : month + 1;
-    const nextYear = month === 11 ? year + 1 : year;
-    let d = 1;
-    while (cells.length % 7 !== 0) {
-      cells.push({
-        key: `${nextYear}-${pad(nextMonth + 1)}-${pad(d)}`,
-        day: d,
-        inMonth: false,
-      });
-      d++;
-    }
-
-    const rows: (typeof cells)[] = [];
-    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-    return rows;
-  }, [view]);
+  const weeks = useMemo(
+    () => toWeeks(buildMonthCells(view.year, view.month, sessions, timeZone)),
+    [view, sessions, timeZone],
+  );
 
   const go = (delta: number) => {
     setView((v) => {
@@ -209,7 +150,9 @@ export function MonthCalendar<T extends CalendarEvent>({
       {/* Celdas */}
       <div className="grid grid-cols-7">
         {weeks.flat().map((cell) => {
-          const daySessions = cell.inMonth ? byDay.get(cell.key) ?? [] : [];
+          // Las sesiones vienen ya resueltas por `buildMonthCells`, incluidas las
+          // de las celdas de relleno (ver el comentario de `lib/calendar/month-grid.ts`).
+          const daySessions = cell.sessions;
           const isToday = cell.key === todayKey;
           const isSelected = selectedDay === cell.key;
           const hasSessions = daySessions.length > 0;
@@ -238,9 +181,10 @@ export function MonthCalendar<T extends CalendarEvent>({
                 type="button"
                 onClick={() => onDayClick?.(cell.key, daySessions)}
                 aria-label={dayAriaLabel}
-                className={`absolute inset-0 z-0 rounded-none transition-colors ${
-                  cell.inMonth ? "hover:bg-ca-bg-soft/50" : ""
-                }`}
+                // El hover va también en las celdas de relleno: ya eran
+                // clickeables, así que no señalarlo era una promesa falsa de
+                // "no pasa nada si haces clic aquí".
+                className="absolute inset-0 z-0 rounded-none transition-colors hover:bg-ca-bg-soft/50"
               />
 
               <span

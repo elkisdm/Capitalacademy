@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import { Badge } from "@/components/ui/badge";
+import { TZ_SANTIAGO, dayKeyOf } from "@/lib/calendar/month-grid";
 
-const TZ = "America/Santiago";
+const TZ = TZ_SANTIAGO;
 
 const MODALITY_LABELS: Record<string, string> = {
   live_online: "Online",
@@ -18,15 +19,6 @@ const MODALITY_TONE: Record<string, "violet" | "neutral" | "amber"> = {
   live_in_person: "neutral",
   recorded: "amber",
 };
-
-function dayKeyOf(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}
 
 function fmtTime(iso: string): string {
   return new Intl.DateTimeFormat("es-CL", {

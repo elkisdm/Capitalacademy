@@ -3,9 +3,24 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
+import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { ACTIVITY_MAX_GAP_SECONDS, chileDateKey } from "@/lib/classroom/actividad";
 
 export const runtime = "nodejs";
+
+/**
+ * Es la ruta que más se dispara de la aplicación: una vez por minuto por cada
+ * alumno conectado, sola, sin que nadie la pulse. Cada llamada cuesta un
+ * round-trip al Auth de Supabase más dos o tres consultas, así que un bucle
+ * autenticado agota el pool de conexiones — la misma familia del incidente de
+ * timeouts 57014 del 21-jul.
+ *
+ * 40 por minuto deja margen de sobra para el latido normal (1/min), los de
+ * reanudación al cambiar de pestaña y varias pestañas abiertas a la vez, y
+ * corta un bucle mucho antes de que haga daño. Limitar no afecta la métrica:
+ * los latidos extra acreditan ~0 segundos igual.
+ */
+const beatLimiter = createRateLimiter({ limit: 40, windowSeconds: 60 });
 
 /**
  * Latido de actividad del alumno (ADR-0029).
@@ -44,6 +59,9 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  const rl = beatLimiter.check(user.id);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   // Un cuerpo ilegible se trata como vacío en vez de 400: el latido puede salir
   // con `keepalive` durante el descargue de la página, y perder telemetría no

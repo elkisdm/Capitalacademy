@@ -250,4 +250,38 @@ describe("POST /api/classroom/actividad", () => {
     expect(res.status).toBe(500);
     expect(res.headers.get("Retry-After")).toBeNull();
   });
+
+  // Es la ruta que más se dispara de la app y la única que se llama sola. Sin
+  // corte, un bucle autenticado agota el pool de conexiones: cada llamada paga
+  // un round-trip al Auth de Supabase más dos o tres consultas.
+  it("corta con 429 un bucle de latidos del mismo usuario", async () => {
+    // Usuario propio para no consumir la cuota de los demás tests: el limitador
+    // es estado de módulo y vive entre tests del mismo archivo.
+    const looper = { id: "99999999-8888-4777-8666-555555555555" };
+    mockGetUser.mockResolvedValue({ data: { user: looper } });
+    mockEnrollmentMaybeSingle.mockResolvedValue({ data: { id: ENROLLMENT_ID } });
+    mockRpc.mockResolvedValue({ data: { active_seconds: 60 }, error: null });
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 45; i++) {
+      statuses.push((await POST(makeRequest())).status);
+    }
+
+    expect(statuses.slice(0, 40).every((s) => s === 200)).toBe(true);
+    expect(statuses[40]).toBe(429);
+    expect(statuses.at(-1)).toBe(429);
+  });
+
+  it("el 429 trae Retry-After para que el cliente no insista", async () => {
+    const looper = { id: "aaaaaaaa-8888-4777-8666-555555555555" };
+    mockGetUser.mockResolvedValue({ data: { user: looper } });
+    mockEnrollmentMaybeSingle.mockResolvedValue({ data: { id: ENROLLMENT_ID } });
+    mockRpc.mockResolvedValue({ data: { active_seconds: 60 }, error: null });
+
+    let res = await POST(makeRequest());
+    for (let i = 0; i < 40; i++) res = await POST(makeRequest());
+
+    expect(res.status).toBe(429);
+    expect(Number(res.headers.get("Retry-After"))).toBeGreaterThan(0);
+  });
 });

@@ -52,6 +52,26 @@ describe("isSafeProfileUrl", () => {
 });
 
 describe("normalizeProfileUrl", () => {
+  // El CHECK de la migración 0086 exige el literal `^https://`. Si se guardara
+  // el texto crudo, un slash de menos pasaría la validación de la app, Postgres
+  // rechazaría el UPDATE entero y se perdería también la reseña escrita a la vez.
+  it("devuelve siempre una URL que cumple el CHECK ^https:// de la base", () => {
+    const casos = ["https:/sitio.cl", "https:sitio.cl", "sitio.cl", "https://sitio.cl"];
+
+    for (const caso of casos) {
+      const out = normalizeProfileUrl(caso);
+      expect(out.ok).toBe(true);
+      expect(out.ok && out.value).toMatch(/^https:\/\//);
+    }
+  });
+
+  it("normaliza el slash faltante en vez de guardar el texto crudo", () => {
+    expect(normalizeProfileUrl("https:/paola.cl")).toEqual({
+      ok: true,
+      value: "https://paola.cl/",
+    });
+  });
+
   it("vacío, null y undefined se guardan como null", () => {
     expect(normalizeProfileUrl("")).toEqual({ ok: true, value: null });
     expect(normalizeProfileUrl("   ")).toEqual({ ok: true, value: null });

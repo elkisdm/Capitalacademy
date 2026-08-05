@@ -47,6 +47,13 @@ export function isSafeProfileUrl(value: string | null | undefined): boolean {
   return parsed.protocol === "https:" && parsed.hostname.length > 0;
 }
 
+/**
+ * La misma forma que exige el CHECK de `db/migrations/0086_instructors_perfil_publico.sql`
+ * (`^https://[^[:space:]]+$`). Si lo que se va a guardar no la cumple, Postgres
+ * rechaza el UPDATE entero.
+ */
+const DB_URL_SHAPE = /^https:\/\/\S+$/;
+
 export type NormalizedUrl =
   | { ok: true; value: string | null }
   | { ok: false; error: string };
@@ -82,7 +89,26 @@ export function normalizeProfileUrl(value: unknown): NormalizedUrl {
   if (!isSafeProfileUrl(candidate)) {
     return { ok: false, error: "El enlace no es válido. Revísalo y vuelve a intentarlo" };
   }
-  return { ok: true, value: candidate };
+
+  // La app y la base tienen que coincidir. `new URL()` es más permisivo que el
+  // CHECK de la migración 0086: acepta `https:/sitio.cl` (un slash de menos,
+  // typo plausible al borrar un carácter) y lo interpreta bien, pero ese literal
+  // NO matchea `^https://`. Guardando el texto crudo, Postgres rechazaba el
+  // UPDATE completo con un 422 que ni siquiera dice qué campo falló y —como el
+  // UPDATE es atómico— se perdía también la reseña que se escribía a la vez.
+  //
+  // Solo se reescribe cuando hace falta: si el texto ya cumple, se guarda tal
+  // cual. Reescribirlo siempre le agregaría una barra final a `https://sitio.cl`
+  // y esa es justo la magia silenciosa que este archivo evita a propósito.
+  if (DB_URL_SHAPE.test(candidate)) {
+    return { ok: true, value: candidate };
+  }
+
+  const normalized = new URL(candidate).href;
+  if (normalized.length > MAX_URL_LENGTH) {
+    return { ok: false, error: "El enlace es demasiado largo (máximo 500 caracteres)" };
+  }
+  return { ok: true, value: normalized };
 }
 
 /**

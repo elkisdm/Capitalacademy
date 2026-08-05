@@ -1,0 +1,170 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveCohortSlug } from "@/lib/classroom/resolve-slugs";
+import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+import { ACTIVITY_MAX_GAP_SECONDS, chileDateKey } from "@/lib/classroom/actividad";
+
+export const runtime = "nodejs";
+
+/**
+ * Es la ruta que más se dispara de la aplicación: una vez por minuto por cada
+ * alumno conectado, sola, sin que nadie la pulse. Cada llamada cuesta un
+ * round-trip al Auth de Supabase más dos o tres consultas, así que un bucle
+ * autenticado agota el pool de conexiones — la misma familia del incidente de
+ * timeouts 57014 del 21-jul.
+ *
+ * 40 por minuto deja margen de sobra para el latido normal (1/min), los de
+ * reanudación al cambiar de pestaña y varias pestañas abiertas a la vez, y
+ * corta un bucle mucho antes de que haga daño. Limitar no afecta la métrica:
+ * los latidos extra acreditan ~0 segundos igual.
+ */
+const beatLimiter = createRateLimiter({ limit: 40, windowSeconds: 60 });
+
+/**
+ * Latido de actividad del alumno (ADR-0029).
+ *
+ * El cuerpo NO lleva segundos a propósito: el incremento lo deriva la base como
+ * `now() - last_beat_at`, recortado a ACTIVITY_MAX_GAP_SECONDS. Latir más
+ * seguido no suma más tiempo, y un latido reenviado por reintento acredita ~0.
+ * Lo único que el cliente aporta es en qué cohorte está parado.
+ *
+ * La escritura va por `record_student_activity` con el cliente admin: un solo
+ * statement atómico, sin leer-modificar-escribir desde acá (dos pestañas
+ * abiertas perderían escrituras) y sin pagar la cascada de RLS en caliente —
+ * la lección del incidente de timeouts 57014 del 21-jul (migración 0079).
+ *
+ * DEGRADACIÓN: esto es telemetría. Cualquier desenlace que no sea "se registró"
+ * responde sin cuerpo útil y el cliente lo ignora; la navegación del alumno
+ * nunca depende de esta ruta.
+ */
+const beatSchema = z.object({
+  // Slug o id de la cohorte donde está parado el alumno. Opcional: las
+  // pantallas fuera de una cohorte (/classroom, /classroom/profile) no lo tienen.
+  cohortSlug: z.string().min(1).max(160).optional(),
+
+  // Primer latido de un tramo visible (al montar o al volver a la pestaña).
+  // Acredita CERO segundos y solo reabre el reloj: no sabemos qué pasó en el
+  // intervalo anterior, así que cobrar el tope sería inventar tiempo.
+  resumed: z.boolean().optional(),
+});
+
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  const rl = beatLimiter.check(user.id);
+  if (!rl.ok) return rateLimitResponse(rl);
+
+  // Un cuerpo ilegible se trata como vacío en vez de 400: el latido puede salir
+  // con `keepalive` durante el descargue de la página, y perder telemetría no
+  // justifica un error. Un cuerpo con la forma equivocada sí se rechaza.
+  let body: unknown = {};
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+
+  const parsed = beatSchema.safeParse(body ?? {});
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validación fallida", issues: parsed.error.issues },
+      { status: 422 },
+    );
+  }
+
+  const { cohortSlug, resumed } = parsed.data;
+  const db = createAdminClient();
+
+  const enrollmentId = await resolveEnrollmentForBeat(db, user.id, cohortSlug);
+
+  if (!enrollmentId) {
+    // Sin matrícula activa no hay nada que registrar: es el caso del staff
+    // recorriendo el classroom en vista previa, cuyo paseo no debe contarse.
+    // 204 y el cliente sigue su camino.
+    //
+    // Ojo con el alcance real: el filtro es la matrícula, NO el rol. Un ops o
+    // admin que además esté matriculado en la cohorte sí acumula tiempo y
+    // aparece en /admin/actividad. Es deliberado —está matriculado de verdad,
+    // igual que cualquier alumno— y no se agrega una consulta de rol por latido
+    // para excluirlo: encarecería la ruta más caliente de la aplicación para
+    // corregir un puñado de filas que el equipo reconoce a simple vista.
+    return new NextResponse(null, { status: 204 });
+  }
+
+  const { data, error } = await db.rpc("record_student_activity", {
+    p_enrollment_id: enrollmentId,
+    p_activity_date: chileDateKey(),
+    // Tope 0 en un latido de reanudación: la base recorta el incremento a 0 y
+    // el latido solo mueve `last_beat_at`.
+    p_max_gap_seconds: resumed ? 0 : ACTIVITY_MAX_GAP_SECONDS,
+  });
+
+  if (error) {
+    const transient = error.code === "57014";
+    console.error("[actividad] record_student_activity error", {
+      code: error.code,
+      message: error.message,
+      transient,
+    });
+    return NextResponse.json(
+      { error: transient ? "Servicio ocupado" : "Error al registrar actividad" },
+      {
+        status: transient ? 503 : 500,
+        headers: transient ? { "Retry-After": "60" } : undefined,
+      },
+    );
+  }
+
+  return NextResponse.json(data ?? {});
+}
+
+/**
+ * Resuelve la matrícula a la que se le acredita el latido.
+ *
+ * Si viene `cohortSlug` y el alumno NO tiene matrícula activa en ESA cohorte,
+ * devuelve null en vez de caer a otra matrícula suya: acreditarle a la cohorte
+ * B el tiempo que pasó mirando la cohorte A ensuciaría los dos reportes. El
+ * fallback a "su matrícula más reciente" solo aplica cuando no hay cohorte en
+ * la ruta (dashboard /classroom, /classroom/profile).
+ */
+async function resolveEnrollmentForBeat(
+  db: ReturnType<typeof createAdminClient>,
+  userId: string,
+  cohortSlug: string | undefined,
+): Promise<string | null> {
+  if (cohortSlug) {
+    const cohortId = await resolveCohortSlug(cohortSlug);
+    if (!cohortId) return null;
+
+    const { data } = await db
+      .from("enrollments")
+      .select("id")
+      .eq("student_id", userId)
+      .eq("cohort_id", cohortId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    return data?.id ?? null;
+  }
+
+  const { data } = await db
+    .from("enrollments")
+    .select("id")
+    .eq("student_id", userId)
+    .eq("status", "active")
+    .order("enrolled_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.id ?? null;
+}

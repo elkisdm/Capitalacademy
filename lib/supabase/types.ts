@@ -2465,6 +2465,50 @@ export type Database = {
           },
         ]
       }
+      student_activity_daily: {
+        Row: {
+          active_seconds: number
+          activity_date: string
+          beats: number
+          created_at: string
+          enrollment_id: string
+          first_beat_at: string
+          id: string
+          last_beat_at: string
+          updated_at: string
+        }
+        Insert: {
+          active_seconds?: number
+          activity_date: string
+          beats?: number
+          created_at?: string
+          enrollment_id: string
+          first_beat_at?: string
+          id?: string
+          last_beat_at?: string
+          updated_at?: string
+        }
+        Update: {
+          active_seconds?: number
+          activity_date?: string
+          beats?: number
+          created_at?: string
+          enrollment_id?: string
+          first_beat_at?: string
+          id?: string
+          last_beat_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_activity_daily_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       survey_campaign_recipients: {
         Row: {
           campaign_id: string
@@ -2748,6 +2792,14 @@ export type Database = {
       is_evaluation_staff: { Args: { p_evaluation_id: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
       is_program_staff: { Args: { p_program_id: string }; Returns: boolean }
+      record_student_activity: {
+        Args: {
+          p_activity_date: string
+          p_enrollment_id: string
+          p_max_gap_seconds: number
+        }
+        Returns: Json
+      }
       reorder_lessons: {
         Args: { p_module_id: string; p_ordered_ids: string[] }
         Returns: undefined

@@ -65,6 +65,12 @@ export function buildActivityRows(
   enrollments: EnrollmentRef[],
   rows: ActivityRow[],
   today: string,
+  /**
+   * Última fecha con actividad ANTERIOR a la ventana del rango, por matrícula.
+   * Solo trae a los que no aparecen dentro de la ventana (ver
+   * `getCohortActivityReport`), así que en la práctica es un puñado de filas.
+   */
+  priorLastActive: ReadonlyMap<string, string> = new Map(),
 ): StudentActivity[] {
   const byEnrollment = new Map<string, ActivityRow[]>();
   for (const row of rows) {
@@ -92,10 +98,15 @@ export function buildActivityRows(
     const totalSeconds = withTime.reduce((sum, r) => sum + Number(r.active_seconds), 0);
     const activeDays = withTime.length;
 
+    // La última vez que se le vio NO puede derivarse solo de la ventana del
+    // rango. Con el rango en 7 días, alguien que entró hace 10 quedaría con
+    // `null` y el panel lo pintaría como "Nunca" y lo sumaría a "14+ días sin
+    // entrar": las dos cosas falsas, y es justo la pregunta que este panel
+    // existe para responder. Por eso se cae al historial anterior a la ventana.
     const lastActiveDate =
       withTime.length > 0
         ? withTime.map((r) => r.activity_date).sort().reverse()[0]
-        : null;
+        : (priorLastActive.get(enr.enrollment_id) ?? null);
 
     const daysSince = lastActiveDate ? daysBetweenDateKeys(lastActiveDate, today) : null;
 
@@ -223,7 +234,39 @@ export async function getCohortActivityReport(
 
   if (error) throw error;
 
-  const students = buildActivityRows(refs, (activity ?? []) as ActivityRow[], today);
+  const rows = (activity ?? []) as ActivityRow[];
+
+  // Quien no aparece en la ventana puede haber entrado ANTES: hay que ir a
+  // buscar su última fecha al historial, o el panel lo reporta como "Nunca".
+  // Se consulta solo por los ausentes (los inactivos, que por definición tienen
+  // pocas filas) y no por toda la cohorte, para no traer el historial completo
+  // de una tabla que crece indefinidamente.
+  const seenInWindow = new Set(
+    rows.filter((r) => Number(r.active_seconds) > 0).map((r) => r.enrollment_id),
+  );
+  const missing = refs
+    .map((r) => r.enrollment_id)
+    .filter((id) => !seenInWindow.has(id));
+
+  const priorLastActive = new Map<string, string>();
+  if (missing.length > 0) {
+    const { data: prior } = await supabase
+      .from("student_activity_daily")
+      .select("enrollment_id, activity_date")
+      .in("enrollment_id", missing)
+      .gt("active_seconds", 0)
+      .lt("activity_date", fromDate)
+      .order("activity_date", { ascending: false });
+
+    // Ordenado descendente: la primera aparición de cada matrícula es su máximo.
+    for (const row of (prior ?? []) as { enrollment_id: string; activity_date: string }[]) {
+      if (!priorLastActive.has(row.enrollment_id)) {
+        priorLastActive.set(row.enrollment_id, row.activity_date);
+      }
+    }
+  }
+
+  const students = buildActivityRows(refs, rows, today, priorLastActive);
 
   return { ...base, students, summary: summarizeActivity(students) };
 }

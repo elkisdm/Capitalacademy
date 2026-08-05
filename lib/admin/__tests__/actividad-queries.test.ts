@@ -6,7 +6,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockCohortSingle = vi.fn();
 const mockEnrollments = vi.fn();
 const mockActivity = vi.fn();
+// Segunda consulta: la última fecha con actividad ANTERIOR a la ventana, solo
+// para las matrículas que no aparecen dentro del rango.
+const mockPriorActivity = vi.fn();
 const activityFilters: Array<{ column: string; value: unknown }> = [];
+const priorFilters: Array<{ column: string; value: unknown }> = [];
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
@@ -32,6 +36,16 @@ vi.mock("@/lib/supabase/server", () => ({
             activityFilters.push({ column, value });
             return mockActivity();
           },
+          // Cadena de la consulta del historial: .gt().lt().order()
+          gt: (column: string, value: unknown) => {
+            priorFilters.push({ column, value });
+            return chain;
+          },
+          lt: (column: string, value: unknown) => {
+            priorFilters.push({ column, value });
+            return chain;
+          },
+          order: () => mockPriorActivity(),
         };
         return chain;
       }
@@ -60,6 +74,9 @@ function enr(id: string, name: string | null = "Ana Pérez") {
 beforeEach(() => {
   vi.clearAllMocks();
   activityFilters.length = 0;
+  priorFilters.length = 0;
+  // Por defecto no hay historial anterior: cada test que lo necesite lo declara.
+  mockPriorActivity.mockResolvedValue({ data: [] });
 });
 
 // ===========================================================================
@@ -120,6 +137,54 @@ describe("buildActivityRows", () => {
     expect(rows[0].avg_seconds_per_active_day).toBe(0);
     expect(rows[0].last_active_date).toBeNull();
     expect(rows[0].days_since_last_active).toBeNull();
+    expect(rows[0].risk).toBe("risk");
+  });
+
+  // El panel existe para responder "quién lleva días sin aparecer". Si la
+  // última fecha se derivara solo de la ventana del rango, con el rango en 7
+  // días un alumno que entró hace 10 saldría como "Nunca" y como inactivo de
+  // 14+ días: las dos cosas falsas.
+  it("usa el historial anterior a la ventana para la última actividad", () => {
+    const rows = buildActivityRows(
+      [enr("e1")],
+      [],
+      TODAY,
+      new Map([["e1", "2026-07-26"]]),
+    );
+
+    expect(rows[0].last_active_date).toBe("2026-07-26");
+    expect(rows[0].days_since_last_active).toBe(10);
+    expect(rows[0].risk).not.toBe("risk");
+  });
+
+  it("los agregados siguen siendo del rango aunque haya historial anterior", () => {
+    const rows = buildActivityRows(
+      [enr("e1")],
+      [],
+      TODAY,
+      new Map([["e1", "2026-07-26"]]),
+    );
+
+    expect(rows[0].total_seconds).toBe(0);
+    expect(rows[0].active_days).toBe(0);
+  });
+
+  it("la actividad dentro de la ventana le gana al historial anterior", () => {
+    const rows = buildActivityRows(
+      [enr("e1")],
+      [{ enrollment_id: "e1", activity_date: "2026-08-04", active_seconds: 600 }],
+      TODAY,
+      new Map([["e1", "2026-07-26"]]),
+    );
+
+    expect(rows[0].last_active_date).toBe("2026-08-04");
+    expect(rows[0].days_since_last_active).toBe(1);
+  });
+
+  it("sigue en null quien no aparece ni en la ventana ni en el historial", () => {
+    const rows = buildActivityRows([enr("e1")], [], TODAY, new Map());
+
+    expect(rows[0].last_active_date).toBeNull();
     expect(rows[0].risk).toBe("risk");
   });
 
@@ -268,6 +333,56 @@ describe("getCohortActivityReport", () => {
     expect(report!.students[0].days_since_last_active).toBe(1);
 
     vi.useRealTimers();
+  });
+
+  it("rescata del historial la última fecha de quien no aparece en la ventana", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-05T15:00:00Z"));
+
+    mockCohortSingle.mockResolvedValue({
+      data: { id: "c1", name: "G4", program_id: "p1", programs: { id: "p1", name: "Diplomado" } },
+    });
+    mockEnrollments.mockResolvedValue({
+      data: [
+        { id: "e1", student_id: "s1", profiles: { full_name: "Ana Pérez", email: "ana@x.cl" } },
+      ],
+    });
+    // Nada dentro de los últimos 7 días...
+    mockActivity.mockResolvedValue({ data: [], error: null });
+    // ...pero sí entró hace 10.
+    mockPriorActivity.mockResolvedValue({
+      data: [{ enrollment_id: "e1", activity_date: "2026-07-26" }],
+    });
+
+    const report = await getCohortActivityReport("c1", 7);
+
+    // El historial se pide acotado a lo anterior a la ventana.
+    expect(priorFilters).toContainEqual({ column: "activity_date", value: "2026-07-30" });
+    expect(report!.students[0].last_active_date).toBe("2026-07-26");
+    expect(report!.students[0].days_since_last_active).toBe(10);
+    // Y por lo tanto NO se le cuenta entre los de 14+ días sin entrar.
+    expect(report!.summary.at_risk).toBe(0);
+
+    vi.useRealTimers();
+  });
+
+  it("no consulta el historial cuando todos aparecieron en la ventana", async () => {
+    mockCohortSingle.mockResolvedValue({
+      data: { id: "c1", name: "G4", program_id: "p1", programs: { id: "p1", name: "Diplomado" } },
+    });
+    mockEnrollments.mockResolvedValue({
+      data: [
+        { id: "e1", student_id: "s1", profiles: { full_name: "Ana Pérez", email: "ana@x.cl" } },
+      ],
+    });
+    mockActivity.mockResolvedValue({
+      data: [{ enrollment_id: "e1", activity_date: "2026-08-04", active_seconds: 2400 }],
+      error: null,
+    });
+
+    await getCohortActivityReport("c1", 7);
+
+    expect(mockPriorActivity).not.toHaveBeenCalled();
   });
 
   it("propaga el error de la consulta de actividad en vez de reportar ceros", async () => {

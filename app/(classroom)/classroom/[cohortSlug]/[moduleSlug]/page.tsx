@@ -8,6 +8,7 @@ import {
   getModuleSessionsForCohort,
 } from "@/lib/classroom/queries";
 import { getClassroomAccess } from "@/lib/classroom/access";
+import { getInstructorIdsByProfileIds } from "@/lib/instructors/queries";
 import { resolveCohortSlug, resolveModuleSlug } from "@/lib/classroom/resolve-slugs";
 import { calculateModuleProgress, getLessonStatus } from "@/lib/classroom/progress";
 import {
@@ -202,9 +203,12 @@ function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession;
             {(session as unknown as { title?: string }).title ?? "Sin título"}
           </Link>
           {session.teacher && (
-            <div className="text-[12px] font-medium text-ca-ink-soft">
+            <Link
+              href={`/classroom/${cohortSlug}/docente/${session.teacher.id}`}
+              className="w-fit text-[12px] font-medium text-ca-ink-soft transition-colors hover:text-ca-violet hover:underline underline-offset-2"
+            >
               {session.teacher.full_name}
-            </div>
+            </Link>
           )}
         </div>
         {isLive && (session as unknown as { meeting_url?: string }).meeting_url && (
@@ -274,6 +278,14 @@ export default async function ModulePage(
   const mod = modules.find((m) => m.id === moduleId);
   if (!mod) notFound();
 
+  // La card "Profesor" del módulo sale de `program_modules.teacher_id`, que
+  // apunta a `profiles` y NO a `instructors` (ADR-0028 §4). Se resuelve el
+  // puente por `profile_id` para poder enlazarla al perfil; si el docente no
+  // tiene ficha visible en el catálogo, el nombre queda como texto plano.
+  const teacherInstructorId = mod.teacher_id
+    ? ((await getInstructorIdsByProfileIds([mod.teacher_id])).get(mod.teacher_id) ?? null)
+    : null;
+
   const progress = calculateModuleProgress(mod.lessons);
   const isCompleted = progress.percentage === 100 && progress.total_lessons > 0;
   const status = isCompleted ? "completed" : progress.percentage > 0 ? "in_progress" : "available";
@@ -307,7 +319,16 @@ export default async function ModulePage(
               <Avatar initials={mod.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={56} />
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-ca-ink-soft">Profesor</div>
-                <div className="text-[16px] font-extrabold tracking-tight text-ca-ink">{mod.teacher.full_name}</div>
+                {teacherInstructorId ? (
+                  <Link
+                    href={`/classroom/${cohortSlug}/docente/${teacherInstructorId}`}
+                    className="text-[16px] font-extrabold tracking-tight text-ca-ink transition-colors hover:text-ca-violet hover:underline underline-offset-2"
+                  >
+                    {mod.teacher.full_name}
+                  </Link>
+                ) : (
+                  <div className="text-[16px] font-extrabold tracking-tight text-ca-ink">{mod.teacher.full_name}</div>
+                )}
               </div>
               <StatusPill status={status} />
             </div>

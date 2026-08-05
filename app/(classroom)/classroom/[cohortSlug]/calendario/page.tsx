@@ -30,5 +30,11 @@ export default async function CohortCalendarPage(
 
   const sessions = await getCohortSchedule(cohortId);
 
-  return <CohortCalendarClient sessions={sessions} cohortName={cohort.name} />;
+  return (
+    <CohortCalendarClient
+      sessions={sessions}
+      cohortName={cohort.name}
+      cohortSlug={cohortSlug}
+    />
+  );
 }

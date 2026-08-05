@@ -214,13 +214,16 @@ export default async function ClassSessionPage(
             </a>
           )}
           {session.teacher?.full_name && (
-            <div className="flex items-center gap-2">
-              <Avatar initials={session.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={28} />
+            <Link
+              href={`/classroom/${cohortSlug}/docente/${session.teacher.id}`}
+              className="group flex items-center gap-2"
+            >
+              <Avatar initials={session.teacher.full_name} avatarUrl={session.teacher.photo_url} size={28} />
               <div className="text-[12px] md:text-right">
-                <span className="font-bold tracking-tight text-ca-ink">{session.teacher.full_name}</span>
+                <span className="font-bold tracking-tight text-ca-ink transition-colors group-hover:text-ca-violet">{session.teacher.full_name}</span>
                 <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft md:ml-0 md:block">Instructor</span>
               </div>
-            </div>
+            </Link>
           )}
         </div>
       </div>

@@ -87,9 +87,16 @@ export async function POST(req: Request) {
   const enrollmentId = await resolveEnrollmentForBeat(db, user.id, cohortSlug);
 
   if (!enrollmentId) {
-    // Sin matrícula activa no hay nada que registrar. El caso típico es staff
-    // recorriendo el classroom en modo vista previa: su paseo NO debe contarse
-    // como actividad de alumno. 204 y el cliente sigue su camino.
+    // Sin matrícula activa no hay nada que registrar: es el caso del staff
+    // recorriendo el classroom en vista previa, cuyo paseo no debe contarse.
+    // 204 y el cliente sigue su camino.
+    //
+    // Ojo con el alcance real: el filtro es la matrícula, NO el rol. Un ops o
+    // admin que además esté matriculado en la cohorte sí acumula tiempo y
+    // aparece en /admin/actividad. Es deliberado —está matriculado de verdad,
+    // igual que cualquier alumno— y no se agrega una consulta de rol por latido
+    // para excluirlo: encarecería la ruta más caliente de la aplicación para
+    // corregir un puñado de filas que el equipo reconoce a simple vista.
     return new NextResponse(null, { status: 204 });
   }
 

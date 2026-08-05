@@ -22,6 +22,16 @@ import {
  * volumen es (alumnos × días del rango), del orden de cientos de filas.
  */
 
+/** Tamaño de página al leer la actividad. Igual al `max-rows` por defecto de PostgREST. */
+const ACTIVITY_PAGE_SIZE = 1000;
+
+/**
+ * Techo duro de filas del reporte. Con ~400 matrículas y 90 días de rango el
+ * peor caso realista son 36.000 filas; 60.000 deja margen y a la vez impide que
+ * un error de paginación derive en un bucle sin fin.
+ */
+const ACTIVITY_MAX_ROWS = 60_000;
+
 export type StudentActivity = {
   student_id: string;
   enrollment_id: string;
@@ -223,18 +233,33 @@ export async function getCohortActivityReport(
     return { ...base, students: [], summary: summarizeActivity([]) };
   }
 
-  const { data: activity, error } = await supabase
-    .from("student_activity_daily")
-    .select("enrollment_id, activity_date, active_seconds")
-    .in(
-      "enrollment_id",
-      refs.map((r) => r.enrollment_id),
-    )
-    .gte("activity_date", fromDate);
+  // Paginado explícito. PostgREST recorta la respuesta al `max-rows` del
+  // proyecto SIN devolver error: la consulta llegaría incompleta, `error` sería
+  // null y el panel mostraría totales subestimados como si fueran correctos.
+  // A diferencia de video_progress (acotado por alumnos × lecciones), esta tabla
+  // crece indefinidamente: alumnos × días del rango sí puede pasarse.
+  const rows: ActivityRow[] = [];
+  for (let offset = 0; ; offset += ACTIVITY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("student_activity_daily")
+      .select("enrollment_id, activity_date, active_seconds")
+      .in(
+        "enrollment_id",
+        refs.map((r) => r.enrollment_id),
+      )
+      .gte("activity_date", fromDate)
+      // Orden estable: sin él, dos páginas pueden repetir u omitir filas.
+      .order("activity_date", { ascending: true })
+      .range(offset, offset + ACTIVITY_PAGE_SIZE - 1);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const rows = (activity ?? []) as ActivityRow[];
+    const page = (data ?? []) as ActivityRow[];
+    rows.push(...page);
+    // Una página incompleta es la última. Se corta también al llegar al techo
+    // para que un error de paginación no se convierta en un bucle infinito.
+    if (page.length < ACTIVITY_PAGE_SIZE || rows.length >= ACTIVITY_MAX_ROWS) break;
+  }
 
   // Quien no aparece en la ventana puede haber entrado ANTES: hay que ir a
   // buscar su última fecha al historial, o el panel lo reporta como "Nunca".

@@ -11,6 +11,8 @@ const mockActivity = vi.fn();
 const mockPriorActivity = vi.fn();
 const activityFilters: Array<{ column: string; value: unknown }> = [];
 const priorFilters: Array<{ column: string; value: unknown }> = [];
+/** Ventanas `.range()` pedidas, para verificar el paginado. */
+const activityRanges: Array<[number, number]> = [];
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
@@ -34,7 +36,7 @@ vi.mock("@/lib/supabase/server", () => ({
           },
           gte: (column: string, value: unknown) => {
             activityFilters.push({ column, value });
-            return mockActivity();
+            return chain;
           },
           // Cadena de la consulta del historial: .gt().lt().order()
           gt: (column: string, value: unknown) => {
@@ -45,7 +47,15 @@ vi.mock("@/lib/supabase/server", () => ({
             priorFilters.push({ column, value });
             return chain;
           },
-          order: () => mockPriorActivity(),
+          order: () => chain,
+          // Terminal de la consulta paginada del rango.
+          range: (from: number, to: number) => {
+            activityRanges.push([from, to]);
+            return mockActivity();
+          },
+          // La del historial termina en .order() y se espera directamente: el
+          // builder real de Supabase es thenable.
+          then: (resolve: (v: unknown) => unknown) => mockPriorActivity().then(resolve),
         };
         return chain;
       }
@@ -75,6 +85,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   activityFilters.length = 0;
   priorFilters.length = 0;
+  activityRanges.length = 0;
   // Por defecto no hay historial anterior: cada test que lo necesite lo declara.
   mockPriorActivity.mockResolvedValue({ data: [] });
 });
@@ -333,6 +344,60 @@ describe("getCohortActivityReport", () => {
     expect(report!.students[0].days_since_last_active).toBe(1);
 
     vi.useRealTimers();
+  });
+
+  // PostgREST recorta al `max-rows` del proyecto SIN devolver error: sin
+  // paginado el panel mostraría totales subestimados como si fueran correctos.
+  it("pide páginas hasta que una viene incompleta", async () => {
+    mockCohortSingle.mockResolvedValue({
+      data: { id: "c1", name: "G4", program_id: "p1", programs: { id: "p1", name: "Diplomado" } },
+    });
+    mockEnrollments.mockResolvedValue({
+      data: [
+        { id: "e1", student_id: "s1", profiles: { full_name: "Ana Pérez", email: "ana@x.cl" } },
+      ],
+    });
+
+    // Primera página llena (1000 filas de 1 segundo), segunda con una sola.
+    const llena = Array.from({ length: 1000 }, () => ({
+      enrollment_id: "e1",
+      activity_date: "2026-08-01",
+      active_seconds: 1,
+    }));
+    mockActivity
+      .mockResolvedValueOnce({ data: llena, error: null })
+      .mockResolvedValueOnce({
+        data: [{ enrollment_id: "e1", activity_date: "2026-08-02", active_seconds: 5 }],
+        error: null,
+      });
+
+    const report = await getCohortActivityReport("c1", 30);
+
+    expect(activityRanges).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+    // 1000 × 1s de la primera página + 5s de la segunda: no se perdió nada.
+    expect(report!.students[0].total_seconds).toBe(1005);
+  });
+
+  it("no pide una segunda página cuando la primera viene incompleta", async () => {
+    mockCohortSingle.mockResolvedValue({
+      data: { id: "c1", name: "G4", program_id: "p1", programs: { id: "p1", name: "Diplomado" } },
+    });
+    mockEnrollments.mockResolvedValue({
+      data: [
+        { id: "e1", student_id: "s1", profiles: { full_name: "Ana Pérez", email: "ana@x.cl" } },
+      ],
+    });
+    mockActivity.mockResolvedValue({
+      data: [{ enrollment_id: "e1", activity_date: "2026-08-04", active_seconds: 2400 }],
+      error: null,
+    });
+
+    await getCohortActivityReport("c1", 7);
+
+    expect(activityRanges).toEqual([[0, 999]]);
   });
 
   it("rescata del historial la última fecha de quien no aparece en la ventana", async () => {

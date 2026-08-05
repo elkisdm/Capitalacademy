@@ -39,6 +39,16 @@ export async function getInstructorProfile(
       code: error.code,
       message: error.message,
     });
+    // Un fallo de infraestructura NO puede presentarse como "este docente no
+    // existe". El precedente concreto es el statement timeout 57014 del 21-jul
+    // (cascada de RLS, migración 0079): repetido hoy, cada ficha respondería un
+    // 404 tranquilizador, nadie se enteraría del outage y no hay Sentry que lo
+    // levante. Se relanza para que la página falle de forma visible.
+    //
+    // El 404 se reserva para "no hay fila", que es lo que devuelve `data: null`
+    // sin error, y que cubre por igual "no existe" y "la RLS no te lo deja ver"
+    // — sin esa distinción no se pueden enumerar docentes.
+    if (error.code !== "PGRST116") throw error;
     return null;
   }
   return (data as unknown as InstructorProfile | null) ?? null;

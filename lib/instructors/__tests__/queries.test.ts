@@ -87,13 +87,21 @@ describe("getInstructorProfile", () => {
     expect(calls.some((c) => c.method === "eq" && c.args[0] === "id")).toBe(true);
   });
 
-  it("devuelve null y registra el error si el query falla", async () => {
+  // Un fallo de infraestructura no puede presentarse como "este docente no
+  // existe": con el 404 tranquilizador nadie se entera del outage, y no hay
+  // Sentry. El 57014 es el del incidente real del 21-jul (cascada de RLS).
+  it("relanza un fallo de infraestructura en vez de disfrazarlo de 404", async () => {
     instructorsResult = { data: null, error: { code: "57014", message: "timeout" } };
-    await expect(getInstructorProfile(ID_A)).resolves.toBeNull();
+    await expect(getInstructorProfile(ID_A)).rejects.toMatchObject({ code: "57014" });
     expect(console.error).toHaveBeenCalledWith(
       "[getInstructorProfile] error leyendo instructors",
       expect.objectContaining({ code: "57014" }),
     );
+  });
+
+  it("devuelve null cuando no hay fila, sin distinguir inexistente de sin acceso", async () => {
+    instructorsResult = { data: null, error: null };
+    await expect(getInstructorProfile(ID_A)).resolves.toBeNull();
   });
 
   it("no filtra por is_active: un docente dado de baja sigue teniendo ficha", async () => {

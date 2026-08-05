@@ -70,6 +70,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   award: <><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" /></>,
   megaphone: <><path d="M3 11v2a1 1 0 001 1h2l4 4V6L6 10H4a1 1 0 00-1 1z" /><path d="M15 8.5a4 4 0 010 7" /><path d="M18.5 5.5a8 8 0 010 13" /></>,
   poll: <><path d="M4 20V10" /><path d="M10 20V4" /><path d="M16 20v-7" /><path d="M2 20h20" /></>,
+  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
 };
 
 function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -508,6 +509,7 @@ export function ClassroomSidebar({
       { icon: "upload", label: "Entregables", href: "/admin/deliverables", section: "config" as const },
       { icon: "userCheck", label: "Alumnos", href: "/admin/alumnos", section: "config" as const },
       { icon: "chart", label: "Progreso cohorte", href: "/admin/progress", section: "config" as const },
+      { icon: "clock", label: "Actividad", href: "/admin/actividad", section: "config" as const },
     ] : []),
   ];
 

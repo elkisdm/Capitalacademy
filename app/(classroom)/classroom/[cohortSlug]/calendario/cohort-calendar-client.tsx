@@ -127,7 +127,15 @@ function ResourceLinks({ resources }: { resources: ScheduleSession["resources"] 
   );
 }
 
-function SessionRow({ s, now }: { s: ScheduleSession; now: number | null }) {
+function SessionRow({
+  s,
+  now,
+  cohortSlug,
+}: {
+  s: ScheduleSession;
+  now: number | null;
+  cohortSlug: string;
+}) {
   const timing = timingOf(s, now);
   const isOnline = s.modality === "live_online";
   const isCancelled = s.status === "cancelled";
@@ -187,16 +195,19 @@ function SessionRow({ s, now }: { s: ScheduleSession; now: number | null }) {
         </h3>
 
         {s.teacher && (
-          <div className="flex items-center gap-2">
+          <Link
+            href={`/classroom/${cohortSlug}/docente/${s.teacher.id}`}
+            className="group flex w-fit items-center gap-2"
+          >
             <Avatar
               initials={initialsOf(s.teacher.full_name)}
               avatarUrl={s.teacher.photo_url}
               size={22}
             />
-            <span className="truncate text-[12px] font-semibold text-ca-ink-soft">
+            <span className="truncate text-[12px] font-semibold text-ca-ink-soft transition-colors group-hover:text-ca-violet">
               {s.teacher.full_name}
             </span>
-          </div>
+          </Link>
         )}
 
         <ResourceLinks resources={s.resources} />
@@ -237,9 +248,12 @@ type ViewMode = "list" | "month";
 export function CohortCalendarClient({
   sessions,
   cohortName,
+  cohortSlug,
 }: {
   sessions: ScheduleSession[];
   cohortName: string;
+  /** Se usa para enlazar el nombre del docente a su perfil (ADR-0028). */
+  cohortSlug: string;
 }) {
   const [view, setView] = useState<ViewMode>("month");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -363,7 +377,7 @@ export function CohortCalendarClient({
             </h2>
             <div className="flex flex-col gap-3">
               {g.items.map((s) => (
-                <SessionRow key={s.id} s={s} now={now} />
+                <SessionRow key={s.id} s={s} now={now} cohortSlug={cohortSlug} />
               ))}
             </div>
           </section>
@@ -385,7 +399,7 @@ export function CohortCalendarClient({
               {selectedSessions.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {selectedSessions.map((s) => (
-                    <SessionRow key={s.id} s={s} now={now} />
+                    <SessionRow key={s.id} s={s} now={now} cohortSlug={cohortSlug} />
                   ))}
                 </div>
               ) : (

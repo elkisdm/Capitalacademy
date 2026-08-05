@@ -12,6 +12,7 @@ import {
   getSessionRecordingRedirect,
 } from "@/lib/classroom/queries";
 import { getClassroomAccess } from "@/lib/classroom/access";
+import { getInstructorIdsByProfileIds } from "@/lib/instructors/queries";
 import { resolveResourceUrls } from "@/lib/classroom/resource-urls";
 import { resolveCohortSlug, resolveModuleSlug, resolveLessonSlug } from "@/lib/classroom/resolve-slugs";
 import { getLessonStatus } from "@/lib/classroom/progress";
@@ -92,6 +93,14 @@ export default async function LessonPage(
     getLessonProgress(enrollmentId, lessonId),
   ]);
   const currentModule = modules.find((m) => m.id === moduleId);
+  // El chip del instructor sale de `program_modules.teacher_id` (→ `profiles`),
+  // no del catálogo `instructors`: se resuelve el puente por `profile_id` para
+  // enlazarlo al perfil. Sin ficha visible, queda como texto plano (ADR-0028 §4).
+  const teacherInstructorId = currentModule?.teacher_id
+    ? ((await getInstructorIdsByProfileIds([currentModule.teacher_id])).get(
+        currentModule.teacher_id,
+      ) ?? null)
+    : null;
   const siblingLessons = currentModule?.lessons ?? [];
   const idx = siblingLessons.findIndex((l) => l.id === lessonId);
   const prevLesson = siblingLessons[idx - 1];
@@ -235,15 +244,25 @@ export default async function LessonPage(
             </p>
           )}
         </div>
-        {currentModule?.teacher?.full_name && (
-          <div className="flex shrink-0 items-center gap-2">
-            <Avatar initials={currentModule.teacher.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()} size={28} />
-            <div className="text-[12px] md:text-right">
-              <span className="font-bold tracking-tight text-ca-ink">{currentModule.teacher.full_name}</span>
-              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft md:ml-0 md:block">Instructor</span>
-            </div>
-          </div>
-        )}
+        {currentModule?.teacher?.full_name && (() => {
+          const teacherName = currentModule.teacher.full_name;
+          const chip = (
+            <>
+              <Avatar initials={teacherName} size={28} />
+              <div className="text-[12px] md:text-right">
+                <span className="font-bold tracking-tight text-ca-ink transition-colors group-hover:text-ca-violet">{teacherName}</span>
+                <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ca-ink-soft md:ml-0 md:block">Instructor</span>
+              </div>
+            </>
+          );
+          return teacherInstructorId ? (
+            <Link href={`/classroom/${cohortSlug}/docente/${teacherInstructorId}`} className="group flex shrink-0 items-center gap-2">
+              {chip}
+            </Link>
+          ) : (
+            <div className="group flex shrink-0 items-center gap-2">{chip}</div>
+          );
+        })()}
       </div>
 
       <VideoSyncProvider>

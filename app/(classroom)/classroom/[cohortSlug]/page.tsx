@@ -327,7 +327,13 @@ export default async function CohortDashboardPage(
       {/* Ruta de aprendizaje: acordeón denso de 2 columnas + aside de progreso */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         <div className="order-2 flex flex-col gap-4 lg:order-1">
-          <div>
+          {/* El ancla del tour va en el encabezado y NO en la lista completa de
+              módulos: esa lista mide más de mil píxeles con el módulo actual
+              abierto, así que el recuadro de foco terminaba cubriendo el
+              viewport entero (sin oscurecer nada) y la tarjeta caía contra el
+              borde inferior. El encabezado es compacto y está justo encima de
+              lo que se quiere mostrar. */}
+          <div data-tour="ruta">
             <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
               {totalModules} {totalModules === 1 ? "módulo" : "módulos"} · {totalContent} {totalContent === 1 ? "clase" : "clases"}
             </div>
@@ -336,7 +342,7 @@ export default async function CohortDashboardPage(
             </h2>
           </div>
 
-          <div data-tour="ruta" className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
             {modules.map((mod) => {
               const data = moduleRowsData.get(mod.id)!;
               return (

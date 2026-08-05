@@ -238,9 +238,17 @@ export function GuidedTour({ start }: { start: TourStart }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[95]">
-      {/* Bloquea la interacción con el fondo: sin esto se puede navegar por
-          debajo del tour y el foco queda huérfano. */}
-      <div className="absolute inset-0" aria-hidden="true" />
+      {/* Bloquea la interacción con el fondo y, al clic, cierra el tour. Cerrar
+          al clic afuera es el comportamiento aprendido del Dialog de este mismo
+          producto. Sin esto el alumno hacía clic en la zona oscura, no pasaba
+          nada, y encima el foco se iba a <body>: desde ahí Tab escapaba de la
+          tarjeta, porque la trampa de foco escucha en el contenedor y no en
+          document, y se podía navegar al sidebar tapado por el overlay. */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        onClick={() => close("skipped")}
+      />
 
       {/* Capa oscura. Con elemento destacado es un recuadro cuyo `box-shadow`
           tapa todo lo demás; sin elemento, una capa plana. */}

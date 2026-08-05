@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
 import { ClassroomSidebar } from "@/components/classroom/sidebar";
+import { ActividadTracker } from "@/components/classroom/actividad-tracker";
 import { getActiveEnv, getEnvOptions, getViewMode, type EnvOption, type ViewMode } from "@/lib/admin/active-env";
 import { getActiveEnvCohortSlug } from "@/lib/classroom/staff-preview";
 import {
@@ -196,6 +197,7 @@ export default async function ClassroomLayout({
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row md:h-screen" style={{ background: "var(--color-ca-bg)" }}>
+      <ActividadTracker />
       <ClassroomSidebar
         userInitials={initials}
         userName={name}

@@ -133,6 +133,11 @@ create policy student_activity_daily_select
 -- La primera fila del día se crea con active_seconds = 0: el primer latido abre
 -- el reloj, no acredita tiempo. Por eso una sesión que cruza la medianoche de
 -- Chile pierde a lo más un intervalo de latido (ADR-0029, riesgos).
+--
+-- p_max_gap_seconds = 0 es un caso de uso legítimo y buscado: es el latido de
+-- REANUDACIÓN que manda el cliente al montar o al volver a la pestaña. Recorta
+-- el incremento a 0 y solo mueve last_beat_at, así volver después de 40 minutos
+-- en otra pestaña no regala el tope completo de tiempo fantasma.
 create or replace function public.record_student_activity(
   p_enrollment_id uuid,
   p_activity_date date,

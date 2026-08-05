@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ArrowRight, Sparkles, Download } from "lucide-react";
+import { Search, ArrowRight, Sparkles, Download, Compass } from "lucide-react";
 import {
   articlesByAudience,
   CATEGORIES_BY_AUDIENCE,
@@ -18,9 +18,16 @@ const TAB_LABEL: Record<Audience, string> = {
 export function GuideIndexClient({
   audiences,
   firstName,
+  tourHref,
 }: {
   audiences: Audience[];
   firstName: string | null;
+  /**
+   * Enlace para re-lanzar el tour guiado (ADR-0030), ya con `?tour=1`. Es null
+   * cuando quien mira no tiene una cohorte a la que volver (staff sin
+   * matrícula): no hay dashboard donde correrlo.
+   */
+  tourHref: string | null;
 }) {
   const [tab, setTab] = useState<Audience>(audiences[0]);
   const [query, setQuery] = useState("");
@@ -61,6 +68,17 @@ export function GuideIndexClient({
           Guías paso a paso de todo lo que puedes hacer, con enlaces directos a cada pantalla.
           Elige un tema o busca lo que necesitas.
         </p>
+
+        {tourHref && (
+          <Link
+            href={tourHref}
+            prefetch={false}
+            className="ca-btn-interactive mt-4 inline-flex items-center gap-2 rounded-xl border border-ca-violet/25 bg-ca-violet/[0.06] px-4 py-2.5 text-[13px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/[0.12]"
+          >
+            <Compass className="h-4 w-4" />
+            Ver el recorrido guiado de nuevo
+          </Link>
+        )}
       </div>
 
       {/* Controles: tabs + buscador */}

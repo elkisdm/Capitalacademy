@@ -239,7 +239,11 @@ function SidebarContent({
         collapsed={collapsed}
       />
 
-      <div className="no-scrollbar flex-1 overflow-y-auto px-3 pb-3">
+      {/* data-tour: anclaje del tour guiado (ADR-0030). SidebarContent se
+          renderiza SOLO en el aside de escritorio; el drawer móvil arma su
+          propia lista más abajo y no lleva el atributo, para que el anclaje
+          nunca esté duplicado en el DOM. */}
+      <div data-tour="menu" className="no-scrollbar flex-1 overflow-y-auto px-3 pb-3">
         {NAV_SECTIONS.map(({ key, label }) => {
           const sectionItems = items.filter((i) => i.section === key);
           if (sectionItems.length === 0) return null;
@@ -261,7 +265,7 @@ function SidebarContent({
           );
         })}
 
-        <div className="mt-3 border-t border-ca-ink/[0.06] pt-3">
+        <div data-tour="ayuda" className="mt-3 border-t border-ca-ink/[0.06] pt-3">
           <NavItemButton
             item={HELP_ITEM}
             active={isActive(HELP_ITEM.href!)}
@@ -538,6 +542,7 @@ export function ClassroomSidebar({
       {/* Mobile header */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-ca-ink/[0.08] bg-ca-surface px-4 py-2.5 md:hidden">
         <button
+          data-tour="menu-movil"
           onClick={() => setMobileOpen(true)}
           className="grid h-11 w-11 place-items-center rounded-xl text-ca-ink transition-colors hover:bg-ca-bg-soft"
           aria-label="Abrir menú"

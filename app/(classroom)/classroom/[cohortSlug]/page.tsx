@@ -14,7 +14,9 @@ import { fmtDuration } from "@/lib/classroom/format";
 import { formatChile, formatDateOnly } from "@/lib/time";
 import { BrandShapes, ProgressBar } from "@/components/classroom/primitives";
 import { ModuleAccordionItem, type ClassRowData } from "@/components/classroom/module-accordion";
+import { GuidedTour } from "@/components/classroom/tour/guided-tour";
 import type { LessonActivityType } from "@/lib/classroom/types";
+import type { TourStart } from "@/lib/tour/types";
 
 // Fila mínima de class_sessions usada por esta página. `title` y `status` se
 // agregan en migraciones posteriores a la generación de tipos de Supabase, por
@@ -43,9 +45,13 @@ function fmtSessionShort(iso: string) {
 }
 
 export default async function CohortDashboardPage(
-  props: { params: Promise<{ cohortSlug: string }> },
+  props: {
+    params: Promise<{ cohortSlug: string }>;
+    searchParams: Promise<{ tour?: string }>;
+  },
 ) {
   const { cohortSlug } = await props.params;
+  const { tour: tourParam } = await props.searchParams;
 
   const cohortId = await resolveCohortSlug(cohortSlug);
   if (!cohortId) notFound();
@@ -65,6 +71,32 @@ export default async function CohortDashboardPage(
   // Los fallos transitorios (p.ej. timeout de BD) ya lanzan dentro de
   // getCohortWithProgram; si llegamos aquí sin program es un dato faltante real.
   if (!program) notFound();
+
+  // Tour guiado del alumno (ADR-0030). Quién lo dispara lo decide el servidor:
+  // - `forced`: lo pidió a propósito (?tour=1, desde el Centro de ayuda).
+  // - `auto`: alumno que todavía no lo cerró ninguna vez.
+  // - `off`: ya lo vio, o es staff/docente — el tour es contenido de alumno.
+  //
+  // No hace falta coordinarlo con el gate de onboarding de perfil: el layout
+  // (app/(classroom)/layout.tsx:41-43) redirige a /onboarding/complete-profile
+  // antes de renderizar este hijo, así que alguien con el perfil incompleto
+  // nunca llega hasta acá. El orden queda perfil → dashboard → tour.
+  let tourStart: TourStart = "off";
+  if (tourParam === "1") {
+    tourStart = "forced";
+  } else if (!access.isStaff) {
+    // `tour_completed_at` lo agrega la migración 0088, posterior a la última
+    // generación de `lib/supabase/types.ts`; de ahí el cast.
+    const { data: tourRow } = await supabase
+      .from("profiles")
+      .select("tour_completed_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    const seen = (tourRow as unknown as { tour_completed_at: string | null } | null)
+      ?.tour_completed_at;
+    tourStart = seen ? "off" : "auto";
+  }
+
   const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
 
   // Clases en vivo (class_sessions) por módulo de ESTA cohorte. Para programas
@@ -243,7 +275,7 @@ export default async function CohortDashboardPage(
 
       {/* Banda "Continuar" */}
       {resume && (
-        <section className="ca-card relative overflow-hidden" style={{ background: "var(--color-ca-ink)", borderColor: "transparent" }}>
+        <section data-tour="continuar" className="ca-card relative overflow-hidden" style={{ background: "var(--color-ca-ink)", borderColor: "transparent" }}>
           <div className="shape-circle absolute -right-10 -top-10 h-32 w-32 bg-ca-violet opacity-40" />
           <div className="relative flex items-center gap-4 px-5 py-4">
             <div className="relative hidden h-[54px] w-24 shrink-0 overflow-hidden rounded-lg bg-white/5 sm:block">
@@ -295,7 +327,7 @@ export default async function CohortDashboardPage(
             </h2>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div data-tour="ruta" className="flex flex-col gap-3">
             {modules.map((mod) => {
               const data = moduleRowsData.get(mod.id)!;
               return (
@@ -317,7 +349,7 @@ export default async function CohortDashboardPage(
         </div>
 
         <aside className="order-1 lg:sticky lg:top-6 lg:order-2 lg:self-start">
-          <div className="ca-card p-5">
+          <div data-tour="progreso" className="ca-card p-5">
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">Progreso general</div>
             <div className="mt-1 text-[32px] font-black leading-none text-ca-ink">
               {overallPct}<span className="text-[16px] font-bold text-ca-ink-soft">%</span>
@@ -347,6 +379,7 @@ export default async function CohortDashboardPage(
         </aside>
       </div>
 
+      <GuidedTour start={tourStart} />
     </div>
   );
 }

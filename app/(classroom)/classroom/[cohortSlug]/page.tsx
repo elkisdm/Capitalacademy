@@ -17,6 +17,7 @@ import { ModuleAccordionItem, type ClassRowData } from "@/components/classroom/m
 import { GuidedTour } from "@/components/classroom/tour/guided-tour";
 import type { LessonActivityType } from "@/lib/classroom/types";
 import type { TourStart } from "@/lib/tour/types";
+import { resolveTourStart } from "@/lib/tour/start";
 
 // Fila mínima de class_sessions usada por esta página. `title` y `status` se
 // agregan en migraciones posteriores a la generación de tipos de Supabase, por
@@ -81,21 +82,29 @@ export default async function CohortDashboardPage(
   // (app/(classroom)/layout.tsx:41-43) redirige a /onboarding/complete-profile
   // antes de renderizar este hijo, así que alguien con el perfil incompleto
   // nunca llega hasta acá. El orden queda perfil → dashboard → tour.
-  let tourStart: TourStart = "off";
-  if (tourParam === "1") {
-    tourStart = "forced";
-  } else if (!access.isStaff) {
+  const forcedTour = tourParam === "1";
+  let tourRow: { tour_completed_at: string | null } | null = null;
+  let tourReadFailed = false;
+
+  if (!forcedTour && !access.isStaff) {
     // `tour_completed_at` lo agrega la migración 0088, posterior a la última
     // generación de `lib/supabase/types.ts`; de ahí el cast.
-    const { data: tourRow } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("tour_completed_at")
       .eq("id", user.id)
       .maybeSingle();
-    const seen = (tourRow as unknown as { tour_completed_at: string | null } | null)
-      ?.tour_completed_at;
-    tourStart = seen ? "off" : "auto";
+    tourRow = data as unknown as { tour_completed_at: string | null } | null;
+    // El error se captura a propósito: `resolveTourStart` falla cerrado con él.
+    tourReadFailed = Boolean(error);
   }
+
+  const tourStart: TourStart = resolveTourStart({
+    forced: forcedTour,
+    isStaff: access.isStaff,
+    completedAt: tourRow?.tour_completed_at,
+    readFailed: tourReadFailed,
+  });
 
   const modules = await getModulesWithLessons(program.id, access.enrollment?.id ?? null);
 

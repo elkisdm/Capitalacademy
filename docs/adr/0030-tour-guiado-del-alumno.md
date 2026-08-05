@@ -223,10 +223,20 @@ lado con espacio) sin tocar el DOM.
 
 ### Riesgos
 
-- **La migración 0088 tiene que ir a producción ANTES que el código.** Si el
-  código sale primero, la lectura de `tour_completed_at` en el dashboard falla y
-  se cae la pantalla principal del alumno. Es el orden habitual del repo, pero
-  acá el blast radius es el dashboard, así que conviene decirlo.
+- **La migración 0088 tiene que ir a producción ANTES que el código.** La
+  pantalla NO se cae: `postgrest-js` no lanza y el error se descarta. Lo que
+  pasa es peor de diagnosticar. Con el código desplegado y la columna ausente,
+  la lectura de `tour_completed_at` falla, y sin protección el tour arrancaría
+  en `auto` para TODA la matrícula en cada carga, mientras cada
+  `POST /api/classroom/tour` responde 500 y no persiste nada: el alumno lo
+  vuelve a ver en la pestaña siguiente, indefinidamente.
+  Por eso `resolveTourStart` (`lib/tour/start.ts`) **falla cerrado**: recibe el
+  error de lectura y devuelve `off`. El mismo corte protege del otro escenario
+  con precedente en este repo —un statement timeout de RLS sobre `profiles`
+  (incidente 57014 del 21-jul, ver 0079)— que si no le relanzaría el tour a
+  alumnos que ya lo cerraron. Aun así el orden correcto sigue siendo migración
+  primero: con la protección puesta, el costo de equivocarse es que nadie ve el
+  tour, en vez de que lo vean todos y no se pueda cerrar.
 - La migración **marca a ops/admin como `tour_outcome = 'skipped'`** con
   `tour_completed_at = now()`, siguiendo el precedente de 0014 con el onboarding.
   Es un efecto de datos deliberado y hay que tenerlo en cuenta al leer el

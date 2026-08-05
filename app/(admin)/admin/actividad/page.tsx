@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortActivityReport } from "@/lib/admin/actividad-queries";
-import { formatActiveDuration } from "@/lib/classroom/actividad";
+import { formatActiveDuration, resolveRangeDays } from "@/lib/classroom/actividad";
 import { formatDateOnly } from "@/lib/time";
 import { getActiveEnv } from "@/lib/admin/active-env";
 import { StatStrip } from "@/components/admin/students/shared";
 import { ActividadTable } from "@/components/admin/actividad-table";
-import { ActividadFiltros, RANGE_OPTIONS } from "./filtros";
-
-const DEFAULT_RANGE_DAYS = 30;
+import { ActividadFiltros } from "./filtros";
 
 export default async function AdminActividadPage({
   searchParams,
@@ -50,10 +48,7 @@ export default async function AdminActividadPage({
     ? (params.cohort as string)
     : cohorts[0].id;
 
-  const requestedRange = Number(params.dias);
-  const rangeDays = (RANGE_OPTIONS as readonly number[]).includes(requestedRange)
-    ? requestedRange
-    : DEFAULT_RANGE_DAYS;
+  const rangeDays = resolveRangeDays(params.dias);
 
   const cohortOptions = cohorts.map((c) => ({
     id: c.id,

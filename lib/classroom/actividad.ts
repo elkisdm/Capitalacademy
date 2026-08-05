@@ -32,6 +32,34 @@ export const ACTIVITY_BEAT_INTERVAL_MS = 60_000;
 export const ACTIVITY_MAX_GAP_SECONDS = 120;
 
 /**
+ * Rangos que ofrece el filtro del panel de actividad, en días.
+ *
+ * Vive acá y NO en `app/(admin)/admin/actividad/filtros.tsx` porque ese archivo
+ * es `"use client"`: cuando un componente de SERVIDOR importa un valor de un
+ * módulo cliente, Next lo reemplaza por una referencia proxy y el valor real no
+ * existe en el servidor. Tenerlo allá hacía que `RANGE_OPTIONS.includes(...)`
+ * reventara con `is not a function` al renderizar la página, sin que lo
+ * atraparan ni los tests (las páginas están excluidas de cobertura) ni el build
+ * (es un fallo de ejecución, no de tipos).
+ */
+export const ACTIVITY_RANGE_OPTIONS = [7, 30, 90] as const;
+
+export const ACTIVITY_DEFAULT_RANGE_DAYS = 30;
+
+/**
+ * Rango pedido por query string → días válidos. Cae al valor por defecto ante
+ * cualquier entrada que no sea una de las opciones ofrecidas, para que un
+ * `?dias=99999` no dispare una consulta arbitraria contra una tabla que crece
+ * indefinidamente.
+ */
+export function resolveRangeDays(raw: string | null | undefined): number {
+  const parsed = Number(raw);
+  return (ACTIVITY_RANGE_OPTIONS as readonly number[]).includes(parsed)
+    ? parsed
+    : ACTIVITY_DEFAULT_RANGE_DAYS;
+}
+
+/**
  * Día calendario de Chile ("YYYY-MM-DD") para un instante dado.
  *
  * Reusa `isoToChileWallTime` de lib/time.ts en vez de armar otro

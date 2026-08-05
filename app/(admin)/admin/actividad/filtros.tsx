@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { Select } from "@/components/ui/field";
+import { ACTIVITY_RANGE_OPTIONS } from "@/lib/classroom/actividad";
 
 type CohortOption = {
   id: string;
@@ -10,7 +11,10 @@ type CohortOption = {
   programName: string;
 };
 
-export const RANGE_OPTIONS = [7, 30, 90] as const;
+// Se importa de lib/ y NO se define acá: este módulo es "use client", y un
+// componente de servidor que importe un valor desde acá recibe una referencia
+// proxy en vez del array. Ver el comentario en lib/classroom/actividad.ts.
+const RANGE_OPTIONS = ACTIVITY_RANGE_OPTIONS;
 
 export function ActividadFiltros({
   cohorts,

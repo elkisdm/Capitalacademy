@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   ACTIVITY_BEAT_INTERVAL_MS,
+  ACTIVITY_DEFAULT_RANGE_DAYS,
   ACTIVITY_MAX_GAP_SECONDS,
+  ACTIVITY_RANGE_OPTIONS,
   activityRiskLevel,
+  resolveRangeDays,
   chileDateKey,
   daysBetweenDateKeys,
   formatActiveDuration,
@@ -147,5 +150,28 @@ describe("activityRiskLevel", () => {
   it("marca en riesgo desde 14 días", () => {
     expect(activityRiskLevel(14)).toBe("risk");
     expect(activityRiskLevel(60)).toBe("risk");
+  });
+});
+
+// El panel reventaba en producción con "RANGE_OPTIONS.includes is not a
+// function": la constante vivía en un módulo "use client" y el componente de
+// servidor recibía una referencia proxy en vez del array. Vive en lib/ y estos
+// tests fijan que sea un array de verdad con la validación adentro.
+describe("resolveRangeDays", () => {
+  it("las opciones son un array real, no una referencia de cliente", () => {
+    expect(Array.isArray(ACTIVITY_RANGE_OPTIONS)).toBe(true);
+    expect(typeof ACTIVITY_RANGE_OPTIONS.includes).toBe("function");
+  });
+
+  it("acepta cada una de las opciones ofrecidas", () => {
+    for (const d of ACTIVITY_RANGE_OPTIONS) {
+      expect(resolveRangeDays(String(d))).toBe(d);
+    }
+  });
+
+  it("cae al valor por defecto ante entradas inválidas", () => {
+    for (const raw of [undefined, null, "", "abc", "0", "-7", "99999", "30.5"]) {
+      expect(resolveRangeDays(raw)).toBe(ACTIVITY_DEFAULT_RANGE_DAYS);
+    }
   });
 });

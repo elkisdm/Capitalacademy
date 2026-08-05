@@ -51,6 +51,23 @@ export default async function DocentesAdminPage() {
     const p = row.profiles as unknown as TeacherAccount | null;
     if (p?.id) accountsById.set(p.id, p);
   }
+  // Las cuentas YA enlazadas se suman aunque no tengan rol de cohorte: si no,
+  // su fila mostraría el placeholder del selector como si estuviera sin enlazar,
+  // y pulsar "Enlazar" la desvincularía sin querer.
+  const linkedIds = instructors
+    .map((i) => i.profile_id)
+    .filter((id): id is string => Boolean(id) && !accountsById.has(id as string));
+
+  if (linkedIds.length > 0) {
+    const { data: linkedProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", linkedIds);
+    for (const p of (linkedProfiles ?? []) as TeacherAccount[]) {
+      accountsById.set(p.id, p);
+    }
+  }
+
   const accounts = [...accountsById.values()].sort((a, b) =>
     (a.full_name || a.email).localeCompare(b.full_name || b.email, "es"),
   );

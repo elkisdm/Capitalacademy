@@ -74,7 +74,9 @@ export function buildActivityRows(
   }
 
   const students = enrollments.map((enr) => {
-    const name = enr.full_name ?? enr.email ?? "Alumno";
+    // `||` y no `??`: un perfil sin nombre llega como "" (no como null) desde
+    // el select embebido, y con `??` la fila quedaría sin etiqueta ninguna.
+    const name = enr.full_name || enr.email || "Alumno";
     const initials = name
       .split(" ")
       .map((w) => w[0])

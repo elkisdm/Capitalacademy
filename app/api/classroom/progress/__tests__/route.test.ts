@@ -324,13 +324,62 @@ describe("POST /api/classroom/progress", () => {
     expect(json.error).toContain("matrícula");
   });
 
-  // ---- success -------------------------------------------------------------
-  it("returns progress data on success", async () => {
+  // ---- anti-bypass: solo lecciones SIN video ------------------------------
+  it("returns 409 when the lesson has video (manual complete is a bypass)", async () => {
     mockGetUser.mockResolvedValue({ data: { user: USER } });
     mockVerifyEnrollment.mockResolvedValue(ENROLLMENT_ID);
 
     mockLessonSelectSingle.mockResolvedValue({
-      data: { video_duration_seconds: 600 },
+      data: { video_duration_seconds: 600, mux_playback_id: "pb_abc123" },
+      error: null,
+    });
+
+    const res = await POST(makeRequest("POST", { lessonId: VALID_UUID }));
+
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toContain("video");
+    // Lo esencial: NO se escribió nada.
+    expect(mockVideoProgressUpsertSingle).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 (not a silent bypass) when the lesson query fails", async () => {
+    // Un fallo de BD no puede degradar a "lección sin video": eso reabriría el
+    // bypass justo cuando la base está en problemas.
+    mockGetUser.mockResolvedValue({ data: { user: USER } });
+    mockVerifyEnrollment.mockResolvedValue(ENROLLMENT_ID);
+
+    mockLessonSelectSingle.mockResolvedValue({
+      data: null,
+      error: { message: "timeout", code: "57014" },
+    });
+
+    const res = await POST(makeRequest("POST", { lessonId: VALID_UUID }));
+
+    expect(res.status).toBe(503);
+    expect(mockVideoProgressUpsertSingle).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when the lesson does not exist", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: USER } });
+    mockVerifyEnrollment.mockResolvedValue(ENROLLMENT_ID);
+
+    mockLessonSelectSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest("POST", { lessonId: VALID_UUID }));
+
+    expect(res.status).toBe(503);
+    expect(mockVideoProgressUpsertSingle).not.toHaveBeenCalled();
+  });
+
+  // ---- success -------------------------------------------------------------
+  it("returns progress data on success (lesson WITHOUT video)", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: USER } });
+    mockVerifyEnrollment.mockResolvedValue(ENROLLMENT_ID);
+
+    mockLessonSelectSingle.mockResolvedValue({
+      data: { video_duration_seconds: 600, mux_playback_id: null },
+      error: null,
     });
 
     mockVideoProgressMaybeSingle.mockResolvedValue({

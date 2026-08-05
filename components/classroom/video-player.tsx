@@ -274,7 +274,6 @@ export function VideoPlayer({
   // Progress tracking
   const [watchPercentage, setWatchPercentage] = useState(initialWatchPercentage);
   const [completed, setCompleted] = useState(initialCompleted);
-  const [markingComplete, setMarkingComplete] = useState(false);
 
   // Media state
   const [ready, setReady] = useState(false);
@@ -377,25 +376,13 @@ export function VideoPlayer({
     onProgressUpdate,
   });
 
-  // ── Manual mark-complete ───────────────────────────────────
-
-  const markComplete = useCallback(async () => {
-    if (completed || markingComplete) return;
-    setMarkingComplete(true);
-    try {
-      const res = await fetch("/api/classroom/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonId }),
-      });
-      if (res.ok) {
-        setCompleted(true);
-        setWatchPercentage(100);
-      }
-    } finally {
-      setMarkingComplete(false);
-    }
-  }, [lessonId, completed, markingComplete]);
+  // El botón "Marcar completada" ya NO vive acá: en una lección con video era un
+  // bypass (declaraba 100% sin haber visto nada) y `POST /api/classroom/progress`
+  // ahora responde 409 sobre lecciones con `mux_playback_id`. El progreso de un
+  // video se reporta solo desde el reproductor, con la posición real.
+  // Las lecciones SIN video conservan su camino legítimo:
+  // components/classroom/mark-complete-button.tsx, que la pantalla de lección
+  // renderiza en la rama de contenido de texto.
 
   // ── HLS / media setup ─────────────────────────────────────
 
@@ -1833,21 +1820,13 @@ export function VideoPlayer({
         <span className="shrink-0 font-mono text-[12px] tabular-nums">
           {Math.round(watchPercentage)}%
         </span>
-        {completed ? (
+        {completed && (
           <span
             className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
             style={{ background: "rgba(168,211,16,0.18)", color: "#3f5a05" }}
           >
             Completada
           </span>
-        ) : (
-          <button
-            onClick={markComplete}
-            disabled={markingComplete}
-            className="shrink-0 rounded-full border border-ca-violet/30 bg-ca-violet/[0.06] px-3 py-1 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet/[0.12] disabled:opacity-50"
-          >
-            {markingComplete ? "Guardando…" : "Marcar completada"}
-          </button>
         )}
       </div>
     </div>

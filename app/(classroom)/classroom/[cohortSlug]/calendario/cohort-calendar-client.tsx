@@ -5,8 +5,9 @@ import Link from "next/link";
 import { BrandShapes, Avatar } from "@/components/classroom/primitives";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import type { ScheduleSession, SessionTiming } from "@/lib/classroom/types";
+import { TZ_SANTIAGO, dayKeyOf } from "@/lib/calendar/month-grid";
 
-const TZ = "America/Santiago";
+const TZ = TZ_SANTIAGO;
 
 // `now` se inyecta para evitar mismatch de hidratación: en SSR / primer render
 // (antes de montar) es `null` y todas las sesiones se tratan como "upcoming",
@@ -47,15 +48,6 @@ function fmtTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(new Date(iso));
-}
-
-function dayKeyOf(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
   }).format(new Date(iso));
 }
 

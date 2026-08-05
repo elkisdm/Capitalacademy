@@ -170,13 +170,40 @@ export async function POST(req: Request) {
   // el cascade de video_progress → enrollments → cohort_roles → profiles.
   const db = createAdminClient();
 
-  const { data: lesson } = await db
+  const { data: lesson, error: lessonError } = await db
     .from("lessons")
-    .select("video_duration_seconds")
+    .select("video_duration_seconds, mux_playback_id")
     .eq("id", lessonId)
     .single();
 
-  const duration = (lesson?.video_duration_seconds as number | null) ?? 0;
+  // Un fallo de BD no puede degradar a "lección sin video": eso reabriría el
+  // bypass justo cuando la base está en problemas (patrón crónico del proyecto:
+  // error de BD tratado como estado vacío).
+  if (lessonError || !lesson) {
+    return NextResponse.json(
+      { error: "No pudimos verificar la lección" },
+      { status: 503 },
+    );
+  }
+
+  // ANTI-BYPASS: esta ruta marca completado al 100% sin mirar cuánto se vio. Solo
+  // tiene sentido para lecciones SIN video (lectura, actividad, material), donde
+  // no hay progreso que medir. Si la lección tiene video, el único camino válido
+  // es el PATCH que reporta la posición real del reproductor.
+  // Verificado en prod (2026-07-29): las 8 filas `source='manual'` existentes son
+  // todas de lecciones sin video, y las 134 de `source='player'` todas con video.
+  // Cerrar esto no rompe ningún uso legítimo.
+  if (lesson.mux_playback_id) {
+    return NextResponse.json(
+      {
+        error:
+          "Esta lección tiene video: se marca como completada viéndola, no manualmente.",
+      },
+      { status: 409 },
+    );
+  }
+
+  const duration = (lesson.video_duration_seconds as number | null) ?? 0;
 
   const { data: existing } = await db
     .from("video_progress")

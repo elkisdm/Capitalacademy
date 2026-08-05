@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { InstructorEditForm } from "@/components/admin/instructor-edit-form";
+import { InstructorLinkAccount, type TeacherAccount } from "@/components/admin/instructor-link-account";
 import { INSTRUCTOR_PROFILE_COLUMNS, type InstructorProfile } from "@/lib/instructors/types";
 
 export const metadata = {
@@ -28,14 +29,31 @@ export default async function DocentesAdminPage() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("instructors")
-    .select(`${INSTRUCTOR_PROFILE_COLUMNS}, is_active`)
+    .select(`${INSTRUCTOR_PROFILE_COLUMNS}, is_active, profile_id`)
     .order("full_name", { ascending: true });
 
   if (error) console.error("[admin/docentes] instructors", error);
 
   const instructors = (data ?? []) as unknown as Array<
-    InstructorProfile & { is_active: boolean }
+    InstructorProfile & { is_active: boolean; profile_id: string | null }
   >;
+
+  // Candidatos a enlazar: quien tenga rol de docente o asistente en alguna
+  // cohorte. No se listan los 500+ perfiles de la plataforma para no convertir
+  // el selector en una lotería.
+  const { data: cohortStaff } = await supabase
+    .from("cohort_roles")
+    .select("user_id, profiles(id, full_name, email)")
+    .in("role", ["teacher", "assistant"]);
+
+  const accountsById = new Map<string, TeacherAccount>();
+  for (const row of cohortStaff ?? []) {
+    const p = row.profiles as unknown as TeacherAccount | null;
+    if (p?.id) accountsById.set(p.id, p);
+  }
+  const accounts = [...accountsById.values()].sort((a, b) =>
+    (a.full_name || a.email).localeCompare(b.full_name || b.email, "es"),
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-8">
@@ -70,7 +88,15 @@ export default async function DocentesAdminPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {instructors.map((instructor) => (
-            <InstructorEditForm key={instructor.id} instructor={instructor} />
+            <div key={instructor.id} className="ca-card p-4 md:p-5">
+              <InstructorEditForm instructor={instructor} bare />
+              <InstructorLinkAccount
+                instructorId={instructor.id}
+                instructorName={instructor.full_name}
+                currentProfileId={instructor.profile_id}
+                accounts={accounts}
+              />
+            </div>
           ))}
         </div>
       )}

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Los profesores ahora editan su propio perfil público desde "Mi perfil" en su panel, sin depender de operaciones. Para que funcione, operaciones enlaza antes cada ficha de docente con su cuenta desde la sección Docentes (los profesores que no estén enlazados ven un aviso que les indica pedirlo)
 - Los alumnos ahora pueden entrar al perfil de su profesor: el nombre que aparece en el calendario, en la ficha de la clase, en el módulo y en la lección se volvió un enlace que lleva a una pantalla con su foto, su cargo, su reseña y sus redes (LinkedIn, Instagram y sitio web) (`ded15d0`)
 - El panel estrena la sección Docentes (`/admin/docentes`): dirección y operaciones ya pueden escribir el cargo, la reseña y las redes de cada profesor sin depender de que alguien lo cargue por base de datos (`45629be`)
 - Nueva sección Actividad en el panel (`/admin/actividad`): muestra por cohorte cuánto tiempo pasó cada alumno con la plataforma abierta, cuántos días entró y hace cuánto que no aparece, con filtros de 7, 30 o 90 días. La medición arranca el día que se activa, así que no hay datos anteriores (`1058a68`, `80e0ad1`, `9130ba6`)

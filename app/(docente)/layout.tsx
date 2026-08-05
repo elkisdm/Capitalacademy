@@ -56,6 +56,12 @@ export default async function DocenteLayout({
             Panel del profesor
           </span>
           <Link
+            href="/docente/perfil"
+            className="rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
+          >
+            Mi perfil
+          </Link>
+          <Link
             href="/classroom/guia"
             className="rounded-xl border border-ca-ink/[0.1] px-3 py-2 text-[12px] font-bold text-ca-ink transition-colors hover:border-ca-violet hover:text-ca-violet"
           >

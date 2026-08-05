@@ -263,7 +263,10 @@
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/users/` + `[userId]/` | Gestión de usuarios y roles por cohorte (RBAC) | `/admin/users` | 0004 |
 | `app/(admin)/admin/docentes/page.tsx` · `components/admin/instructor-edit-form.tsx` | Edición del titular, la reseña y las redes de cada docente. Solo edita: el alta sigue viniendo del seed | `/admin/docentes` | 0028 |
-| `app/api/admin/instructors/[instructorId]/route.ts` | PATCH de la ficha docente, con `authorizeAdmin()` antes de leer el cuerpo y validación zod de las URLs | `PATCH /api/admin/instructors/[instructorId]` | 0028 |
+| `app/api/admin/instructors/[instructorId]/route.ts` | PATCH de la ficha docente, con `authorizeAdmin()` antes de leer el cuerpo. Acepta además `profile_id` para enlazar la ficha con una cuenta, que es lo que habilita el autoservicio del docente | `PATCH /api/admin/instructors/[instructorId]` | 0028 |
+| `components/admin/instructor-link-account.tsx` | Selector con el que operaciones enlaza una ficha a una cuenta (candidatos: quien tenga rol docente/asistente en alguna cohorte) | en `/admin/docentes` | 0028 |
+| `app/(docente)/docente/perfil/page.tsx` · `app/api/docente/perfil/route.ts` | El docente edita SU propia ficha. Resuelve siempre por `instructors.profile_id = auth.uid()`, nunca por un id de la URL; escribe con service_role para acotar las columnas editables sin abrir una policy | `/docente/perfil`, `PATCH /api/docente/perfil` | 0028 |
+| `lib/instructors/patch.ts` | Validación y normalización compartida por las dos rutas que editan el perfil docente: fija qué campos son editables (nunca identidad ni estado) | — | 0028 |
 | `app/(admin)/admin/actividad/` · `lib/admin/actividad-queries.ts` | Panel de actividad por cohorte: tiempo con la plataforma abierta, días activos e inactividad. La última fecha se busca en TODO el historial (no solo en la ventana del rango) y la lectura va paginada para no truncarse en silencio | `/admin/actividad` | 0029 |
 | `app/(admin)/admin/cohorts/[cohortId]/` | Detalle de cohorte (info, roster, accesos al calendario) | `/admin/cohorts/[cohortId]` | — |
 | `components/admin/assign-participant-modal.tsx` | Modal "Agregar participante" del detalle de cohorte: asigna profesor/asistente/alumno por rol (y módulo si aplica) | en `/admin/cohorts/[cohortId]` | — |

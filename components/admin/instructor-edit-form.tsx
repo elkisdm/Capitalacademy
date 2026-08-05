@@ -13,6 +13,16 @@ const HEADLINE_MAX = 120;
 
 type Props = {
   instructor: InstructorProfile & { is_active: boolean };
+  /**
+   * Endpoint del PATCH. Por defecto el del panel (edita la ficha de cualquiera);
+   * la pantalla del docente pasa `/api/docente/perfil`, que resuelve la ficha
+   * por la sesión y nunca por un id de la URL.
+   */
+  endpoint?: string;
+  /** Abre el editor de entrada: en su propia pantalla no hay nada que desplegar. */
+  defaultOpen?: boolean;
+  /** Sin la tarjeta exterior, cuando quien lo usa ya aporta el contenedor. */
+  bare?: boolean;
 };
 
 /**
@@ -20,9 +30,14 @@ type Props = {
  * alumno ve: titular, reseña y las tres redes. Mismo patrón que
  * `module-edit-form`: colapsado por defecto, PATCH a la API y `router.refresh()`.
  */
-export function InstructorEditForm({ instructor }: Props) {
+export function InstructorEditForm({
+  instructor,
+  endpoint = `/api/admin/instructors/${instructor.id}`,
+  defaultOpen = false,
+  bare = false,
+}: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [headline, setHeadline] = useState(instructor.headline ?? "");
   const [bio, setBio] = useState(instructor.bio ?? "");
   const [linkedin, setLinkedin] = useState(instructor.linkedin_url ?? "");
@@ -41,7 +56,7 @@ export function InstructorEditForm({ instructor }: Props) {
     setSaved(false);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/instructors/${instructor.id}`, {
+      const res = await fetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,7 +83,7 @@ export function InstructorEditForm({ instructor }: Props) {
   };
 
   return (
-    <div className="ca-card p-4 md:p-5">
+    <div className={bare ? "" : "ca-card p-4 md:p-5"}>
       <div className="flex flex-wrap items-center gap-3">
         <Avatar initials={instructor.full_name} avatarUrl={instructor.photo_url} size={44} />
         <div className="min-w-0 flex-1">
@@ -88,7 +103,7 @@ export function InstructorEditForm({ instructor }: Props) {
               : `${filled} de 5 campos completos`}
           </div>
         </div>
-        {!open && (
+        {!open && !defaultOpen && (
           <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
             <Pencil className="h-3.5 w-3.5" />
             Editar perfil
@@ -102,15 +117,17 @@ export function InstructorEditForm({ instructor }: Props) {
             <span className="text-xs font-semibold uppercase tracking-wider text-ca-ink-soft">
               Perfil público
             </span>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setOpen(false)}
-              className="h-auto min-h-0 rounded p-1"
-              aria-label="Cerrar"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {!defaultOpen && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setOpen(false)}
+                className="h-auto min-h-0 rounded p-1"
+                aria-label="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           <div>

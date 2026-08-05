@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { Logo } from "@/components/classroom/primitives";
 
@@ -44,7 +45,29 @@ export default async function DocenteLayout({
       .limit(1)
       .maybeSingle();
 
-    if (!cohortRole) redirect("/classroom");
+    if (!cohortRole) {
+      // Sin rol de cohorte todavía puede entrar SI tiene una ficha de docente
+      // enlazada: es quien dicta clases pero no administra ninguna cohorte, y
+      // necesita llegar a `/docente/perfil` para editar su propio perfil
+      // público. La alternativa —darle rol de cohorte— le abriría el listado de
+      // alumnos y las notas, que es justo lo que no debe ver.
+      //
+      // Se lee con el cliente admin porque la policy de lectura de
+      // `instructors` (0059) exige dictar en el programa que se consulta, y
+      // "mirar si tengo ficha" no encaja en esa condición.
+      const { data: ownInstructor } = await createAdminClient()
+        .from("instructors")
+        .select("id")
+        .eq("profile_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      // Entra al grupo, pero SOLO a su perfil: las pantallas con datos de
+      // alumnos (`/docente` y `/docente/notas`) tienen su propio guard y lo
+      // mandan de vuelta acá. El layout no puede decidirlo solo porque no
+      // conoce la ruta actual de forma fiable.
+      if (!ownInstructor) redirect("/classroom");
+    }
   }
 
   return (

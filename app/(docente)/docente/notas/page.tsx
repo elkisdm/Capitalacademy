@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { getTeacherGradableEvaluations } from "@/lib/docente/queries";
 import { NotasDocenteClient } from "./notas-docente-client";
@@ -11,11 +12,37 @@ export const metadata = { title: "Calificar · Panel del profesor" };
  * `requireEvaluationStaff` en las APIs — el docente real vive en
  * `cohort_roles`, no en `system_role` (fix §0.7 del brief).
  */
+/**
+ * Quien llegó acá solo por tener una ficha de docente enlazada (sin rol de
+ * cohorte ni ser staff) no debe ver datos de alumnos: se le manda a su perfil,
+ * que es lo único del panel que le corresponde.
+ */
+async function redirectIfSoloPerfil(userId: string) {
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("system_role")
+    .eq("id", userId)
+    .single();
+  if (profile && ["ops", "admin"].includes(profile.system_role)) return;
+
+  const { data: cohortRole } = await supabase
+    .from("cohort_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .in("role", ["teacher", "assistant"])
+    .limit(1)
+    .maybeSingle();
+
+  if (!cohortRole) redirect("/docente/perfil");
+}
+
 export default async function DocenteNotasPage() {
   const {
     data: { user },
   } = await getAuthUser();
   if (!user) redirect("/login");
+  await redirectIfSoloPerfil(user.id);
 
   const evaluations = await getTeacherGradableEvaluations(user.id);
 

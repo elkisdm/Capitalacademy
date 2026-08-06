@@ -4,8 +4,8 @@
  * El componente de la clase es inevitablemente DOM y SDK, y en este proyecto
  * los componentes React no se testean (no hay jsdom, ver `vitest.config.ts`).
  * Por eso todo lo que se puede decidir sin un navegador vive acá: qué se le
- * dice al alumno según el estado de la conexión y a quién se le da la ventana
- * grande. Es lo que de verdad se puede equivocar en silencio.
+ * dice al alumno según el estado de la conexión y cómo se traduce un rechazo
+ * del token. El interior de la sala lo pone `<VideoConference />`.
  */
 
 /** Estados de la pantalla, no del SDK: son los que el alumno percibe. */
@@ -75,57 +75,4 @@ export function tokenErrorMessage(status: number, serverMessage?: string | null)
   if (status === 429) return "Demasiados intentos seguidos. Espera un momento.";
   if (status === 503) return "Las clases en vivo no están disponibles por ahora.";
   return "No pudimos conectarte a la clase.";
-}
-
-export type TileParticipant = {
-  identity: string;
-  name: string;
-  isLocal: boolean;
-  isSpeaking: boolean;
-  hasVideo: boolean;
-  /** true para quien dicta la clase. */
-  isHost: boolean;
-};
-
-/**
- * Quién ocupa la ventana grande.
- *
- * Orden: quien está hablando (pero nunca uno mismo — verse a sí mismo en grande
- * mientras hablas es desorientador y no aporta), después quien dicta la clase,
- * después cualquiera con cámara encendida, y como último recurso el primero que
- * haya. Devuelve null si no hay nadie.
- */
-export function pickMainParticipant(
-  participants: readonly TileParticipant[],
-): TileParticipant | null {
-  if (participants.length === 0) return null;
-
-  const remotos = participants.filter((p) => !p.isLocal);
-  const candidatos = remotos.length > 0 ? remotos : participants;
-
-  return (
-    candidatos.find((p) => p.isSpeaking) ??
-    candidatos.find((p) => p.isHost) ??
-    candidatos.find((p) => p.hasVideo) ??
-    candidatos[0]
-  );
-}
-
-/**
- * Los que van en la tira de abajo: todos menos el destacado.
- *
- * Se conserva el orden de llegada para que las miniaturas no bailen cada vez
- * que alguien habla; lo único que se mueve es quién está en grande.
- */
-export function stripParticipants(
-  participants: readonly TileParticipant[],
-  main: TileParticipant | null,
-): TileParticipant[] {
-  if (!main) return [...participants];
-  return participants.filter((p) => p.identity !== main.identity);
-}
-
-/** "3 personas" / "1 persona", para el encabezado de la sala. */
-export function participantCountLabel(count: number): string {
-  return count === 1 ? "1 persona" : `${count} personas`;
 }

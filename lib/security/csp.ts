@@ -70,10 +70,18 @@ export function buildCsp(opts: {
 /**
  * Permissions-Policy del sitio.
  *
- * Cámara y micrófono pasan de estar prohibidos a permitidos SOLO para nuestro
- * propio origen (`self`), que es lo que necesita la sala en vivo. `self` no es
- * una relajación cosmética: sigue bloqueando que un iframe de terceros —el
- * checkout de Fintoc, el visor de Office— pida cámara o micrófono en nombre del
- * sitio. La geolocalización sigue prohibida para todos: nada la usa.
+ * Cámara, micrófono y captura de pantalla pasan de estar prohibidos a
+ * permitidos SOLO para nuestro propio origen (`self`), que es lo que necesita
+ * la sala en vivo —incluido compartir pantalla—. `self` no es una relajación
+ * cosmética: sigue bloqueando que un iframe de terceros —el checkout de Fintoc,
+ * el visor de Office— los pida en nombre del sitio.
+ *
+ * `display-capture` ya venía permitido por defecto en los navegadores, pero se
+ * declara explícito: la cabecera es el lugar donde se lee qué puede hacer el
+ * sitio, y un permiso que la clase necesita no debería depender de un default
+ * que puede cambiar.
+ *
+ * La geolocalización sigue prohibida para todos: nada la usa.
  */
-export const PERMISSIONS_POLICY = "camera=(self), microphone=(self), geolocation=()";
+export const PERMISSIONS_POLICY =
+  "camera=(self), microphone=(self), display-capture=(self), geolocation=()";

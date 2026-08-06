@@ -259,14 +259,7 @@ export default async function ClassSessionPage(
           <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             Clase en vivo
           </div>
-          {/* `hostIdentity` le da la ventana grande a quien dicta mientras
-              nadie habla. Es null cuando la ficha del docente no tiene cuenta
-              enlazada (hoy la mitad no la tiene), y en ese caso la sala destaca
-              a quien habla, que es un buen segundo criterio. */}
-          <LiveClassRoom
-            sessionId={session.id}
-            hostIdentity={session.teacher?.profile_id ?? null}
-          />
+          <LiveClassRoom sessionId={session.id} />
         </section>
       )}
 

@@ -528,9 +528,7 @@ export async function getSessionForStudent(
     s.teacher_id
       ? supabase
           .from("instructors")
-          // `profile_id` es lo que identifica al docente dentro de la sala en
-          // vivo: la identidad del token es la cuenta, no la ficha (ADR-0031).
-          .select("id, full_name, photo_url, profile_id")
+          .select("id, full_name, photo_url")
           .eq("id", s.teacher_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),

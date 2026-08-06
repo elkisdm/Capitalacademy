@@ -90,6 +90,8 @@ describe("PERMISSIONS_POLICY", () => {
     // bien: son dos frenos distintos.
     expect(PERMISSIONS_POLICY).toContain("camera=(self)");
     expect(PERMISSIONS_POLICY).toContain("microphone=(self)");
+    // Compartir pantalla es getDisplayMedia, un permiso distinto del de cámara.
+    expect(PERMISSIONS_POLICY).toContain("display-capture=(self)");
     // `*` dejaría que un iframe de terceros los pida en nombre del sitio.
     expect(PERMISSIONS_POLICY).not.toContain("*");
   });

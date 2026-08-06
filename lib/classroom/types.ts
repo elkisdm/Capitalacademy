@@ -107,14 +107,6 @@ export type SessionInstructor = {
   id: string;
   full_name: string;
   photo_url: string | null;
-  /**
-   * Cuenta enlazada a la ficha, cuando la hay (hoy 10 de 20 lo están).
-   *
-   * Es lo que permite reconocer al docente DENTRO de la sala en vivo: la
-   * identidad del token es el id del perfil, no el de la ficha, así que sin
-   * esto no hay forma de saber cuál de los participantes dicta la clase.
-   */
-  profile_id?: string | null;
 };
 
 export type SessionResourceType = "pdf" | "link" | "template" | "document" | "other";

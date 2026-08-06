@@ -130,8 +130,9 @@
 | `lib/livekit/token.ts` | Firma **pura** del JWT HS256 de acceso (`node:crypto`, sin SDK). El token ES la autorización: LiveKit no consulta nada más | — | 0031 |
 | `lib/livekit/access.ts` | Decisión **pura** de acceso a la sala: modalidad en vivo, cohorte, matrícula/staff, ventana (−30/+120 min) y grants. La sala se deriva del id de sesión, nunca del cliente | — | 0031 |
 | `app/api/classroom/clase/[sessionId]/token/route.ts` | Emite el token del participante. Deriva cohorte y sala de la sesión; el nombre visible sale del perfil. 10/min por usuario | `POST /api/classroom/clase/[sessionId]/token` | 0031 |
-| `lib/livekit/room-state.ts` | Lógica **pura** de la pantalla: mensajes por estado de conexión, traducción de errores del token y a quién se le da la ventana grande | — | 0031 |
-| `components/classroom/live/live-class-room.tsx` · `participant-tile.tsx` | Sala embebida del alumno (SDK `livekit-client`, sin `@livekit/components-react` para no chocar con el sistema de diseño). El token se pide al pulsar "Entrar", no al montar | en `/classroom/[cohortSlug]/clase/[sessionId]` | 0031 |
+| `lib/livekit/room-state.ts` | Lógica **pura** de la pantalla: mensajes por estado de conexión y traducción de los rechazos del token | — | 0031 |
+| `components/classroom/live/live-class-room.tsx` | Sala embebida del alumno. El interior lo pone `<VideoConference />` de `@livekit/components-react` (pantalla compartida, chat, grilla paginada, dispositivos); tematizado con `.ca-live-room` en `globals.css`. El token se pide al pulsar "Entrar", no al montar | en `/classroom/[cohortSlug]/clase/[sessionId]` | 0031 |
+| `lib/security/csp.ts` | CSP y Permissions-Policy del sitio, fuera de `next.config.ts` para poder testearlos: un origen que falta no rompe el build ni los tests, solo la función en producción | — | 0031 |
 
 ## Asistencia (QR)
 

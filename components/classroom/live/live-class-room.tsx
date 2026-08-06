@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
+import {
+  LiveKitRoom,
+  VideoConference,
+  PreJoin,
+  type LocalUserChoices,
+} from "@livekit/components-react";
 import "@livekit/components-styles";
 import { liveMessage, tokenErrorMessage, type LiveScreenState } from "@/lib/livekit/room-state";
 
@@ -26,6 +31,15 @@ import { liveMessage, tokenErrorMessage, type LiveScreenState } from "@/lib/live
 
 type Conexion = { token: string; url: string };
 
+/**
+ * Lo que la persona eligió en la antesala: si entra con micrófono y cámara
+ * encendidos, y con qué dispositivos.
+ */
+type Eleccion = Pick<
+  LocalUserChoices,
+  "audioEnabled" | "videoEnabled" | "audioDeviceId" | "videoDeviceId"
+>;
+
 type Estado = {
   screen: LiveScreenState;
   /** Mensaje del servidor cuando el token fue rechazado. */
@@ -44,10 +58,19 @@ type Estado = {
 export function LiveClassRoom({
   sessionId,
   fill = false,
+  userName,
 }: {
   sessionId: string;
   /** `true` en la pantalla propia de la sala: ocupa todo el alto disponible. */
   fill?: boolean;
+  /**
+   * Nombre del perfil, para rellenar la antesala.
+   *
+   * Es DECORATIVO: el nombre con que se aparece en la sala lo fija el token que
+   * firma el servidor. Se rellena igual para que el campo diga la verdad en vez
+   * de aparecer vacío pidiendo algo que no se va a usar.
+   */
+  userName?: string | null;
 }) {
   const [estado, setEstado] = useState<Estado>({
     screen: "idle",
@@ -55,8 +78,12 @@ export function LiveClassRoom({
     detalle: null,
   });
   const [conexion, setConexion] = useState<Conexion | null>(null);
+  const [eleccion, setEleccion] = useState<Eleccion | null>(null);
+  const [enAntesala, setEnAntesala] = useState(false);
 
-  const entrar = useCallback(async () => {
+  const entrar = useCallback(async (elegido: Eleccion) => {
+    setEleccion(elegido);
+    setEnAntesala(false);
     setEstado({ screen: "connecting", error: null, detalle: null });
 
     try {
@@ -89,12 +116,14 @@ export function LiveClassRoom({
   // desde donde se puede volver a entrar mientras la clase siga en curso.
   const salir = useCallback(() => {
     setConexion(null);
+    setEnAntesala(false);
     setEstado({ screen: "disconnected", error: null, detalle: null });
   }, []);
 
   const fallo = useCallback((e: Error) => {
     console.error("[clase en vivo] error de la sala", e);
     setConexion(null);
+    setEnAntesala(false);
     setEstado({ screen: "error", error: null, detalle: `${e.name}: ${e.message}` });
   }, []);
 
@@ -112,12 +141,49 @@ export function LiveClassRoom({
 
   const mensaje = liveMessage(estado.screen);
 
-  // En la pantalla propia ya se está "aquí mismo": lo útil de decir ahí es que
-  // entras apagado, que es lo que la gente quiere saber antes de pulsar.
+  // En la pantalla propia ya se está "aquí mismo", así que ese detalle sobra; lo
+  // útil es anticipar que hay un paso previo para probar cámara y micrófono.
   const detalleEntrada =
     fill && estado.screen === "idle"
-      ? "Tu cámara y tu micrófono empiezan apagados."
+      ? "Antes de entrar podrás revisar tu cámara y tu micrófono."
       : mensaje.detail;
+
+  /* ── Antesala ─────────────────────────────────────────────── */
+  // Verse y probar el micrófono ANTES de entrar es lo que evita el clásico "no
+  // se me escucha" en los primeros cinco minutos de clase. `PreJoin` de la
+  // librería ya trae vista previa y selección de dispositivos.
+  if (enAntesala && estado.screen !== "connected") {
+    return (
+      <div
+        data-lk-theme="default"
+        className={[
+          "ca-live-room ca-live-prejoin overflow-hidden rounded-[18px]",
+          fill ? "h-full" : "",
+        ].join(" ")}
+        style={fill ? undefined : { height: "min(70vh, 560px)" }}
+      >
+        <PreJoin
+          onSubmit={entrar}
+          onError={(e) => {
+            console.warn("[clase en vivo] antesala", e);
+          }}
+          joinLabel="Entrar a la clase"
+          micLabel="Micrófono"
+          camLabel="Cámara"
+          // El nombre real lo fija el token; acá solo se muestra.
+          userLabel="Entrarás como"
+          // Arranca con el micrófono listo y la cámara apagada: es lo que
+          // conviene en un aula de 20, y desde acá se puede cambiar antes de
+          // entrar, que es justo el punto de la antesala.
+          defaults={{
+            audioEnabled: true,
+            videoEnabled: false,
+            ...(userName ? { username: userName } : {}),
+          }}
+        />
+      </div>
+    );
+  }
 
   /* ── Fuera de la sala ─────────────────────────────────────── */
   if (estado.screen !== "connected" || !conexion) {
@@ -145,7 +211,7 @@ export function LiveClassRoom({
         {(estado.screen === "idle" || mensaje.canRetry) && (
           <button
             type="button"
-            onClick={entrar}
+            onClick={() => setEnAntesala(true)}
             disabled={ocupado}
             className="ca-btn-lime ca-btn-interactive px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] disabled:opacity-60"
           >
@@ -180,8 +246,8 @@ export function LiveClassRoom({
         // 2. Robustez: pedir el micrófono al conectar hacía que quien negara el
         //    permiso quedara FUERA de la clase, sin poder ni mirar. Es lo que
         //    apareció en el QA de esta pantalla.
-        audio={false}
-        video={false}
+        audio={eleccion?.audioEnabled ?? false}
+        video={eleccion?.videoEnabled ?? false}
         onDisconnected={salir}
         onError={fallo}
         onMediaDeviceFailure={falloDeDispositivo}

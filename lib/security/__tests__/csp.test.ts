@@ -53,7 +53,8 @@ describe("buildCsp", () => {
     const connect = directive(buildCsp({ isDev: false }), "connect-src");
     expect(connect).toBe(
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co " +
-        "https://api.fintoc.com https://*.fintoc.com https://*.mux.com https://*.fastly.mux.com",
+        "https://api.fintoc.com https://*.fintoc.com https://*.mux.com https://*.fastly.mux.com " +
+        "https://umami-production-41e5.up.railway.app",
     );
   });
 
@@ -69,6 +70,15 @@ describe("buildCsp", () => {
     ]) {
       expect(connect).toContain(origen);
     }
+  });
+
+  it("permite el script de analítica, que estuvo bloqueado sin que nadie lo notara", () => {
+    // Umami se carga desde `app/layout.tsx` y necesita las dos directivas: una
+    // para cargarse y otra para mandar los eventos. Faltaba en script-src desde
+    // que existe este CSP, así que no medía nada y no daba error visible.
+    const csp = buildCsp({ isDev: false });
+    expect(directive(csp, "script-src")).toContain("umami-production-41e5.up.railway.app");
+    expect(directive(csp, "connect-src")).toContain("umami-production-41e5.up.railway.app");
   });
 
   it("solo permite unsafe-eval en desarrollo", () => {

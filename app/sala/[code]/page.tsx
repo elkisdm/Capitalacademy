@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { getClassroomAccess } from "@/lib/classroom/access";
+import { getViewerProfile } from "@/lib/supabase/auth";
 import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { LiveClassRoom } from "@/components/classroom/live/live-class-room";
 
@@ -25,7 +26,7 @@ export const runtime = "nodejs";
 export async function generateMetadata(props: { params: Promise<{ code: string }> }) {
   const { code } = await props.params;
   const ref = parseSessionRef(code);
-  if (ref.kind === "invalid") return { title: "Sala · Capital Academy" };
+  if (ref.kind === "invalid") return { title: "Sala" };
 
   const admin = createAdminClient();
   const { data } = await admin
@@ -35,7 +36,8 @@ export async function generateMetadata(props: { params: Promise<{ code: string }
     .maybeSingle();
 
   const titulo = (data?.title as string | null) ?? "Clase en vivo";
-  return { title: `${titulo} · Capital Academy` };
+  // El sufijo "· Capital Academy" lo pone la plantilla del layout raíz.
+  return { title: titulo };
 }
 
 export default async function SalaPage(props: { params: Promise<{ code: string }> }) {
@@ -64,6 +66,7 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   const access = await getClassroomAccess(user.id, session.cohort_id as string);
   if (!access) notFound();
 
+  const perfil = await getViewerProfile(user.id);
   const cohortSlug = (session.cohorts as { slug: string | null } | null)?.slug ?? null;
   const title = (session.title as string | null) ?? "Clase en vivo";
 
@@ -86,7 +89,11 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
       </header>
 
       <main className="min-h-0 flex-1 px-3 pb-3">
-        <LiveClassRoom sessionId={session.code as string} fill />
+        <LiveClassRoom
+          sessionId={session.code as string}
+          fill
+          userName={perfil?.full_name ?? null}
+        />
       </main>
     </div>
   );

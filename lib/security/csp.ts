@@ -35,6 +35,17 @@ export function livekitConnectSources(livekitUrl: string | undefined): string[] 
   return [`wss://${host}`, `https://${host}`];
 }
 
+/**
+ * Analítica propia (Umami). El `<script>` está fijo en `app/layout.tsx` y hay
+ * que permitirlo en DOS directivas: `script-src` para poder cargarlo y
+ * `connect-src` para que pueda mandar los eventos.
+ *
+ * OJO: estuvo bloqueado desde que existe este CSP —el host nunca figuró en
+ * `script-src`—, así que la analítica no estaba midiendo nada. No dio ningún
+ * error visible: exactamente el mismo silencio que tapó lo de LiveKit.
+ */
+const UMAMI_ORIGIN = "https://umami-production-41e5.up.railway.app";
+
 export function buildCsp(opts: {
   isDev: boolean;
   livekitUrl?: string;
@@ -49,12 +60,13 @@ export function buildCsp(opts: {
     "https://*.fintoc.com",
     "https://*.mux.com",
     "https://*.fastly.mux.com",
+    UMAMI_ORIGIN,
     ...livekitConnectSources(livekitUrl),
   ];
 
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.fintoc.com`,
+    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.fintoc.com ${UMAMI_ORIGIN}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https://fonts.gstatic.com",

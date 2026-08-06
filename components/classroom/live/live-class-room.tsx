@@ -91,6 +91,18 @@ export function LiveClassRoom({ sessionId }: { sessionId: string }) {
     setEstado({ screen: "error", error: null, detalle: `${e.name}: ${e.message}` });
   }, []);
 
+  /**
+   * Un problema con el micrófono o la cámara NO puede echar a nadie de la clase.
+   *
+   * Sin esto, quien niega el permiso —o simplemente no tiene micrófono— quedaba
+   * fuera con un `ConnectionError: Client initiated disconnect`, sin poder ni
+   * mirar ni escuchar. Acá solo se registra: la persona sigue en la sala y puede
+   * reintentar desde la barra de controles cuando resuelva sus permisos.
+   */
+  const falloDeDispositivo = useCallback((e: unknown) => {
+    console.warn("[clase en vivo] no se pudo usar un dispositivo", e);
+  }, []);
+
   const mensaje = liveMessage(estado.screen);
 
   /* ── Fuera de la sala ─────────────────────────────────────── */
@@ -141,12 +153,19 @@ export function LiveClassRoom({ sessionId }: { sessionId: string }) {
         token={conexion.token}
         serverUrl={conexion.url}
         connect
-        // Micrófono sí, cámara no: entrar con la cámara encendida sin avisar es
-        // invasivo, y en un aula de 20 es además ancho de banda que nadie pidió.
-        audio
+        // Se entra SILENCIADO y sin cámara, y se enciende lo que haga falta
+        // desde la barra de controles. Dos razones:
+        //
+        // 1. Producto: 20 personas entrando con micrófono abierto es ruido y
+        //    eco. Zoom y Meet también entran apagados por algo.
+        // 2. Robustez: pedir el micrófono al conectar hacía que quien negara el
+        //    permiso quedara FUERA de la clase, sin poder ni mirar. Es lo que
+        //    apareció en el QA de esta pantalla.
+        audio={false}
         video={false}
         onDisconnected={salir}
         onError={fallo}
+        onMediaDeviceFailure={falloDeDispositivo}
         style={{ height: "100%" }}
       >
         <VideoConference />

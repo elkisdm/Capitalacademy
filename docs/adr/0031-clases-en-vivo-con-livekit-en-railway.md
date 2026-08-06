@@ -1,6 +1,6 @@
 # ADR-0031: Clases en vivo con LiveKit autoalojado en Railway
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-06
 - **Deciders:** Elkis Daza (dirección), equipo de desarrollo
 - **Tags:** infra, video, clases-en-vivo, asistencia
@@ -86,6 +86,45 @@ MP4 o HLS: **Mux no es un destino nativo**.
 **Consecuencia:** hace falta un salto intermedio (Egress → almacenamiento →
 crear el asset en Mux por URL) y un servicio de Railway dimensionado aparte, que
 solo se justifica si se apaga o se reduce cuando no hay clase en curso.
+
+## Estado del despliegue (6-ago-2026)
+
+**Paso 1 hecho y verificado: servidor y Redis arriba.** Proyecto Railway
+`capitalacademy-livekit`, en el workspace de la empresa —el mismo donde ya vive
+`umami-analytics`, que Capital Academy consume desde `app/layout.tsx:132`.
+
+| Pieza | Estado |
+|---|---|
+| `livekit-server` v1.13.5 (imagen oficial, versión fijada) | corriendo |
+| Redis (Railway) | conectado por red privada, `redis.railway.internal:6379` |
+| Señalización pública | `https://livekit-production-0c7a.up.railway.app` → HTTP 200 |
+| Autenticación | token firmado da 200; token adulterado da 401 |
+| API de salas | `CreateRoom` → `ListRooms` → `DeleteRoom` los tres 200 |
+
+Las credenciales (`LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`) quedaron
+en el `.env` local, que está en `.gitignore`. **Todavía no están en Netlify**
+porque ninguna ruta de la app las usa aún.
+
+Dos cosas que costaron y conviene no volver a descubrir:
+
+- **Railway daba 502 con el servidor sano.** LiveKit respondía `OK` en
+  `127.0.0.1:7880` dentro del contenedor y escuchaba en `:::7880`, así que no era
+  el binding: era el puerto destino del proxy. Se resuelve declarando `PORT=7880`
+  como variable del servicio; el flag `--port` de `railway domain` no bastó.
+- **El log confirma la limitación de UDP en vivo**: `could not validate external
+  IP` y `network is unreachable` contra el STUN. El servidor sigue funcionando
+  porque cae al TCP de 7881, que es justo el camino que este ADR asume.
+
+### Lo que falta (no hecho todavía)
+
+1. **Transporte del medio por TCP**: exponer el TCP Proxy de Railway hacia 7881.
+   Ojo con la trampa ya identificada: **LiveKit no tiene opción para anunciar un
+   puerto TCP público distinto del que escucha**, así que el puerto público de
+   Railway y `rtc.tcp_port` tienen que coincidir (de ahí el reenvío por iptables
+   de la plantilla oficial).
+2. **Prueba de carga con ~20 participantes** antes de mover una clase real.
+3. Egress, emisión de tokens desde la app, webhooks de asistencia y migración de
+   `class_sessions`.
 
 ## Opciones consideradas
 

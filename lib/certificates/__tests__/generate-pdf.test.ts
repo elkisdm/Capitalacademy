@@ -1,4 +1,14 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+
+/**
+ * Estos tests generan PDFs DE VERDAD: pdf-lib embebe una fuente TTF real y una
+ * plantilla PNG del repo, con el subseteo de glifos que eso implica. Aislados
+ * corren en ~2 s, pero bajo la carga de la suite completa con instrumentación
+ * de cobertura se pasan del timeout por defecto de 5 s y ensucian el gate con
+ * un fallo que no es del código. El trabajo es legítimamente lento: se le da el
+ * tiempo que necesita en vez de fingir que es instantáneo.
+ */
+vi.setConfig({ testTimeout: 30_000 });
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import {

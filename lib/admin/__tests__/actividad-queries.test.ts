@@ -68,6 +68,7 @@ const {
   buildActivityRows,
   summarizeActivity,
   getCohortActivityReport,
+  isStaffEnrollment,
 } = await import("@/lib/admin/actividad-queries");
 
 const TODAY = "2026-08-05";
@@ -88,6 +89,32 @@ beforeEach(() => {
   activityRanges.length = 0;
   // Por defecto no hay historial anterior: cada test que lo necesite lo declara.
   mockPriorActivity.mockResolvedValue({ data: [] });
+});
+
+// ===========================================================================
+describe("isStaffEnrollment", () => {
+  it("reconoce como staff los mismos roles que is_platform_staff() en la base", () => {
+    expect(isStaffEnrollment("ops")).toBe(true);
+    expect(isStaffEnrollment("admin")).toBe(true);
+  });
+
+  it("trata como alumno el rol de usuario común", () => {
+    expect(isStaffEnrollment("user")).toBe(false);
+  });
+
+  it("ante un rol ausente prefiere mostrar de más", () => {
+    // Esconder a alguien por un dato faltante es peor que mostrarlo: el panel
+    // existe justamente para encontrar a quien no aparece.
+    expect(isStaffEnrollment(null)).toBe(false);
+    expect(isStaffEnrollment(undefined)).toBe(false);
+  });
+
+  it("no confunde el rol legacy de docente con staff de plataforma", () => {
+    // `profiles.role` es la columna legacy y tiene 'teacher'; el permiso real
+    // vive en `system_role`, que solo conoce user/ops/admin.
+    expect(isStaffEnrollment("teacher")).toBe(false);
+    expect(isStaffEnrollment("student")).toBe(false);
+  });
 });
 
 // ===========================================================================
@@ -309,6 +336,63 @@ describe("getCohortActivityReport", () => {
 
     expect(report!.students).toEqual([]);
     expect(report!.summary.total_students).toBe(0);
+    expect(mockActivity).not.toHaveBeenCalled();
+  });
+
+  // En producción hay gente del equipo matriculada a propósito para ver el aula
+  // como la ve el alumno. Contarla falsea el denominador y la mete en la lista
+  // de inactivos, que es justo lo que el panel tiene que responder bien.
+  it("deja fuera las matrículas del equipo y no las cuenta en el resumen", async () => {
+    mockCohortSingle.mockResolvedValue({
+      data: { id: "c1", name: "G4", program_id: "p1", programs: { id: "p1", name: "Diplomado" } },
+    });
+    mockEnrollments.mockResolvedValue({
+      data: [
+        {
+          id: "e1",
+          student_id: "s1",
+          profiles: { full_name: "Ana Pérez", email: "ana@x.cl", system_role: "user" },
+        },
+        {
+          id: "e2",
+          student_id: "s2",
+          profiles: { full_name: "Paola Ops", email: "paola@x.cl", system_role: "ops" },
+        },
+        {
+          id: "e3",
+          student_id: "s3",
+          profiles: { full_name: "Elkis Admin", email: "elkis@x.cl", system_role: "admin" },
+        },
+      ],
+    });
+    mockActivity.mockResolvedValue({ data: [], error: null });
+
+    const report = await getCohortActivityReport("c1", 7);
+
+    expect(report!.students.map((s) => s.email)).toEqual(["ana@x.cl"]);
+    expect(report!.summary.total_students).toBe(1);
+    // Tampoco se pide su actividad: no tiene sentido traer filas que se
+    // descartan igual.
+    expect(activityFilters).toContainEqual({ column: "enrollment_id", value: ["e1"] });
+  });
+
+  it("no consulta la actividad cuando la cohorte solo tiene matrículas del equipo", async () => {
+    mockCohortSingle.mockResolvedValue({
+      data: { id: "c1", name: "G4", program_id: "p1", programs: { id: "p1", name: "Diplomado" } },
+    });
+    mockEnrollments.mockResolvedValue({
+      data: [
+        {
+          id: "e1",
+          student_id: "s1",
+          profiles: { full_name: "Elkis Admin", email: "elkis@x.cl", system_role: "admin" },
+        },
+      ],
+    });
+
+    const report = await getCohortActivityReport("c1");
+
+    expect(report!.students).toEqual([]);
     expect(mockActivity).not.toHaveBeenCalled();
   });
 

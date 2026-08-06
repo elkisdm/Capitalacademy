@@ -65,6 +65,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - las guías de quizzes, examen final y certificación ahora describen cómo funciona la plataforma hoy: las notas de los quizzes por clase se publican solas y cuentan para el promedio aunque no certifiquen, las alternativas llegan hasta la F, y los certificados viven en su propia sección (`f2bb309`, `5223ae1`)
 
 ### Changed
+- Las direcciones del aula ya no muestran códigos internos ilegibles: el perfil de un profesor es `/docente/paola-vicuna`, un tema del foro y un quiz llevan su propio nombre en la dirección. Los enlaces antiguos que ya circulan por correo siguen funcionando (`7d9aad6`)
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
 - El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)
 - La pantalla de una conversación carga más liviana y rápida: dejó de enviarse el procesador de texto al navegador y los avatares se optimizan automáticamente (`db2c32d`)

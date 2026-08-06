@@ -134,6 +134,7 @@
 | `components/classroom/live/live-class-room.tsx` | Sala embebida del alumno. El interior lo pone `<VideoConference />` de `@livekit/components-react` (pantalla compartida, chat, grilla paginada, dispositivos); tematizado con `.ca-live-room` en `globals.css`. El token se pide al pulsar "Entrar", no al montar | en `/classroom/[cohortSlug]/clase/[sessionId]` | 0031 |
 | `lib/security/csp.ts` | CSP y Permissions-Policy del sitio, fuera de `next.config.ts` para poder testearlos: un origen que falta no rompe el build ni los tests, solo la función en producción | — | 0031 |
 | `app/sala/[code]/page.tsx` | Sala en pantalla COMPLETA, fuera del grupo `(classroom)`: sin barra lateral, como una videollamada. La URL usa el código legible | `/sala/[code]` | 0031 |
+| `lib/classroom/ref.ts` | `resolveRef`: decide si lo que llega por la URL es slug legible o UUID, y con qué columna buscar. Lo usan docente, hilo y evaluación (0090); devolver `null` ante basura evita un 500 de Postgres donde corresponde un 404 | — | — |
 | `lib/livekit/meeting-code.ts` | Código legible de reunión (formato Meet `abc-defg-hij`, migración 0089) y `parseSessionRef`, que acepta código o UUID para no romper los enlaces ya enviados por correo | — | 0031 |
 
 ## Asistencia (QR)

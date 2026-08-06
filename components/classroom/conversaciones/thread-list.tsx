@@ -457,7 +457,7 @@ export function ThreadList({
                   el botón de guardar (interactivo) dentro de un <a> (T18 —
                   antes el bookmark quedaba anidado en el <Link>, HTML inválido). */}
               <Link
-                href={`/classroom/${cohortSlug}/conversaciones/${t.id}`}
+                href={`/classroom/${cohortSlug}/conversaciones/${t.slug ?? t.id}`}
                 aria-label={t.title}
                 className="absolute inset-0 z-0"
               />

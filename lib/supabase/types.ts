@@ -722,6 +722,7 @@ export type Database = {
           is_pinned: boolean
           last_activity_at: string
           program_id: string
+          slug: string | null
           title: string
           updated_at: string
         }
@@ -737,6 +738,7 @@ export type Database = {
           is_pinned?: boolean
           last_activity_at?: string
           program_id: string
+          slug?: string | null
           title: string
           updated_at?: string
         }
@@ -752,6 +754,7 @@ export type Database = {
           is_pinned?: boolean
           last_activity_at?: string
           program_id?: string
+          slug?: string | null
           title?: string
           updated_at?: string
         }
@@ -1302,6 +1305,7 @@ export type Database = {
           questions_per_attempt: number | null
           scope: string
           session_id: string | null
+          slug: string | null
           time_limit_minutes: number | null
           title: string
           updated_at: string
@@ -1324,6 +1328,7 @@ export type Database = {
           questions_per_attempt?: number | null
           scope: string
           session_id?: string | null
+          slug?: string | null
           time_limit_minutes?: number | null
           title: string
           updated_at?: string
@@ -1346,6 +1351,7 @@ export type Database = {
           questions_per_attempt?: number | null
           scope?: string
           session_id?: string | null
+          slug?: string | null
           time_limit_minutes?: number | null
           title?: string
           updated_at?: string
@@ -1395,6 +1401,7 @@ export type Database = {
           linkedin_url: string | null
           photo_url: string | null
           profile_id: string | null
+          slug: string | null
           website_url: string | null
         }
         Insert: {
@@ -1409,6 +1416,7 @@ export type Database = {
           linkedin_url?: string | null
           photo_url?: string | null
           profile_id?: string | null
+          slug?: string | null
           website_url?: string | null
         }
         Update: {
@@ -1423,6 +1431,7 @@ export type Database = {
           linkedin_url?: string | null
           photo_url?: string | null
           profile_id?: string | null
+          slug?: string | null
           website_url?: string | null
         }
         Relationships: [
@@ -2917,7 +2926,9 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      slugify: { Args: { texto: string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
+      unaccent_bytes: { Args: { texto: string }; Returns: string }
     }
     Enums: {
       cohort_role_kind: "student" | "teacher" | "assistant"

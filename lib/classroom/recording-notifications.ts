@@ -40,7 +40,7 @@ export async function dispatchCapacitacionFollowup(
     // ¿Esta lección es la repetición de una sesión, y de qué programa?
     const { data: session } = await supabase
       .from("class_sessions")
-      .select("id, cohort_id, title, cohorts(program_id, slug)")
+      .select("id, code, cohort_id, title, cohorts(program_id, slug)")
       .eq("lesson_id", lessonId)
       .maybeSingle();
 
@@ -54,6 +54,8 @@ export async function dispatchCapacitacionFollowup(
 
     const sessionRow = session as unknown as {
       id: string;
+      // Código legible de la clase (0089): es lo que va en el enlace del correo.
+      code: string;
       cohort_id: string;
       title: string | null;
     };
@@ -115,7 +117,7 @@ export async function dispatchCapacitacionFollowup(
       }));
 
     const cohortSlug = cohort.slug ?? sessionRow.cohort_id;
-    const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.id}`;
+    const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.code}`;
     const title = sessionRow.title ?? "tu capacitación";
 
     // IDEMPOTENCIA POR DESTINATARIO (migración 0077): a quién YA le llegó.
@@ -238,7 +240,7 @@ export async function dispatchRecordingAvailableNotification(
     const { data: session } = await supabase
       .from("class_sessions")
       .select(
-        "id, cohort_id, title, cohorts(program_id, slug, name, programs(name))",
+        "id, code, cohort_id, title, cohorts(program_id, slug, name, programs(name))",
       )
       .eq("lesson_id", lessonId)
       .maybeSingle();
@@ -260,6 +262,8 @@ export async function dispatchRecordingAvailableNotification(
 
     const sessionRow = session as unknown as {
       id: string;
+      // Código legible de la clase (0089): es lo que va en el enlace del correo.
+      code: string;
       cohort_id: string;
       title: string | null;
     };
@@ -321,7 +325,7 @@ export async function dispatchRecordingAvailableNotification(
       }));
 
     const cohortSlug = cohort.slug ?? sessionRow.cohort_id;
-    const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.id}`;
+    const recordingUrl = `${getPublicBaseUrl()}/classroom/${cohortSlug}/clase/${sessionRow.code}`;
     const lessonTitle = sessionRow.title ?? "tu clase";
     const programName = cohort.programs?.name ?? "Capital Academy";
 

@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
+import { resolveRef } from "@/lib/classroom/ref";
 import type { createAdminClient } from "@/lib/supabase/admin";
 import { getEvaluationState } from "@/lib/classroom/evaluation-window";
 
@@ -42,12 +43,19 @@ export async function resolveEvaluationAccess(
   evaluationId: string,
   opts?: { ignoreClosesAt?: boolean },
 ): Promise<EvalAccess> {
+  // Acepta el slug legible (0090) o el UUID; el UUID viaja en enlaces ya
+  // enviados y en los botones "Responder quiz" de pantallas antiguas.
+  const ref = resolveRef(evaluationId);
+  // Misma respuesta que una evaluación inexistente: quien manda una referencia
+  // inventada no debe poder distinguir "mal formada" de "no existe".
+  if (!ref) return { ok: false, status: 404, error: "Evaluación no disponible" };
+
   const { data: evaluation } = await admin
     .from("evaluations")
     .select(
       "id, program_id, scope, title, passing_grade_pct, questions_per_attempt, max_attempts, time_limit_minutes, is_active, opens_at, closes_at",
     )
-    .eq("id", evaluationId)
+    .eq(ref.column, ref.value)
     .single();
 
   if (!evaluation) {

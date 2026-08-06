@@ -24,6 +24,8 @@ import { resolveTourStart } from "@/lib/tour/start";
 // eso se castean explícitamente (mismo patrón que [moduleSlug]/page.tsx).
 type SessionRowLite = {
   id: string;
+  /** Código legible de la clase (0089): es lo que va en el enlace. */
+  code: string;
   module_id: string | null;
   starts_at: string;
   ends_at: string;
@@ -114,7 +116,7 @@ export default async function CohortDashboardPage(
   if (moduleIds.length > 0) {
     const { data: sessionRows } = await supabase
       .from("class_sessions")
-      .select("id, module_id, starts_at, ends_at, status, title, lesson_id")
+      .select("id, code, module_id, starts_at, ends_at, status, title, lesson_id")
       .eq("cohort_id", cohortId)
       .in("module_id", moduleIds)
       .neq("status", "cancelled");
@@ -203,7 +205,7 @@ export default async function CohortDashboardPage(
         key: session.id,
         title: session.title ?? "Sin título",
         status,
-        href: `/classroom/${cohortSlug}/clase/${session.id}`,
+        href: `/classroom/${cohortSlug}/clase/${session.code}`,
         durationOrDate: fmtUnlock(session.starts_at),
         hasRecording: Boolean(session.lesson_id),
       };

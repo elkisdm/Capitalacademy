@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveRef } from "@/lib/classroom/ref";
 import { getPublicAuthorsMap } from "@/lib/profiles/public-authors";
 import { getProgramStaffIds } from "@/lib/profiles/program-staff";
 import { REACTION_EMOJIS } from "@/lib/conversaciones/reactions";
@@ -14,6 +15,8 @@ export type ThreadAuthor = {
 
 export type ThreadListItem = {
   id: string;
+  /** Slug legible del hilo para la URL (0090). */
+  slug?: string | null;
   title: string;
   body: string;
   category: string;
@@ -234,7 +237,7 @@ type CommentRow = {
 // dueño+staff, 0045). Se trae solo author_id y se resuelve el autor público
 // (id/nombre/avatar) por service-role con getPublicAuthorsMap.
 const THREAD_SELECT = `
-  id, title, body, category, is_pinned, is_locked, comment_count,
+  id, slug, title, body, category, is_pinned, is_locked, comment_count,
   last_activity_at, created_at, author_id
 `;
 
@@ -373,10 +376,15 @@ export async function getThreadWithComments(
 > {
   const supabase = await createClient();
 
+  // Acepta el slug legible (0090) o el UUID: las notificaciones ya enviadas
+  // llevan el UUID en /classroom/go/thread/<id>.
+  const ref = resolveRef(threadId);
+  if (!ref) return null;
+
   const { data: threadData, error } = await supabase
     .from("conversation_threads")
     .select(`program_id, edited_at, ${THREAD_SELECT}`)
-    .eq("id", threadId)
+    .eq(ref.column, ref.value)
     .maybeSingle();
 
   if (error || !threadData) return null;

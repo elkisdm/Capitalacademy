@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveRef } from "@/lib/classroom/ref";
 import { uuidLike } from "@/lib/utils/zod";
 import { INSTRUCTOR_PROFILE_COLUMNS, type InstructorProfile } from "./types";
 
@@ -24,13 +25,16 @@ import { INSTRUCTOR_PROFILE_COLUMNS, type InstructorProfile } from "./types";
 export async function getInstructorProfile(
   instructorId: string,
 ): Promise<InstructorProfile | null> {
-  if (!uuidLike.safeParse(instructorId).success) return null;
+  // Acepta el slug legible (`paola-vicuna`, migración 0090) o el UUID: hay
+  // enlaces con UUID en correos ya enviados y en favoritos de la gente.
+  const ref = resolveRef(instructorId);
+  if (!ref) return null;
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("instructors")
     .select(INSTRUCTOR_PROFILE_COLUMNS)
-    .eq("id", instructorId)
+    .eq(ref.column, ref.value)
     .maybeSingle();
 
   if (error) {

@@ -169,7 +169,7 @@ function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession;
   const end = new Date(session.ends_at);
   const isPast = end < now;
   const isLive = start <= now && now <= end;
-  const classHref = `/classroom/${cohortSlug}/clase/${session.id}`;
+  const classHref = `/classroom/${cohortSlug}/clase/${session.code}`;
   const hasRecording = Boolean(
     (session as unknown as { lesson_id?: string | null }).lesson_id,
   );
@@ -235,7 +235,7 @@ function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession;
       </Link>
       {session.evaluation && session.status !== "cancelled" && (
         <Link
-          href={`/classroom/quiz/${session.evaluation.id}`}
+          href={`/classroom/quiz/${session.evaluation.slug ?? session.evaluation.id}`}
           className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-ca-violet/10 px-3 py-1.5 text-[11px] font-bold text-ca-violet transition-colors hover:bg-ca-violet hover:text-white"
         >
           <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

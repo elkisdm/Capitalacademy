@@ -121,6 +121,16 @@
 | `lib/email/recording-available.ts` | Correo "grabación disponible" al publicarse la repetición de una clase en vivo (todo programa salvo CAP-CI) | — | — |
 | `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI), `attendance-warning` (alerta de inasistencias, brandeada por entorno) | — | 0013 |
 
+## Clases en vivo (LiveKit)
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `infra/livekit/` | Imagen del servidor LiveKit autoalojado en Railway (Dockerfile + entrypoint que arma la config). El medio va por UDP; NO fijar `node_ip` a la IP del TCP Proxy | — | 0031 |
+| `lib/livekit/config.ts` | Credenciales (`LIVEKIT_URL/API_KEY/API_SECRET`) con error tipado que nombra la variable faltante → 503 | — | 0031 |
+| `lib/livekit/token.ts` | Firma **pura** del JWT HS256 de acceso (`node:crypto`, sin SDK). El token ES la autorización: LiveKit no consulta nada más | — | 0031 |
+| `lib/livekit/access.ts` | Decisión **pura** de acceso a la sala: modalidad en vivo, cohorte, matrícula/staff, ventana (−30/+120 min) y grants. La sala se deriva del id de sesión, nunca del cliente | — | 0031 |
+| `app/api/classroom/clase/[sessionId]/token/route.ts` | Emite el token del participante. Deriva cohorte y sala de la sesión; el nombre visible sale del perfil. 10/min por usuario | `POST /api/classroom/clase/[sessionId]/token` | 0031 |
+
 ## Asistencia (QR)
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |

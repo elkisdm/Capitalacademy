@@ -1,12 +1,11 @@
 /**
  * Ficha docente del catálogo `public.instructors`.
  *
- * Las cuatro columnas del perfil público (`headline` + las tres redes) se
- * agregan en `db/migrations/0086_instructors_perfil_publico.sql`. Hasta que se
- * regeneren los tipos del CLI de Supabase (`supabase gen types`) NO están en
- * `Tables<"instructors">`, por eso este tipo se declara a mano — el mismo
- * patrón que ya usa `ClassSession` en `lib/classroom/types.ts` para
- * `teacher_id` y `title`.
+ * Es la PROYECCIÓN que devuelven las consultas de perfil, no la fila completa:
+ * se declara a mano para que calce exactamente con `INSTRUCTOR_PROFILE_COLUMNS`
+ * y deje fuera lo que el perfil público no debe arrastrar (`email`,
+ * `is_active`, `profile_id`). Las columnas en sí ya existen en
+ * `Tables<"instructors">` desde que se regeneraron los tipos.
  */
 export type InstructorProfile = {
   id: string;

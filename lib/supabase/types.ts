@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_program_modules_teacher_20260722: {
+        Row: {
+          code: string | null
+          id: string | null
+          program_id: string | null
+          teacher_id: string | null
+          title: string | null
+        }
+        Insert: {
+          code?: string | null
+          id?: string | null
+          program_id?: string | null
+          teacher_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          code?: string | null
+          id?: string | null
+          program_id?: string | null
+          teacher_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       access_email_log: {
         Row: {
           created_at: string
@@ -821,7 +845,22 @@ export type Database = {
           status?: string
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deliverable_open_recipients_deliverable_id_fkey"
+            columns: ["deliverable_id"]
+            isOneToOne: false
+            referencedRelation: "deliverables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliverable_open_recipients_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deliverable_submissions: {
         Row: {
@@ -1127,104 +1166,6 @@ export type Database = {
           },
         ]
       }
-      evaluations: {
-        Row: {
-          closes_at: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          kind: string
-          lesson_id: string | null
-          max_attempts: number
-          min_completion_pct: number | null
-          module_id: string | null
-          opens_at: string | null
-          passing_grade_pct: number
-          program_id: string
-          questions_per_attempt: number | null
-          scope: string
-          session_id: string | null
-          time_limit_minutes: number | null
-          title: string
-          updated_at: string
-          weight_pct: number | null
-        }
-        Insert: {
-          closes_at?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          kind?: string
-          lesson_id?: string | null
-          max_attempts?: number
-          min_completion_pct?: number | null
-          module_id?: string | null
-          opens_at?: string | null
-          passing_grade_pct?: number
-          program_id: string
-          questions_per_attempt?: number | null
-          scope: string
-          session_id?: string | null
-          time_limit_minutes?: number | null
-          title: string
-          updated_at?: string
-          weight_pct?: number | null
-        }
-        Update: {
-          closes_at?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          kind?: string
-          lesson_id?: string | null
-          max_attempts?: number
-          min_completion_pct?: number | null
-          module_id?: string | null
-          opens_at?: string | null
-          passing_grade_pct?: number
-          program_id?: string
-          questions_per_attempt?: number | null
-          scope?: string
-          session_id?: string | null
-          time_limit_minutes?: number | null
-          title?: string
-          updated_at?: string
-          weight_pct?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "evaluations_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evaluations_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "program_modules"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evaluations_program_id_fkey"
-            columns: ["program_id"]
-            isOneToOne: false
-            referencedRelation: "programs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evaluations_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "class_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       evaluation_criteria: {
         Row: {
           created_at: string
@@ -1325,10 +1266,115 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "evaluation_grades_graded_by_fkey"
+            columns: ["graded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "evaluation_grades_quiz_attempt_id_fkey"
             columns: ["quiz_attempt_id"]
             isOneToOne: false
             referencedRelation: "quiz_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          lesson_id: string | null
+          max_attempts: number
+          min_completion_pct: number | null
+          module_id: string | null
+          opens_at: string | null
+          passing_grade_pct: number
+          program_id: string
+          questions_per_attempt: number | null
+          scope: string
+          session_id: string | null
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          weight_pct: number | null
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          lesson_id?: string | null
+          max_attempts?: number
+          min_completion_pct?: number | null
+          module_id?: string | null
+          opens_at?: string | null
+          passing_grade_pct?: number
+          program_id: string
+          questions_per_attempt?: number | null
+          scope: string
+          session_id?: string | null
+          time_limit_minutes?: number | null
+          title: string
+          updated_at?: string
+          weight_pct?: number | null
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          lesson_id?: string | null
+          max_attempts?: number
+          min_completion_pct?: number | null
+          module_id?: string | null
+          opens_at?: string | null
+          passing_grade_pct?: number
+          program_id?: string
+          questions_per_attempt?: number | null
+          scope?: string
+          session_id?: string | null
+          time_limit_minutes?: number | null
+          title?: string
+          updated_at?: string
+          weight_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1339,30 +1385,42 @@ export type Database = {
           created_at: string
           email: string | null
           full_name: string
+          headline: string | null
           id: string
+          instagram_url: string | null
           is_active: boolean
+          linkedin_url: string | null
           photo_url: string | null
           profile_id: string | null
+          website_url: string | null
         }
         Insert: {
           bio?: string | null
           created_at?: string
           email?: string | null
           full_name: string
+          headline?: string | null
           id?: string
+          instagram_url?: string | null
           is_active?: boolean
+          linkedin_url?: string | null
           photo_url?: string | null
           profile_id?: string | null
+          website_url?: string | null
         }
         Update: {
           bio?: string | null
           created_at?: string
           email?: string | null
           full_name?: string
+          headline?: string | null
           id?: string
+          instagram_url?: string | null
           is_active?: boolean
+          linkedin_url?: string | null
           photo_url?: string | null
           profile_id?: string | null
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -1957,6 +2015,8 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           rut: string | null
           system_role: Database["public"]["Enums"]["system_role"]
+          tour_completed_at: string | null
+          tour_outcome: string | null
           updated_at: string
         }
         Insert: {
@@ -1978,6 +2038,8 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           rut?: string | null
           system_role?: Database["public"]["Enums"]["system_role"]
+          tour_completed_at?: string | null
+          tour_outcome?: string | null
           updated_at?: string
         }
         Update: {
@@ -1999,6 +2061,8 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           rut?: string | null
           system_role?: Database["public"]["Enums"]["system_role"]
+          tour_completed_at?: string | null
+          tour_outcome?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2270,7 +2334,22 @@ export type Database = {
           status?: string
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recording_notify_recipients_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recording_notify_recipients_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_attendance: {
         Row: {
@@ -2365,7 +2444,22 @@ export type Database = {
           status?: string
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "session_reminder_recipients_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reminder_recipients_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_reminders: {
         Row: {
@@ -2781,7 +2875,11 @@ export type Database = {
         Returns: Database["public"]["Enums"]["cohort_role_kind"]
       }
       has_cohort_access: { Args: { p_cohort_id: string }; Returns: boolean }
-      has_evaluation_access: { Args: { p_evaluation_id: string }; Returns: boolean }
+      has_evaluation_access: {
+        Args: { p_evaluation_id: string }
+        Returns: boolean
+      }
+      has_lesson_access: { Args: { p_lesson_id: string }; Returns: boolean }
       has_program_access: { Args: { p_program_id: string }; Returns: boolean }
       increment_coupon_redemptions: {
         Args: { p_coupon_id: string }
@@ -2789,9 +2887,18 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_cohort_staff: { Args: { p_cohort_id: string }; Returns: boolean }
-      is_evaluation_staff: { Args: { p_evaluation_id: string }; Returns: boolean }
+      is_evaluation_staff: {
+        Args: { p_evaluation_id: string }
+        Returns: boolean
+      }
+      is_lesson_staff: { Args: { p_lesson_id: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
       is_program_staff: { Args: { p_program_id: string }; Returns: boolean }
+      is_staff_of_enrollment: {
+        Args: { p_enrollment_id: string }
+        Returns: boolean
+      }
+      owns_enrollment: { Args: { p_enrollment_id: string }; Returns: boolean }
       record_student_activity: {
         Args: {
           p_activity_date: string

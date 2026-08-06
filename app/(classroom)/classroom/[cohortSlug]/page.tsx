@@ -87,14 +87,12 @@ export default async function CohortDashboardPage(
   let tourReadFailed = false;
 
   if (!forcedTour && !access.isStaff) {
-    // `tour_completed_at` lo agrega la migración 0088, posterior a la última
-    // generación de `lib/supabase/types.ts`; de ahí el cast.
     const { data, error } = await supabase
       .from("profiles")
       .select("tour_completed_at")
       .eq("id", user.id)
       .maybeSingle();
-    tourRow = data as unknown as { tour_completed_at: string | null } | null;
+    tourRow = data;
     // El error se captura a propósito: `resolveTourStart` falla cerrado con él.
     tourReadFailed = Boolean(error);
   }

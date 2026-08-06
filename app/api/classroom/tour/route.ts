@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
@@ -50,18 +49,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // `tour_completed_at` y `tour_outcome` los agrega la migración 0088, posterior
-  // a la última generación de `lib/supabase/types.ts`. El cast explícito es el
-  // mismo patrón que usa `app/api/classroom/profile/route.ts`; se puede sacar
-  // cuando se regeneren los tipos.
-  const update: Record<string, unknown> = {
-    tour_completed_at: new Date().toISOString(),
-    tour_outcome: parsed.data.outcome,
-  };
-
   const { error } = await supabase
     .from("profiles")
-    .update(update as Database["public"]["Tables"]["profiles"]["Update"])
+    .update({
+      tour_completed_at: new Date().toISOString(),
+      tour_outcome: parsed.data.outcome,
+    })
     .eq("id", user.id);
 
   if (error) {

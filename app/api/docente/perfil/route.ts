@@ -85,7 +85,7 @@ export async function PATCH(req: Request) {
   const db = createAdminClient();
   const { data, error } = await db
     .from("instructors")
-    .update(built.patch as never)
+    .update(built.patch)
     .eq("id", mine.id)
     // Redundante con el `eq("id")` porque el id salió de la consulta por
     // profile_id, pero deja la intención escrita en la consulta misma.

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- La clase en vivo ahora se abre en pantalla completa, como una videollamada, y su enlace es un código corto que se puede dictar por teléfono (`axr-hmwk-ipr`) en vez de la cadena larga de letras y números que había antes. Los enlaces ya enviados por correo siguen funcionando (`82cf248`)
 - Las clases en vivo ahora ocurren dentro de la plataforma: el alumno entra desde la pantalla de su clase con micrófono y cámara propios, el profesor puede compartir pantalla, hay chat durante la clase, y la grilla pagina cuando hay muchos participantes. El enlace externo (Zoom/Meet) queda como respaldo para las clases ya creadas con uno (`be5ed5a`, `6657e28`, `ad02288`)
 - Los profesores ahora editan su propio perfil público desde "Mi perfil" en su panel, sin depender de operaciones. Para que funcione, operaciones enlaza antes cada ficha de docente con su cuenta desde la sección Docentes (los profesores que no estén enlazados ven un aviso que les indica pedirlo)
 - Los alumnos ahora pueden entrar al perfil de su profesor: el nombre que aparece en el calendario, en la ficha de la clase, en el módulo y en la lección se volvió un enlace que lleva a una pantalla con su foto, su cargo, su reseña y sus redes (LinkedIn, Instagram y sitio web) (`ded15d0`)

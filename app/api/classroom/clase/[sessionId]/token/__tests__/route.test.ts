@@ -15,14 +15,25 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({ auth: { getUser: mockGetUser } })),
 }));
 
+const mockSolicitud = vi.fn();
+
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: (table: string) => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: table === "class_sessions" ? mockSession : mockProfile,
-        }),
-      }),
+      select: () => {
+        // Encadenable: la consulta de la sala de espera filtra por sesión Y por
+        // persona, así que necesita dos `.eq()` seguidos.
+        const chain = {
+          eq: () => chain,
+          maybeSingle:
+            table === "class_sessions"
+              ? mockSession
+              : table === "room_join_requests"
+                ? mockSolicitud
+                : mockProfile,
+        };
+        return chain;
+      },
     }),
   }),
 }));
@@ -83,6 +94,7 @@ beforeEach(() => {
     error: null,
   });
   mockProfile.mockResolvedValue({ data: { full_name: "Ana Pérez", email: "ana@x.cl" } });
+  mockSolicitud.mockResolvedValue({ data: null });
   mockAccess.mockResolvedValue({ enrollment: { id: "enr-1" }, isStaff: false });
 });
 
@@ -163,11 +175,43 @@ describe("POST /api/classroom/clase/[sessionId]/token", () => {
     expect(mockSession).not.toHaveBeenCalled();
   });
 
-  it("rechaza a quien no tiene acceso a la cohorte", async () => {
+  it("a quien no tiene acceso se le ofrece pedir entrar (sala de espera)", async () => {
     mockAccess.mockResolvedValue(null);
+
     const res = await POST(...req());
+    const body = await res.json();
+
     expect(res.status).toBe(403);
-    expect((await res.json()).error).toMatch(/matriculado/i);
+    expect(body.reason).toBe("needs_approval");
+    expect(body.puedeSolicitar).toBe(true);
+  });
+
+  it("con la solicitud APROBADA entra como alumno, sin matrícula", async () => {
+    mockAccess.mockResolvedValue(null);
+    mockSolicitud.mockResolvedValue({ data: { status: "approved" } });
+
+    const res = await POST(...req());
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).role).toBe("student");
+  });
+
+  it("con la solicitud pendiente sigue esperando, sin token", async () => {
+    mockAccess.mockResolvedValue(null);
+    mockSolicitud.mockResolvedValue({ data: { status: "pending" } });
+
+    const res = await POST(...req());
+    const body = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(body.esperando).toBe(true);
+  });
+
+  it("rechazado no recibe token por más que reintente", async () => {
+    mockAccess.mockResolvedValue(null);
+    mockSolicitud.mockResolvedValue({ data: { status: "denied" } });
+
+    expect((await POST(...req())).status).toBe(403);
   });
 
   it("responde 404 si la clase no existe", async () => {

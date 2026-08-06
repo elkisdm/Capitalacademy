@@ -37,15 +37,37 @@ export const runtime = "nodejs";
  */
 const tokenLimiter = createRateLimiter({ limit: 10, windowSeconds: 60 });
 
-/** Mensajes por motivo de rechazo. El alumno tiene que entender qué le pasa. */
-const DENIAL: Record<string, { status: number; error: string }> = {
+/**
+ * Mensajes por motivo de rechazo. La persona tiene que entender qué le pasa y,
+ * cuando corresponde, qué puede hacer al respecto.
+ *
+ * Los tres estados de la sala de espera (0091) van con `puedeSolicitar` para que
+ * la pantalla sepa si ofrecer el botón de pedir entrar o solo informar.
+ */
+const DENIAL: Record<
+  string,
+  { status: number; error: string; puedeSolicitar?: boolean; esperando?: boolean }
+> = {
   not_live: { status: 409, error: "Esta clase no es en vivo." },
   wrong_cohort: { status: 404, error: "No encontramos esta clase." },
-  no_access: { status: 403, error: "No estás matriculado en esta clase." },
   outside_window: {
     status: 409,
     error:
       "La sala se abre 30 minutos antes de la clase y se cierra 2 horas después de que termina.",
+  },
+  needs_approval: {
+    status: 403,
+    error: "No estás matriculado en esta clase, pero puedes pedirle al docente que te deje entrar.",
+    puedeSolicitar: true,
+  },
+  awaiting_approval: {
+    status: 403,
+    error: "Ya pediste entrar. Estamos esperando que el docente te acepte.",
+    esperando: true,
+  },
+  denied: {
+    status: 403,
+    error: "El docente no aceptó tu solicitud para entrar a esta clase.",
   },
 };
 
@@ -109,17 +131,36 @@ export async function POST(
   // contra la cohorte REAL de la clase.
   const access = await getClassroomAccess(user.id, session.cohort_id);
 
+  // Sala de espera (0091): solo importa para quien NO tiene matrícula ni rol.
+  // Se consulta con el cliente admin porque la RLS de la tabla solo deja ver la
+  // fila propia, y acá se está resolviendo el acceso de esa misma persona.
+  type EstadoSolicitud = "pending" | "approved" | "denied";
+  let solicitud: EstadoSolicitud | null = null;
+  if (!access?.enrollment && !access?.isStaff) {
+    const { data: fila } = await admin
+      .from("room_join_requests")
+      .select("status")
+      .eq("session_id", session.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    solicitud = (fila?.status as EstadoSolicitud | undefined) ?? null;
+  }
+
   const decision = decideRoomAccess({
     session,
     cohortId: session.cohort_id,
     hasActiveEnrollment: Boolean(access?.enrollment),
     isStaff: Boolean(access?.isStaff),
+    solicitud,
     now: new Date(),
   });
 
   if (!decision.allowed) {
-    const { status, error: message } = DENIAL[decision.reason];
-    return NextResponse.json({ error: message }, { status });
+    const { status, error: message, puedeSolicitar, esperando } = DENIAL[decision.reason];
+    return NextResponse.json(
+      { error: message, reason: decision.reason, puedeSolicitar, esperando },
+      { status },
+    );
   }
 
   // El nombre visible sale del perfil, no del cliente: si lo mandara el

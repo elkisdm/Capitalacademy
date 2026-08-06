@@ -67,6 +67,39 @@ export function liveMessage(state: LiveScreenState): LiveMessage {
  * llega ninguno (caída de red, respuesta sin cuerpo) para no dejar al alumno
  * con un "error" pelado.
  */
+/**
+ * Estados de la sala de espera (0091) tal como los percibe quien pide entrar.
+ *
+ * Se distinguen los tres porque hay que decirle cosas distintas: puede pedir, ya
+ * pidió, o lo rechazaron. Colapsarlos en "no puedes entrar" deja a la persona
+ * sin saber si le falta hacer algo.
+ */
+export type EsperaEstado = "puede_pedir" | "esperando" | "rechazado";
+
+export function mensajeEspera(estado: EsperaEstado): LiveMessage {
+  switch (estado) {
+    case "puede_pedir":
+      return {
+        title: "No estás en esta clase",
+        detail: "Puedes pedirle al docente que te deje entrar.",
+        canRetry: false,
+      };
+    case "esperando":
+      return {
+        title: "Esperando que te acepten",
+        // Encuadra la espera: sin esto la persona recarga a los diez segundos.
+        detail: "El docente verá tu solicitud en su pantalla. Deja esta ventana abierta.",
+        canRetry: false,
+      };
+    case "rechazado":
+      return {
+        title: "No te aceptaron en esta clase",
+        detail: "Si crees que es un error, escríbele al docente o a la coordinación.",
+        canRetry: false,
+      };
+  }
+}
+
 export function tokenErrorMessage(status: number, serverMessage?: string | null): string {
   if (serverMessage) return serverMessage;
   if (status === 401) return "Tu sesión expiró. Vuelve a entrar a la plataforma.";

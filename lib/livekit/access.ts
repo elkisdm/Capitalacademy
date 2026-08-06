@@ -39,8 +39,13 @@ export type RoomSession = {
 export type RoomAccessDenial =
   | "not_live"
   | "wrong_cohort"
-  | "no_access"
-  | "outside_window";
+  | "outside_window"
+  /** Tiene cuenta pero no matrícula: puede PEDIR entrar y esperar aprobación. */
+  | "needs_approval"
+  /** Ya pidió y el docente todavía no decide. */
+  | "awaiting_approval"
+  /** El docente rechazó la solicitud. */
+  | "denied";
 
 export type RoomAccessDecision =
   | { allowed: true; grant: VideoGrant; role: "teacher" | "student"; expiresAt: Date }
@@ -87,6 +92,13 @@ export type RoomAccessInput = {
   hasActiveEnrollment: boolean;
   /** ¿Es staff (admin/ops) o docente/asistente de ESA cohorte? */
   isStaff: boolean;
+  /**
+   * Estado de su solicitud en la sala de espera (0091), si pidió entrar.
+   *
+   * Solo pesa cuando NO hay matrícula ni rol: quien ya está autorizado entra
+   * directo, sin pasar por la espera.
+   */
+  solicitud?: "pending" | "approved" | "denied" | null;
   now: Date;
 };
 
@@ -104,34 +116,56 @@ export function decideRoomAccess(input: RoomAccessInput): RoomAccessDecision {
     return { allowed: false, reason: "wrong_cohort" };
   }
 
-  if (!hasActiveEnrollment && !isStaff) {
-    return { allowed: false, reason: "no_access" };
-  }
-
-  // El staff no tiene ventana: necesita entrar antes a probar cámara y audio, y
-  // después a cerrar. Al alumno sí se le acota, para que la sala de una clase
-  // no quede abierta como sala de reunión permanente.
+  // La ventana se evalúa ANTES de la sala de espera, y no después: un invitado
+  // aprobado sigue siendo un alumno y no puede entrar a una clase que ya
+  // terminó. Además, pedir entrar a una clase que no está ocurriendo tampoco
+  // tiene sentido: el motivo correcto ahí es el horario, no la falta de permiso.
   if (!isStaff && !isWithinRoomWindow(session, now)) {
     return { allowed: false, reason: "outside_window" };
   }
 
+  if (!hasActiveEnrollment && !isStaff) {
+    // Sin matrícula ni rol, la sala de espera es el único camino. Se distinguen
+    // los tres momentos porque a la persona hay que decirle cosas distintas:
+    // "puedes pedir entrar", "ya pediste, espera" y "te rechazaron".
+    if (input.solicitud === "approved") {
+      return {
+        allowed: true,
+        role: "student",
+        expiresAt: tokenExpiryFor(session, now),
+        grant: grantParaRol("student", session),
+      };
+    }
+    if (input.solicitud === "pending") return { allowed: false, reason: "awaiting_approval" };
+    if (input.solicitud === "denied") return { allowed: false, reason: "denied" };
+    return { allowed: false, reason: "needs_approval" };
+  }
+
+  // (El staff no tiene ventana: necesita entrar antes a probar cámara y audio, y
+  // después a cerrar. Al alumno sí se le acota, para que la sala de una clase no
+  // quede abierta como sala de reunión permanente.)
   const role = isStaff ? "teacher" : "student";
 
   return {
     allowed: true,
     role,
     expiresAt: tokenExpiryFor(session, now),
-    grant: {
-      room: roomNameForSession(session.id),
-      roomJoin: true,
-      // El alumno publica micrófono y cámara: es una clase, no una transmisión.
-      // Quién los enciende de hecho lo decide la UI; esto solo habilita.
-      canPublish: true,
-      canSubscribe: true,
-      canPublishData: true,
-      // Solo quien dicta modera. Un alumno con roomAdmin podría silenciar o
-      // expulsar a sus compañeros.
-      ...(role === "teacher" ? { roomAdmin: true } : {}),
-    },
+    grant: grantParaRol(role, session),
+  };
+}
+
+function grantParaRol(role: "teacher" | "student", session: RoomSession): VideoGrant {
+  return {
+    room: roomNameForSession(session.id),
+    roomJoin: true,
+    // El alumno publica micrófono y cámara: es una clase, no una transmisión.
+    // Quién los enciende de hecho lo decide la UI; esto solo habilita.
+    canPublish: true,
+    canSubscribe: true,
+    canPublishData: true,
+    // Solo quien dicta modera. Un alumno con roomAdmin podría silenciar o
+    // expulsar a sus compañeros. Quien entra aprobado desde la sala de espera
+    // es un invitado: entra como alumno, nunca como docente.
+    ...(role === "teacher" ? { roomAdmin: true } : {}),
   };
 }

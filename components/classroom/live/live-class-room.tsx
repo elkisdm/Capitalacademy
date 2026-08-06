@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LiveKitRoom,
   VideoConference,
@@ -8,7 +8,13 @@ import {
   type LocalUserChoices,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { liveMessage, tokenErrorMessage, type LiveScreenState } from "@/lib/livekit/room-state";
+import {
+  liveMessage,
+  tokenErrorMessage,
+  mensajeEspera,
+  type LiveScreenState,
+  type EsperaEstado,
+} from "@/lib/livekit/room-state";
 import { ModerationPanel } from "./moderation-panel";
 import { AplicarEleccion } from "./aplicar-eleccion";
 
@@ -82,6 +88,8 @@ export function LiveClassRoom({
   const [conexion, setConexion] = useState<Conexion | null>(null);
   const [eleccion, setEleccion] = useState<Eleccion | null>(null);
   const [enAntesala, setEnAntesala] = useState(false);
+  /** Sala de espera (0091): solo se activa si el servidor lo indica. */
+  const [espera, setEspera] = useState<EsperaEstado | null>(null);
 
   const entrar = useCallback(async (elegido: Eleccion) => {
     setEleccion(elegido);
@@ -92,6 +100,19 @@ export function LiveClassRoom({
       const res = await fetch(`/api/classroom/clase/${sessionId}/token`, { method: "POST" });
       if (!res.ok) {
         const cuerpo = await res.json().catch(() => null);
+
+        // La sala de espera no es un error: es otro camino. El servidor lo
+        // señala para que la pantalla ofrezca pedir entrar en vez de un
+        // "no pudimos conectarte" que no dice qué hacer.
+        if (cuerpo?.puedeSolicitar || cuerpo?.esperando || cuerpo?.reason === "denied") {
+          setEnAntesala(false);
+          setEspera(
+            cuerpo.esperando ? "esperando" : cuerpo.reason === "denied" ? "rechazado" : "puede_pedir",
+          );
+          setEstado({ screen: "idle", error: null, detalle: null });
+          return;
+        }
+
         setEstado({
           screen: "error",
           error: tokenErrorMessage(res.status, cuerpo?.error ?? null),
@@ -141,6 +162,46 @@ export function LiveClassRoom({
     console.warn("[clase en vivo] no se pudo usar un dispositivo", e);
   }, []);
 
+  const pedirEntrar = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/classroom/clase/${sessionId}/acceso`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "request" }),
+      });
+      if (res.ok) setEspera("esperando");
+    } catch (e) {
+      console.error("[clase en vivo] no se pudo pedir entrar", e);
+    }
+  }, [sessionId]);
+
+  // Mientras espera, se consulta cada 5 s si el docente ya decidió. Es sondeo y
+  // no tiempo real a propósito: montar un canal en vivo para un puñado de
+  // invitados sería más maquinaria de la que el caso justifica.
+  useEffect(() => {
+    if (espera !== "esperando") return;
+
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/classroom/clase/${sessionId}/acceso`);
+        if (!res.ok) return;
+        const { estado: st } = (await res.json()) as { estado: string | null };
+        if (st === "approved") {
+          setEspera(null);
+          // Aprobado: se pasa por la antesala igual que cualquiera, para que
+          // pueda revisar cámara y micrófono antes de aparecer en la clase.
+          setEnAntesala(true);
+        } else if (st === "denied") {
+          setEspera("rechazado");
+        }
+      } catch {
+        // Un fallo de red puntual no cambia nada: se reintenta al próximo tick.
+      }
+    }, 5000);
+
+    return () => clearInterval(id);
+  }, [espera, sessionId]);
+
   const mensaje = liveMessage(estado.screen);
 
   // En la pantalla propia ya se está "aquí mismo", así que ese detalle sobra; lo
@@ -149,6 +210,36 @@ export function LiveClassRoom({
     fill && estado.screen === "idle"
       ? "Antes de entrar podrás revisar tu cámara y tu micrófono."
       : mensaje.detail;
+
+  /* ── Sala de espera ───────────────────────────────────────── */
+  if (espera) {
+    const m = mensajeEspera(espera);
+    return (
+      <div
+        className={[
+          "ca-card flex flex-col items-start gap-3 p-5",
+          fill ? "m-auto max-w-md" : "",
+        ].join(" ")}
+      >
+        <div>
+          <p className="text-[15px] font-black tracking-tight text-ca-ink">{m.title}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">{m.detail}</p>
+        </div>
+        {espera === "puede_pedir" && (
+          <button
+            type="button"
+            onClick={pedirEntrar}
+            className="ca-btn-lime ca-btn-interactive px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em]"
+          >
+            Pedir entrar
+          </button>
+        )}
+        {espera === "esperando" && (
+          <span className="text-[12px] font-semibold text-ca-ink-soft">Esperando…</span>
+        )}
+      </div>
+    );
+  }
 
   /* ── Antesala ─────────────────────────────────────────────── */
   // Verse y probar el micrófono ANTES de entrar es lo que evita el clásico "no

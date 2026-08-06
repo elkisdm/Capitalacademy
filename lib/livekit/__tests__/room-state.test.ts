@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { liveMessage, tokenErrorMessage } from "../room-state";
+import { liveMessage, tokenErrorMessage, mensajeEspera } from "../room-state";
 
 describe("liveMessage", () => {
   it("da un texto para cada estado", () => {
@@ -44,5 +44,28 @@ describe("tokenErrorMessage", () => {
   it("un mensaje vacío del servidor no deja al alumno sin texto", () => {
     expect(tokenErrorMessage(500, "")).toMatch(/no pudimos/i);
     expect(tokenErrorMessage(500, null)).toMatch(/no pudimos/i);
+  });
+});
+
+describe("mensajeEspera", () => {
+  it("distingue los tres momentos, que exigen decir cosas distintas", () => {
+    expect(mensajeEspera("puede_pedir").title).toMatch(/no estás en esta clase/i);
+    expect(mensajeEspera("esperando").title).toMatch(/esperando/i);
+    expect(mensajeEspera("rechazado").title).toMatch(/no te aceptaron/i);
+  });
+
+  it("al esperar pide no cerrar la ventana", () => {
+    // Sin encuadrar la espera, la persona recarga a los diez segundos.
+    expect(mensajeEspera("esperando").detail).toMatch(/deja esta ventana abierta/i);
+  });
+
+  it("al rechazar ofrece una salida en vez de dejar a la persona colgada", () => {
+    expect(mensajeEspera("rechazado").detail).toMatch(/escríbele|coordinación/i);
+  });
+
+  it("ninguno ofrece reintentar: reintentar solo genera ruido al docente", () => {
+    for (const e of ["puede_pedir", "esperando", "rechazado"] as const) {
+      expect(mensajeEspera(e).canRetry).toBe(false);
+    }
   });
 });

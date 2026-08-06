@@ -129,6 +129,7 @@
 | `lib/livekit/config.ts` | Credenciales (`LIVEKIT_URL/API_KEY/API_SECRET`) con error tipado que nombra la variable faltante → 503 | — | 0031 |
 | `lib/livekit/token.ts` | Firma **pura** del JWT HS256 de acceso (`node:crypto`, sin SDK). El token ES la autorización: LiveKit no consulta nada más | — | 0031 |
 | `lib/livekit/access.ts` | Decisión **pura** de acceso a la sala: modalidad en vivo, cohorte, matrícula/staff, ventana (−30/+120 min) y grants. La sala se deriva del id de sesión, nunca del cliente | — | 0031 |
+| `app/api/classroom/clase/[sessionId]/acceso/route.ts` | Sala de espera (0091): pedir entrar, listar pendientes y aprobar/rechazar. Quien espera NO recibe token ni entra a la sala hasta que el docente decide | `GET/POST /api/classroom/clase/[sessionId]/acceso` | 0031 |
 | `app/api/classroom/clase/[sessionId]/moderar/route.ts` | Silenciar o sacar a alguien de la sala. Re-verifica contra la base que quien pide es staff de ESA cohorte —no basta el `roomAdmin` del token— y actúa con una credencial de servicio de 1 minuto acotada a esa sala | `POST /api/classroom/clase/[sessionId]/moderar` | 0031 |
 | `app/api/classroom/clase/[sessionId]/token/route.ts` | Emite el token del participante. Deriva cohorte y sala de la sesión; el nombre visible sale del perfil. 10/min por usuario | `POST /api/classroom/clase/[sessionId]/token` | 0031 |
 | `lib/livekit/room-state.ts` | Lógica **pura** de la pantalla: mensajes por estado de conexión y traducción de los rechazos del token | — | 0031 |

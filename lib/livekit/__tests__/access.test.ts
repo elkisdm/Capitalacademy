@@ -115,9 +115,9 @@ describe("decideRoomAccess", () => {
     expect(d.grant.roomAdmin).toBe(true);
   });
 
-  it("rechaza a quien no está matriculado ni es staff", () => {
+  it("a quien no está matriculado ni es staff se le ofrece la sala de espera", () => {
     const d = decideRoomAccess(input({ hasActiveEnrollment: false }));
-    expect(d).toEqual({ allowed: false, reason: "no_access" });
+    expect(d).toEqual({ allowed: false, reason: "needs_approval" });
   });
 
   it("rechaza una sesión de otra cohorte que la verificada", () => {
@@ -171,11 +171,70 @@ describe("decideRoomAccess", () => {
     expect(despues.allowed).toBe(true);
   });
 
-  it("la falta de matrícula pesa más que la ventana horaria", () => {
-    // Quien no tiene acceso debe saber que no tiene acceso, no que llegó tarde.
+  it("fuera de la ventana pesa más que la falta de matrícula", () => {
+    // Pedir entrar a una clase que no está ocurriendo no tiene sentido: el
+    // motivo correcto ahí es el horario, no el permiso.
     const d = decideRoomAccess(
       input({ hasActiveEnrollment: false, now: new Date("2026-08-06T10:00:00Z") }),
     );
-    expect(d).toEqual({ allowed: false, reason: "no_access" });
+    expect(d).toEqual({ allowed: false, reason: "outside_window" });
+  });
+});
+
+// ===========================================================================
+describe("sala de espera (0091)", () => {
+  const invitado = (solicitud?: "pending" | "approved" | "denied" | null) =>
+    decideRoomAccess(input({ hasActiveEnrollment: false, isStaff: false, solicitud }));
+
+  it("sin matrícula ni solicitud, se le ofrece pedir entrar", () => {
+    expect(invitado()).toEqual({ allowed: false, reason: "needs_approval" });
+    expect(invitado(null)).toEqual({ allowed: false, reason: "needs_approval" });
+  });
+
+  it("con solicitud pendiente, espera", () => {
+    expect(invitado("pending")).toEqual({ allowed: false, reason: "awaiting_approval" });
+  });
+
+  it("rechazado, se le dice que lo rechazaron", () => {
+    // Distinguir los tres momentos importa: a la persona hay que decirle cosas
+    // distintas en cada uno.
+    expect(invitado("denied")).toEqual({ allowed: false, reason: "denied" });
+  });
+
+  it("aprobado, entra como ALUMNO y nunca como docente", () => {
+    const d = invitado("approved");
+    expect(d.allowed).toBe(true);
+    if (!d.allowed) return;
+    expect(d.role).toBe("student");
+    // Un invitado con roomAdmin podría silenciar o sacar a los alumnos de casa.
+    expect(d.grant.roomAdmin).toBeUndefined();
+    expect(d.grant.room).toBe("clase-ses-1");
+  });
+
+  it("el invitado aprobado SIGUE atado a la ventana de la sala", () => {
+    // Aprobar no es una llave permanente: si la clase terminó hace horas, no
+    // entra, igual que cualquier alumno.
+    const d = decideRoomAccess(
+      input({
+        hasActiveEnrollment: false,
+        isStaff: false,
+        solicitud: "approved",
+        now: new Date("2026-08-07T10:00:00Z"),
+      }),
+    );
+    expect(d).toEqual({ allowed: false, reason: "outside_window" });
+  });
+
+  it("quien SÍ tiene matrícula no pasa por la espera aunque tenga solicitud", () => {
+    const d = decideRoomAccess(input({ hasActiveEnrollment: true, solicitud: "denied" }));
+    expect(d.allowed).toBe(true);
+  });
+
+  it("el staff tampoco pasa por la espera", () => {
+    const d = decideRoomAccess(
+      input({ hasActiveEnrollment: false, isStaff: true, solicitud: "pending" }),
+    );
+    expect(d.allowed).toBe(true);
+    if (d.allowed) expect(d.role).toBe("teacher");
   });
 });

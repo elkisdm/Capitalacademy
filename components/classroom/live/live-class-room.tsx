@@ -9,6 +9,8 @@ import {
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { liveMessage, tokenErrorMessage, type LiveScreenState } from "@/lib/livekit/room-state";
+import { ModerationPanel } from "./moderation-panel";
+import { AplicarEleccion } from "./aplicar-eleccion";
 
 /**
  * Sala de clase en vivo del alumno (ADR-0031).
@@ -29,7 +31,7 @@ import { liveMessage, tokenErrorMessage, type LiveScreenState } from "@/lib/live
  * pantalla de la clase solo a mirar el material.
  */
 
-type Conexion = { token: string; url: string };
+type Conexion = { token: string; url: string; role: "teacher" | "student" };
 
 /**
  * Lo que la persona eligió en la antesala: si entra con micrófono y cámara
@@ -98,8 +100,8 @@ export function LiveClassRoom({
         return;
       }
 
-      const { token, url } = (await res.json()) as Conexion;
-      setConexion({ token, url });
+      const { token, url, role } = (await res.json()) as Conexion;
+      setConexion({ token, url, role });
       setEstado({ screen: "connected", error: null, detalle: null });
     } catch (e) {
       console.error("[clase en vivo] no se pudo pedir el token", e);
@@ -238,22 +240,29 @@ export function LiveClassRoom({
         token={conexion.token}
         serverUrl={conexion.url}
         connect
-        // Se entra SILENCIADO y sin cámara, y se enciende lo que haga falta
-        // desde la barra de controles. Dos razones:
+        // Se CONECTA siempre silenciado y sin cámara, y lo que la persona eligió
+        // en la antesala se aplica DESPUÉS (ver `AplicarEleccion`).
         //
-        // 1. Producto: 20 personas entrando con micrófono abierto es ruido y
-        //    eco. Zoom y Meet también entran apagados por algo.
-        // 2. Robustez: pedir el micrófono al conectar hacía que quien negara el
-        //    permiso quedara FUERA de la clase, sin poder ni mirar. Es lo que
-        //    apareció en el QA de esta pantalla.
-        audio={eleccion?.audioEnabled ?? false}
-        video={eleccion?.videoEnabled ?? false}
+        // Pedir dispositivos durante la conexión hace que un permiso denegado
+        // tumbe la conexión entera y deje a la persona fuera de la clase, sin
+        // poder ni mirar. Ya pasó una vez en el QA de esta pantalla; separar las
+        // dos cosas es lo que impide que vuelva a pasar.
+        audio={false}
+        video={false}
         onDisconnected={salir}
         onError={fallo}
         onMediaDeviceFailure={falloDeDispositivo}
         style={{ height: "100%" }}
       >
-        <VideoConference />
+        {/* `relative` acá para que el panel se posicione contra la sala. */}
+        <div className="relative h-full">
+          <AplicarEleccion
+            micro={eleccion?.audioEnabled ?? false}
+            camara={eleccion?.videoEnabled ?? false}
+          />
+          <VideoConference />
+          {conexion.role === "teacher" && <ModerationPanel sessionId={sessionId} />}
+        </div>
       </LiveKitRoom>
     </div>
   );

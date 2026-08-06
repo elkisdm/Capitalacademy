@@ -267,7 +267,7 @@
 | `components/admin/instructor-link-account.tsx` | Selector con el que operaciones enlaza una ficha a una cuenta (candidatos: quien tenga rol docente/asistente en alguna cohorte) | en `/admin/docentes` | 0028 |
 | `app/(docente)/docente/perfil/page.tsx` · `app/api/docente/perfil/route.ts` | El docente edita SU propia ficha. Resuelve siempre por `instructors.profile_id = auth.uid()`, nunca por un id de la URL; escribe con service_role para acotar las columnas editables sin abrir una policy | `/docente/perfil`, `PATCH /api/docente/perfil` | 0028 |
 | `lib/instructors/patch.ts` | Validación y normalización compartida por las dos rutas que editan el perfil docente: fija qué campos son editables (nunca identidad ni estado) | — | 0028 |
-| `app/(admin)/admin/actividad/` · `lib/admin/actividad-queries.ts` | Panel de actividad por cohorte: tiempo con la plataforma abierta, días activos e inactividad. La última fecha se busca en TODO el historial (no solo en la ventana del rango) y la lectura va paginada para no truncarse en silencio | `/admin/actividad` | 0029 |
+| `app/(admin)/admin/actividad/` · `lib/admin/actividad-queries.ts` | Panel de actividad por cohorte: tiempo con la plataforma abierta, días activos e inactividad. La última fecha se busca en TODO el historial (no solo en la ventana del rango), la lectura va paginada para no truncarse en silencio y las matrículas de staff (`system_role` ops/admin) quedan fuera del roster y de los promedios | `/admin/actividad` | 0029 |
 | `app/(admin)/admin/cohorts/[cohortId]/` | Detalle de cohorte (info, roster, accesos al calendario) | `/admin/cohorts/[cohortId]` | — |
 | `components/admin/assign-participant-modal.tsx` | Modal "Agregar participante" del detalle de cohorte: asigna profesor/asistente/alumno por rol (y módulo si aplica) | en `/admin/cohorts/[cohortId]` | — |
 | `app/(admin)/admin/calendario/` | Calendario mensual read-only de todas las sesiones del entorno activo (todas las cohortes); cada sesión enlaza al editor de la cohorte | `/admin/calendario` | — |
@@ -303,7 +303,7 @@
 | `lib/admin/active-env.ts` · `env-actions.ts` | Entorno activo (program_id) + modo de vista (admin/alumno) del staff, en cookies; `resolveProgramScope` (precedencia `?program` > cookie) y server actions `setActiveEnv`/`setViewMode` | — | — |
 | `components/admin/env-switcher.tsx` | Selector global de entorno + toggle "Ver como Admin/Alumno" (en el sidebar, solo staff) | — | — |
 | `lib/admin/session-module.ts` | Valida que el módulo de una sesión pertenezca al programa de la cohorte (POST/PATCH de sesiones) | — | — |
-| `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada, modelo de roles y `requireSessionStaff` (gate por-sesión: staff o docente/asistente de la cohorte de esa sesión) | — | 0004, 0013 |
+| `lib/auth/authorize-admin.ts` | Autorización admin/staff unificada y `requireSessionStaff` (gate por-sesión: staff o docente/asistente de la cohorte de esa sesión). El modelo de roles NO se declara acá: los enums `user_role`/`system_role` salen de `lib/supabase/types.ts`, generado desde la base | — | 0004, 0013 |
 | `lib/auth/redirects.ts` | Saneamiento del `next` post-autenticación (`safeNextPath`, anti open-redirect) y origen canónico de los enlaces; compartido por `/auth/confirm`, login y set-password | — | — |
 
 ## Landing (público)

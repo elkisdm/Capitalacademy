@@ -6,32 +6,34 @@ Servidor de clases en vivo, autoalojado. La decisión y sus tradeoffs están en
 - **Proyecto Railway:** `capitalacademy-livekit` (workspace de la empresa)
 - **Servicios:** `livekit` (esta imagen) y `Redis`
 - **Señalización:** `wss://livekit-production-0c7a.up.railway.app`
-- **Medio (ICE sobre TCP):** `zephyr.proxy.rlwy.net:33805`
+- **Medio:** UDP, contra la IP pública que el propio servidor descubre por STUN
+
+## Lo que hay que saber antes de tocar la configuración
+
+**Railway sí deja pasar el medio por UDP.** Es contraintuitivo, porque Railway no
+expone puertos UDP *entrantes*, pero deja salir UDP y mantiene la traducción de
+direcciones, así que el par ICE se arma igual.
+
+**No fijes `rtc.node_ip` a la IP del TCP Proxy.** Fue el primer intento y ROMPE
+la conexión: hace que LiveKit anuncie también sus candidatos UDP en una IP que no
+reenvía UDP. Medido: 0 de 20 suscriptores logran conectar. Con el descubrimiento
+normal por STUN, los mismos 20 conectan con 0,002% de pérdida.
 
 ## Por qué hay una imagen propia y no la oficial a secas
 
-Railway no expone UDP, así que el medio de WebRTC tiene que ir por ICE sobre TCP
-a través de su TCP Proxy. Ahí chocan dos restricciones:
-
-- LiveKit usa **un solo** valor (`rtc.tcp_port`) para el puerto que escucha y
-  para el que anuncia en su candidato ICE. No hay forma de separarlos.
-- Railway **asigna** el puerto público (no se elige) y entrega el tráfico en un
-  puerto interno distinto, que tampoco se puede cambiar después: la API solo
-  tiene `tcpProxyCreate` y `tcpProxyDelete`.
-
-La salida es invertir el reparto: LiveKit escucha en el puerto **público** (así
-anuncia bien) y `socat` recibe donde Railway entrega y reenvía a donde LiveKit
-escucha. Todo se deriva de las variables que Railway inyecta
-(`RAILWAY_TCP_PROXY_PORT`, `RAILWAY_TCP_APPLICATION_PORT`,
-`RAILWAY_TCP_PROXY_DOMAIN`), así que si Railway reasigna el puerto o la IP, esto
-sigue funcionando sin editar nada.
+Solo para generar la configuración al arranque a partir de las variables de
+Railway. Es una capa fina sobre la imagen oficial, con la versión fijada.
 
 ## Desplegar
 
 ```bash
-railway link --project capitalacademy-livekit --environment production --service livekit
 railway up --service livekit
 ```
+
+**Cambiar una variable NO redespliega el código.** El servicio vuelve a arrancar
+con la imagen oficial y la configuración por defecto, lo que hace parecer que la
+configuración propia funciona cuando en realidad no está corriendo. Después de
+tocar variables, corre `railway up`.
 
 ## Variables del servicio
 
@@ -41,6 +43,7 @@ railway up --service livekit
 | `LIVEKIT_REDIS_ADDR` | `redis.railway.internal:6379` (red privada) |
 | `LIVEKIT_REDIS_PASSWORD` | referencia a `${{Redis.REDISPASSWORD}}` |
 | `PORT` | `7880`. **No lo saques**: sin él el proxy HTTP de Railway da 502 aunque el servidor esté sano |
+| `LIVEKIT_FORCE_TCP` | solo para medir: apaga el UDP. Hoy con esto NO conecta nadie |
 
 `LIVEKIT_CONFIG` **no debe existir**: si está, LiveKit la prefiere por sobre el
 archivo que arma el entrypoint y se ignora toda la configuración de arriba.
@@ -51,16 +54,22 @@ archivo que arma el entrypoint y se ignora toda la configuración de arriba.
 curl -s https://livekit-production-0c7a.up.railway.app/
 ```
 
-Debe responder `OK`. En los logs del arranque tienen que aparecer el `nodeIP` con
-la IP del proxy (no la del contenedor) y `rtc.portTCP` con el puerto público:
+Debe responder `OK`. Para probar el medio de verdad hace falta la herramienta
+oficial (`brew install livekit-cli`):
 
+```bash
+lk load-test --url wss://livekit-production-0c7a.up.railway.app --api-key "$LIVEKIT_API_KEY" --api-secret "$LIVEKIT_API_SECRET" --room prueba --video-publishers 1 --subscribers 20 --duration 2m --video-resolution medium
 ```
-livekit-entrypoint: anuncia 66.33.22.227:33805 (ICE sobre TCP)
-starting LiveKit server {"nodeIP": "66.33.22.227", "rtc.portTCP": 33805}
-```
+
+Referencia de una corrida sana: **20/20 conectados, 7,1 Mbps, 0,002% de pérdida**.
 
 ## Pendiente
 
-Prueba de carga con ~20 participantes reales antes de mover una clase del
-Diplomado. El transporte TCP degrada peor que UDP ante pérdida de paquetes, y
-ese riesgo todavía no está medido.
+- **Respaldo para redes que bloqueen UDP.** Hoy no existe. El intento con `socat`
+  falló, probablemente porque un proxy de espacio de usuario reescribe la
+  dirección de origen a `127.0.0.1` y ICE ya no puede formar un par válido; por
+  eso la plantilla oficial de Railway usa `iptables REDIRECT`, que sí la
+  preserva. Mientras tanto, un alumno tras un firewall que bloquee UDP no podrá
+  entrar a la clase.
+- **La prueba se corrió desde una sola máquina.** Mide que el servidor abastece a
+  20 suscriptores, no 20 redes domésticas distintas.

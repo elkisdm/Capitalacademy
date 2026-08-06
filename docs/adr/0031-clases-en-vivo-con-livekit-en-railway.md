@@ -56,27 +56,36 @@ volver a un proveedor externo; deja de ser el camino por defecto.
 
 ## Hallazgos que condicionan el diseño
 
-Estos dos se verificaron contra documentación antes de decidir, y ninguno era
-obvio de antemano:
+### El supuesto del transporte TCP era FALSO (corregido el 6-ago)
 
-### Railway no expone UDP — el medio va por TCP
+> Este ADR sostuvo durante su primer día que, al no exponer Railway puertos UDP
+> entrantes, el medio tenía que ir por ICE sobre TCP, con la degradación que eso
+> implica. **La prueba de carga demostró que es falso** y el diseño se corrigió.
 
-WebRTC prefiere UDP, y la documentación de LiveKit lo dice explícitamente: *"UDP
-is preferred over TCP for WebRTC traffic, as it has better control over
-congestion and latency"*. Railway **no expone puertos UDP crudos**; su plantilla
-de LiveKit resuelve esto forzando el transporte por un proxy TCP (puerto 7882)
-con reenvío por iptables.
+Lo que dice la documentación es cierto pero incompleto: Railway no expone
+puertos UDP **entrantes**, y la documentación de LiveKit efectivamente prefiere
+UDP (*"UDP is preferred over TCP for WebRTC traffic"*). De ahí salió la
+conclusión equivocada.
 
-Funciona, pero **no es gratis**: TCP introduce head-of-line blocking, así que ante
-pérdida de paquetes la clase se degrada peor que con UDP (congelamientos en vez
-de pérdida de calidad progresiva). La plantilla de Railway está pensada para
-**agentes de voz 1-a-1**, no para un aula de ~20 personas: es un perfil de carga
-distinto y no hay evidencia publicada de que se comporte igual.
+Lo que pasa en realidad es que **Railway sí deja salir UDP y mantiene la
+traducción de direcciones**, así que el par ICE se arma igual por UDP: LiveKit
+descubre su IP pública por STUN, anuncia ahí sus candidatos, y las
+comprobaciones de conectividad abren el camino de vuelta. No hace falta ningún
+proxy TCP.
 
-**Consecuencia:** el riesgo de calidad hay que medirlo con una prueba de carga
-real antes de mover una clase de verdad, no asumirlo resuelto por la plantilla.
+**El intento de forzar TCP fue activamente dañino.** Fijar `rtc.node_ip` a la IP
+del TCP Proxy —para poder anunciar un candidato TCP alcanzable— hace que LiveKit
+anuncie **también sus candidatos UDP** en una IP que no reenvía UDP. Resultado
+medido: **0 de 20 suscriptores lograron conectar**. Con el descubrimiento normal
+por STUN, los mismos 20 conectan con 0,002% de pérdida.
+
+**Consecuencia:** el riesgo #1 de este ADR —que la clase se degradara por ir
+sobre TCP— **no aplica**, porque el medio no va sobre TCP. Lo que queda abierto
+es el caso contrario: qué pasa con un alumno cuya red bloquee UDP (ver más
+abajo).
 
 ### Egress no escribe directo a Mux, y es caro
+
 
 Egress requiere Redis, pide **mínimo 4 CPU y 4 GB de memoria**, corre Chrome
 headless, y un trabajo de Room Composite —el que sirve para grabar una clase
@@ -105,64 +114,52 @@ Las credenciales (`LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`) quedar
 en el `.env` local, que está en `.gitignore`. **Todavía no están en Netlify**
 porque ninguna ruta de la app las usa aún.
 
-Dos cosas que costaron y conviene no volver a descubrir:
+Tres cosas que costaron y conviene no volver a descubrir:
 
 - **Railway daba 502 con el servidor sano.** LiveKit respondía `OK` en
   `127.0.0.1:7880` dentro del contenedor y escuchaba en `:::7880`, así que no era
   el binding: era el puerto destino del proxy. Se resuelve declarando `PORT=7880`
   como variable del servicio; el flag `--port` de `railway domain` no bastó.
-- **El log confirma la limitación de UDP en vivo**: `could not validate external
-  IP` y `network is unreachable` contra el STUN. El servidor sigue funcionando
-  porque cae al TCP de 7881, que es justo el camino que este ADR asume.
+- **`LIVEKIT_CONFIG` le gana al `--config`.** Si esa variable existe, LiveKit la
+  prefiere e ignora el archivo que arma el entrypoint. Hay que borrarla, no basta
+  con dejar de usarla.
+- **Cambiar una variable NO redespliega el código.** Varias veces el servicio
+  volvió a arrancar con la imagen oficial y la configuración por defecto, lo que
+  hizo parecer que la configuración propia funcionaba cuando en realidad no
+  estaba corriendo. Después de tocar variables hay que correr `railway up`.
 
-**Paso 2 hecho y verificado: el medio ya tiene camino público por TCP.**
-TCP Proxy de Railway en `zephyr.proxy.rlwy.net:33805` → puerto interno 7881.
+**Paso 2: prueba de carga, y corrección del diseño (6-ago).**
 
-El problema resultó peor de lo anticipado, porque eran **dos** restricciones que
-chocaban de frente:
+La prueba se hizo con la herramienta oficial (`lk load-test`, livekit-cli
+2.18.2): 1 publicador de video + 20 suscriptores, resolución media, 2 minutos.
 
-- LiveKit usa **un solo** valor (`rtc.tcp_port`) para el puerto que escucha y
-  para el que anuncia en su candidato ICE. Se verificó en el struct `RTCConfig`
-  de `livekit/mediatransportutil` (`pkg/rtcconfig/config.go`): hay `tcp_port`,
-  `node_ip`, `use_external_ip` y `skip_external_ip_validation`, pero **ninguna
-  opción para anunciar un puerto distinto del que se escucha**.
-- Railway **asigna** el puerto público y no deja elegirlo, y el puerto interno
-  **no se puede cambiar después**: su API solo expone `tcpProxyCreate` y
-  `tcpProxyDelete`, no un update.
+| Configuración | Resultado |
+|---|---|
+| `node_ip` fijado a la IP del TCP Proxy + `socat` | **0 de 20 conectan** |
+| `force_tcp: true` (UDP apagado a propósito) | **0 de 20 conectan** |
+| Descubrimiento normal por STUN (la que quedó) | **20 de 20**, 7,1 Mbps, **0,002% de pérdida** |
 
-La salida fue invertir el reparto en vez de pelear con ninguna de las dos:
-**LiveKit escucha directamente en el puerto público** (así el candidato que
-anuncia es correcto) y **`socat` traduce**, recibiendo donde Railway entrega y
-reenviando a donde LiveKit escucha. Además `rtc.node_ip` se fija a la IP del
-proxy —no la del contenedor, que es inalcanzable— y `use_external_ip` queda en
-`false`, porque el descubrimiento por STUN sale por UDP y siempre falla acá.
+O sea: **la arquitectura que este ADR proponía no funcionaba, y la que se creía
+innecesaria sí.** El detalle está en la sección de hallazgos. El aparato de TCP
+Proxy + `socat` se retiró de la imagen por ser una pieza móvil que no aportaba.
 
-Eso obligó a una **imagen propia** (`infra/livekit/`), versionada en el repo:
-la oficial no trae `socat` ni forma de generar la configuración al arranque. El
-entrypoint deriva todo de las variables que Railway inyecta
-(`RAILWAY_TCP_PROXY_PORT`, `RAILWAY_TCP_APPLICATION_PORT`,
-`RAILWAY_TCP_PROXY_DOMAIN`), así que una reasignación de puerto o IP no rompe
-nada ni exige editar archivos.
-
-Verificado: el contenedor tiene `socat` en 7881 y `livekit-server` en 33805; el
-arranque reporta `nodeIP 66.33.22.227` y `rtc.portTCP 33805`; desde fuera el
-puerto público acepta TCP en ~250 ms; y un STUN Binding Request enviado con
-encuadre RFC 4571 hace que el servidor **cierre la conexión tras leerlo**, que es
-justo lo que hace pion ante un ufrag desconocido — prueba de que el mux ICE está
-leyendo el tráfico que llega por el camino público.
-
-**Trampa cara:** dejar la variable `LIVEKIT_CONFIG` puesta. LiveKit la prefiere
-por sobre el `--config` del entrypoint, así que el servidor arrancó ignorando
-toda la configuración nueva: siguió anunciando la IP del contenedor y chocó con
-`address already in use` contra el propio `socat`. Hay que borrarla, no basta
-con dejar de usarla.
+El TCP Proxy de Railway (`zephyr.proxy.rlwy.net:33805` → 7881) se dejó creado
+pero **sin uso**: no cuesta nada y sirve de punto de partida si algún día se
+retoma el respaldo por TCP.
 
 ### Lo que falta (no hecho todavía)
 
-1. **Prueba de carga con ~20 participantes reales.** Es lo único que puede
-   confirmar o refutar el riesgo #1 de este ADR: hasta acá está probado que el
-   transporte funciona, NO que la calidad aguante un aula.
-2. Egress, emisión de tokens desde la app, webhooks de asistencia y migración de
+1. **Respaldo para redes que bloqueen UDP.** Hoy no existe: con `force_tcp` no
+   conecta nadie. El intento con `socat` falló probablemente porque un proxy de
+   espacio de usuario reescribe la dirección de origen a `127.0.0.1` y ICE ya no
+   puede formar un par válido — es justamente la razón por la que la plantilla
+   oficial de Railway usa `iptables REDIRECT`, que sí la preserva. Mientras esto
+   no se resuelva, un alumno tras un firewall corporativo que bloquee UDP no
+   podrá entrar a la clase.
+2. **La prueba se corrió desde una sola máquina y una sola conexión.** Mide que
+   el servidor abastece a 20 suscriptores, no 20 redes domésticas distintas. La
+   prueba con alumnos reales sigue siendo necesaria antes de una clase de verdad.
+3. Egress, emisión de tokens desde la app, webhooks de asistencia y migración de
    `class_sessions`.
 
 ## Opciones consideradas
@@ -171,9 +168,9 @@ con dejar de usarla.
 
 - **Pros:** control total, sin costo por minuto de participante, mismo proveedor
   de infraestructura que el equipo ya decidió usar, datos de la clase en casa.
-- **Contras:** el medio va por TCP con la degradación descrita; hay que operar
-  servidor, Redis y Egress; el dimensionamiento de Egress es responsabilidad
-  nuestra.
+- **Contras:** hay que operar servidor, Redis y Egress, y el dimensionamiento de
+  Egress es responsabilidad nuestra. Sin respaldo por TCP, un alumno con UDP
+  bloqueado no puede entrar.
 
 ### Opción B — LiveKit Cloud para el SFU, Railway para lo demás
 
@@ -207,10 +204,12 @@ con dejar de usarla.
 
 ### Riesgos
 
-- **El principal: que el aula por TCP no aguante ~20 participantes con calidad
-  aceptable.** Mitigación: prueba de carga con participantes reales ANTES de
-  migrar una clase del Diplomado, y `meeting_url` conservado como salida de
-  emergencia.
+- **DESCARTADO** (era el principal): que el aula por TCP no aguantara ~20
+  participantes. No aplica: el medio va por UDP y la prueba dio 0,002% de
+  pérdida con 20 suscriptores.
+- **Vigente: un alumno con UDP bloqueado hoy no puede entrar.** No hay respaldo
+  por TCP funcionando. Mitigación mientras tanto: `meeting_url` conservado como
+  salida de emergencia.
 - Que el costo de Egress sorprenda si queda encendido fuera de horario de clases.
 - Que un fallo de Egress pierda la grabación de una clase que ya ocurrió y no se
   puede repetir. Mitigación: mantener disponible la subida manual a Mux como

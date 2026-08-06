@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Antes de entrar a una clase en vivo ahora hay una pantalla para revisar cámara y micrófono y elegir qué dispositivo usar, y el profesor puede silenciar o sacar de la sala a un participante (`1e72ce5`)
 - La clase en vivo ahora se abre en pantalla completa, como una videollamada, y su enlace es un código corto que se puede dictar por teléfono (`axr-hmwk-ipr`) en vez de la cadena larga de letras y números que había antes. Los enlaces ya enviados por correo siguen funcionando (`82cf248`)
 - Las clases en vivo ahora ocurren dentro de la plataforma: el alumno entra desde la pantalla de su clase con micrófono y cámara propios, el profesor puede compartir pantalla, hay chat durante la clase, y la grilla pagina cuando hay muchos participantes. El enlace externo (Zoom/Meet) queda como respaldo para las clases ya creadas con uno (`be5ed5a`, `6657e28`, `ad02288`)
 - Los profesores ahora editan su propio perfil público desde "Mi perfil" en su panel, sin depender de operaciones. Para que funcione, operaciones enlaza antes cada ficha de docente con su cuenta desde la sección Docentes (los profesores que no estén enlazados ven un aviso que les indica pedirlo)
@@ -48,6 +49,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- La analítica de visitas del sitio vuelve a registrar: el script estaba bloqueado por la política de seguridad del navegador desde que esa política existe, sin dar ningún error visible (`1e72ce5`)
 - La sección Actividad ya no cuenta al equipo como alumnado: las cuentas de dirección y operaciones que están matriculadas para ver el aula desaparecen del listado y dejan de alterar los promedios y el conteo de inactivos de la cohorte (`962d41c`)
 - El calendario ya no esconde clases: los días del mes vecino que aparecen en la primera y la última semana de la grilla ahora muestran sus clases. Antes salían vacíos aunque el panel de abajo sí las listara — por eso el sábado 1 de agosto, que tiene dos clases del Diplomado, no se veía desde la vista de julio (`0ef6069`)
 - Una clase con video ya no se puede marcar como completada de un clic sin verla: el progreso de un video se registra solo mirándolo. Las lecciones sin video (lectura, actividad, material) conservan su botón para marcarlas listas (`7ccfdec`)

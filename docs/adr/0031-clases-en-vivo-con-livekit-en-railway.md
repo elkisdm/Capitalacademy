@@ -115,15 +115,54 @@ Dos cosas que costaron y conviene no volver a descubrir:
   IP` y `network is unreachable` contra el STUN. El servidor sigue funcionando
   porque cae al TCP de 7881, que es justo el camino que este ADR asume.
 
+**Paso 2 hecho y verificado: el medio ya tiene camino público por TCP.**
+TCP Proxy de Railway en `zephyr.proxy.rlwy.net:33805` → puerto interno 7881.
+
+El problema resultó peor de lo anticipado, porque eran **dos** restricciones que
+chocaban de frente:
+
+- LiveKit usa **un solo** valor (`rtc.tcp_port`) para el puerto que escucha y
+  para el que anuncia en su candidato ICE. Se verificó en el struct `RTCConfig`
+  de `livekit/mediatransportutil` (`pkg/rtcconfig/config.go`): hay `tcp_port`,
+  `node_ip`, `use_external_ip` y `skip_external_ip_validation`, pero **ninguna
+  opción para anunciar un puerto distinto del que se escucha**.
+- Railway **asigna** el puerto público y no deja elegirlo, y el puerto interno
+  **no se puede cambiar después**: su API solo expone `tcpProxyCreate` y
+  `tcpProxyDelete`, no un update.
+
+La salida fue invertir el reparto en vez de pelear con ninguna de las dos:
+**LiveKit escucha directamente en el puerto público** (así el candidato que
+anuncia es correcto) y **`socat` traduce**, recibiendo donde Railway entrega y
+reenviando a donde LiveKit escucha. Además `rtc.node_ip` se fija a la IP del
+proxy —no la del contenedor, que es inalcanzable— y `use_external_ip` queda en
+`false`, porque el descubrimiento por STUN sale por UDP y siempre falla acá.
+
+Eso obligó a una **imagen propia** (`infra/livekit/`), versionada en el repo:
+la oficial no trae `socat` ni forma de generar la configuración al arranque. El
+entrypoint deriva todo de las variables que Railway inyecta
+(`RAILWAY_TCP_PROXY_PORT`, `RAILWAY_TCP_APPLICATION_PORT`,
+`RAILWAY_TCP_PROXY_DOMAIN`), así que una reasignación de puerto o IP no rompe
+nada ni exige editar archivos.
+
+Verificado: el contenedor tiene `socat` en 7881 y `livekit-server` en 33805; el
+arranque reporta `nodeIP 66.33.22.227` y `rtc.portTCP 33805`; desde fuera el
+puerto público acepta TCP en ~250 ms; y un STUN Binding Request enviado con
+encuadre RFC 4571 hace que el servidor **cierre la conexión tras leerlo**, que es
+justo lo que hace pion ante un ufrag desconocido — prueba de que el mux ICE está
+leyendo el tráfico que llega por el camino público.
+
+**Trampa cara:** dejar la variable `LIVEKIT_CONFIG` puesta. LiveKit la prefiere
+por sobre el `--config` del entrypoint, así que el servidor arrancó ignorando
+toda la configuración nueva: siguió anunciando la IP del contenedor y chocó con
+`address already in use` contra el propio `socat`. Hay que borrarla, no basta
+con dejar de usarla.
+
 ### Lo que falta (no hecho todavía)
 
-1. **Transporte del medio por TCP**: exponer el TCP Proxy de Railway hacia 7881.
-   Ojo con la trampa ya identificada: **LiveKit no tiene opción para anunciar un
-   puerto TCP público distinto del que escucha**, así que el puerto público de
-   Railway y `rtc.tcp_port` tienen que coincidir (de ahí el reenvío por iptables
-   de la plantilla oficial).
-2. **Prueba de carga con ~20 participantes** antes de mover una clase real.
-3. Egress, emisión de tokens desde la app, webhooks de asistencia y migración de
+1. **Prueba de carga con ~20 participantes reales.** Es lo único que puede
+   confirmar o refutar el riesgo #1 de este ADR: hasta acá está probado que el
+   transporte funciona, NO que la calidad aguante un aula.
+2. Egress, emisión de tokens desde la app, webhooks de asistencia y migración de
    `class_sessions`.
 
 ## Opciones consideradas

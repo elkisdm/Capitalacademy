@@ -41,7 +41,14 @@ type Estado = {
   detalle: string | null;
 };
 
-export function LiveClassRoom({ sessionId }: { sessionId: string }) {
+export function LiveClassRoom({
+  sessionId,
+  fill = false,
+}: {
+  sessionId: string;
+  /** `true` en la pantalla propia de la sala: ocupa todo el alto disponible. */
+  fill?: boolean;
+}) {
   const [estado, setEstado] = useState<Estado>({
     screen: "idle",
     error: null,
@@ -105,16 +112,28 @@ export function LiveClassRoom({ sessionId }: { sessionId: string }) {
 
   const mensaje = liveMessage(estado.screen);
 
+  // En la pantalla propia ya se está "aquí mismo": lo útil de decir ahí es que
+  // entras apagado, que es lo que la gente quiere saber antes de pulsar.
+  const detalleEntrada =
+    fill && estado.screen === "idle"
+      ? "Tu cámara y tu micrófono empiezan apagados."
+      : mensaje.detail;
+
   /* ── Fuera de la sala ─────────────────────────────────────── */
   if (estado.screen !== "connected" || !conexion) {
     const ocupado = estado.screen === "connecting";
     return (
-      <div className="ca-card flex flex-col items-start gap-3 p-5">
+      <div
+        className={[
+          "ca-card flex flex-col items-start gap-3 p-5",
+          fill ? "m-auto max-w-md" : "",
+        ].join(" ")}
+      >
         <div>
           <p className="text-[15px] font-black tracking-tight text-ca-ink">{mensaje.title}</p>
-          {(estado.error ?? mensaje.detail) && (
+          {(estado.error ?? detalleEntrada) && (
             <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
-              {estado.error ?? mensaje.detail}
+              {estado.error ?? detalleEntrada}
             </p>
           )}
           {estado.detalle && (
@@ -146,8 +165,8 @@ export function LiveClassRoom({ sessionId }: { sessionId: string }) {
       // `data-lk-theme` engancha la hoja de estilos de la librería; las
       // variables `--lk-*` (en globals.css) la repintan con los colores de marca.
       data-lk-theme="default"
-      className="ca-live-room overflow-hidden rounded-[18px]"
-      style={{ height: "min(70vh, 560px)" }}
+      className="ca-live-room h-full overflow-hidden rounded-[18px]"
+      style={fill ? undefined : { height: "min(70vh, 560px)" }}
     >
       <LiveKitRoom
         token={conexion.token}

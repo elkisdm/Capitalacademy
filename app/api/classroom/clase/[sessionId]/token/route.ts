@@ -5,6 +5,7 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getLiveKitConfig, LiveKitNotConfiguredError } from "@/lib/livekit/config";
 import { decideRoomAccess, type RoomSession } from "@/lib/livekit/access";
+import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { createAccessToken } from "@/lib/livekit/token";
 
 export const runtime = "nodejs";
@@ -80,11 +81,18 @@ export async function POST(
     throw e;
   }
 
+  // La URL puede traer el código legible (`abc-defg-hij`) o el UUID: los correos
+  // de recordatorio que ya circulan llevan el UUID y no se pueden romper.
+  const ref = parseSessionRef(sessionId);
+  if (ref.kind === "invalid") {
+    return NextResponse.json({ error: "No encontramos esta clase." }, { status: 404 });
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("class_sessions")
     .select("id, cohort_id, starts_at, ends_at, modality")
-    .eq("id", sessionId)
+    .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
 
   if (error) {

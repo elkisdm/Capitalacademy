@@ -291,6 +291,7 @@ export type Database = {
       class_sessions: {
         Row: {
           audience: string
+          code: string
           cohort_id: string
           created_at: string
           created_by: string | null
@@ -309,6 +310,7 @@ export type Database = {
         }
         Insert: {
           audience?: string
+          code?: string
           cohort_id: string
           created_at?: string
           created_by?: string | null
@@ -327,6 +329,7 @@ export type Database = {
         }
         Update: {
           audience?: string
+          code?: string
           cohort_id?: string
           created_at?: string
           created_by?: string | null
@@ -2870,6 +2873,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_meeting_code: { Args: never; Returns: string }
       get_cohort_role: {
         Args: { p_cohort_id: string }
         Returns: Database["public"]["Enums"]["cohort_role_kind"]

@@ -35,9 +35,13 @@ const { POST } = await import("@/app/api/classroom/clase/[sessionId]/token/route
 
 const AHORA = new Date("2026-08-06T15:30:00Z");
 
-function req(sessionId = "ses-1") {
+/** Código legible de reunión (migración 0089), el formato real de la URL. */
+const CODIGO = "xkw-mqtd-abn";
+const UUID = "ffffffff-0000-0000-0000-0000000000aa";
+
+function req(sessionId: string = CODIGO) {
   return [
-    new Request("http://localhost/api/classroom/clase/ses-1/token", { method: "POST" }),
+    new Request(`http://localhost/api/classroom/clase/${sessionId}/token`, { method: "POST" }),
     { params: Promise.resolve({ sessionId }) },
   ] as const;
 }
@@ -70,7 +74,7 @@ beforeEach(() => {
   mockGetUser.mockResolvedValue({ data: { user: { id: userId } } });
   mockSession.mockResolvedValue({
     data: {
-      id: "ses-1",
+      id: "ses-uuid-real",
       cohort_id: "cohorte-1",
       starts_at: "2026-08-06T15:00:00Z",
       ends_at: "2026-08-06T17:00:00Z",
@@ -89,15 +93,26 @@ describe("POST /api/classroom/clase/[sessionId]/token", () => {
 
     const body = await res.json();
     expect(body.url).toBe("wss://livekit.example");
-    expect(body.room).toBe("clase-ses-1");
+    expect(body.room).toBe("clase-ses-uuid-real");
     expect(body.role).toBe("student");
     expect(typeof body.token).toBe("string");
   });
 
-  it("la sala del token se deriva de la sesión, no del cliente", async () => {
+  it("acepta también el UUID, que es lo que llevan los correos ya enviados", async () => {
+    expect((await POST(...req(UUID))).status).toBe(200);
+  });
+
+  it("rechaza una referencia que no es ni código ni UUID, sin consultar la base", async () => {
+    const res = await POST(...req("../../etc/passwd"));
+
+    expect(res.status).toBe(404);
+    expect(mockSession).not.toHaveBeenCalled();
+  });
+
+  it("la sala del token se deriva de la FILA, no de lo que venga en la URL", async () => {
     const body = await (await POST(...req())).json();
     const payload = decodePayload(body.token);
-    expect(payload.video.room).toBe("clase-ses-1");
+    expect(payload.video.room).toBe("clase-ses-uuid-real");
     expect(payload.sub).toBe(userId);
   });
 
@@ -168,7 +183,7 @@ describe("POST /api/classroom/clase/[sessionId]/token", () => {
   it("no emite token para una clase grabada", async () => {
     mockSession.mockResolvedValue({
       data: {
-        id: "ses-1",
+        id: "ses-uuid-real",
         cohort_id: "cohorte-1",
         starts_at: "2026-08-06T15:00:00Z",
         ends_at: "2026-08-06T17:00:00Z",

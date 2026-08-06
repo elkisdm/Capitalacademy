@@ -15,8 +15,8 @@ import { EvaluationRunner } from "@/components/classroom/evaluation/evaluation-r
 import { VideoSyncProvider } from "@/components/classroom/video-sync-context";
 import { Breadcrumb, Avatar } from "@/components/classroom/primitives";
 import { ClassMaterial } from "@/components/classroom/class-material";
-import { LiveClassRoom } from "@/components/classroom/live/live-class-room";
 import { isWithinRoomWindow } from "@/lib/livekit/access";
+import { meetingPath } from "@/lib/livekit/meeting-code";
 
 const TZ = "America/Santiago";
 
@@ -250,20 +250,42 @@ export default async function ClassSessionPage(
         </div>
       </div>
 
-      {/* Sala en vivo. Se muestra solo dentro de la ventana de la sala y para
-          clases en vivo: fuera de eso lo único relevante es la repetición.
-          Se usa el MISMO predicado que la ruta del token, para que la pantalla
-          nunca ofrezca entrar donde el servidor va a rechazar. */}
+      {/* La sala NO se embebe acá: vive en su propia pantalla (/sala/<código>).
+          Una reunión no se mira entre la barra lateral y el resto del aula, y
+          además el enlace es compartible por sí solo. Acá va solo la invitación.
+          Se usa el MISMO predicado que la ruta del token, para no ofrecer entrar
+          donde el servidor va a rechazar. */}
       {showLiveRoom && (
         <section className="mb-6">
           <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
             Clase en vivo
           </div>
-          <LiveClassRoom sessionId={session.id} />
+          <div className="ca-card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[15px] font-black tracking-tight text-ca-ink">
+                {isLive ? "La clase está en curso" : "La sala ya está abierta"}
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
+                Se abre en pantalla completa, como una videollamada.
+              </p>
+              <p className="mt-1.5 font-mono text-[11px] text-ca-ink-soft/70">
+                {session.code}
+              </p>
+            </div>
+            <Link
+              href={meetingPath(session.code)}
+              className="ca-btn-lime ca-btn-interactive shrink-0 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.08em]"
+            >
+              Entrar a la clase
+            </Link>
+          </div>
         </section>
       )}
 
-      {/* Repetición */}
+      {/* Repetición. Se omite del todo mientras la sala está abierta: un cartel
+          grande de "aún no hay repetición" compitiendo con la invitación a
+          entrar es ruido justo cuando la clase está por empezar. */}
+      {(hasVideo || !showLiveRoom) && (
       <section>
         {!hasVideo && (
           <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
@@ -292,6 +314,7 @@ export default async function ClassSessionPage(
           </div>
         )}
       </section>
+      )}
 
       {/* Material de la clase */}
       {session.resources.length > 0 && (

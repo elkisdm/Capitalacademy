@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveResourceUrls } from "./resource-urls";
 import { isEvaluationOpen } from "./evaluation-window";
@@ -508,10 +509,15 @@ export async function getSessionForStudent(
 ): Promise<StudentSession | null> {
   const supabase = await createClient();
 
+  // Acepta el código legible (`abc-defg-hij`) o el UUID: los correos de
+  // recordatorio y los favoritos que ya circulan llevan el UUID (0089).
+  const ref = parseSessionRef(sessionId);
+  if (ref.kind === "invalid") return null;
+
   const { data: session, error } = await supabase
     .from("class_sessions")
     .select("*")
-    .eq("id", sessionId)
+    .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
   if (error) {
     console.error("[getSessionForStudent] class_sessions error", {
@@ -559,7 +565,12 @@ export async function getSessionForStudent(
     teacher: (teacherRes.data as SessionInstructor | null) ?? null,
     resources,
     recording,
-    evaluation: evalMap.get(sessionId) ?? null,
+    // `s.id` y NO `sessionId`: lo que llega por la URL puede ser el código
+    // legible (0089), y el mapa de evaluaciones está indexado por el id real de
+    // la fila. Mientras la URL traía siempre el UUID esto coincidía por
+    // casualidad; con el código, buscar por el parámetro dejaba el quiz de la
+    // clase en null sin ningún error visible.
+    evaluation: evalMap.get(s.id) ?? null,
   };
 }
 

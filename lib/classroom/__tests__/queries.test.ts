@@ -611,7 +611,7 @@ describe("getSessionForStudent", () => {
     const calls: Call[] = [];
     mockCreateClient.mockResolvedValue(makeFakeSupabase({ class_sessions: { data: null } }, calls));
 
-    const result = await getSessionForStudent("s1");
+    const result = await getSessionForStudent("xkw-mqtd-abn");
     expect(result).toBeNull();
     expect(calls.every((c) => c.table === "class_sessions")).toBe(true);
   });
@@ -654,7 +654,7 @@ describe("getSessionForStudent", () => {
       }),
     );
 
-    const result = await getSessionForStudent("s1");
+    const result = await getSessionForStudent("xkw-mqtd-abn");
     expect(result?.teacher).toEqual({ id: "t1", full_name: "Prof", photo_url: null });
     expect(result?.resources).toHaveLength(1);
     expect(result?.recording).toEqual({
@@ -691,7 +691,7 @@ describe("getSessionForStudent", () => {
       ),
     );
 
-    const result = await getSessionForStudent("s1");
+    const result = await getSessionForStudent("xkw-mqtd-abn");
     expect(result?.teacher).toBeNull();
     expect(result?.recording).toBeNull();
     expect(calls.some((c) => c.table === "instructors")).toBe(false);
@@ -718,7 +718,7 @@ describe("getSessionForStudent", () => {
       }),
     );
 
-    const result = await getSessionForStudent("s1");
+    const result = await getSessionForStudent("xkw-mqtd-abn");
     expect(result?.evaluation).toBeNull();
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "[getActiveSessionEvaluations] degradando (quiz CTA oculto)",

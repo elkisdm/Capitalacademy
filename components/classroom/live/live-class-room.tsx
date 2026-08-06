@@ -37,6 +37,15 @@ type Estado = {
   screen: LiveScreenState;
   /** Mensaje del servidor cuando el token fue rechazado. */
   error: string | null;
+  /**
+   * Causa técnica del fallo, si la hubo.
+   *
+   * Se muestra en chico bajo el mensaje amable. Sin esto, un bloqueo del
+   * navegador (una directiva de CSP que falta, un permiso denegado) se ve
+   * exactamente igual que un corte de internet, y ni el alumno ni soporte
+   * pueden distinguirlos. Es justo lo que pasó al estrenar esta pantalla.
+   */
+  detalle: string | null;
 };
 
 /**
@@ -65,7 +74,11 @@ export function LiveClassRoom({
   /** Id de la cuenta de quien dicta, para darle la ventana grande. */
   hostIdentity?: string | null;
 }) {
-  const [estado, setEstado] = useState<Estado>({ screen: "idle", error: null });
+  const [estado, setEstado] = useState<Estado>({
+    screen: "idle",
+    error: null,
+    detalle: null,
+  });
   const [, forzarRender] = useState(0);
   // La sala va en ESTADO y no en un ref porque el render la lee: los
   // participantes y sus pistas salen de acá.
@@ -88,7 +101,7 @@ export function LiveClassRoom({
     const actual = roomRef.current;
     guardarSala(null);
     if (actual) await actual.disconnect();
-    setEstado({ screen: "disconnected", error: null });
+    setEstado({ screen: "disconnected", error: null, detalle: null });
   }, [guardarSala]);
 
   // Desconectar al desmontar: sin esto, navegar a otra pantalla deja la cámara
@@ -101,7 +114,7 @@ export function LiveClassRoom({
   }, []);
 
   const entrar = useCallback(async () => {
-    setEstado({ screen: "connecting", error: null });
+    setEstado({ screen: "connecting", error: null, detalle: null });
 
     try {
       const res = await fetch(`/api/classroom/clase/${sessionId}/token`, { method: "POST" });
@@ -110,6 +123,7 @@ export function LiveClassRoom({
         setEstado({
           screen: "error",
           error: tokenErrorMessage(res.status, cuerpo?.error ?? null),
+          detalle: `HTTP ${res.status}`,
         });
         return;
       }
@@ -128,11 +142,11 @@ export function LiveClassRoom({
         .on(RoomEvent.LocalTrackPublished, refrescar)
         .on(RoomEvent.LocalTrackUnpublished, refrescar)
         .on(RoomEvent.ActiveSpeakersChanged, refrescar)
-        .on(RoomEvent.Reconnecting, () => setEstado({ screen: "reconnecting", error: null }))
-        .on(RoomEvent.Reconnected, () => setEstado({ screen: "connected", error: null }))
+        .on(RoomEvent.Reconnecting, () => setEstado({ screen: "reconnecting", error: null, detalle: null }))
+        .on(RoomEvent.Reconnected, () => setEstado({ screen: "connected", error: null, detalle: null }))
         .on(RoomEvent.Disconnected, () => {
           guardarSala(null);
-          setEstado({ screen: "disconnected", error: null });
+          setEstado({ screen: "disconnected", error: null, detalle: null });
         });
 
       await sala.connect(url, token);
@@ -145,12 +159,16 @@ export function LiveClassRoom({
         setMicOn(false);
       });
 
-      setEstado({ screen: "connected", error: null });
+      setEstado({ screen: "connected", error: null, detalle: null });
       refrescar();
     } catch (e) {
       console.error("[clase en vivo] no se pudo conectar", e);
       guardarSala(null);
-      setEstado({ screen: "error", error: null });
+      setEstado({
+        screen: "error",
+        error: null,
+        detalle: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+      });
     }
   }, [sessionId, refrescar, guardarSala]);
 
@@ -184,6 +202,11 @@ export function LiveClassRoom({
           {(estado.error ?? mensaje.detail) && (
             <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
               {estado.error ?? mensaje.detail}
+            </p>
+          )}
+          {estado.detalle && (
+            <p className="mt-1.5 font-mono text-[11px] leading-relaxed text-ca-ink-soft/70">
+              {estado.detalle}
             </p>
           )}
         </div>

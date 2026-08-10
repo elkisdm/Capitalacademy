@@ -179,9 +179,16 @@ ser una línea, no una cacería.
 
 **Fortalezas detectadas** = los ejes en verde, redactados en positivo.
 **Variables que podrían mejorar** = los ejes en amarillo o rojo, redactados como acción
-concreta ("aumentar el pie en 180 UF", no "mejorar el ahorro") **con el número exacto que
-haría cambiar el resultado**. Ese número es lo que convierte el semáforo en una herramienta
-de conversación en vez de un adorno.
+concreta ("con 180 UF más de pie…", no "mejorar el ahorro") **con el número exacto**. Ese
+número es lo que convierte el semáforo en una herramienta de conversación en vez de un
+adorno.
+
+> **Los ejes afirman hechos, no prometen efectos.** Descubierto probando el motor con
+> casos reales: cuando el límite es el múltiplo de renta, aumentar el pie NO sube el valor
+> alcanzable, así que un texto fijo que lo prometa hace que la herramienta mienta en buena
+> parte de los casos. El eje dice cuánto falta para cubrir cierto pie —siempre cierto—; es
+> **la pantalla de resultado (tarea 5)** la que conoce `limitadoPor` y debe destacar la
+> palanca que sí mueve la cifra. Un test lo protege.
 
 ---
 

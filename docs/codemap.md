@@ -353,6 +353,8 @@
 | `lib/credito/constants.ts` | Parámetros del banco: castigos por fuente, renta mínima, carga máxima 25%, tasa, pies, plazos, edad tope | — | 0027 |
 | `lib/credito/capacidad.ts` | Motor INVERSO (ADR-0032): dividendo máximo por tramo, despeje del crédito (valor presente de la anualidad), tope 60× renta menos hipotecario, y valor máximo de propiedad como mínimo entre crédito y ahorro | — | 0032 |
 | `lib/credito/capacidad-constants.ts` | Parámetros SOLO de la evaluación: umbral $2.5M, cargas 25/30%, múltiplo 60×, financiamiento por perfil. Separado de `constants.ts` para no mover la calculadora pública | — | 0032 |
+| `lib/evaluacion/perfil.ts` | Semáforo determinista de cinco ejes (estabilidad, antigüedad, carga, patrimonio, ahorro): color, fortalezas y mejoras con cifra. No mira la capacidad (evita la circularidad del ADR-0032) | — | 0032 |
+| `lib/evaluacion/perfil-constants.ts` | Umbrales del semáforo: son política del banco, no matemática, y se ajustan acá | — | 0032 |
 | `lib/indicadores/uf.ts` | Valor UF del día desde mindicador.cl, cacheado 12h; el fallback nunca se cachea | — | 0027 |
 | `lib/utils/money.ts` | Helper único de formateo CLP/UF y máscara de montos para inputs | — | 0027 |
 

@@ -355,6 +355,8 @@
 | `lib/credito/capacidad-constants.ts` | Parámetros SOLO de la evaluación: umbral $2.5M, cargas 25/30%, múltiplo 60×, financiamiento por perfil. Separado de `constants.ts` para no mover la calculadora pública | — | 0032 |
 | `lib/evaluacion/perfil.ts` | Semáforo determinista de cinco ejes (estabilidad, antigüedad, carga, patrimonio, ahorro): color, fortalezas y mejoras con cifra. No mira la capacidad (evita la circularidad del ADR-0032) | — | 0032 |
 | `lib/evaluacion/perfil-constants.ts` | Umbrales del semáforo: son política del banco, no matemática, y se ajustan acá | — | 0032 |
+| `lib/evaluacion/ficha.ts` | Ficha de Estado de Situación (Paso 7): tipo + validación Zod, saldo hipotecario vigente y patrimonio neto. NO se persiste (decisión 1 del ADR-0032) | — | 0032 |
+| `lib/evaluacion/evaluar.ts` | `evaluarFicha`: la cadena completa del botón "Analizar capacidad de compra"; calcula el perfil ANTES que la capacidad y resuelve la palanca real según qué tope manda | — | 0032 |
 | `lib/indicadores/uf.ts` | Valor UF del día desde mindicador.cl, cacheado 12h; el fallback nunca se cachea | — | 0027 |
 | `lib/utils/money.ts` | Helper único de formateo CLP/UF y máscara de montos para inputs | — | 0027 |
 

@@ -1,0 +1,62 @@
+{
+  "change": "motor-evaluacion-financiera",
+  "spec_flow_tier": 3,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "capacidad-constants.ts + capacidad.ts: despeje inverso y los tres topes (capacidad de pago, 60x renta menos hipotecario, ahorro disponible); gana el menor",
+      "kind": "feat",
+      "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "high", "breaking": false },
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "title": "perfil.ts: cinco ejes del semaforo con umbrales nombrados y redaccion de fortalezas/mejoras con la cifra que cambiaria el resultado",
+      "kind": "feat",
+      "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false },
+      "depends_on": []
+    },
+    {
+      "id": 3,
+      "title": "ficha.ts: tipo y validacion Zod de la Ficha de Estado de Situacion",
+      "kind": "feat",
+      "size": "small",
+      "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false },
+      "depends_on": []
+    },
+    {
+      "id": 4,
+      "title": "FichaEstadoSituacion.tsx: formulario por secciones con los controles de marca del proyecto",
+      "kind": "feat",
+      "size": "large",
+      "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false },
+      "depends_on": [3]
+    },
+    {
+      "id": 5,
+      "title": "ResultadoEvaluacion.tsx: semaforo, las seis cifras y el valor maximo en UF como protagonista, con disclaimer pegado al resultado",
+      "kind": "feat",
+      "size": "medium",
+      "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false },
+      "depends_on": [1, 2]
+    },
+    {
+      "id": 6,
+      "title": "Pantalla /classroom/[cohortSlug]/evaluacion tras login",
+      "kind": "feat",
+      "size": "small",
+      "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false },
+      "depends_on": [4, 5]
+    },
+    {
+      "id": 7,
+      "title": "Verificar E1-E8, actualizar codemap y CHANGELOG, pasar ADR-0032 a accepted",
+      "kind": "docs",
+      "size": "small",
+      "signals": { "type": "docs", "tier": 3, "risk": "low", "breaking": false },
+      "depends_on": [6]
+    }
+  ]
+}

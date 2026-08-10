@@ -357,6 +357,7 @@
 | `lib/evaluacion/perfil-constants.ts` | Umbrales del semáforo: son política del banco, no matemática, y se ajustan acá | — | 0032 |
 | `lib/evaluacion/ficha.ts` | Ficha de Estado de Situación (Paso 7): tipo + validación Zod, saldo hipotecario vigente y patrimonio neto. NO se persiste (decisión 1 del ADR-0032) | — | 0032 |
 | `lib/evaluacion/evaluar.ts` | `evaluarFicha`: la cadena completa del botón "Analizar capacidad de compra"; calcula el perfil ANTES que la capacidad y resuelve la palanca real según qué tope manda | — | 0032 |
+| `app/(classroom)/classroom/[cohortSlug]/evaluacion/` · `components/evaluacion/` | Pantalla del Motor de Evaluación Financiera: ficha por secciones, resultado con el valor máximo en UF como protagonista y semáforo. Tras login; el cálculo corre en el navegador y nada se envía ni se guarda | `/classroom/[cohortSlug]/evaluacion` | 0032 |
 | `lib/indicadores/uf.ts` | Valor UF del día desde mindicador.cl, cacheado 12h; el fallback nunca se cachea | — | 0027 |
 | `lib/utils/money.ts` | Helper único de formateo CLP/UF y máscara de montos para inputs | — | 0027 |
 

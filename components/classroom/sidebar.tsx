@@ -52,6 +52,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   book: <><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z" /><path d="M4 17a3 3 0 013-3h12" /></>,
   filmLines: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 4v16M17 4v16M2 9h5M2 15h5M17 9h5M17 15h5" /></>,
   chart: <><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></>,
+  calculator: <><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8" /><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v4" /></>,
   folder: <><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></>,
   upload: <><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" /></>,
   users: <><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></>,
@@ -484,6 +485,9 @@ export function ClassroomSidebar({
         // debe existir siempre, aunque el alumno aún no tenga notas publicadas.
         { icon: "chart", label: "Notas", href: `/classroom/${activeCohort}/notas`, section: "learn" as const },
         { icon: "chat", label: "Conversaciones", href: `/classroom/${activeCohort}/conversaciones`, section: "learn" as const },
+        // Herramienta de trabajo del asesor (Paso 7 de la metodología), no
+        // contenido del programa: por eso no se gatea por progreso ni por quiz.
+        { icon: "calculator", label: "Evaluación Financiera", href: `/classroom/${activeCohort}/evaluacion`, section: "learn" as const },
         ...(activeHasFinal ? [
           { icon: "clipboardCheck", label: "Quiz final", href: `/classroom/${activeCohort}/quiz`, section: "learn" as const },
         ] : []),

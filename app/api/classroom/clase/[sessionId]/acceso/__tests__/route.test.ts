@@ -144,6 +144,19 @@ describe("POST /acceso — pedir entrar", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
+  // El alumno matriculado es el caso que de verdad se daba: la matrícula se
+  // cargaba y se descartaba, así que la decisión se tomaba siempre con
+  // `hasActiveEnrollment: false` y todo alumno de la cohorte que pulsara el
+  // botón caía como pendiente en el panel del docente a mitad de clase.
+  it("un alumno MATRICULADO tampoco entra a la sala de espera", async () => {
+    mockAccess.mockResolvedValue({ enrollment: { id: "e1" }, isStaff: false });
+
+    const res = await POST(...post({ action: "request" }));
+
+    expect(res.status).toBe(409);
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
   it("no se puede pedir entrar a una clase fuera de horario", async () => {
     vi.setSystemTime(new Date("2026-08-07T10:00:00Z"));
 

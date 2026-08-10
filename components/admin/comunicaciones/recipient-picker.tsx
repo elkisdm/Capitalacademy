@@ -5,6 +5,7 @@ import { Search, Users } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
+import { seleccionEfectiva } from "@/lib/campaigns/seleccion";
 
 export type AudiencePerson = {
   studentId: string;
@@ -55,26 +56,40 @@ export function RecipientPicker({ people, loading, selected, onChange, disabled 
   const selectedCount = people.filter((p) => selectedSet.has(p.studentId)).length;
   const allSelected = people.length > 0 && selectedCount === people.length;
 
+  /**
+   * Traduce un conjunto de ids marcados al valor que se guarda.
+   *
+   * El filtrado contra `people` va SIEMPRE primero, y recién después se compara
+   * el tamaño: `selectedSet` puede arrastrar ids de una selección guardada cuyos
+   * dueños ya salieron de la cohorte, y comparar el conjunto crudo contra
+   * `people.length` daba "ya están todos" sin que lo estuvieran — marcaba `null`
+   * y le escribía a gente que nadie había elegido. `seleccionEfectiva` es la
+   * misma función que decide qué se guarda, para que no haya dos reglas.
+   */
+  function commit(next: Set<string>) {
+    const ids = people.map((p) => p.studentId);
+    const enAudiencia = seleccionEfectiva(ids, [...next]);
+    // Volver a marcar a todos equivale a no tener selección manual.
+    onChange(enAudiencia.length === ids.length ? null : enAudiencia);
+  }
+
   function toggle(studentId: string, checked: boolean) {
     const next = new Set(selectedSet);
     if (checked) next.add(studentId);
     else next.delete(studentId);
-    // Volver a marcar a todos equivale a no tener selección manual.
-    if (next.size === people.length) return onChange(null);
-    onChange(people.filter((p) => next.has(p.studentId)).map((p) => p.studentId));
+    commit(next);
   }
 
   function selectAllVisible() {
     const next = new Set(selectedSet);
     for (const p of visible) next.add(p.studentId);
-    if (next.size === people.length) return onChange(null);
-    onChange(people.filter((p) => next.has(p.studentId)).map((p) => p.studentId));
+    commit(next);
   }
 
   function clearVisible() {
     const next = new Set(selectedSet);
     for (const p of visible) next.delete(p.studentId);
-    onChange(people.filter((p) => next.has(p.studentId)).map((p) => p.studentId));
+    commit(next);
   }
 
   if (loading) {

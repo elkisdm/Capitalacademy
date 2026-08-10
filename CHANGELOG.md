@@ -51,6 +51,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- Los materiales de una clase en vivo (presentaciones, PDF y enlaces) volvieron a aparecer: desde que las clases estrenaron enlace corto, la pantalla los buscaba con el código de la URL en vez del identificador de la clase y la lista salía vacía sin ningún aviso
+- Los comentarios del foro volvieron a verse en los hilos creados antes del cambio de direcciones: el hilo se abría pero sin ningún comentario, con el contador y las reacciones en cero
+- Un comunicado con destinatarios elegidos a mano ya no puede terminar enviándose a la cohorte entera: si se guardaba antes de que cargara la lista de personas, la selección se borraba en silencio. Ahora el botón de guardar espera a que la lista esté lista, y la confirmación previa al envío dice cuántas personas lo recibirán de verdad, avisando si alguna de las elegidas ya salió de la cohorte
+- Los alumnos ya matriculados dejaron de caer en la sala de espera de su propia clase: el profesor tenía que aprobar a gente que ya estaba dentro
+- Las direcciones legibles siguen siéndolo: los hilos, evaluaciones y fichas de docente creados después del cambio nacían de nuevo con la dirección larga
 - Un profesor con ficha enlazada ya entra a su panel y a su perfil aunque no esté asignado como docente de ninguna cohorte: antes el acceso se decidía solo por el rol de cohorte y quedaba fuera (`0fbb823`)
 - Al enlazar una ficha de docente con una cuenta, esa cuenta ya no desaparece del selector: seguía apareciendo como disponible o se perdía de la lista según el caso (`07e6f2e`)
 - La sección Actividad del panel volvió a abrir: fallaba al cargar por una constante que se importaba desde un módulo de cliente (`aa01699`)

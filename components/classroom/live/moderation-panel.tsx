@@ -33,8 +33,16 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
   const [aviso, setAviso] = useState<string | null>(null);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
 
-  // Sondeo de la sala de espera (0091). Cada 8 s: alguien que pide entrar puede
-  // aguantar unos segundos, y consultar más seguido solo suma carga.
+  // Sondeo de la sala de espera (0091). El ritmo depende de si el panel está
+  // abierto: con el panel cerrado lo único que cambia es el número de la
+  // insignia, y 30 s de retraso ahí no le cuestan nada a nadie. Con el panel
+  // abierto el docente está mirando la lista y sí quiere verla fresca.
+  //
+  // No se puede simplemente apagar el sondeo mientras está cerrado: la insignia
+  // es justamente lo que le avisa que alguien está esperando. Espaciarlo baja la
+  // carga a un cuarto — cada tick cuesta cinco consultas secuenciales, y este
+  // classroom ya sufrió una cascada de `statement timeout` por presión de RLS.
+  const ritmoMs = abierto ? 8000 : 30000;
   useEffect(() => {
     let vivo = true;
     const consultar = async () => {
@@ -48,12 +56,12 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
       }
     };
     void consultar();
-    const id = setInterval(consultar, 8000);
+    const id = setInterval(consultar, ritmoMs);
     return () => {
       vivo = false;
       clearInterval(id);
     };
-  }, [sessionId]);
+  }, [sessionId, ritmoMs]);
 
   const decidir = useCallback(
     async (accion: "approve" | "deny", userId: string, nombre: string) => {

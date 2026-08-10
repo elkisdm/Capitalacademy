@@ -390,12 +390,18 @@ export async function getThreadWithComments(
   if (error || !threadData) return null;
 
   const threadRow = threadData as unknown as ThreadDetailRow;
+  // A partir de acá SIEMPRE el id real de la fila, nunca el parámetro de la URL:
+  // desde la 0090 ese parámetro suele ser el slug, y compararlo contra columnas
+  // uuid (thread_id, reacciones, marcadores, conteos) es un 22P02 que PostgREST
+  // devuelve como 400. Como esos errores no se inspeccionan, el hilo se veía
+  // pero sin ningún comentario, con contador y reacciones en cero.
+  const realId = threadRow.id;
   const limit = opts?.commentsLimit ?? DEFAULT_COMMENTS_PAGE;
 
   let rootQuery = supabase
     .from("conversation_comments")
     .select(COMMENT_SELECT)
-    .eq("thread_id", threadId)
+    .eq("thread_id", realId)
     .is("parent_id", null)
     .order("created_at", { ascending: false })
     .limit(limit + 1);
@@ -424,18 +430,18 @@ export async function getThreadWithComments(
 
   const [threadReactions, commentReactions, authorsMap, bookmarkedSet, staffIds, visibleCounts] =
     await Promise.all([
-      getReactionStatsMap(supabase, "thread_id", [threadId], viewerId),
+      getReactionStatsMap(supabase, "thread_id", [realId], viewerId),
       getReactionStatsMap(supabase, "comment_id", commentIds, viewerId),
       getPublicAuthorsMap([
         threadRow.author_id,
         ...commentRows.map((c) => c.author_id),
       ]),
-      getBookmarkedSet(supabase, [threadId], viewerId),
+      getBookmarkedSet(supabase, [realId], viewerId),
       getProgramStaffIds(threadRow.program_id),
-      getVisibleCommentCounts(supabase, [threadId]),
+      getVisibleCommentCounts(supabase, [realId]),
     ]);
 
-  const threadStats = threadReactions.get(threadId) ?? EMPTY_REACTION_STATS;
+  const threadStats = threadReactions.get(realId) ?? EMPTY_REACTION_STATS;
   const threadAuthor = authorsMap.get(threadRow.author_id) ?? FALLBACK_AUTHOR;
 
   const thread: ThreadDetail = {
@@ -446,7 +452,7 @@ export async function getThreadWithComments(
     category: threadRow.category,
     is_pinned: threadRow.is_pinned,
     is_locked: threadRow.is_locked,
-    comment_count: visibleCounts.get(threadId) ?? 0,
+    comment_count: visibleCounts.get(realId) ?? 0,
     last_activity_at: threadRow.last_activity_at,
     created_at: threadRow.created_at,
     edited_at: threadRow.edited_at,
@@ -457,7 +463,7 @@ export async function getThreadWithComments(
     reaction_count: threadStats.total,
     reactions: threadStats.counts,
     viewer_reaction: threadStats.viewerReaction,
-    viewer_bookmarked: bookmarkedSet.has(threadId),
+    viewer_bookmarked: bookmarkedSet.has(realId),
   };
 
   const comments: ConversationComment[] = commentRows.map((c) => {

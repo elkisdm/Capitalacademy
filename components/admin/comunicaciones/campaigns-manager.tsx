@@ -9,6 +9,7 @@ import { Input, Select, Textarea } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/admin/toast";
 import { AUDIENCE_STATUSES } from "@/lib/campaigns/audience";
+import { audienceStudentIdsParaGuardar } from "@/lib/campaigns/seleccion";
 import { RecipientPicker, type AudiencePerson } from "./recipient-picker";
 
 type Campaign = {
@@ -97,6 +98,9 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
   const [testing, setTesting] = useState(false);
 
   const [confirmSend, setConfirmSend] = useState<Campaign | null>(null);
+  // Destinatarios reales de la campaña a punto de enviarse, resueltos por el
+  // servidor con la misma cuenta que hace el envío. `null` = todavía cargando.
+  const [confirmCount, setConfirmCount] = useState<number | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -136,6 +140,25 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
     return () => controller.abort();
   }, [load]);
 
+  // Conteo real de la campaña que se va a enviar. Se pide al servidor en vez de
+  // contar `audience_student_ids` en el cliente: esa lista es una intención, y
+  // los que se retiraron de la cohorte entremedio ya no reciben el correo.
+  useEffect(() => {
+    if (!confirmSend) return;
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setConfirmCount(null);
+
+    fetch(`/api/admin/campaigns/audience?campaignId=${confirmSend.id}`, {
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((d) => setConfirmCount(typeof d.count === "number" ? d.count : null))
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, [confirmSend]);
+
   // Conteo de audiencia en vivo: es la última barrera antes de un envío masivo,
   // así que se recalcula ante cualquier cambio de segmentación.
   useEffect(() => {
@@ -156,11 +179,18 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
         setAudienceCount(typeof d.count === "number" ? d.count : null);
         setAudiencePeople(Array.isArray(d.recipients) ? d.recipients : []);
       })
-      .catch(() => {
+      .catch((err: Error) => {
+        // Un abort NO es un fallo: lo dispara la propia limpieza del efecto
+        // cuando llega una petición nueva. Tratarlo como error pintaba
+        // "No se pudo calcular la audiencia" y escondía el selector mientras
+        // la petición buena seguía en curso.
+        if (err.name === "AbortError") return;
         setAudienceCount(null);
         setAudiencePeople([]);
       })
-      .finally(() => setAudienceLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setAudienceLoading(false);
+      });
 
     return () => controller.abort();
   }, [editorOpen, programId, draft.cohortId, draft.audienceStatus]);
@@ -205,14 +235,18 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
   }
 
   async function save(): Promise<string | null> {
-    // Se guarda la selección podada a quienes siguen en la audiencia. Y si
-    // quedaron todos marcados se guarda `null`: "todos" y "esta lista que hoy
-    // es todos" se comportan distinto cuando la cohorte cambia, y lo que se ve
-    // en pantalla es "todos".
-    const inAudience = new Set(audiencePeople.map((p) => p.studentId));
-    const picked = draft.audienceStudentIds?.filter((id) => inAudience.has(id)) ?? null;
-    const audienceStudentIds =
-      picked === null || picked.length === audiencePeople.length ? null : picked;
+    // `canSave` ya garantiza que la decisión es válida; este guard existe para
+    // que un cambio futuro en el botón no pueda saltarse la regla en silencio.
+    if (!decision.ok) {
+      toast(
+        decision.reason === "nadie"
+          ? "Marca al menos a una persona antes de guardar"
+          : "Espera a que termine de cargar la lista de destinatarios",
+        "error",
+      );
+      return null;
+    }
+    const audienceStudentIds = decision.value;
 
     const payload = {
       programId,
@@ -319,12 +353,27 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
     }
   }
 
-  // Una selección manual vacía no se guarda como "todos": desmarcar a todo el
-  // mundo y terminar escribiéndole a la cohorte entera sería exactamente lo
-  // contrario de lo que pidió quien desmarcó.
-  const nadieSeleccionado = draft.audienceStudentIds?.length === 0;
+  // La audiencia tiene que estar RESUELTA para poder decidir cualquier cosa
+  // sobre la selección. Mientras carga o si falló, `audiencePeople` está vacío y
+  // no se distingue "no hay nadie" de "todavía no sé quiénes son".
+  const audienceReady = !audienceLoading && audienceCount !== null;
+
+  const audienceIds = useMemo(
+    () => audiencePeople.map((p) => p.studentId),
+    [audiencePeople],
+  );
+
+  // Qué se guardaría con lo que hay en pantalla ahora mismo. La regla vive en
+  // `lib/campaigns/seleccion.ts` (probada aparte) porque equivocarse acá manda
+  // un correo masivo a gente que nadie eligió.
+  const decision = useMemo(
+    () => audienceStudentIdsParaGuardar(audienceIds, draft.audienceStudentIds, audienceReady),
+    [audienceIds, draft.audienceStudentIds, audienceReady],
+  );
+
+  const nadieSeleccionado = !decision.ok && decision.reason === "nadie";
   const canSave =
-    draft.subject.trim().length > 0 && draft.bodyMd.trim().length > 0 && !nadieSeleccionado;
+    draft.subject.trim().length > 0 && draft.bodyMd.trim().length > 0 && decision.ok;
 
   return (
     <div className="space-y-5">
@@ -616,22 +665,33 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
             </h2>
             <p className="text-[14px] leading-relaxed text-ca-ink-soft">
               Se enviará <strong className="text-ca-ink">“{confirmSend.subject}”</strong>{" "}
-              {confirmSend.audience_student_ids?.length ? (
+              {confirmCount === null ? (
+                <>a los destinatarios de esta campaña (calculando cuántos son…)</>
+              ) : confirmSend.audience_student_ids?.length ? (
                 <>
-                  a las{" "}
-                  <strong className="text-ca-ink">
-                    {confirmSend.audience_student_ids.length} personas
-                  </strong>{" "}
-                  que seleccionaste
+                  a <strong className="text-ca-ink">{confirmCount}</strong>{" "}
+                  {confirmCount === 1 ? "persona" : "personas"} de las que seleccionaste
                 </>
               ) : (
                 <>
-                  a los alumnos de {confirmSend.cohorts?.name ?? "todas las cohortes"} de este
-                  entorno
+                  a <strong className="text-ca-ink">{confirmCount}</strong>{" "}
+                  {confirmCount === 1 ? "persona" : "personas"} de{" "}
+                  {confirmSend.cohorts?.name ?? "todas las cohortes"} de este entorno
                 </>
               )}
               . Un correo enviado no se puede deshacer.
             </p>
+            {confirmSend.audience_student_ids?.length != null &&
+              confirmCount !== null &&
+              confirmCount < confirmSend.audience_student_ids.length && (
+                <p className="flex items-start gap-2 rounded-xl bg-ca-bg-soft px-4 py-3 text-[13px] text-ca-ink-soft">
+                  <TriangleAlert size={15} className="mt-0.5 shrink-0" />
+                  Seleccionaste {confirmSend.audience_student_ids.length} personas, pero{" "}
+                  {confirmSend.audience_student_ids.length - confirmCount} ya no están en esta
+                  audiencia (se retiraron o cambió su estado de matrícula) y no recibirán el
+                  correo.
+                </p>
+              )}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirmSend(null)}>
                 Cancelar

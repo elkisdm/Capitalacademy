@@ -539,13 +539,27 @@ export async function getSessionForStudent(
           .eq("id", s.teacher_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    // `s.id` y NO `sessionId`, por lo mismo que se explica abajo en `evaluation`:
+    // lo que llega por la URL puede ser el código legible (0089), y comparar un
+    // código contra una columna uuid es un 22P02 que PostgREST devuelve como 400.
+    // Como el error se descartaba, la clase renderizaba sin NINGÚN material.
     supabase
       .from("session_resources")
       .select("id, session_id, title, type, url, storage_path, position")
-      .eq("session_id", sessionId)
+      .eq("session_id", s.id)
       .order("position", { ascending: true }),
-    getActiveSessionEvaluations(supabase, [sessionId]),
+    getActiveSessionEvaluations(supabase, [s.id]),
   ]);
+
+  // Un fallo acá dejaba la clase sin materiales y en silencio. Se registra: la
+  // lista vacía sigue siendo la degradación correcta, pero deja rastro.
+  if (resourcesRes.error) {
+    console.error("[getSessionForStudent] session_resources error", {
+      sessionId: s.id,
+      code: resourcesRes.error.code,
+      message: resourcesRes.error.message,
+    });
+  }
 
   const resources = await resolveResourceUrls(
     (resourcesRes.data ?? []) as SessionResource[],

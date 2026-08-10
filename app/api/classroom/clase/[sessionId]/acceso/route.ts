@@ -34,10 +34,12 @@ const schema = z.discriminatedUnion("action", [
 type Contexto = {
   session: RoomSession;
   esStaff: boolean;
+  /** Matrícula activa en la cohorte: quien la tiene NO pasa por sala de espera. */
+  tieneMatricula: boolean;
   userId: string;
 };
 
-/** Carga la sesión y resuelve si quien pregunta es staff de esa cohorte. */
+/** Carga la sesión y resuelve si quien pregunta es staff o alumno de esa cohorte. */
 async function contexto(sessionId: string, userId: string): Promise<Contexto | null> {
   const ref = parseSessionRef(sessionId);
   if (ref.kind === "invalid") return null;
@@ -52,7 +54,16 @@ async function contexto(sessionId: string, userId: string): Promise<Contexto | n
 
   const session = data as RoomSession;
   const access = await getClassroomAccess(userId, session.cohort_id);
-  return { session, esStaff: Boolean(access?.isStaff), userId };
+  return {
+    session,
+    esStaff: Boolean(access?.isStaff),
+    // Se descartaba, y sin este dato `decideRoomAccess` recibía siempre
+    // `hasActiveEnrollment: false`: todo alumno YA matriculado que pulsara
+    // "pedir entrar" caía como pendiente en el panel del docente, que terminaba
+    // aprobando a gente que ya estaba dentro.
+    tieneMatricula: Boolean(access?.enrollment),
+    userId,
+  };
 }
 
 export async function GET(
@@ -145,7 +156,7 @@ export async function POST(
     const decision = decideRoomAccess({
       session: c.session,
       cohortId: c.session.cohort_id,
-      hasActiveEnrollment: false,
+      hasActiveEnrollment: c.tieneMatricula,
       isStaff: c.esStaff,
       now: new Date(),
     });

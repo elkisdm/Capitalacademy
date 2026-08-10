@@ -27,6 +27,43 @@ export async function GET(req: Request) {
   if ("error" in auth) return auth.error;
 
   const { searchParams } = new URL(req.url);
+  const campaignId = searchParams.get("campaignId");
+
+  // Con `campaignId` se responde por la audiencia EFECTIVA de una campaña ya
+  // guardada: sus filtros más su selección manual, resueltos igual que en el
+  // envío. Lo usa la confirmación previa a enviar, que antes mostraba el largo
+  // crudo de la selección y prometía más gente de la que iba a recibir el
+  // correo (quien se retiró entremedio ya no cuenta).
+  if (campaignId) {
+    if (!uuidLike.safeParse(campaignId).success) {
+      return NextResponse.json({ error: "campaignId debe ser un UUID válido" }, { status: 422 });
+    }
+    const admin = createAdminClient();
+    const { data: campaign } = await admin
+      .from("email_campaigns")
+      .select("program_id, cohort_id, audience_status, audience_segment, audience_student_ids")
+      .eq("id", campaignId)
+      .maybeSingle();
+
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
+    }
+
+    try {
+      const recipients = await resolveAudience(admin, {
+        programId: campaign.program_id,
+        cohortId: campaign.cohort_id,
+        statuses: campaign.audience_status ?? ["active"],
+        segment: campaign.audience_segment,
+        studentIds: campaign.audience_student_ids,
+      });
+      return NextResponse.json({ count: recipients.length });
+    } catch (err) {
+      console.error("Error resolving campaign audience:", err);
+      return NextResponse.json({ error: "Error al calcular la audiencia" }, { status: 500 });
+    }
+  }
+
   const programId = searchParams.get("programId");
   const cohortId = searchParams.get("cohortId");
   const segment = searchParams.get("segment");

@@ -616,6 +616,46 @@ describe("getSessionForStudent", () => {
     expect(calls.every((c) => c.table === "class_sessions")).toBe(true);
   });
 
+  // Regresión: la URL trae el código legible (0089) pero `session_resources` se
+  // consultaba con ESE parámetro en vez del id de la fila. Comparar un código
+  // contra una columna uuid es un 22P02 que PostgREST devuelve como 400, y como
+  // el error se descartaba la clase renderizaba sin NINGÚN material.
+  it("busca los materiales por el id de la fila, no por el código de la URL", async () => {
+    const calls: Call[] = [];
+    mockCreateClient.mockResolvedValue(
+      makeFakeSupabase(
+        {
+          class_sessions: {
+            data: {
+              id: "s1",
+              cohort_id: "c1",
+              teacher_id: null,
+              lesson_id: null,
+              status: "scheduled",
+              starts_at: "2026-08-01T00:00:00Z",
+              title: "Clase X",
+              audience: "all",
+            },
+          },
+          session_resources: { data: [] },
+          evaluations: { data: [] },
+        },
+        calls,
+      ),
+    );
+
+    await getSessionForStudent("xkw-mqtd-abn");
+
+    const filtroRecursos = calls.find(
+      (c) => c.table === "session_resources" && c.method === "eq",
+    );
+    expect(filtroRecursos?.args).toEqual(["session_id", "s1"]);
+
+    // El quiz de la clase se busca por la misma clave, y por el mismo motivo.
+    const filtroEvaluaciones = calls.find((c) => c.table === "evaluations" && c.method === "in");
+    expect(filtroEvaluaciones?.args).toEqual(["session_id", ["s1"]]);
+  });
+
   it("camino feliz: docente, recursos, grabación (repetición) y quiz activo", async () => {
     mockCreateClient.mockResolvedValue(
       makeFakeSupabase({

@@ -14,6 +14,10 @@ import { SessionRecordingPanel } from "@/components/admin/session-recording-pane
 import { SessionQrButton } from "@/components/admin/session-qr";
 import { SessionAttendanceButton } from "@/components/admin/session-attendance-button";
 import { SessionDeleteDialog } from "@/components/admin/session-delete-dialog";
+import {
+  SessionChangeNoticeDialog,
+  type AvisoTarget,
+} from "@/components/admin/session-change-notice-dialog";
 import { SessionResourcesPanel } from "@/components/admin/session-resources-panel";
 import {
   ArrowLeftIcon,
@@ -230,6 +234,10 @@ export function SessionsManagerClient({
   const [view, setView] = useState<"list" | "month">("list");
   const [now, setNow] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ClassSession | null>(null);
+  // Aviso de reprogramación / cancelación (0094). Se ofrece DESPUÉS de guardar
+  // un cambio de horario y ANTES de borrar una clase.
+  const [avisoTarget, setAvisoTarget] = useState<AvisoTarget | null>(null);
+  const [avisoMsg, setAvisoMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setNow(Date.now());
@@ -345,6 +353,25 @@ export function SessionsManagerClient({
         return;
       }
 
+      // Si se movió una clase que ya existía, se ofrece avisar. Los alumnos que
+      // ya recibieron un recordatorio tienen la hora vieja en su bandeja y esa
+      // ventana nunca se reenvía sola.
+      const movida =
+        editing &&
+        (payload.starts_at !== editing.starts_at || payload.ends_at !== editing.ends_at);
+
+      if (movida) {
+        setAvisoTarget({
+          sessionId: editing.id,
+          title: payload.title,
+          kind: "rescheduled",
+          previousStartsAt: editing.starts_at,
+          previousEndsAt: editing.ends_at,
+          newStartsAt: payload.starts_at,
+          newEndsAt: payload.ends_at,
+        });
+      }
+
       await reloadSessions();
       closeForm();
     } catch {
@@ -354,25 +381,46 @@ export function SessionsManagerClient({
     }
   }
 
-  async function confirmDelete() {
+  /**
+   * Borrar es el segundo paso, no el primero: el aviso de cancelación necesita
+   * la fila viva para saber a quién escribirle y qué horario tenía. Así que al
+   * confirmar el borrado se abre el diálogo de aviso, y el DELETE corre recién
+   * cuando ese diálogo se cierra —haya avisado o no.
+   */
+  function confirmDelete() {
     if (!deleteTarget) return;
+    setAvisoTarget({
+      sessionId: deleteTarget.id,
+      title: deleteTarget.title ?? "Clase",
+      kind: "cancelled",
+      previousStartsAt: deleteTarget.starts_at,
+      previousEndsAt: deleteTarget.ends_at,
+    });
+    setDeleteTarget(null);
+  }
+
+  async function borrarSesion(sessionId: string) {
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/sessions/${deleteTarget.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/admin/sessions/${sessionId}`, { method: "DELETE" });
       if (!res.ok) {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
         setError(json.error ?? "No se pudo eliminar la sesión.");
         return;
       }
       await reloadSessions();
-      setDeleteTarget(null);
     } catch {
       setError("Error de red al eliminar la sesión.");
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Cierre del diálogo de aviso: si venía de un borrado, ahora sí se borra. */
+  async function cerrarAviso() {
+    const pendienteDeBorrar = avisoTarget?.kind === "cancelled" ? avisoTarget.sessionId : null;
+    setAvisoTarget(null);
+    if (pendienteDeBorrar) await borrarSesion(pendienteDeBorrar);
   }
 
   async function addResource(
@@ -710,6 +758,32 @@ export function SessionsManagerClient({
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />
+
+      {/* `key` por clase y tipo de aviso: remonta el diálogo en cada apertura,
+          para que el motivo escrito la vez anterior no reaparezca. */}
+      <SessionChangeNoticeDialog
+        key={avisoTarget ? `${avisoTarget.sessionId}:${avisoTarget.kind}` : "sin-aviso"}
+        target={avisoTarget}
+        onClose={cerrarAviso}
+        onDone={setAvisoMsg}
+      />
+
+      {avisoMsg && (
+        <div
+          role="status"
+          className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-ca-ink px-4 py-3 text-[13px] font-semibold text-white shadow-lg"
+        >
+          {avisoMsg}
+          <button
+            type="button"
+            onClick={() => setAvisoMsg(null)}
+            className="ml-3 text-white/60 hover:text-white"
+            aria-label="Cerrar aviso"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

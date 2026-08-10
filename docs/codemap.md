@@ -63,6 +63,7 @@
 | `app/(admin)/admin/comunicaciones/` · `components/admin/comunicaciones/campaigns-manager.tsx` | Panel: lista, editor Markdown, conteo de audiencia en vivo, prueba y confirmación de envío | `/admin/comunicaciones` | 0026 |
 | `components/admin/comunicaciones/recipient-picker.tsx` | Lista de destinatarios con casillas y buscador; `null` (sin selección) es distinto de "todos marcados" | en `/admin/comunicaciones` | 0026 |
 | `db/migrations/0092_audiencia_seleccion_manual.sql` | `email_campaigns.audience_student_ids`: selección manual de destinatarios; null = toda la audiencia del filtro | — | 0026 |
+| `lib/campaigns/seleccion.ts` | Reglas puras de la selección manual: qué se guarda y a quién alcanza; `null` (todos) nunca se confunde con una lista | — | 0026 |
 
 ## Encuestas (federadas con capital-admin/hclp)
 
@@ -116,6 +117,10 @@
 |------|-----------------|---------------------------|-----|
 | `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) y detecta inasistencias (`processAbsenceAlerts`) | `POST /api/cron/session-reminders` | 0008, 0013 |
 | `netlify/functions/session-reminders-cron.mjs` | Netlify Scheduled Function (`*/30`) que invoca el endpoint de recordatorios | — | 0008 |
+| `app/api/admin/sessions/[sessionId]/aviso/route.ts` | Aviso de reprogramación/cancelación de una clase: GET devuelve a cuántos alcanza, POST envía y deja bitácora. El horario ANTERIOR llega en el body (la fila ya tiene el nuevo) | `GET/POST /api/admin/sessions/[id]/aviso` | 0013 |
+| `lib/email/session-change.ts` · `lib/classroom/session-recipients.ts` | Plantilla del aviso (horario viejo tachado + nuevo) y destinatarios de una clase, compartidos con el cron de recordatorios | — | 0013 |
+| `components/admin/session-change-notice-dialog.tsx` | Confirmación de aviso al mover o borrar una clase; en cancelación corre ANTES del DELETE | en `/admin/cohorts/[id]/sesiones` | 0013 |
+| `db/migrations/0094_avisos_cambio_de_clase.sql` | `session_change_notices`: bitácora de avisos; conserva el título porque la clase puede borrarse | — | 0013 |
 | `lib/classroom/recording-notifications.ts` | Dispatch en dos fases (reserva→completado) del aviso "grabación disponible" (genérico y follow-up CAP-CI), reconciliable por el cron ante crash a mitad del envío | — | — |
 | `app/api/cron/recording-notifications/route.ts` | Cron de reconciliación: reintenta notificaciones de grabación cuya reserva quedó sin completar | `GET/POST /api/cron/recording-notifications` | — |
 | `netlify/functions/recording-notifications-cron.mjs` | Netlify Scheduled Function que invoca el cron de reconciliación de notificaciones de grabación | — | — |

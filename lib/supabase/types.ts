@@ -2528,6 +2528,54 @@ export type Database = {
           },
         ]
       }
+      session_change_notices: {
+        Row: {
+          cohort_id: string
+          created_at: string
+          id: string
+          kind: string
+          motivo: string | null
+          new_ends_at: string | null
+          new_starts_at: string | null
+          previous_ends_at: string
+          previous_starts_at: string
+          recipients_count: number
+          sent_by: string | null
+          session_id: string | null
+          session_title: string
+        }
+        Insert: {
+          cohort_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          motivo?: string | null
+          new_ends_at?: string | null
+          new_starts_at?: string | null
+          previous_ends_at: string
+          previous_starts_at: string
+          recipients_count?: number
+          sent_by?: string | null
+          session_id?: string | null
+          session_title: string
+        }
+        Update: {
+          cohort_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          motivo?: string | null
+          new_ends_at?: string | null
+          new_starts_at?: string | null
+          previous_ends_at?: string
+          previous_starts_at?: string
+          recipients_count?: number
+          sent_by?: string | null
+          session_id?: string | null
+          session_title?: string
+        }
+        Relationships: []
+      }
       session_reminders: {
         Row: {
           channel: string

@@ -1,20 +1,12 @@
 import type { NextConfig } from "next";
+import { buildCsp, PERMISSIONS_POLICY } from "./lib/security/csp";
 
-const isDev = process.env.NODE_ENV !== "production";
-
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.fintoc.com`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.fintoc.com https://*.fintoc.com https://*.mux.com https://*.fastly.mux.com",
-  "media-src 'self' https://stream.mux.com https://*.fastly.mux.com blob:",
-  "worker-src 'self' blob:",
-  "frame-src 'self' https://*.fintoc.com https://view.officeapps.live.com",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join("; ");
+// El CSP se arma en `lib/security/csp.ts` para poder testearlo: un origen que
+// falta no rompe el build ni ningún test, solo la función en producción.
+const csp = buildCsp({
+  isDev: process.env.NODE_ENV !== "production",
+  livekitUrl: process.env.LIVEKIT_URL,
+});
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -52,10 +44,7 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
-          },
+          { key: "Permissions-Policy", value: PERMISSIONS_POLICY },
         ],
       },
       {

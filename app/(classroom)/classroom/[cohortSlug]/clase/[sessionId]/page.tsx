@@ -15,6 +15,8 @@ import { EvaluationRunner } from "@/components/classroom/evaluation/evaluation-r
 import { VideoSyncProvider } from "@/components/classroom/video-sync-context";
 import { Breadcrumb, Avatar } from "@/components/classroom/primitives";
 import { ClassMaterial } from "@/components/classroom/class-material";
+import { isWithinRoomWindow } from "@/lib/livekit/access";
+import { meetingPath } from "@/lib/livekit/meeting-code";
 
 const TZ = "America/Santiago";
 
@@ -72,6 +74,22 @@ export default async function ClassSessionPage(
   const isLive = start <= now && now <= end;
   const isUpcoming = start > now;
   const meetingUrl = (session as { meeting_url?: string | null }).meeting_url ?? null;
+
+  // El staff ve la sala siempre (necesita entrar antes a probar); al alumno se
+  // le ofrece solo dentro de la ventana, igual que decide la ruta del token.
+  const showLiveRoom =
+    session.modality !== "recorded" &&
+    (access.isStaff ||
+      isWithinRoomWindow(
+        {
+          id: session.id,
+          cohort_id: session.cohort_id,
+          starts_at: session.starts_at,
+          ends_at: session.ends_at,
+          modality: session.modality,
+        },
+        now,
+      ));
 
   const recording = session.recording;
   const hasVideo = !!(recording?.mux_playback_id && recording.video_duration_seconds);
@@ -202,14 +220,18 @@ export default async function ClassSessionPage(
           </h1>
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          {/* El enlace externo queda solo como respaldo: la sala propia (abajo)
+              es el camino por defecto desde ADR-0031. Las sesiones creadas
+              antes siguen teniendo su `meeting_url` de Zoom/Meet y deben poder
+              usarlo mientras la migración no esté completa. */}
           {(isLive || isUpcoming) && meetingUrl && (
             <a
               href={meetingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-ca-lime px-4 py-2 text-[12px] font-bold text-ca-ink transition-transform hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-ca-bg-soft px-4 py-2 text-[12px] font-bold text-ca-ink-soft transition-colors hover:text-ca-ink"
             >
-              Entrar a la clase
+              Enlace externo
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
             </a>
           )}
@@ -228,7 +250,42 @@ export default async function ClassSessionPage(
         </div>
       </div>
 
-      {/* Repetición */}
+      {/* La sala NO se embebe acá: vive en su propia pantalla (/sala/<código>).
+          Una reunión no se mira entre la barra lateral y el resto del aula, y
+          además el enlace es compartible por sí solo. Acá va solo la invitación.
+          Se usa el MISMO predicado que la ruta del token, para no ofrecer entrar
+          donde el servidor va a rechazar. */}
+      {showLiveRoom && (
+        <section className="mb-6">
+          <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            Clase en vivo
+          </div>
+          <div className="ca-card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[15px] font-black tracking-tight text-ca-ink">
+                {isLive ? "La clase está en curso" : "La sala ya está abierta"}
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
+                Se abre en pantalla completa, como una videollamada.
+              </p>
+              <p className="mt-1.5 font-mono text-[11px] text-ca-ink-soft/70">
+                {session.code}
+              </p>
+            </div>
+            <Link
+              href={meetingPath(session.code)}
+              className="ca-btn-lime ca-btn-interactive shrink-0 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.08em]"
+            >
+              Entrar a la clase
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Repetición. Se omite del todo mientras la sala está abierta: un cartel
+          grande de "aún no hay repetición" compitiendo con la invitación a
+          entrar es ruido justo cuando la clase está por empezar. */}
+      {(hasVideo || !showLiveRoom) && (
       <section>
         {!hasVideo && (
           <div className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
@@ -257,6 +314,7 @@ export default async function ClassSessionPage(
           </div>
         )}
       </section>
+      )}
 
       {/* Material de la clase */}
       {session.resources.length > 0 && (

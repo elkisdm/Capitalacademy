@@ -65,6 +65,27 @@ export type EnrollmentRef = {
 };
 
 /**
+ * Roles de plataforma que NO son alumnado. Misma definición que la función
+ * `is_platform_staff()` de la base (0045), para que el panel y la RLS no
+ * discrepen sobre quién es staff.
+ */
+const PLATFORM_STAFF_ROLES = new Set(["ops", "admin"]);
+
+/**
+ * ¿Esta matrícula es de alguien del equipo y no de un alumno?
+ *
+ * Del equipo hay gente matriculada a propósito, para ver el aula como la ve el
+ * alumno. Contarlos acá falsea las dos respuestas que este panel existe para
+ * dar: engorda el denominador de "cuántos usan la plataforma" y mete en la
+ * lista de inactivos a quien nunca fue alumno. Un `system_role` ausente se
+ * trata como alumno: el panel prefiere mostrar de más a esconder a alguien que
+ * sí tenía que aparecer.
+ */
+export function isStaffEnrollment(systemRole: string | null | undefined): boolean {
+  return systemRole != null && PLATFORM_STAFF_ROLES.has(systemRole);
+}
+
+/**
  * Cruza las matrículas con sus filas diarias y produce una fila por alumno.
  * Pura y sin dependencias de red: es donde vive toda la lógica del reporte.
  *
@@ -215,19 +236,24 @@ export async function getCohortActivityReport(
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("id, student_id, profiles(full_name, email)")
+    .select("id, student_id, profiles(full_name, email, system_role)")
     .eq("cohort_id", cohortId)
     .eq("status", "active");
 
-  const refs: EnrollmentRef[] = (enrollments ?? []).map((e) => {
-    const profile = e.profiles as { full_name: string | null; email: string } | null;
-    return {
-      enrollment_id: e.id as string,
-      student_id: e.student_id as string,
-      full_name: profile?.full_name ?? null,
-      email: profile?.email ?? "",
-    };
-  });
+  const refs: EnrollmentRef[] = (enrollments ?? [])
+    .filter((e) => {
+      const profile = e.profiles as { system_role: string | null } | null;
+      return !isStaffEnrollment(profile?.system_role);
+    })
+    .map((e) => {
+      const profile = e.profiles as { full_name: string | null; email: string } | null;
+      return {
+        enrollment_id: e.id as string,
+        student_id: e.student_id as string,
+        full_name: profile?.full_name ?? null,
+        email: profile?.email ?? "",
+      };
+    });
 
   if (refs.length === 0) {
     return { ...base, students: [], summary: summarizeActivity([]) };

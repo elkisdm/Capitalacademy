@@ -188,7 +188,7 @@ function SessionRow({
 
         {s.teacher && (
           <Link
-            href={`/classroom/${cohortSlug}/docente/${s.teacher.id}`}
+            href={`/classroom/${cohortSlug}/docente/${s.teacher.slug ?? s.teacher.id}`}
             className="group flex w-fit items-center gap-2"
           >
             <Avatar

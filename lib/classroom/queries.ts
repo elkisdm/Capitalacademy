@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveResourceUrls } from "./resource-urls";
 import { isEvaluationOpen } from "./evaluation-window";
@@ -32,13 +33,14 @@ async function getActiveSessionEvaluations(
   try {
     const { data } = await supabase
       .from("evaluations")
-      .select("id, title, session_id, is_active, opens_at, closes_at")
+      .select("id, slug, title, session_id, is_active, opens_at, closes_at")
       .in("session_id", sessionIds)
       .eq("scope", "session")
       .eq("is_active", true);
     const now = new Date();
     for (const e of (data ?? []) as {
       id: string;
+      slug: string | null;
       title: string;
       session_id: string;
       is_active: boolean;
@@ -46,7 +48,7 @@ async function getActiveSessionEvaluations(
       closes_at: string | null;
     }[]) {
       if (!isEvaluationOpen(e, now)) continue;
-      map.set(e.session_id, { id: e.id, title: e.title });
+      map.set(e.session_id, { id: e.id, slug: e.slug, title: e.title });
     }
   } catch (e) {
     console.error("[getActiveSessionEvaluations] degradando (quiz CTA oculto)", e);
@@ -355,7 +357,7 @@ export async function getModuleSessionsForCohort(
   if (teacherIds.length > 0) {
     const { data: instructors } = await supabase
       .from("instructors")
-      .select("id, full_name, photo_url")
+      .select("id, slug, full_name, photo_url")
       .in("id", teacherIds);
     for (const i of (instructors ?? []) as SessionInstructor[]) {
       teacherMap.set(i.id, i);
@@ -429,7 +431,7 @@ export async function getCohortSchedule(
     try {
       const { data: instructors } = await supabase
         .from("instructors")
-        .select("id, full_name, photo_url")
+        .select("id, slug, full_name, photo_url")
         .in("id", teacherIds);
 
       for (const i of (instructors ?? []) as SessionInstructor[]) {
@@ -508,10 +510,15 @@ export async function getSessionForStudent(
 ): Promise<StudentSession | null> {
   const supabase = await createClient();
 
+  // Acepta el código legible (`abc-defg-hij`) o el UUID: los correos de
+  // recordatorio y los favoritos que ya circulan llevan el UUID (0089).
+  const ref = parseSessionRef(sessionId);
+  if (ref.kind === "invalid") return null;
+
   const { data: session, error } = await supabase
     .from("class_sessions")
     .select("*")
-    .eq("id", sessionId)
+    .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
   if (error) {
     console.error("[getSessionForStudent] class_sessions error", {
@@ -528,7 +535,7 @@ export async function getSessionForStudent(
     s.teacher_id
       ? supabase
           .from("instructors")
-          .select("id, full_name, photo_url")
+          .select("id, slug, full_name, photo_url")
           .eq("id", s.teacher_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
@@ -559,7 +566,12 @@ export async function getSessionForStudent(
     teacher: (teacherRes.data as SessionInstructor | null) ?? null,
     resources,
     recording,
-    evaluation: evalMap.get(sessionId) ?? null,
+    // `s.id` y NO `sessionId`: lo que llega por la URL puede ser el código
+    // legible (0089), y el mapa de evaluaciones está indexado por el id real de
+    // la fila. Mientras la URL traía siempre el UUID esto coincidía por
+    // casualidad; con el código, buscar por el parámetro dejaba el quiz de la
+    // clase en null sin ningún error visible.
+    evaluation: evalMap.get(s.id) ?? null,
   };
 }
 

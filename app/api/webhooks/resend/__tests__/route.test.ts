@@ -124,6 +124,93 @@ describe("POST /api/webhooks/resend", () => {
     expect(res.status).toBe(401);
   });
 
+  it("rechaza un timestamp que no es número", async () => {
+    // Sin el chequeo de NaN, `Math.abs(NaN) > ventana` es false y el evento se
+    // colaría a la verificación de firma con el timestamp corrupto adentro.
+    const req = signedRequest({ type: "email.delivered", data: { email_id: "e1" } });
+    req.headers.set("svix-timestamp", "no-es-un-numero");
+
+    expect((await POST(req)).status).toBe(401);
+  });
+
+  it("rechaza cuando falta solo la firma y el resto de los headers está", async () => {
+    const req = signedRequest({ type: "email.delivered", data: { email_id: "e1" } });
+    req.headers.delete("svix-signature");
+
+    expect((await POST(req)).status).toBe(401);
+  });
+
+  it("acepta un secreto configurado sin el prefijo whsec_", async () => {
+    // Resend muestra el secreto con prefijo, pero quien lo copia a Netlify a
+    // veces lo pega sin él. Se firma con los mismos bytes en los dos casos.
+    const sinPrefijo = SECRET.slice(6);
+    process.env.RESEND_WEBHOOK_SECRET = sinPrefijo;
+
+    const res = await POST(
+      signedRequest({ type: "email.delivered", data: { email_id: "e1" } }, {
+        secret: sinPrefijo,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it("acepta cuando el header trae varias versiones y solo una calza", async () => {
+    // Durante una rotación de secreto, Svix manda las dos firmas separadas por
+    // espacio. Basta que UNA coincida.
+    const timestamp = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({ type: "email.delivered", data: { email_id: "e1" } });
+    const buena = createHmac("sha256", Buffer.from(SECRET.slice(6), "base64"))
+      .update(`msg_test.${timestamp}.${body}`)
+      .digest("base64");
+
+    const res = await POST(
+      new Request("http://localhost/api/webhooks/resend", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "svix-id": "msg_test",
+          "svix-timestamp": String(timestamp),
+          "svix-signature": `v1,firma-vieja-que-no-calza v1,${buena}`,
+        },
+        body,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it("acepta una firma sin la etiqueta de versión", async () => {
+    const res = await POST(
+      signedRequest({ type: "email.delivered", data: { email_id: "e1" } }, {
+        // Mismo valor que calcula `signedRequest`, pero sin el `v1,` adelante.
+        signature: createHmac("sha256", Buffer.from(SECRET.slice(6), "base64"))
+          .update(
+            `msg_test.${Math.floor(Date.now() / 1000)}.${JSON.stringify({
+              type: "email.delivered",
+              data: { email_id: "e1" },
+            })}`,
+          )
+          .digest("base64"),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it("responde 0 actualizaciones cuando la escritura no devuelve filas", async () => {
+    // `data` en null con `error` en null: sin el `?? 0` la respuesta llevaría
+    // `updated: undefined` y se perdería en el JSON.
+    updateResult = { data: null, error: null };
+
+    const res = await POST(
+      signedRequest({ type: "email.bounced", data: { email_id: "e1" } }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, updated: 0 });
+  });
+
   it("marca la entrega con su hora cuando llega email.delivered", async () => {
     const res = await POST(
       signedRequest({ type: "email.delivered", data: { email_id: "email_abc" } }),

@@ -382,17 +382,31 @@ function commentsHandler(opts: {
 }
 
 describe("getThreadWithComments", () => {
+  it("corta antes de tocar la base si la referencia no es ni slug ni UUID", async () => {
+    // Sin este corte, la basura llegaría a una consulta contra una columna uuid
+    // y Postgres devolvería un 500 en vez del 404 que corresponde.
+    let consultado = false;
+    handlers["conversation_threads"] = () => {
+      consultado = true;
+      return { data: null, error: null };
+    };
+
+    await expect(getThreadWithComments("../../etc/passwd", "viewer")).resolves.toBeNull();
+    await expect(getThreadWithComments("", "viewer")).resolves.toBeNull();
+    expect(consultado).toBe(false);
+  });
+
   it("devuelve null si la query del hilo da error", async () => {
     handlers["conversation_threads"] = () => ({ data: null, error: { message: "db down" } });
 
-    const result = await getThreadWithComments("t404", "viewer");
+    const result = await getThreadWithComments("hilo-9b1c2d3e", "viewer");
     expect(result).toBeNull();
   });
 
   it("devuelve null si el hilo no existe (o RLS lo oculta): data null sin error", async () => {
     handlers["conversation_threads"] = () => ({ data: null, error: null });
 
-    const result = await getThreadWithComments("t404", "viewer");
+    const result = await getThreadWithComments("hilo-9b1c2d3e", "viewer");
     expect(result).toBeNull();
   });
 

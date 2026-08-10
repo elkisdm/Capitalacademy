@@ -121,6 +121,26 @@
 | `lib/email/recording-available.ts` | Correo "grabación disponible" al publicarse la repetición de una clase en vivo (todo programa salvo CAP-CI) | — | — |
 | `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI), `attendance-warning` (alerta de inasistencias, brandeada por entorno) | — | 0013 |
 
+## Clases en vivo (LiveKit)
+
+| Path | Responsabilidad | Rutas / entrypoints clave | ADR |
+|------|-----------------|---------------------------|-----|
+| `infra/livekit/` | Imagen del servidor LiveKit autoalojado en Railway (Dockerfile + entrypoint que arma la config). El medio va por UDP; NO fijar `node_ip` a la IP del TCP Proxy | — | 0031 |
+| `lib/livekit/config.ts` | Credenciales (`LIVEKIT_URL/API_KEY/API_SECRET`) con error tipado que nombra la variable faltante → 503 | — | 0031 |
+| `lib/livekit/token.ts` | Firma **pura** del JWT HS256 de acceso (`node:crypto`, sin SDK). El token ES la autorización: LiveKit no consulta nada más | — | 0031 |
+| `lib/livekit/access.ts` | Decisión **pura** de acceso a la sala: modalidad en vivo, cohorte, matrícula/staff, ventana (−30/+120 min) y grants. La sala se deriva del id de sesión, nunca del cliente | — | 0031 |
+| `app/api/classroom/clase/[sessionId]/acceso/route.ts` | Sala de espera (0091): pedir entrar, listar pendientes y aprobar/rechazar. Quien espera NO recibe token ni entra a la sala hasta que el docente decide | `GET/POST /api/classroom/clase/[sessionId]/acceso` | 0031 |
+| `app/api/classroom/clase/[sessionId]/moderar/route.ts` | Silenciar o sacar a alguien de la sala. Re-verifica contra la base que quien pide es staff de ESA cohorte —no basta el `roomAdmin` del token— y actúa con una credencial de servicio de 1 minuto acotada a esa sala | `POST /api/classroom/clase/[sessionId]/moderar` | 0031 |
+| `app/api/classroom/clase/[sessionId]/token/route.ts` | Emite el token del participante. Deriva cohorte y sala de la sesión; el nombre visible sale del perfil. 10/min por usuario | `POST /api/classroom/clase/[sessionId]/token` | 0031 |
+| `lib/livekit/room-state.ts` | Lógica **pura** de la pantalla: mensajes por estado de conexión y traducción de los rechazos del token | — | 0031 |
+| `components/classroom/live/moderation-panel.tsx` · `aplicar-eleccion.tsx` | Panel de moderación del docente (superpuesto al prefab, que no tiene dónde colgar acciones) y aplicación de las elecciones de la antesala DESPUÉS de conectar, para que un permiso denegado no tumbe la conexión | — | 0031 |
+| `lib/livekit/moderation.ts` | Lógica **pura** del panel: etiquetas, confirmación de sacar y orden de la lista (primero quien tiene el micrófono abierto) | — | 0031 |
+| `components/classroom/live/live-class-room.tsx` | Sala embebida del alumno. El interior lo pone `<VideoConference />` de `@livekit/components-react` (pantalla compartida, chat, grilla paginada, dispositivos); tematizado con `.ca-live-room` en `globals.css`. El token se pide al pulsar "Entrar", no al montar | en `/classroom/[cohortSlug]/clase/[sessionId]` | 0031 |
+| `lib/security/csp.ts` | CSP y Permissions-Policy del sitio, fuera de `next.config.ts` para poder testearlos: un origen que falta no rompe el build ni los tests, solo la función en producción | — | 0031 |
+| `app/sala/[code]/page.tsx` | Sala en pantalla COMPLETA, fuera del grupo `(classroom)`: sin barra lateral, como una videollamada. La URL usa el código legible | `/sala/[code]` | 0031 |
+| `lib/classroom/ref.ts` | `resolveRef`: decide si lo que llega por la URL es slug legible o UUID, y con qué columna buscar. Lo usan docente, hilo y evaluación (0090); devolver `null` ante basura evita un 500 de Postgres donde corresponde un 404 | — | — |
+| `lib/livekit/meeting-code.ts` | Código legible de reunión (formato Meet `abc-defg-hij`, migración 0089) y `parseSessionRef`, que acepta código o UUID para no romper los enlaces ya enviados por correo | — | 0031 |
+
 ## Asistencia (QR)
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
@@ -267,7 +287,7 @@
 | `components/admin/instructor-link-account.tsx` | Selector con el que operaciones enlaza una ficha a una cuenta (candidatos: quien tenga rol docente/asistente en alguna cohorte) | en `/admin/docentes` | 0028 |
 | `app/(docente)/docente/perfil/page.tsx` · `app/api/docente/perfil/route.ts` | El docente edita SU propia ficha. Resuelve siempre por `instructors.profile_id = auth.uid()`, nunca por un id de la URL; escribe con service_role para acotar las columnas editables sin abrir una policy | `/docente/perfil`, `PATCH /api/docente/perfil` | 0028 |
 | `lib/instructors/patch.ts` | Validación y normalización compartida por las dos rutas que editan el perfil docente: fija qué campos son editables (nunca identidad ni estado) | — | 0028 |
-| `app/(admin)/admin/actividad/` · `lib/admin/actividad-queries.ts` | Panel de actividad por cohorte: tiempo con la plataforma abierta, días activos e inactividad. La última fecha se busca en TODO el historial (no solo en la ventana del rango) y la lectura va paginada para no truncarse en silencio | `/admin/actividad` | 0029 |
+| `app/(admin)/admin/actividad/` · `lib/admin/actividad-queries.ts` | Panel de actividad por cohorte: tiempo con la plataforma abierta, días activos e inactividad. La última fecha se busca en TODO el historial (no solo en la ventana del rango), la lectura va paginada para no truncarse en silencio y las matrículas de staff (`system_role` ops/admin) quedan fuera del roster y de los promedios | `/admin/actividad` | 0029 |
 | `app/(admin)/admin/cohorts/[cohortId]/` | Detalle de cohorte (info, roster, accesos al calendario) | `/admin/cohorts/[cohortId]` | — |
 | `components/admin/assign-participant-modal.tsx` | Modal "Agregar participante" del detalle de cohorte: asigna profesor/asistente/alumno por rol (y módulo si aplica) | en `/admin/cohorts/[cohortId]` | — |
 | `app/(admin)/admin/calendario/` | Calendario mensual read-only de todas las sesiones del entorno activo (todas las cohortes); cada sesión enlaza al editor de la cohorte | `/admin/calendario` | — |
@@ -303,7 +323,7 @@
 | `lib/admin/active-env.ts` · `env-actions.ts` | Entorno activo (program_id) + modo de vista (admin/alumno) del staff, en cookies; `resolveProgramScope` (precedencia `?program` > cookie) y server actions `setActiveEnv`/`setViewMode` | — | — |
 | `components/admin/env-switcher.tsx` | Selector global de entorno + toggle "Ver como Admin/Alumno" (en el sidebar, solo staff) | — | — |
 | `lib/admin/session-module.ts` | Valida que el módulo de una sesión pertenezca al programa de la cohorte (POST/PATCH de sesiones) | — | — |
-| `lib/auth/authorize-admin.ts` · `roles.ts` | Autorización admin/staff unificada, modelo de roles y `requireSessionStaff` (gate por-sesión: staff o docente/asistente de la cohorte de esa sesión) | — | 0004, 0013 |
+| `lib/auth/authorize-admin.ts` | Autorización admin/staff unificada y `requireSessionStaff` (gate por-sesión: staff o docente/asistente de la cohorte de esa sesión). El modelo de roles NO se declara acá: los enums `user_role`/`system_role` salen de `lib/supabase/types.ts`, generado desde la base | — | 0004, 0013 |
 | `lib/auth/redirects.ts` | Saneamiento del `next` post-autenticación (`safeNextPath`, anti open-redirect) y origen canónico de los enlaces; compartido por `/auth/confirm`, login y set-password | — | — |
 
 ## Landing (público)

@@ -517,3 +517,18 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 }
 .ca-prose th { background: var(--color-ca-bg-soft); font-weight: 700; }
 .ca-prose strong { font-weight: 800; }
+
+/* === Sala de clase en vivo (LiveKit, ADR-0031) =============================
+   `<VideoConference />` trae su propia hoja de estilos, pensada para una sala
+   oscura tipo Meet. Estas variables la repintan con la marca para que no se
+   sienta una app ajena incrustada: el acento pasa a ser el violeta de Capital
+   Academy y el botón de colgar mantiene el rojo, que es un código universal y
+   no conviene tocar. Solo aplica dentro de .ca-live-room. */
+.ca-live-room {
+  --lk-accent-bg: var(--color-ca-violet);
+  --lk-accent-fg: #ffffff;
+  --lk-control-active-bg: var(--color-ca-violet);
+  --lk-control-active-hover-bg: var(--color-ca-violet-deep);
+  --lk-border-radius: 12px;
+  --lk-connection-excellent: var(--color-ca-lime);
+}

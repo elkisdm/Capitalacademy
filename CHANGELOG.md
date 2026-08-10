@@ -8,6 +8,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Las clases en vivo ahora tienen sala de espera: alguien con cuenta en la plataforma pero sin matrícula en esa cohorte puede pedirle al profesor que lo deje entrar, y el profesor lo acepta o lo rechaza desde su panel. Quien está matriculado entra directo, como siempre (`2370d1a`)
+- Antes de entrar a una clase en vivo ahora hay una pantalla para revisar cámara y micrófono y elegir qué dispositivo usar. Y durante la clase el profesor tiene un panel de participantes desde donde puede silenciar a quien esté interrumpiendo o sacarlo de la sala (`b275de6`, `1e72ce5`)
+- La clase en vivo ahora se abre en pantalla completa, como una videollamada, y su enlace es un código corto que se puede dictar por teléfono (`axr-hmwk-ipr`) en vez de la cadena larga de letras y números que había antes. Los enlaces ya enviados por correo siguen funcionando (`82cf248`)
+- Las clases en vivo ahora ocurren dentro de la plataforma: el alumno entra desde la pantalla de su clase con micrófono y cámara propios, el profesor puede compartir pantalla, hay chat durante la clase, y la grilla pagina cuando hay muchos participantes. El enlace externo (Zoom/Meet) queda como respaldo para las clases ya creadas con uno (`be5ed5a`, `6657e28`, `ad02288`)
 - Los profesores ahora editan su propio perfil público desde "Mi perfil" en su panel, sin depender de operaciones. Para que funcione, operaciones enlaza antes cada ficha de docente con su cuenta desde la sección Docentes (los profesores que no estén enlazados ven un aviso que les indica pedirlo)
 - Los alumnos ahora pueden entrar al perfil de su profesor: el nombre que aparece en el calendario, en la ficha de la clase, en el módulo y en la lección se volvió un enlace que lleva a una pantalla con su foto, su cargo, su reseña y sus redes (LinkedIn, Instagram y sitio web) (`ded15d0`)
 - El panel estrena la sección Docentes (`/admin/docentes`): dirección y operaciones ya pueden escribir el cargo, la reseña y las redes de cada profesor sin depender de que alguien lo cargue por base de datos (`45629be`)
@@ -49,6 +53,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Un profesor con ficha enlazada ya entra a su panel y a su perfil aunque no esté asignado como docente de ninguna cohorte: antes el acceso se decidía solo por el rol de cohorte y quedaba fuera (`0fbb823`)
 - Al enlazar una ficha de docente con una cuenta, esa cuenta ya no desaparece del selector: seguía apareciendo como disponible o se perdía de la lista según el caso (`07e6f2e`)
 - La sección Actividad del panel volvió a abrir: fallaba al cargar por una constante que se importaba desde un módulo de cliente (`aa01699`)
+- La analítica de visitas del sitio vuelve a registrar: el script estaba bloqueado por la política de seguridad del navegador desde que esa política existe, sin dar ningún error visible (`1e72ce5`)
+- La sección Actividad ya no cuenta al equipo como alumnado: las cuentas de dirección y operaciones que están matriculadas para ver el aula desaparecen del listado y dejan de alterar los promedios y el conteo de inactivos de la cohorte (`962d41c`)
 - El calendario ya no esconde clases: los días del mes vecino que aparecen en la primera y la última semana de la grilla ahora muestran sus clases. Antes salían vacíos aunque el panel de abajo sí las listara — por eso el sábado 1 de agosto, que tiene dos clases del Diplomado, no se veía desde la vista de julio (`0ef6069`)
 - Una clase con video ya no se puede marcar como completada de un clic sin verla: el progreso de un video se registra solo mirándolo. Las lecciones sin video (lectura, actividad, material) conservan su botón para marcarlas listas (`7ccfdec`)
 - Operaciones vuelve a poder administrar la ficha de los instructores: el permiso de escritura consultaba una columna de rol antigua que ya no refleja los roles reales de las cuentas (`4f68fc3`)
@@ -65,6 +71,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - las guías de quizzes, examen final y certificación ahora describen cómo funciona la plataforma hoy: las notas de los quizzes por clase se publican solas y cuentan para el promedio aunque no certifiquen, las alternativas llegan hasta la F, y los certificados viven en su propia sección (`f2bb309`, `5223ae1`)
 
 ### Changed
+- Las direcciones del aula ya no muestran códigos internos ilegibles: el perfil de un profesor es `/docente/paola-vicuna`, un tema del foro y un quiz llevan su propio nombre en la dirección. Los enlaces antiguos que ya circulan por correo siguen funcionando (`7d9aad6`)
 - El menú lateral del alumno es más simple ("Inicio", programas colapsados) (`12e3145`)
 - El classroom carga más rápido en cada navegación: se eliminaron validaciones de sesión y consultas a la base de datos que se repetían en cada pantalla, y las que quedan se resuelven en paralelo (`b09a5d4`)
 - La pantalla de una conversación carga más liviana y rápida: dejó de enviarse el procesador de texto al navegador y los avatares se optimizan automáticamente (`db2c32d`)

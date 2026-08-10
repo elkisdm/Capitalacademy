@@ -105,6 +105,8 @@ export type ClassSession = Tables<"class_sessions"> & {
 
 export type SessionInstructor = {
   id: string;
+  /** Slug legible para la URL del docente (0090). */
+  slug?: string | null;
   full_name: string;
   photo_url: string | null;
 };
@@ -127,7 +129,7 @@ export type SessionResource = {
 };
 
 /** Referencia mínima al quiz activo de una clase en vivo (scope='session'). */
-export type SessionEvaluationRef = { id: string; title: string };
+export type SessionEvaluationRef = { id: string; title: string; slug?: string | null };
 
 export type ScheduleSession = ClassSession & {
   teacher: SessionInstructor | null;

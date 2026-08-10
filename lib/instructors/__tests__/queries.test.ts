@@ -65,6 +65,24 @@ describe("getInstructorProfile", () => {
     await expect(getInstructorProfile(ID_A)).resolves.toEqual(ROW);
   });
 
+  it("busca por SLUG cuando la URL trae el slug legible", async () => {
+    // Es el camino por defecto desde la 0090: /docente/paola-vicuna.
+    calls.length = 0;
+    instructorsResult = { data: ROW, error: null };
+
+    await expect(getInstructorProfile("paola-vicuna")).resolves.toEqual(ROW);
+    expect(calls.some((c) => c.method === "eq" && c.args[0] === "slug")).toBe(true);
+  });
+
+  it("sigue buscando por id cuando la URL trae el UUID", async () => {
+    // Los enlaces con UUID viven en correos ya enviados: no se pueden romper.
+    calls.length = 0;
+    instructorsResult = { data: ROW, error: null };
+
+    await expect(getInstructorProfile(ID_A)).resolves.toEqual(ROW);
+    expect(calls.some((c) => c.method === "eq" && c.args[0] === "id")).toBe(true);
+  });
+
   it("devuelve null cuando la RLS no devuelve fila (otro programa o id inexistente)", async () => {
     instructorsResult = { data: null, error: null };
     await expect(getInstructorProfile(ID_A)).resolves.toBeNull();

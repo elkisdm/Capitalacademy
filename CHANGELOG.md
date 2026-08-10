@@ -46,6 +46,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - los profesores ahora pueden descargar toda su guía de ayuda en un PDF, siempre al día porque se genera desde el mismo contenido del Centro de Ayuda (`5b656f2`)
 
 ### Fixed
+- Un profesor con ficha enlazada ya entra a su panel y a su perfil aunque no esté asignado como docente de ninguna cohorte: antes el acceso se decidía solo por el rol de cohorte y quedaba fuera (`0fbb823`)
+- Al enlazar una ficha de docente con una cuenta, esa cuenta ya no desaparece del selector: seguía apareciendo como disponible o se perdía de la lista según el caso (`07e6f2e`)
+- La sección Actividad del panel volvió a abrir: fallaba al cargar por una constante que se importaba desde un módulo de cliente (`aa01699`)
 - El calendario ya no esconde clases: los días del mes vecino que aparecen en la primera y la última semana de la grilla ahora muestran sus clases. Antes salían vacíos aunque el panel de abajo sí las listara — por eso el sábado 1 de agosto, que tiene dos clases del Diplomado, no se veía desde la vista de julio (`0ef6069`)
 - Una clase con video ya no se puede marcar como completada de un clic sin verla: el progreso de un video se registra solo mirándolo. Las lecciones sin video (lectura, actividad, material) conservan su botón para marcarlas listas (`7ccfdec`)
 - Operaciones vuelve a poder administrar la ficha de los instructores: el permiso de escritura consultaba una columna de rol antigua que ya no refleja los roles reales de las cuentas (`4f68fc3`)

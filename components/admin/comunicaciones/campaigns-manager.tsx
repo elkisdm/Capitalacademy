@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Mail, Plus, Send, Trash2, TriangleAlert, Users } from "lucide-react";
+import { Loader2, Mail, Plus, Send, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import { Input, Select, Textarea } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/admin/toast";
 import { AUDIENCE_STATUSES } from "@/lib/campaigns/audience";
+import { RecipientPicker, type AudiencePerson } from "./recipient-picker";
 
 type Campaign = {
   id: string;
@@ -21,6 +22,7 @@ type Campaign = {
   cta_url: string | null;
   audience_status: string[];
   audience_segment: string | null;
+  audience_student_ids: string[] | null;
   status: string;
   recipients_count: number;
   sent_count: number;
@@ -65,6 +67,8 @@ type DraftState = {
   ctaLabel: string;
   ctaUrl: string;
   audienceStatus: string[];
+  /** null = toda la audiencia del filtro; lista = solo esas personas. */
+  audienceStudentIds: string[] | null;
 };
 
 const EMPTY_DRAFT: DraftState = {
@@ -75,6 +79,7 @@ const EMPTY_DRAFT: DraftState = {
   ctaLabel: "",
   ctaUrl: "",
   audienceStatus: ["active"],
+  audienceStudentIds: null,
 };
 
 export function CampaignsManager({ programs, cohorts, initialProgramId }: Props) {
@@ -97,6 +102,7 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
 
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [audienceLoading, setAudienceLoading] = useState(false);
+  const [audiencePeople, setAudiencePeople] = useState<AudiencePerson[]>([]);
 
   const programCohorts = useMemo(
     () => cohorts.filter((c) => c.program_id === programId),
@@ -137,13 +143,23 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAudienceLoading(true);
-    const params = new URLSearchParams({ programId, status: draft.audienceStatus.join(",") });
+    const params = new URLSearchParams({
+      programId,
+      status: draft.audienceStatus.join(","),
+      detail: "full",
+    });
     if (draft.cohortId) params.set("cohortId", draft.cohortId);
 
     fetch(`/api/admin/campaigns/audience?${params}`, { signal: controller.signal })
       .then((r) => r.json())
-      .then((d) => setAudienceCount(typeof d.count === "number" ? d.count : null))
-      .catch(() => setAudienceCount(null))
+      .then((d) => {
+        setAudienceCount(typeof d.count === "number" ? d.count : null);
+        setAudiencePeople(Array.isArray(d.recipients) ? d.recipients : []);
+      })
+      .catch(() => {
+        setAudienceCount(null);
+        setAudiencePeople([]);
+      })
       .finally(() => setAudienceLoading(false));
 
     return () => controller.abort();
@@ -153,6 +169,7 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
     setEditingId(null);
     setDraft(EMPTY_DRAFT);
     setAudienceCount(null);
+    setAudiencePeople([]);
     setEditorOpen(true);
   }
 
@@ -166,8 +183,10 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
       ctaLabel: campaign.cta_label ?? "",
       ctaUrl: campaign.cta_url ?? "",
       audienceStatus: campaign.audience_status ?? ["active"],
+      audienceStudentIds: campaign.audience_student_ids ?? null,
     });
     setAudienceCount(null);
+    setAudiencePeople([]);
     setEditorOpen(true);
   }
 
@@ -177,11 +196,24 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
         ? d.audienceStatus.filter((s) => s !== status)
         : [...d.audienceStatus, status];
       // Nunca dejar la audiencia sin ningún estado: enviaría a cero personas.
-      return { ...d, audienceStatus: next.length ? next : d.audienceStatus };
+      if (!next.length) return d;
+      // Cambiar el filtro cambia el universo de personas, así que la selección
+      // hecha sobre el universo anterior deja de tener sentido y se descarta.
+      // Conservarla mostraría una lista nueva con todo desmarcado.
+      return { ...d, audienceStatus: next, audienceStudentIds: null };
     });
   }
 
   async function save(): Promise<string | null> {
+    // Se guarda la selección podada a quienes siguen en la audiencia. Y si
+    // quedaron todos marcados se guarda `null`: "todos" y "esta lista que hoy
+    // es todos" se comportan distinto cuando la cohorte cambia, y lo que se ve
+    // en pantalla es "todos".
+    const inAudience = new Set(audiencePeople.map((p) => p.studentId));
+    const picked = draft.audienceStudentIds?.filter((id) => inAudience.has(id)) ?? null;
+    const audienceStudentIds =
+      picked === null || picked.length === audiencePeople.length ? null : picked;
+
     const payload = {
       programId,
       cohortId: draft.cohortId || null,
@@ -191,6 +223,7 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
       ctaLabel: draft.ctaLabel.trim() || null,
       ctaUrl: draft.ctaUrl.trim() || null,
       audienceStatus: draft.audienceStatus,
+      audienceStudentIds,
     };
 
     setSaving(true);
@@ -286,7 +319,12 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
     }
   }
 
-  const canSave = draft.subject.trim().length > 0 && draft.bodyMd.trim().length > 0;
+  // Una selección manual vacía no se guarda como "todos": desmarcar a todo el
+  // mundo y terminar escribiéndole a la cohorte entera sería exactamente lo
+  // contrario de lo que pidió quien desmarcó.
+  const nadieSeleccionado = draft.audienceStudentIds?.length === 0;
+  const canSave =
+    draft.subject.trim().length > 0 && draft.bodyMd.trim().length > 0 && !nadieSeleccionado;
 
   return (
     <div className="space-y-5">
@@ -348,7 +386,9 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
                   <p className="mt-0.5 text-[12px] text-ca-ink-soft">
                     {campaign.status === "sent" || campaign.sent_count > 0
                       ? `${campaign.sent_count} de ${campaign.recipients_count} entregados`
-                      : `Audiencia: ${(campaign.audience_status ?? []).map((s) => ENROLLMENT_LABEL[s] ?? s).join(", ")}`}
+                      : campaign.audience_student_ids?.length
+                        ? `Audiencia: ${campaign.audience_student_ids.length} personas seleccionadas a mano`
+                        : `Audiencia: ${(campaign.audience_status ?? []).map((s) => ENROLLMENT_LABEL[s] ?? s).join(", ")}`}
                   </p>
                   {campaign.error && (
                     <p className="mt-2 flex items-start gap-1.5 text-[12px] text-destructive">
@@ -478,7 +518,11 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
               </span>
               <Select
                 value={draft.cohortId}
-                onChange={(e) => setDraft({ ...draft, cohortId: e.target.value })}
+                onChange={(e) =>
+                  // Igual que con el estado: otra cohorte es otro universo, la
+                  // selección manual anterior se descarta.
+                  setDraft({ ...draft, cohortId: e.target.value, audienceStudentIds: null })
+                }
               >
                 <option value="">Todas las cohortes</option>
                 {programCohorts.map((c) => (
@@ -516,22 +560,31 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl bg-ca-bg-soft px-4 py-3">
-            <Users size={16} className="text-ca-ink-soft" />
-            <p className="text-[13px] text-ca-ink">
-              {audienceLoading ? (
-                "Calculando destinatarios…"
-              ) : audienceCount === null ? (
-                "No se pudo calcular la audiencia"
-              ) : (
-                <>
-                  Este comunicado llegaría a{" "}
-                  <strong className="font-black">{audienceCount}</strong>{" "}
-                  {audienceCount === 1 ? "persona" : "personas"}
-                </>
-              )}
-            </p>
+          <div>
+            <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-ca-ink-soft">
+              Destinatarios
+            </span>
+            {audienceCount === null && !audienceLoading ? (
+              <p className="rounded-xl bg-ca-bg-soft px-4 py-3 text-[13px] text-ca-ink-soft">
+                No se pudo calcular la audiencia
+              </p>
+            ) : (
+              <RecipientPicker
+                people={audiencePeople}
+                loading={audienceLoading}
+                selected={draft.audienceStudentIds}
+                onChange={(next) => setDraft((d) => ({ ...d, audienceStudentIds: next }))}
+                disabled={saving}
+              />
+            )}
           </div>
+
+          {nadieSeleccionado && (
+            <p className="flex items-center gap-2 rounded-xl bg-ca-destructive/10 px-4 py-3 text-[13px] text-ca-destructive">
+              <TriangleAlert size={15} />
+              No hay ningún destinatario marcado. Marca al menos a una persona para guardar.
+            </p>
+          )}
 
           <div className="flex flex-wrap justify-end gap-2 pt-1">
             <Button variant="ghost" onClick={() => setEditorOpen(false)}>
@@ -562,9 +615,22 @@ export function CampaignsManager({ programs, cohorts, initialProgramId }: Props)
               ¿Enviar este comunicado?
             </h2>
             <p className="text-[14px] leading-relaxed text-ca-ink-soft">
-              Se enviará <strong className="text-ca-ink">“{confirmSend.subject}”</strong> a los
-              alumnos de {confirmSend.cohorts?.name ?? "todas las cohortes"} de este entorno. Un
-              correo enviado no se puede deshacer.
+              Se enviará <strong className="text-ca-ink">“{confirmSend.subject}”</strong>{" "}
+              {confirmSend.audience_student_ids?.length ? (
+                <>
+                  a las{" "}
+                  <strong className="text-ca-ink">
+                    {confirmSend.audience_student_ids.length} personas
+                  </strong>{" "}
+                  que seleccionaste
+                </>
+              ) : (
+                <>
+                  a los alumnos de {confirmSend.cohorts?.name ?? "todas las cohortes"} de este
+                  entorno
+                </>
+              )}
+              . Un correo enviado no se puede deshacer.
             </p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirmSend(null)}>

@@ -85,6 +85,9 @@ const patchSchema = z
     ctaUrl: z.string().trim().url("El enlace del botón debe ser una URL válida").nullable().optional(),
     audienceStatus: z.array(statusEnum).min(1).optional(),
     audienceSegment: z.string().trim().max(60).nullable().optional(),
+    // Selección manual (0092). `null` explícito quita la selección y vuelve a
+    // "toda la audiencia del filtro"; una lista vacía no es un caso válido.
+    audienceStudentIds: z.array(uuidLike).min(1).nullable().optional(),
   })
   // El botón se actualiza COMPLETO o no se toca. Mandar solo un lado dejaba
   // pasar la validación (el otro queda `undefined`) y la incoherencia la
@@ -167,6 +170,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if ("ctaUrl" in v) patch.cta_url = v.ctaUrl ?? null;
   if (v.audienceStatus !== undefined) patch.audience_status = v.audienceStatus;
   if ("audienceSegment" in v) patch.audience_segment = v.audienceSegment ?? null;
+  if ("audienceStudentIds" in v) patch.audience_student_ids = v.audienceStudentIds ?? null;
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nada que actualizar" }, { status: 422 });

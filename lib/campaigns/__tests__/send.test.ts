@@ -13,6 +13,7 @@ type Campaign = {
   cta_url: string | null;
   audience_status: string[] | null;
   audience_segment: string | null;
+  audience_student_ids: string[] | null;
 };
 
 type State = {
@@ -116,6 +117,7 @@ const CAMPAIGN: Campaign = {
   cta_url: null,
   audience_status: ["active"],
   audience_segment: null,
+  audience_student_ids: null,
 };
 
 function enrollment(id: string, email: string) {
@@ -150,6 +152,43 @@ describe("sendEmailCampaign — camino feliz", () => {
     expect(terminal.recipients_count).toBe(3);
     expect(terminal.sent_count).toBe(3);
     expect(terminal.sent_at).toBeTruthy();
+  });
+
+  // Selección manual de destinatarios (0092), de punta a punta.
+  it("con destinatarios seleccionados escribe solo a esos", async () => {
+    state.claimed = { ...CAMPAIGN, audience_student_ids: ["s1", "s3"] };
+    sendEmailBatchSpy.mockResolvedValue({ sent: ["a@x.cl", "c@x.cl"], failed: [] });
+
+    const result = await sendEmailCampaign(CAMPAIGN_ID);
+
+    const [messages] = sendEmailBatchSpy.mock.calls[0];
+    expect((messages as Array<{ to: string | string[] }>).map((m) => m.to)).toEqual([
+      "a@x.cl",
+      "c@x.cl",
+    ]);
+    expect(result).toMatchObject({ total: 2 });
+  });
+
+  // La garantía que sostiene toda la feature: el filtro corre primero. Alguien
+  // elegido a mano que ya no está matriculado NO recibe el correo.
+  it("no le escribe a quien fue elegido pero ya salió de la audiencia", async () => {
+    state.claimed = { ...CAMPAIGN, audience_student_ids: ["s1", "s-retirado"] };
+    sendEmailBatchSpy.mockResolvedValue({ sent: ["a@x.cl"], failed: [] });
+
+    await sendEmailCampaign(CAMPAIGN_ID);
+
+    const [messages] = sendEmailBatchSpy.mock.calls[0];
+    expect((messages as Array<{ to: string | string[] }>).map((m) => m.to)).toEqual(["a@x.cl"]);
+  });
+
+  it("falla en vez de enviar si ninguno de los elegidos sigue en la audiencia", async () => {
+    state.claimed = { ...CAMPAIGN, audience_student_ids: ["s-fantasma"] };
+
+    const result = await sendEmailCampaign(CAMPAIGN_ID);
+
+    expect(result.status).toBe("skipped");
+    expect(sendEmailBatchSpy).not.toHaveBeenCalled();
+    expect(statusUpdates.at(-1)!.status).toBe("failed");
   });
 
   it("despacha por lote, nunca uno a uno", async () => {

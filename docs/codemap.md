@@ -54,13 +54,15 @@
 | `lib/email/layout.ts` | Shell de correo compartido (`emailShell`/`emailButton`/`emailGreeting`), con acento por entorno desde `lib/programs/registry.ts`. Las 4 plantillas previas siguen con su `shell()` propio | — | 0026 |
 | `lib/email/markdown.ts` | Subset Markdown → HTML email-safe con estilos inline (+ versión texto); escapa HTML y limita enlaces a http/https/mailto | — | 0026 |
 | `lib/email/campaign.ts` | `buildCampaignEmail`: arma el comunicado (saludo, cuerpo Markdown, CTA opcional) sin enviarlo | — | 0026 |
-| `lib/campaigns/audience.ts` | `resolveAudience`: alumnos por programa/cohorte/estado/segmento; excluye staff (`profiles.role`) y deduplica por correo | — | 0026 |
+| `lib/campaigns/audience.ts` | `resolveAudience`: alumnos por programa/cohorte/estado/segmento; excluye staff (`profiles.role`), deduplica por correo e intersecta con la selección manual (`studentIds`), que nunca salta el filtro | — | 0026 |
 | `lib/campaigns/send.ts` | `sendEmailCampaign`: reclamo atómico → bitácora → `sendEmailBatch` → estado terminal solo sin fallos | — | 0026, 0020 |
 | `app/api/admin/campaigns/route.ts` · `[campaignId]/route.ts` | CRUD de campañas; PATCH/DELETE dan 409 sobre una campaña ya enviada | `GET/POST/PATCH/DELETE /api/admin/campaigns` | 0026 |
 | `app/api/admin/campaigns/[campaignId]/send/route.ts` | Dispara el envío real (idempotente por bitácora) | `POST /api/admin/campaigns/[id]/send` | 0026 |
 | `app/api/admin/campaigns/[campaignId]/test/route.ts` | Correo de prueba a la casilla del equipo (`CAMPAIGN_TEST_EMAIL`) + copia al autor; destinos limitados a cuentas ops/admin (no es un relay) y omite dominios sin MX (`capitalacademy.cl`) | `POST /api/admin/campaigns/[id]/test` | 0026 |
-| `app/api/admin/campaigns/audience/route.ts` | Conteo de destinatarios previo al envío + muestra corta | `GET /api/admin/campaigns/audience` | 0026 |
+| `app/api/admin/campaigns/audience/route.ts` | Conteo de destinatarios previo al envío + muestra corta; con `detail=full` devuelve la lista completa para elegir a mano | `GET /api/admin/campaigns/audience` | 0026 |
 | `app/(admin)/admin/comunicaciones/` · `components/admin/comunicaciones/campaigns-manager.tsx` | Panel: lista, editor Markdown, conteo de audiencia en vivo, prueba y confirmación de envío | `/admin/comunicaciones` | 0026 |
+| `components/admin/comunicaciones/recipient-picker.tsx` | Lista de destinatarios con casillas y buscador; `null` (sin selección) es distinto de "todos marcados" | en `/admin/comunicaciones` | 0026 |
+| `db/migrations/0092_audiencia_seleccion_manual.sql` | `email_campaigns.audience_student_ids`: selección manual de destinatarios; null = toda la audiencia del filtro | — | 0026 |
 
 ## Encuestas (federadas con capital-admin/hclp)
 

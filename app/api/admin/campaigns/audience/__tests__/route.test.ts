@@ -95,6 +95,28 @@ describe("GET /api/admin/campaigns/audience", () => {
     });
   });
 
+  // La lista completa solo con detail=full: la pantalla que deja marcar
+  // destinatarios uno por uno la necesita, el resto de las llamadas no (0092).
+  it("no incluye la lista completa salvo que se pida", async () => {
+    const body = await (await GET(req(`?programId=${PROGRAM_ID}`))).json();
+    expect(body.recipients).toBeUndefined();
+  });
+
+  it("con detail=full devuelve la lista completa de destinatarios", async () => {
+    const body = await (await GET(req(`?programId=${PROGRAM_ID}&detail=full`))).json();
+
+    expect(body.count).toBe(2);
+    expect(body.recipients).toEqual([
+      { studentId: "s1", email: "a@x.cl", fullName: "Ana Pérez" },
+      { studentId: "s2", email: "b@x.cl", fullName: "" },
+    ]);
+  });
+
+  it("un detail distinto de 'full' no abre la lista", async () => {
+    const body = await (await GET(req(`?programId=${PROGRAM_ID}&detail=1`))).json();
+    expect(body.recipients).toBeUndefined();
+  });
+
   it("traduce un fallo de la audiencia a 500", async () => {
     resolveAudienceSpy.mockRejectedValue(new Error("boom"));
     expect((await GET(req(`?programId=${PROGRAM_ID}`))).status).toBe(500);

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- En Comunicaciones ya se puede elegir a quién se le escribe: además de filtrar por cohorte y estado de matrícula, ahora aparece la lista de esas personas con casillas para marcar o desmarcar una por una, con buscador por nombre o correo. Se envía a quienes quedaron marcados, y quien se retiró de la cohorte entremedio no lo recibe aunque estuviera en la lista (`a494c38`)
 - Las clases en vivo ahora tienen sala de espera: alguien con cuenta en la plataforma pero sin matrícula en esa cohorte puede pedirle al profesor que lo deje entrar, y el profesor lo acepta o lo rechaza desde su panel. Quien está matriculado entra directo, como siempre (`2370d1a`)
 - Antes de entrar a una clase en vivo ahora hay una pantalla para revisar cámara y micrófono y elegir qué dispositivo usar. Y durante la clase el profesor tiene un panel de participantes desde donde puede silenciar a quien esté interrumpiendo o sacarlo de la sala (`b275de6`, `1e72ce5`)
 - La clase en vivo ahora se abre en pantalla completa, como una videollamada, y su enlace es un código corto que se puede dictar por teléfono (`axr-hmwk-ipr`) en vez de la cadena larga de letras y números que había antes. Los enlaces ya enviados por correo siguen funcionando (`82cf248`)

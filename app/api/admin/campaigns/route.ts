@@ -61,6 +61,10 @@ const createSchema = z
     ctaUrl: z.string().trim().url("El enlace del botón debe ser una URL válida").nullable().optional(),
     audienceStatus: z.array(statusEnum).min(1).optional(),
     audienceSegment: z.string().trim().max(60).nullable().optional(),
+    // Selección manual de destinatarios (0092). null = toda la audiencia del
+    // filtro; una lista vacía no es un caso válido (sería un envío a nadie) y
+    // el CHECK de la base la rechaza igual.
+    audienceStudentIds: z.array(uuidLike).min(1).nullable().optional(),
   })
   // Un CTA a medias renderiza un botón roto; el CHECK de la 0082 lo rechazaría
   // con un 23514 poco explicativo, así que se valida antes con un mensaje claro.
@@ -119,6 +123,7 @@ export async function POST(req: Request) {
       cta_url: v.ctaUrl ?? null,
       audience_status: v.audienceStatus ?? ["active"],
       audience_segment: v.audienceSegment ?? null,
+      audience_student_ids: v.audienceStudentIds ?? null,
       created_by: auth.user.id,
     })
     .select()

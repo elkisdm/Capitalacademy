@@ -50,10 +50,11 @@ type CampaignRow = {
   cta_url: string | null;
   audience_status: string[] | null;
   audience_segment: string | null;
+  audience_student_ids: string[] | null;
 };
 
 const CAMPAIGN_COLUMNS =
-  "id, program_id, cohort_id, subject, preheader, body_md, cta_label, cta_url, audience_status, audience_segment";
+  "id, program_id, cohort_id, subject, preheader, body_md, cta_label, cta_url, audience_status, audience_segment, audience_student_ids";
 
 export async function sendEmailCampaign(campaignId: string): Promise<CampaignSendResult> {
   const admin = createAdminClient();
@@ -102,6 +103,7 @@ export async function sendEmailCampaign(campaignId: string): Promise<CampaignSen
       cohortId: campaign.cohort_id,
       statuses: campaign.audience_status ?? ["active"],
       segment: campaign.audience_segment,
+      studentIds: campaign.audience_student_ids,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error resolviendo la audiencia";

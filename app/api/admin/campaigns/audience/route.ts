@@ -7,14 +7,20 @@ import { resolveAudience } from "@/lib/campaigns/audience";
 export const runtime = "nodejs";
 
 /**
- * GET /api/admin/campaigns/audience?programId=&cohortId=&status=active,invited&segment=
+ * GET /api/admin/campaigns/audience?programId=&cohortId=&status=active,invited&segment=&detail=full
  *
  * Cuántas personas recibirían el envío con estos filtros. Existe para que el
  * panel muestre el número ANTES de enviar: "vas a escribirle a 239 personas" es
  * la última barrera antes de un envío masivo irreversible.
  *
- * Devuelve el conteo y una muestra corta de nombres (no la lista completa: es
- * un contador, no un exportador de PII).
+ * Por defecto devuelve el conteo y una muestra corta de nombres. Con
+ * `detail=full` devuelve además la lista completa, que es lo que necesita la
+ * pantalla para dejar marcar destinatarios uno por uno (0092).
+ *
+ * Esa lista NO es una apertura de PII: la ruta ya exige `authorizeAdmin()`
+ * (`ops` o `admin`), y ese mismo rol ve el roster completo con correos en
+ * `/admin/alumnos`. Lo que antes faltaba era el dato en esta pantalla, no el
+ * permiso para verlo.
  */
 export async function GET(req: Request) {
   const auth = await authorizeAdmin();
@@ -49,6 +55,15 @@ export async function GET(req: Request) {
     return NextResponse.json({
       count: recipients.length,
       sample: recipients.slice(0, 5).map((r) => r.fullName || r.email),
+      ...(searchParams.get("detail") === "full"
+        ? {
+            recipients: recipients.map((r) => ({
+              studentId: r.studentId,
+              email: r.email,
+              fullName: r.fullName,
+            })),
+          }
+        : {}),
     });
   } catch (err) {
     console.error("Error resolving audience:", err);

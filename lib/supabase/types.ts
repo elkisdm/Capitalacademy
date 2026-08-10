@@ -1040,6 +1040,7 @@ export type Database = {
         Row: {
           audience_segment: string | null
           audience_status: string[]
+          audience_student_ids: string[] | null
           body_md: string
           cohort_id: string | null
           created_at: string
@@ -1061,6 +1062,7 @@ export type Database = {
         Insert: {
           audience_segment?: string | null
           audience_status?: string[]
+          audience_student_ids?: string[] | null
           body_md: string
           cohort_id?: string | null
           created_at?: string
@@ -1082,6 +1084,7 @@ export type Database = {
         Update: {
           audience_segment?: string | null
           audience_status?: string[]
+          audience_student_ids?: string[] | null
           body_md?: string
           cohort_id?: string | null
           created_at?: string

@@ -117,6 +117,50 @@ describe("resolveAudience", () => {
     expect(calls).toContainEqual({ method: "eq", args: ["segment", "capital_inteligente"] });
   });
 
+  // Selección manual de destinatarios (0092).
+  it("con selección manual devuelve solo a los elegidos", async () => {
+    rows = [student("s1", "ana@x.cl"), student("s2", "beto@x.cl"), student("s3", "cata@x.cl")];
+
+    const result = await resolveAudience(makeClient(), {
+      programId: "p1",
+      studentIds: ["s1", "s3"],
+    });
+
+    expect(result.map((r) => r.email)).toEqual(["ana@x.cl", "cata@x.cl"]);
+  });
+
+  // La garantía central: la selección se intersecta con el filtro. Quien fue
+  // elegido a mano pero ya no cumple el filtro NO recibe el correo.
+  it("no rescata a quien la query ya dejó fuera", async () => {
+    rows = [student("s1", "ana@x.cl")];
+
+    const result = await resolveAudience(makeClient(), {
+      programId: "p1",
+      studentIds: ["s1", "s-retirado"],
+    });
+
+    expect(result.map((r) => r.studentId)).toEqual(["s1"]);
+  });
+
+  it("una selección manual no salta el filtro de staff", async () => {
+    rows = [{ student_id: "s2", profiles: { email: "ops@x.cl", full_name: "Ops", role: "ops" } }];
+
+    const result = await resolveAudience(makeClient(), { programId: "p1", studentIds: ["s2"] });
+
+    expect(result).toEqual([]);
+  });
+
+  // null y [] significan lo mismo acá: sin selección manual, o sea toda la
+  // audiencia. La lista vacía se rechaza antes, en el endpoint y en el CHECK.
+  it("sin selección manual devuelve toda la audiencia", async () => {
+    rows = [student("s1", "ana@x.cl"), student("s2", "beto@x.cl")];
+
+    expect(await resolveAudience(makeClient(), { programId: "p1", studentIds: null })).toHaveLength(
+      2,
+    );
+    expect(await resolveAudience(makeClient(), { programId: "p1", studentIds: [] })).toHaveLength(2);
+  });
+
   it("propaga el error de la query con contexto", async () => {
     queryError = { message: "boom" };
 

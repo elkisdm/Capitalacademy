@@ -15,6 +15,10 @@
  * 2. **Dedup por correo, no por matrícula.** Una misma persona puede tener dos
  *    matrículas en el mismo programa (dos cohortes/generaciones). Sin dedup
  *    recibiría el mismo correo dos veces.
+ * 3. **La selección manual se INTERSECTA con el filtro, no lo reemplaza** (0092).
+ *    Quien fue elegido a mano pero ya no cumple el filtro —se retiró, cambió de
+ *    estado— queda fuera igual. Así una lista guardada hace dos semanas no puede
+ *    escribirle a alguien que hoy no corresponde.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -34,6 +38,11 @@ export type AudienceFilter = {
   statuses?: string[];
   /** Segmento de `enrollments.segment` (0024). null = sin filtro. */
   segment?: string | null;
+  /**
+   * Selección manual de destinatarios (0092). null/undefined = toda la audiencia
+   * del filtro. Se intersecta con el resultado del filtro, nunca lo reemplaza.
+   */
+  studentIds?: string[] | null;
 };
 
 /** Estados de matrícula que tiene sentido ofrecer en un envío. */
@@ -72,12 +81,18 @@ export async function resolveAudience(
     throw new Error(`No se pudo resolver la audiencia: ${error.message ?? "error desconocido"}`);
   }
 
+  // La selección manual se aplica en memoria y no en la query: la lista puede
+  // traer ids que ya no cumplen el filtro, y filtrar acá deja que el resto de
+  // las reglas (staff fuera, dedup por correo) sigan corriendo igual.
+  const selected = filter.studentIds?.length ? new Set(filter.studentIds) : null;
+
   const byEmail = new Map<string, CampaignRecipient>();
   for (const row of data ?? []) {
     const profile = row.profiles;
     const email = profile?.email?.trim().toLowerCase();
     if (!email) continue;
     if (profile?.role !== "student") continue;
+    if (selected && !selected.has(row.student_id)) continue;
     if (byEmail.has(email)) continue;
     byEmail.set(email, {
       studentId: row.student_id,

@@ -183,6 +183,28 @@ describe("PATCH", () => {
     expect(res.status).toBe(200);
   });
 
+  // Selección manual de destinatarios (0092).
+  it("actualiza la selección manual de destinatarios", async () => {
+    const ids = ["d0000000-0000-0000-0000-000000000001"];
+    await PATCH(patchReq({ audienceStudentIds: ids }), ctx());
+
+    expect(updateSpy).toHaveBeenCalledWith({ audience_student_ids: ids });
+  });
+
+  // Volver a "toda la audiencia" es un null explícito, no omitir el campo.
+  it("un null explícito quita la selección manual", async () => {
+    await PATCH(patchReq({ audienceStudentIds: null }), ctx());
+
+    expect(updateSpy).toHaveBeenCalledWith({ audience_student_ids: null });
+  });
+
+  it("rechaza una selección manual vacía", async () => {
+    const res = await PATCH(patchReq({ audienceStudentIds: [] }), ctx());
+
+    expect(res.status).toBe(422);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
   it("traduce un CHECK a 422", async () => {
     state.updateResult = { data: null, error: { code: "23514" } };
     expect((await PATCH(patchReq({ subject: "Nuevo" }), ctx())).status).toBe(422);

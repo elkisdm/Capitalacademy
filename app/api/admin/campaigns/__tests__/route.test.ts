@@ -38,6 +38,8 @@ const { GET, POST } = await import("@/app/api/admin/campaigns/route");
 
 const PROGRAM_ID = "a0000000-0000-0000-0000-000000000002";
 const COHORT_ID = "b0000000-0000-0000-0000-000000000004";
+const STUDENT_A = "c0000000-0000-0000-0000-000000000001";
+const STUDENT_B = "c0000000-0000-0000-0000-000000000002";
 
 const VALID = {
   programId: PROGRAM_ID,
@@ -166,6 +168,35 @@ describe("POST /api/admin/campaigns", () => {
 
   it("rechaza un estado de matrícula desconocido", async () => {
     const res = await POST(postReq({ ...VALID, audienceStatus: ["fantasma"] }));
+    expect(res.status).toBe(422);
+  });
+
+  // Selección manual de destinatarios (0092).
+  it("guarda la selección manual de destinatarios", async () => {
+    await POST(postReq({ ...VALID, audienceStudentIds: [STUDENT_A, STUDENT_B] }));
+
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ audience_student_ids: [STUDENT_A, STUDENT_B] }),
+    );
+  });
+
+  it("sin selección manual guarda null, que significa toda la audiencia", async () => {
+    await POST(postReq(VALID));
+
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ audience_student_ids: null }),
+    );
+  });
+
+  // Una lista vacía no es "todos": es un envío a nadie, y se rechaza en el borde
+  // en vez de dejar que la ambigüedad llegue al momento de enviar.
+  it("rechaza una selección manual vacía", async () => {
+    const res = await POST(postReq({ ...VALID, audienceStudentIds: [] }));
+    expect(res.status).toBe(422);
+  });
+
+  it("rechaza una selección con ids que no son UUID", async () => {
+    const res = await POST(postReq({ ...VALID, audienceStudentIds: ["no-soy-uuid"] }));
     expect(res.status).toBe(422);
   });
 

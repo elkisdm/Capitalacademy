@@ -17,9 +17,16 @@ import {
   califica,
   plazoMaximoPorEdad,
   edadDesdeAnioNacimiento,
+  matrizDividendos,
+  type Celda,
 } from "@/lib/credito/calculo";
 import { RENTA_MINIMA_CLP, TASA_ANUAL_DEFAULT } from "@/lib/credito/constants";
-import { capacidadDeCompra, creditoMaximo, type CapacidadDeCompra } from "@/lib/credito/capacidad";
+import {
+  capacidadDeCompra,
+  cargaMaxima,
+  creditoMaximo,
+  type CapacidadDeCompra,
+} from "@/lib/credito/capacidad";
 import { perfilCrediticio, type PerfilCrediticio } from "./perfil";
 import { patrimonioNeto, saldoHipotecarioVigente, type Ficha } from "./ficha";
 
@@ -43,6 +50,12 @@ export type EvaluacionAprobada = {
   edad: number;
   perfil: PerfilCrediticio;
   capacidad: CapacidadDeCompra;
+  /**
+   * La matriz de la calculadora pública (plazos × pie), calculada sobre el
+   * valor máximo estimado y con la carga escalonada del motor: fusiona las dos
+   * herramientas en una pantalla. Cada celda ya dice si la renta alcanza.
+   */
+  escenarios: Celda[][];
   /**
    * La palanca que SÍ movería el valor máximo, según qué tope está mandando.
    * Los ejes del perfil afirman hechos y no prometen efectos justamente porque
@@ -133,12 +146,22 @@ export function evaluarFicha(
     saldoHipotecarioVigente: hipotecario,
   });
 
+  const escenarios = matrizDividendos({
+    valorPropiedadUF: capacidad.valorMaximoPropiedadUF,
+    tasaAnual,
+    valorUF,
+    rentaDisponible: renta,
+    edad,
+    carga: cargaMaxima(renta),
+  });
+
   return {
     ...base,
     califica: true,
     edad,
     perfil,
     capacidad,
+    escenarios,
     palanca: PALANCA[capacidad.limitadoPor],
   };
 }

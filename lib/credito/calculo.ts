@@ -160,9 +160,15 @@ export function dividendoMensual(params: {
   return cuotaUF * valorUF;
 }
 
-/** Renta necesaria para que un dividendo no supere la carga máxima permitida. */
-export function rentaRequerida(dividendo: number): number {
-  return dividendo / CARGA_MAXIMA;
+/**
+ * Renta necesaria para que un dividendo no supere la carga permitida.
+ *
+ * `carga` existe para el Motor de Evaluación (ADR-0032), que usa carga
+ * escalonada. Sin argumento se comporta igual que siempre: la calculadora
+ * pública no se mueve.
+ */
+export function rentaRequerida(dividendo: number, carga = CARGA_MAXIMA): number {
+  return dividendo / carga;
 }
 
 /**
@@ -201,8 +207,11 @@ export function matrizDividendos(params: {
   valorUF: number;
   rentaDisponible: number;
   edad?: number;
+  /** Carga máxima para calificar cada celda. Default: la de la pública (25%). */
+  carga?: number;
 }): Celda[][] {
-  const { valorPropiedadUF, tasaAnual, valorUF, rentaDisponible, edad } = params;
+  const { valorPropiedadUF, tasaAnual, valorUF, rentaDisponible, edad, carga } =
+    params;
   // OJO: `plazoTope === null` es ambiguo — puede significar "no se dio edad" o
   // "la edad excede TODOS los plazos". Por eso se guarda `edadProvista` aparte:
   // sin esta distinción, una persona demasiado mayor calificaría a los 4 plazos.
@@ -218,7 +227,7 @@ export function matrizDividendos(params: {
         plazoAnios,
         valorUF,
       });
-      const requerida = rentaRequerida(dividendo);
+      const requerida = rentaRequerida(dividendo, carga);
 
       const excedeEdad =
         edadProvista && (plazoTope === null || plazoAnios > plazoTope);

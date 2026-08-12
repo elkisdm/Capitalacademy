@@ -41,6 +41,52 @@ describe("evaluarFicha — el caso que da sentido a la herramienta (E1)", () => 
     if (!r.califica) throw new Error("debía calificar");
     expect(r.palanca).toBeTruthy();
   });
+
+  // Fusión con la calculadora pública: los escenarios de dividendo salen del
+  // mismo análisis, sobre el valor máximo estimado.
+  it("trae la matriz de escenarios (plazos × pies)", () => {
+    if (!r.califica) throw new Error("debía calificar");
+
+    expect(r.escenarios).toHaveLength(4);
+    for (const fila of r.escenarios) expect(fila).toHaveLength(4);
+  });
+
+  it("la celda del perfil coincide con el dividendo estimado de la tarjeta", () => {
+    if (!r.califica) throw new Error("debía calificar");
+
+    const pieDelPerfil = 1 - r.capacidad.financiamiento;
+    const celda = r.escenarios
+      .flat()
+      .find(
+        (c) =>
+          Math.abs(c.pie - pieDelPerfil) < 1e-9 &&
+          c.plazoAnios === r.capacidad.plazoAnios,
+      );
+
+    expect(celda).toBeDefined();
+    expect(celda!.dividendo).toBeCloseTo(r.capacidad.dividendoEstimadoCLP, 4);
+    expect(celda!.califica).toBe(true);
+  });
+
+  // La coherencia que motivó el parámetro `carga`: SOLVENTE tiene renta sobre
+  // $2,5M, así que las celdas deben calificar con la carga del 30%, no con el
+  // 25% fijo de la calculadora pública.
+  it("las celdas califican con la carga escalonada del motor", () => {
+    if (!r.califica) throw new Error("debía calificar");
+
+    const pieDelPerfil = 1 - r.capacidad.financiamiento;
+    const celda = r.escenarios
+      .flat()
+      .find(
+        (c) =>
+          Math.abs(c.pie - pieDelPerfil) < 1e-9 &&
+          c.plazoAnios === r.capacidad.plazoAnios,
+      )!;
+
+    // Con el 25% fijo esta celda NO calificaría cuando manda la capacidad de
+    // pago; con la carga real de la renta, sí.
+    expect(celda.rentaRequerida).toBeLessThanOrEqual(r.rentaFinal + 1);
+  });
 });
 
 describe("evaluarFicha — no califica", () => {

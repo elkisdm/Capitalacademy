@@ -3,9 +3,12 @@
 import { useMemo, useState } from "react";
 import { Calculator, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MatrizDividendos } from "@/components/calculadora/MatrizDividendos";
 import { FichaEstadoSituacion } from "./FichaEstadoSituacion";
 import { ImportarFicha } from "./ImportarFicha";
 import { ResultadoEvaluacion } from "./ResultadoEvaluacion";
+import { formatUF } from "@/lib/utils/money";
+import { TASA_ANUAL_DEFAULT } from "@/lib/credito/constants";
 import { fichaSchema, fichaVacia, type Ficha } from "@/lib/evaluacion/ficha";
 import { evaluarFicha, type Evaluacion } from "@/lib/evaluacion/evaluar";
 import type { ImporteEESS } from "@/lib/evaluacion/importar-eess";
@@ -63,6 +66,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
   }
 
   return (
+    <div className="space-y-8">
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
       <div className="ca-card p-5 sm:p-7">
         <header className="mb-6">
@@ -144,6 +148,33 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
           cerrarla.
         </p>
       </aside>
+    </div>
+
+    {/* La parte de la calculadora pública, fusionada acá: los escenarios de
+        dividendo sobre el valor máximo que arrojó la evaluación. A lo ancho,
+        porque la matriz 4×4 no cabe en la columna del resultado. */}
+    {evaluacion?.califica && (
+      <section className="ca-card p-5 sm:p-7">
+        <header className="mb-5">
+          <h2 className="text-[17px] font-black tracking-tight text-ca-ink">
+            Escenarios de dividendo
+          </h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
+            Sobre el valor máximo estimado de{" "}
+            {formatUF(Math.floor(evaluacion.capacidad.valorMaximoPropiedadUF))}, con una
+            tasa referencial de{" "}
+            {(TASA_ANUAL_DEFAULT * 100).toLocaleString("es-CL", {
+              maximumFractionDigits: 2,
+            })}
+            % anual y la renta final del cliente.
+          </p>
+        </header>
+        <MatrizDividendos
+          matriz={evaluacion.escenarios}
+          plazoMaximo={evaluacion.capacidad.plazoAnios}
+        />
+      </section>
+    )}
     </div>
   );
 }

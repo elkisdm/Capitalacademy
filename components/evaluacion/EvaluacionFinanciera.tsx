@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calculator, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
+import { Calculator, Loader2, Pencil, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MatrizDividendos } from "@/components/calculadora/MatrizDividendos";
 import { FichaEstadoSituacion } from "./FichaEstadoSituacion";
 import { ImportarFicha } from "./ImportarFicha";
 import { ResultadoEvaluacion } from "./ResultadoEvaluacion";
-import { formatUF } from "@/lib/utils/money";
-import { TASA_ANUAL_DEFAULT } from "@/lib/credito/constants";
+import { formatCLP } from "@/lib/utils/money";
 import { fichaSchema, fichaVacia, type Ficha } from "@/lib/evaluacion/ficha";
 import { evaluarFicha, type Evaluacion } from "@/lib/evaluacion/evaluar";
 import type { ImporteEESS } from "@/lib/evaluacion/importar-eess";
@@ -25,19 +23,39 @@ type Props = { valorUF: ValorUF };
  * frente. El único dato del servidor es el valor de la UF.
  *
  * La ficha NO se envía a ningún lado ni se guarda (decisión 1 del ADR-0032).
+ *
+ * Dos vistas: mientras se llena la ficha, formulario + columna de resultado.
+ * Con el análisis listo, la ficha se COLAPSA a una barra y el resultado toma
+ * toda la pantalla — el resumen a la izquierda y los escenarios de dividendo a
+ * la derecha, sin scroll. "Editar ficha" vuelve a la primera vista.
  */
 export function EvaluacionFinanciera({ valorUF }: Props) {
   const [ficha, setFicha] = useState<Ficha>(fichaVacia);
   const [evaluacion, setEvaluacion] = useState<Evaluacion | null>(null);
   const [analizando, setAnalizando] = useState(false);
+  const [editando, setEditando] = useState(true);
   const [errores, setErrores] = useState<string[]>([]);
   const [avisosImport, setAvisosImport] = useState<string[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resultadoRef = useRef<HTMLElement | null>(null);
+  const resultadoRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => () => {
     if (timerRef.current) clearTimeout(timerRef.current);
   }, []);
+
+  const vistaResultado = evaluacion !== null && !editando;
+
+  // El scroll corre DESPUÉS de que la vista de resultado monta: dispararlo en el
+  // mismo tick del cambio de estado deja al navegador anclado a la posición del
+  // formulario largo que acaba de desaparecer.
+  useEffect(() => {
+    if (!vistaResultado) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultadoRef.current?.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [vistaResultado]);
 
   // El botón se habilita solo cuando hay lo mínimo para calcular algo honesto:
   // sin ingresos no hay renta, y sin renta cualquier cifra sería inventada.
@@ -63,14 +81,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
     timerRef.current = setTimeout(() => {
       setEvaluacion(evaluarFicha(parsed.data, { valorUF: valorUF.valor }));
       setAnalizando(false);
-      // En móvil el resultado queda bajo el formulario: llevar la vista hasta él.
-      if (window.innerWidth < 1024) {
-        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        resultadoRef.current?.scrollIntoView({
-          behavior: reduce ? "auto" : "smooth",
-          block: "start",
-        });
-      }
+      setEditando(false);
     }, 750);
   }
 
@@ -79,6 +90,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
     setFicha(fichaVacia());
     setEvaluacion(null);
     setAnalizando(false);
+    setEditando(true);
     setErrores([]);
     setAvisosImport([]);
   }
@@ -90,14 +102,50 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
   function aplicarImport({ ficha: importada, avisos }: ImporteEESS) {
     if (timerRef.current) clearTimeout(timerRef.current);
     setAnalizando(false);
+    setEditando(true);
     setFicha(importada);
     setEvaluacion(null);
     setErrores([]);
     setAvisosImport(avisos);
   }
 
+  // --- Vista resultado: ficha colapsada, análisis a pantalla completa --------
+  if (evaluacion && !editando) {
+    return (
+      <div ref={resultadoRef} className="scroll-mt-6 space-y-5">
+        <div className="ca-card ca-fade-up flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <p className="truncate text-[14px] font-black tracking-tight text-ca-ink">
+              {ficha.nombre.trim() || "Ficha sin nombre"}
+            </p>
+            <p className="text-[12px] text-ca-ink-soft">
+              Renta final {formatCLP(evaluacion.rentaFinal)} · UF de hoy $
+              {valorUF.valor.toLocaleString("es-CL")}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditando(true)}>
+              <Pencil size={14} /> Editar ficha
+            </Button>
+            <Button variant="ghost" size="sm" onClick={limpiar}>
+              <RotateCcw size={14} /> Limpiar
+            </Button>
+          </div>
+        </div>
+
+        <ResultadoEvaluacion evaluacion={evaluacion} amplio />
+
+        <p className="flex items-start gap-2 px-1 text-[11px] leading-relaxed text-ca-ink-soft">
+          <ShieldCheck size={13} className="mt-0.5 shrink-0" />
+          Los datos del cliente no se guardan: quedan solo en esta pantalla y desaparecen al
+          cerrarla.
+        </p>
+      </div>
+    );
+  }
+
+  // --- Vista ficha: formulario + columna de resultado ------------------------
   return (
-    <div className="space-y-8">
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
       <div className="ca-card p-5 sm:p-7">
         <header className="mb-6">
@@ -149,13 +197,19 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
               </>
             ) : (
               <>
-                <Calculator size={16} /> Analizar capacidad de compra
+                <Calculator size={16} />{" "}
+                {evaluacion ? "Volver a analizar" : "Analizar capacidad de compra"}
               </>
             )}
           </Button>
           <Button variant="ghost" size="lg" onClick={limpiar} disabled={analizando}>
             <RotateCcw size={15} /> Limpiar
           </Button>
+          {evaluacion && !analizando && (
+            <Button variant="outline" size="lg" onClick={() => setEditando(false)}>
+              Ver el análisis
+            </Button>
+          )}
         </div>
 
         {!hayIngresos && (
@@ -165,7 +219,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         )}
       </div>
 
-      <aside ref={resultadoRef} className="scroll-mt-6 lg:sticky lg:top-6">
+      <aside className="lg:sticky lg:top-6">
         {analizando ? (
           <SkeletonResultado />
         ) : evaluacion ? (
@@ -190,55 +244,20 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         </p>
       </aside>
     </div>
-
-    {/* La parte de la calculadora pública, fusionada acá: los escenarios de
-        dividendo sobre el valor máximo que arrojó la evaluación. A lo ancho,
-        porque la matriz 4×4 no cabe en la columna del resultado. */}
-    {evaluacion?.califica && (
-      <section className="ca-card ca-fade-up p-5 sm:p-7" style={{ animationDelay: "180ms" }}>
-        <header className="mb-5">
-          <h2 className="text-[17px] font-black tracking-tight text-ca-ink">
-            Escenarios de dividendo
-          </h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
-            Sobre el valor máximo estimado de{" "}
-            {formatUF(Math.floor(evaluacion.capacidad.valorMaximoPropiedadUF))}, con una
-            tasa referencial de{" "}
-            {(TASA_ANUAL_DEFAULT * 100).toLocaleString("es-CL", {
-              maximumFractionDigits: 2,
-            })}
-            % anual y la renta final del cliente.
-          </p>
-        </header>
-        <MatrizDividendos
-          matriz={evaluacion.escenarios}
-          plazoMaximo={evaluacion.capacidad.plazoAnios}
-          resaltar={{
-            pie: 1 - evaluacion.capacidad.financiamiento,
-            plazoAnios: evaluacion.capacidad.plazoAnios,
-          }}
-        />
-      </section>
-    )}
-    </div>
   );
 }
 
 /**
  * Skeleton fiel al layout del resultado (§4.1 de las convenciones): titular,
- * franja de perfil y grilla de cifras, para que el contenido no salte al llegar.
+ * franja de perfil y filas de cifras, para que el contenido no salte al llegar.
  */
 function SkeletonResultado() {
   return (
-    <div role="status" aria-label="Analizando la ficha" className="space-y-5">
-      <Skeleton className="h-40 rounded-2xl" />
-      <Skeleton className="h-20 rounded-2xl" />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-[86px]" />
-        ))}
-      </div>
-      <Skeleton className="h-14" />
+    <div role="status" aria-label="Analizando la ficha" className="space-y-4">
+      <Skeleton className="h-32 rounded-2xl" />
+      <Skeleton className="h-16 rounded-2xl" />
+      <Skeleton className="h-56" />
+      <Skeleton className="h-12" />
     </div>
   );
 }

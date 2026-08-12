@@ -3,14 +3,24 @@
 import { AlertCircle, ArrowRight, Check, Info, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { formatCLP, formatUF } from "@/lib/utils/money";
+import { MatrizDividendos } from "@/components/calculadora/MatrizDividendos";
+import { TASA_ANUAL_DEFAULT } from "@/lib/credito/constants";
 import {
   DISCLAIMER_EVALUACION,
   NOTA_COSTOS_NO_INCLUIDOS,
   type ColorPerfil,
 } from "@/lib/credito/capacidad-constants";
-import type { Evaluacion } from "@/lib/evaluacion/evaluar";
+import type { Evaluacion, EvaluacionAprobada } from "@/lib/evaluacion/evaluar";
 
-type Props = { evaluacion: Evaluacion };
+type Props = {
+  evaluacion: Evaluacion;
+  /**
+   * Modo a pantalla completa (la ficha está colapsada): resumen a la izquierda
+   * y escenarios de dividendo a la derecha, sin scroll para ver la matriz.
+   * Sin `amplio`, es la columna angosta junto al formulario y omite la matriz.
+   */
+  amplio?: boolean;
+};
 
 const TONO: Record<ColorPerfil, { punto: string; texto: string; fondo: string; label: string }> = {
   verde: {
@@ -33,134 +43,272 @@ const TONO: Record<ColorPerfil, { punto: string; texto: string; fondo: string; l
   },
 };
 
-export function ResultadoEvaluacion({ evaluacion }: Props) {
+export function ResultadoEvaluacion({ evaluacion, amplio = false }: Props) {
   if (!evaluacion.califica) return <NoCalifica evaluacion={evaluacion} />;
 
-  const { capacidad, perfil, palanca } = evaluacion;
-  const tono = TONO[perfil.color];
+  if (!amplio) {
+    return (
+      <div className="space-y-4">
+        <Titular evaluacion={evaluacion} />
+        <Perfil evaluacion={evaluacion} />
+        <Cifras evaluacion={evaluacion} />
+        <BrechaPie evaluacion={evaluacion} />
+        <Palanca evaluacion={evaluacion} />
+        <Listas evaluacion={evaluacion} />
+        <Advertencias evaluacion={evaluacion} />
+        <Avisos />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-5">
-      {/* El dato que el asesor dice en voz alta. Todo lo demás lo respalda. */}
-      <div className="ca-fade-up rounded-2xl bg-ca-ink px-6 py-7 text-center text-white">
-        <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/60">
-          Podría evaluar propiedades hasta
-        </p>
-        {/* Redondeado a propósito: una propiedad se habla en UF enteras, y
-            "1.468,93 UF" en un titular de 52px es precisión falsa — la cifra ya
-            es una estimación, no un presupuesto al peso. */}
-        <p className="mt-2 text-[40px] font-black leading-none tracking-tight sm:text-[52px]">
-          {formatUF(Math.floor(capacidad.valorMaximoPropiedadUF))}
-        </p>
-        <p className="mt-2 text-[13px] text-white/70">
-          {/* El valor en pesos es, por construcción, crédito + pie. */}
-          equivalente a {formatCLP(capacidad.creditoMaximoCLP + capacidad.pieRequeridoCLP)}
-        </p>
-      </div>
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
+        {/* Riel de resumen: lo que el asesor dice en voz alta, de arriba abajo. */}
+        <div className="space-y-4">
+          <Titular evaluacion={evaluacion} />
+          <Perfil evaluacion={evaluacion} />
+          <Cifras evaluacion={evaluacion} />
+          <BrechaPie evaluacion={evaluacion} />
+          <Palanca evaluacion={evaluacion} />
+        </div>
 
-      <div
-        className={cn("ca-fade-up rounded-2xl border px-5 py-4", tono.fondo)}
-        style={{ animationDelay: "60ms" }}
-      >
-        <div className="flex items-start gap-3">
-          <span className={cn("mt-1.5 h-3 w-3 shrink-0 rounded-full", tono.punto)} aria-hidden />
-          <div>
-            <p className={cn("text-[15px] font-black tracking-tight", tono.texto)}>{tono.label}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">{perfil.resumen}</p>
-          </div>
+        {/* La conversación: escenarios y qué mover. Visible sin scroll. */}
+        <div className="space-y-5">
+          <section
+            className="ca-card ca-fade-up p-5 sm:p-6"
+            style={{ animationDelay: "160ms" }}
+          >
+            <header className="mb-4">
+              <h3 className="text-[15px] font-black tracking-tight text-ca-ink">
+                Escenarios de dividendo
+              </h3>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-ca-ink-soft">
+                Sobre el valor máximo estimado de{" "}
+                {formatUF(Math.floor(evaluacion.capacidad.valorMaximoPropiedadUF))}, con
+                tasa referencial de{" "}
+                {(TASA_ANUAL_DEFAULT * 100).toLocaleString("es-CL", {
+                  maximumFractionDigits: 2,
+                })}
+                % anual y la renta final del cliente.
+              </p>
+            </header>
+            <MatrizDividendos
+              matriz={evaluacion.escenarios}
+              plazoMaximo={evaluacion.capacidad.plazoAnios}
+              resaltar={{
+                pie: 1 - evaluacion.capacidad.financiamiento,
+                plazoAnios: evaluacion.capacidad.plazoAnios,
+              }}
+            />
+          </section>
+
+          <Listas evaluacion={evaluacion} dosColumnas />
+          <Advertencias evaluacion={evaluacion} />
         </div>
       </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Cifra indice={0} label="Dividendo estimado" valor={formatCLP(capacidad.dividendoEstimadoCLP)} nota="sin seguros" />
-        <Cifra
-          indice={1}
-          label="Pie requerido"
-          valor={formatCLP(capacidad.pieRequeridoCLP)}
-          nota={
-            // La cifra de la brecha vive en el aviso ámbar de abajo: repetirla acá
-            // desnivela la tarjeta respecto de sus vecinas.
-            capacidad.brechaPieCLP > 0
-              ? `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor — no cubierto`
-              : `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor · cubierto`
-          }
-        />
-        <Cifra indice={2} label="Crédito estimado" valor={formatCLP(capacidad.creditoMaximoCLP)} nota={`financiamiento ${Math.round(capacidad.financiamiento * 100)}%`} />
-        <Cifra indice={3} label="Plazo sugerido" valor={`${capacidad.plazoAnios} años`} nota={`edad: ${evaluacion.edad}`} />
-        <Cifra indice={4} label="Renta reconocida" valor={formatCLP(evaluacion.ingresoReconocido)} nota={evaluacion.cuotasMensuales > 0 ? `menos ${formatCLP(evaluacion.cuotasMensuales)} en cuotas` : "sin deudas vigentes"} />
-        <Cifra indice={5} label="Renta final" valor={formatCLP(evaluacion.rentaFinal)} nota="base del cálculo" />
-      </div>
-
-      {/* El pie no limita el titular, pero el asesor tiene que decirlo en la
-          misma frase: la cifra de arriba supone que el pie se completa. */}
-      {capacidad.brechaPieCLP > 0 && (
-        <div
-          className="ca-fade-up flex items-start gap-2.5 rounded-xl bg-ca-amber/10 px-4 py-3"
-          style={{ animationDelay: "320ms" }}
-        >
-          <TriangleAlert size={16} className="mt-0.5 shrink-0 text-ca-amber-text" />
-          <p className="text-[13px] leading-relaxed text-ca-ink">
-            El ahorro declarado no cubre el pie de este valor: faltan{" "}
-            <strong>{formatCLP(capacidad.brechaPieCLP)}</strong>. La cifra de arriba
-            supone que el pie se completa.
-          </p>
-        </div>
-      )}
-
-      {/* La palanca real: cuál de los dos topes de crédito está mandando. Es lo
-          que evita que el asesor recomiende algo que no cambiaría la cifra. */}
-      <div
-        className="ca-fade-up flex items-start gap-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3"
-        style={{ animationDelay: "360ms" }}
-      >
-        <ArrowRight size={16} className="mt-0.5 shrink-0 text-ca-violet" />
-        <p className="text-[13px] leading-relaxed text-ca-ink">{palanca}</p>
-      </div>
-
-      {perfil.fortalezas.length > 0 && (
-        <Bloque titulo="Fortalezas detectadas">
-          {perfil.fortalezas.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-[13px] text-ca-ink">
-              <Check size={15} className="mt-0.5 shrink-0 text-ca-lime-text" />
-              {f}
-            </li>
-          ))}
-        </Bloque>
-      )}
-
-      {perfil.mejoras.length > 0 && (
-        <Bloque titulo="Variables que mejorarían la evaluación">
-          {perfil.mejoras.map((m) => (
-            <li key={m} className="flex items-start gap-2 text-[13px] text-ca-ink">
-              <AlertCircle size={15} className="mt-0.5 shrink-0 text-ca-ink-soft" />
-              {m}
-            </li>
-          ))}
-        </Bloque>
-      )}
-
-      {evaluacion.advertencias.length > 0 && (
-        <div className="space-y-1.5 rounded-xl bg-ca-amber/10 px-4 py-3">
-          {evaluacion.advertencias.map((a) => (
-            <p key={a} className="flex items-start gap-2 text-[12px] text-ca-ink">
-              <TriangleAlert size={14} className="mt-0.5 shrink-0 text-ca-amber-text" />
-              {a}
-            </p>
-          ))}
-        </div>
-      )}
 
       <Avisos />
     </div>
   );
 }
 
+// --- Piezas del resultado aprobado ------------------------------------------
+
+function Titular({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
+  const { capacidad } = evaluacion;
+  return (
+    <div className="ca-fade-up rounded-2xl bg-ca-ink px-6 py-5 text-center text-white">
+      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/60">
+        Podría evaluar propiedades hasta
+      </p>
+      {/* Redondeado a propósito: una propiedad se habla en UF enteras. */}
+      <p className="mt-1.5 text-[38px] font-black leading-none tracking-tight sm:text-[44px]">
+        {formatUF(Math.floor(capacidad.valorMaximoPropiedadUF))}
+      </p>
+      <p className="mt-1.5 text-[12px] text-white/70">
+        {/* El valor en pesos es, por construcción, crédito + pie. */}
+        equivalente a {formatCLP(capacidad.creditoMaximoCLP + capacidad.pieRequeridoCLP)}
+      </p>
+    </div>
+  );
+}
+
+function Perfil({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
+  const tono = TONO[evaluacion.perfil.color];
+  return (
+    <div
+      className={cn("ca-fade-up rounded-2xl border px-4 py-3", tono.fondo)}
+      style={{ animationDelay: "60ms" }}
+    >
+      <div className="flex items-start gap-2.5">
+        <span className={cn("mt-1 h-2.5 w-2.5 shrink-0 rounded-full", tono.punto)} aria-hidden />
+        <div>
+          <p className={cn("text-[14px] font-black tracking-tight", tono.texto)}>{tono.label}</p>
+          <p className="mt-0.5 text-[12px] leading-relaxed text-ca-ink-soft">
+            {evaluacion.perfil.resumen}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Las cifras como filas clave-valor, no tarjetas: los montos van alineados a la
+ * derecha en tipografía tabular y NUNCA desbordan, y seis datos caben en el
+ * espacio que antes ocupaban dos tarjetas.
+ */
+function Cifras({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
+  const { capacidad } = evaluacion;
+  const pctPie = Math.round((1 - capacidad.financiamiento) * 100);
+
+  return (
+    <dl
+      className="ca-card ca-fade-up divide-y divide-ca-ink/[0.06] px-4"
+      style={{ animationDelay: "100ms" }}
+    >
+      <Fila label="Dividendo estimado" nota="sin seguros" valor={formatCLP(capacidad.dividendoEstimadoCLP)} />
+      <Fila
+        label="Pie requerido"
+        nota={capacidad.brechaPieCLP > 0 ? `${pctPie}% del valor — no cubierto` : `${pctPie}% del valor · cubierto`}
+        valor={formatCLP(capacidad.pieRequeridoCLP)}
+      />
+      <Fila
+        label="Crédito estimado"
+        nota={`financiamiento ${Math.round(capacidad.financiamiento * 100)}%`}
+        valor={formatCLP(capacidad.creditoMaximoCLP)}
+      />
+      <Fila label="Plazo sugerido" nota={`edad: ${evaluacion.edad}`} valor={`${capacidad.plazoAnios} años`} />
+      <Fila
+        label="Renta reconocida"
+        nota={
+          evaluacion.cuotasMensuales > 0
+            ? `menos ${formatCLP(evaluacion.cuotasMensuales)} en cuotas`
+            : "sin deudas vigentes"
+        }
+        valor={formatCLP(evaluacion.ingresoReconocido)}
+      />
+      <Fila label="Renta final" nota="base del cálculo" valor={formatCLP(evaluacion.rentaFinal)} destacada />
+    </dl>
+  );
+}
+
+function Fila({
+  label,
+  nota,
+  valor,
+  destacada = false,
+}: {
+  label: string;
+  nota?: string;
+  valor: string;
+  destacada?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2.5">
+      <dt className="min-w-0">
+        <span className="block text-[12px] font-semibold text-ca-ink">{label}</span>
+        {nota && <span className="block text-[11px] leading-tight text-ca-ink-soft">{nota}</span>}
+      </dt>
+      <dd
+        className={cn(
+          "shrink-0 whitespace-nowrap text-right font-black tabular-nums tracking-tight text-ca-ink",
+          destacada ? "text-[16px]" : "text-[15px]",
+        )}
+      >
+        {valor}
+      </dd>
+    </div>
+  );
+}
+
+function BrechaPie({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
+  if (evaluacion.capacidad.brechaPieCLP <= 0) return null;
+  return (
+    <div
+      className="ca-fade-up flex items-start gap-2.5 rounded-xl bg-ca-amber/10 px-4 py-3"
+      style={{ animationDelay: "140ms" }}
+    >
+      <TriangleAlert size={15} className="mt-0.5 shrink-0 text-ca-amber-text" />
+      <p className="text-[12px] leading-relaxed text-ca-ink">
+        El ahorro declarado no cubre el pie de este valor: faltan{" "}
+        <strong className="tabular-nums">{formatCLP(evaluacion.capacidad.brechaPieCLP)}</strong>. La
+        cifra de arriba supone que el pie se completa.
+      </p>
+    </div>
+  );
+}
+
+function Palanca({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
+  return (
+    <div
+      className="ca-fade-up flex items-start gap-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3"
+      style={{ animationDelay: "180ms" }}
+    >
+      <ArrowRight size={15} className="mt-0.5 shrink-0 text-ca-violet" />
+      <p className="text-[12px] leading-relaxed text-ca-ink">{evaluacion.palanca}</p>
+    </div>
+  );
+}
+
+function Listas({
+  evaluacion,
+  dosColumnas = false,
+}: {
+  evaluacion: EvaluacionAprobada;
+  dosColumnas?: boolean;
+}) {
+  const { fortalezas, mejoras } = evaluacion.perfil;
+  if (fortalezas.length === 0 && mejoras.length === 0) return null;
+
+  return (
+    <div className={cn("gap-5", dosColumnas ? "grid sm:grid-cols-2" : "space-y-5")}>
+      {fortalezas.length > 0 && (
+        <Bloque titulo="Fortalezas detectadas">
+          {fortalezas.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-[12px] leading-relaxed text-ca-ink">
+              <Check size={14} className="mt-0.5 shrink-0 text-ca-lime-text" />
+              {f}
+            </li>
+          ))}
+        </Bloque>
+      )}
+
+      {mejoras.length > 0 && (
+        <Bloque titulo="Variables que mejorarían la evaluación">
+          {mejoras.map((m) => (
+            <li key={m} className="flex items-start gap-2 text-[12px] leading-relaxed text-ca-ink">
+              <AlertCircle size={14} className="mt-0.5 shrink-0 text-ca-ink-soft" />
+              {m}
+            </li>
+          ))}
+        </Bloque>
+      )}
+    </div>
+  );
+}
+
+function Advertencias({ evaluacion }: { evaluacion: Evaluacion }) {
+  if (evaluacion.advertencias.length === 0) return null;
+  return (
+    <div className="space-y-1.5 rounded-xl bg-ca-amber/10 px-4 py-3">
+      {evaluacion.advertencias.map((a) => (
+        <p key={a} className="flex items-start gap-2 text-[12px] text-ca-ink">
+          <TriangleAlert size={14} className="mt-0.5 shrink-0 text-ca-amber-text" />
+          {a}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function NoCalifica({ evaluacion }: { evaluacion: Extract<Evaluacion, { califica: false }> }) {
   return (
-    <div className="space-y-5">
+    <div className="max-w-2xl space-y-4">
       {/* Sin ninguna cifra de propiedad: mostrar un tope junto a un "no
           califica" es exactamente la ilusión que hay que evitar. */}
-      <div className="rounded-2xl border border-ca-rose/30 bg-ca-rose/10 px-6 py-6">
+      <div className="ca-fade-up rounded-2xl border border-ca-rose/30 bg-ca-rose/10 px-6 py-6">
         <div className="flex items-start gap-3">
           <TriangleAlert size={20} className="mt-0.5 shrink-0 text-ca-rose-text" />
           <div>
@@ -174,49 +322,14 @@ function NoCalifica({ evaluacion }: { evaluacion: Extract<Evaluacion, { califica
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Cifra label="Renta reconocida" valor={formatCLP(evaluacion.ingresoReconocido)} />
-        <Cifra label="Cuotas vigentes" valor={formatCLP(evaluacion.cuotasMensuales)} />
-        <Cifra label="Renta final" valor={formatCLP(evaluacion.rentaFinal)} />
-      </div>
+      <dl className="ca-card ca-fade-up divide-y divide-ca-ink/[0.06] px-4" style={{ animationDelay: "80ms" }}>
+        <Fila label="Renta reconocida" valor={formatCLP(evaluacion.ingresoReconocido)} />
+        <Fila label="Cuotas vigentes" valor={formatCLP(evaluacion.cuotasMensuales)} />
+        <Fila label="Renta final" valor={formatCLP(evaluacion.rentaFinal)} destacada />
+      </dl>
 
-      {evaluacion.advertencias.length > 0 && (
-        <div className="space-y-1.5 rounded-xl bg-ca-amber/10 px-4 py-3">
-          {evaluacion.advertencias.map((a) => (
-            <p key={a} className="flex items-start gap-2 text-[12px] text-ca-ink">
-              <TriangleAlert size={14} className="mt-0.5 shrink-0 text-ca-amber-text" />
-              {a}
-            </p>
-          ))}
-        </div>
-      )}
-
+      <Advertencias evaluacion={evaluacion} />
       <Avisos />
-    </div>
-  );
-}
-
-function Cifra({
-  label,
-  valor,
-  nota,
-  indice = 0,
-}: {
-  label: string;
-  valor: string;
-  nota?: string;
-  indice?: number;
-}) {
-  return (
-    <div
-      className="ca-fade-up rounded-xl border border-ca-ink/[0.08] bg-ca-surface px-4 py-3"
-      style={{ animationDelay: `${100 + indice * 40}ms` }}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ca-ink-soft">
-        {label}
-      </p>
-      <p className="mt-1 text-[18px] font-black tabular-nums tracking-tight text-ca-ink">{valor}</p>
-      {nota && <p className="mt-0.5 text-[11px] text-ca-ink-soft">{nota}</p>}
     </div>
   );
 }

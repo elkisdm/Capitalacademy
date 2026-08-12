@@ -1,6 +1,6 @@
 # ADR-0032: Motor de Evaluación Financiera
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-10
 - **Deciders:** Elkis Daza (ingeniería), Paola Vicuña (producto / metodología comercial)
 - **Tags:** cálculo financiero, PII, asesoría comercial, classroom

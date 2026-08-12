@@ -146,6 +146,7 @@
 | `lib/security/csp.ts` | CSP y Permissions-Policy del sitio, fuera de `next.config.ts` para poder testearlos: un origen que falta no rompe el build ni los tests, solo la función en producción | — | 0031 |
 | `app/sala/[code]/page.tsx` | Sala en pantalla COMPLETA, fuera del grupo `(classroom)`: sin barra lateral, como una videollamada. La URL usa el código legible | `/sala/[code]` | 0031 |
 | `lib/classroom/ref.ts` | `resolveRef`: decide si lo que llega por la URL es slug legible o UUID, y con qué columna buscar. Lo usan docente, hilo y evaluación (0090); devolver `null` ante basura evita un 500 de Postgres donde corresponde un 404 | — | — |
+| `db/migrations/0093_slugs_para_filas_nuevas.sql` | Triggers para que hilos, evaluaciones y fichas de docente nuevos nazcan con slug (la 0090 solo hizo backfill) y `rtrim` del doble guion que `SLUG_RE` rechaza | — | — |
 | `lib/livekit/meeting-code.ts` | Código legible de reunión (formato Meet `abc-defg-hij`, migración 0089) y `parseSessionRef`, que acepta código o UUID para no romper los enlaces ya enviados por correo | — | 0031 |
 
 ## Asistencia (QR)
@@ -358,6 +359,7 @@
 | `lib/evaluacion/ficha.ts` | Ficha de Estado de Situación (Paso 7): tipo + validación Zod, saldo hipotecario vigente y patrimonio neto. NO se persiste (decisión 1 del ADR-0032) | — | 0032 |
 | `lib/evaluacion/evaluar.ts` | `evaluarFicha`: la cadena completa del botón "Analizar capacidad de compra"; calcula el perfil ANTES que la capacidad y resuelve la palanca real según qué tope manda | — | 0032 |
 | `app/(classroom)/classroom/[cohortSlug]/evaluacion/` · `components/evaluacion/` | Pantalla del Motor de Evaluación Financiera: ficha por secciones, resultado con el valor máximo en UF como protagonista y semáforo. Tras login; el cálculo corre en el navegador y nada se envía ni se guarda | `/classroom/[cohortSlug]/evaluacion` | 0032 |
+| `lib/evaluacion/importar-eess.ts` · `components/evaluacion/ImportarFicha.tsx` | Import del Excel EESS del portal de crédito: mapea celdas fijas de la hoja DECLARACION a la `Ficha` (parsing 100% en el navegador, xlsx por import dinámico); los totales se suman de las componentes, nunca de las celdas fórmula | — | 0032 |
 | `lib/indicadores/uf.ts` | Valor UF del día desde mindicador.cl, cacheado 12h; el fallback nunca se cachea | — | 0027 |
 | `lib/utils/money.ts` | Helper único de formateo CLP/UF y máscara de montos para inputs | — | 0027 |
 

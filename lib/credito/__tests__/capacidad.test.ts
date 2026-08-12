@@ -183,32 +183,35 @@ describe("capacidadDeCompra — el dato que el asesor dice en voz alta (E1)", ()
     expect(r.dividendoEstimadoCLP).toBeLessThanOrEqual(dividendoMaximo(CASO.rentaMensual) + 1);
   });
 
-  // E3 — la corrección más importante: el ahorro es un tope real.
-  it("con poco ahorro manda el pie, no el crédito", () => {
-    const r = capacidadDeCompra({ ...CASO, ahorroDisponibleCLP: 7_800_000 }); // 200 UF
+  // E3 (enmienda 2026-08-12): el ahorro NO limita el titular — la capacidad la
+  // define la renta. El pie se informa como brecha.
+  it("con poco ahorro el valor no cambia y la brecha dice cuánto falta", () => {
+    const conAhorro = capacidadDeCompra(CASO);
+    const pocoAhorro = capacidadDeCompra({ ...CASO, ahorroDisponibleCLP: 7_800_000 }); // 200 UF
 
-    expect(r.limitadoPor).toBe("ahorro_disponible");
-    expect(r.valorMaximoPropiedadUF).toBeLessThan(r.topesUF.porCredito);
-    // Con financiamiento 90%, 200 UF de pie alcanzan para 2.000 UF de propiedad.
-    expect(r.valorMaximoPropiedadUF).toBeCloseTo(2_000, 6);
+    expect(pocoAhorro.valorMaximoPropiedadUF).toBeCloseTo(
+      conAhorro.valorMaximoPropiedadUF,
+      6,
+    );
+    expect(pocoAhorro.brechaPieCLP).toBeCloseTo(
+      pocoAhorro.pieRequeridoCLP - 7_800_000,
+      2,
+    );
   });
 
-  it("si el ahorro no restringe, el limitante es el del crédito", () => {
+  it("si el ahorro cubre el pie, la brecha es cero", () => {
     const r = capacidadDeCompra({ ...CASO, ahorroDisponibleCLP: 500_000_000 });
 
-    expect(r.limitadoPor).not.toBe("ahorro_disponible");
+    expect(r.brechaPieCLP).toBe(0);
   });
 
-  // Un perfil amarillo financia menos, así que exige más pie para el mismo valor.
-  it("un perfil más restringido baja el tope cuando el ahorro es el limitante", () => {
-    const verde = capacidadDeCompra({ ...CASO, ahorroDisponibleCLP: 7_800_000 });
-    const amarillo = capacidadDeCompra({
-      ...CASO,
-      ahorroDisponibleCLP: 7_800_000,
-      perfil: "amarillo",
-    });
+  // Un perfil amarillo financia menos, así que exige más pie para el mismo crédito.
+  it("un perfil más restringido exige más pie", () => {
+    const verde = capacidadDeCompra(CASO);
+    const amarillo = capacidadDeCompra({ ...CASO, perfil: "amarillo" });
 
-    expect(amarillo.valorMaximoPropiedadUF).toBeLessThan(verde.valorMaximoPropiedadUF);
+    expect(amarillo.financiamiento).toBeLessThan(verde.financiamiento);
+    expect(amarillo.pieRequeridoCLP).toBeGreaterThan(verde.pieRequeridoCLP);
   });
 
   // E5 — la edad manda sobre el plazo, y el plazo sobre el tope.
@@ -238,11 +241,13 @@ describe("capacidadDeCompra — el dato que el asesor dice en voz alta (E1)", ()
     expect(r.creditoMaximoCLP).toBe(0);
   });
 
-  it("sin ahorro el tope es cero, no infinito", () => {
+  // El caso que motivó la enmienda: ahorro $0 dejaba el titular en 0 UF junto a
+  // un perfil "viable".
+  it("sin ahorro el titular no colapsa: la brecha es el pie completo", () => {
     const r = capacidadDeCompra({ ...CASO, ahorroDisponibleCLP: 0 });
 
-    expect(r.valorMaximoPropiedadUF).toBe(0);
-    expect(r.limitadoPor).toBe("ahorro_disponible");
+    expect(r.valorMaximoPropiedadUF).toBeGreaterThan(0);
+    expect(r.brechaPieCLP).toBeCloseTo(r.pieRequeridoCLP, 2);
   });
 
   it("un valor UF inválido no produce cifras absurdas", () => {

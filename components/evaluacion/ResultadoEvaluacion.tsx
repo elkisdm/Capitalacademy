@@ -70,15 +70,36 @@ export function ResultadoEvaluacion({ evaluacion }: Props) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Cifra label="Dividendo estimado" valor={formatCLP(capacidad.dividendoEstimadoCLP)} nota="sin seguros" />
-        <Cifra label="Pie requerido" valor={formatCLP(capacidad.pieRequeridoCLP)} nota={`${Math.round((1 - capacidad.financiamiento) * 100)}% del valor`} />
+        <Cifra
+          label="Pie requerido"
+          valor={formatCLP(capacidad.pieRequeridoCLP)}
+          nota={
+            capacidad.brechaPieCLP > 0
+              ? `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor — faltan ${formatCLP(capacidad.brechaPieCLP)} de ahorro`
+              : `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor, cubierto con el ahorro declarado`
+          }
+        />
         <Cifra label="Crédito estimado" valor={formatCLP(capacidad.creditoMaximoCLP)} nota={`financiamiento ${Math.round(capacidad.financiamiento * 100)}%`} />
         <Cifra label="Plazo sugerido" valor={`${capacidad.plazoAnios} años`} nota={`edad: ${evaluacion.edad}`} />
         <Cifra label="Renta reconocida" valor={formatCLP(evaluacion.ingresoReconocido)} nota={evaluacion.cuotasMensuales > 0 ? `menos ${formatCLP(evaluacion.cuotasMensuales)} en cuotas` : "sin deudas vigentes"} />
         <Cifra label="Renta final" valor={formatCLP(evaluacion.rentaFinal)} nota="base del cálculo" />
       </div>
 
-      {/* La palanca real: cuál de los tres topes está mandando. Es lo que evita
-          que el asesor recomiende algo que no cambiaría la cifra. */}
+      {/* El pie no limita el titular, pero el asesor tiene que decirlo en la
+          misma frase: la cifra de arriba supone que el pie se completa. */}
+      {capacidad.brechaPieCLP > 0 && (
+        <div className="flex items-start gap-2.5 rounded-xl bg-ca-amber/10 px-4 py-3">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0 text-ca-amber-text" />
+          <p className="text-[13px] leading-relaxed text-ca-ink">
+            El ahorro declarado no cubre el pie de este valor: faltan{" "}
+            <strong>{formatCLP(capacidad.brechaPieCLP)}</strong>. La cifra de arriba
+            supone que el pie se completa.
+          </p>
+        </div>
+      )}
+
+      {/* La palanca real: cuál de los dos topes de crédito está mandando. Es lo
+          que evita que el asesor recomiende algo que no cambiaría la cifra. */}
       <div className="flex items-start gap-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3">
         <ArrowRight size={16} className="mt-0.5 shrink-0 text-ca-violet" />
         <p className="text-[13px] leading-relaxed text-ca-ink">{palanca}</p>

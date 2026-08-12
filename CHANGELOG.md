@@ -7,6 +7,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Changed
+- En la Evaluación Financiera, el ahorro del cliente ya no deja el resultado en "0 UF": el valor máximo de propiedad lo define su renta, y el pie pasa a informarse aparte — la pantalla dice cuánto pie exige ese valor y cuántos pesos de ahorro faltan para cubrirlo. Así el asesor siempre obtiene una cifra para conversar, incluso con un cliente que aún no junta el pie (igual que en la planilla original)
+
 ### Added
 - La gestión de sesiones del admin ahora muestra el enlace de la sala en vivo de cada clase, con botones para abrirla y copiar el enlace; antes el código de la sala existía desde que se creaba la clase pero nadie del equipo podía verlo ni compartirlo desde el panel (`e7f38f4`)
 - Nuevo Entorno de Pruebas (sandbox interno): un programa y cohorte aparte donde el equipo puede crear clases, salas en vivo y lecciones de ensayo sin tocar a los alumnos reales — los correos automáticos que disparen las pruebas llegan solo a las cuentas internas matriculadas ahí (`dc8e105`)

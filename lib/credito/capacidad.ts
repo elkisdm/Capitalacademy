@@ -8,11 +8,16 @@
  * Funciones puras, sin I/O. El único dato externo es el valor de la UF, que
  * entra por parámetro.
  *
- * REGLA QUE GOBIERNA TODO EL ARCHIVO: cuando hay varios topes, manda el MENOR.
- * No son alternativas entre las que elegir sino restricciones simultáneas, y el
- * error barato es quedarse corto. Si esto sobreestima, el asesor ilusiona al
- * cliente en la reunión y el banco lo rechaza semanas después — exactamente el
- * daño que la metodología comercial que esta herramienta apoya busca evitar.
+ * REGLA QUE GOBIERNA EL CRÉDITO: cuando hay varios topes, manda el MENOR.
+ * Capacidad de pago y múltiplo de renta no son alternativas entre las que elegir
+ * sino restricciones simultáneas, y el error barato es quedarse corto. Si esto
+ * sobreestima, el asesor ilusiona al cliente en la reunión y el banco lo rechaza
+ * semanas después — exactamente el daño que la metodología comercial que esta
+ * herramienta apoya busca evitar.
+ *
+ * El AHORRO no es un tope (enmienda 2026-08-12 al ADR-0032): la capacidad la
+ * define la renta. El pie es la parte del cliente y se informa como brecha
+ * (`brechaPieCLP`), no colapsa el titular a cero.
  */
 
 import { tasaMensual } from "./calculo";
@@ -134,28 +139,28 @@ export type CapacidadDeCompra = {
   /** El dato que el asesor dice en voz alta. */
   valorMaximoPropiedadUF: number;
   /** Qué restringió el valor: es lo que vuelve accionable la recomendación. */
-  limitadoPor: "capacidad_de_pago" | "multiplo_de_renta" | "ahorro_disponible";
+  limitadoPor: "capacidad_de_pago" | "multiplo_de_renta";
   creditoMaximoCLP: number;
   pieRequeridoCLP: number;
+  /**
+   * Lo que falta de ahorro para cubrir el pie de ese valor. 0 cuando el ahorro
+   * declarado alcanza. Es información complementaria, no un tope: el titular
+   * supone que el pie se completa.
+   */
+  brechaPieCLP: number;
   dividendoEstimadoCLP: number;
   financiamiento: number;
   plazoAnios: number;
-  /** Detalle de los tres topes, en UF, para poder explicar el resultado. */
-  topesUF: {
-    porCredito: number;
-    porAhorro: number;
-  };
 };
 
 /**
  * Valor máximo de propiedad que este perfil puede evaluar hoy.
  *
- * El tope por AHORRO no es decorativo y es la corrección más importante al
- * planteamiento original: de nada sirve calificar para un crédito de 4.000 UF si
- * el cliente tiene 200 UF ahorradas y el pie exigido son 400. En la práctica el
- * pie manda más seguido que el crédito, y además es lo único que le da sentido
- * numérico a la recomendación "aumentar el pie" — sin este tope, esa palanca no
- * movería ninguna cifra.
+ * ENMIENDA 2026-08-12 al ADR-0032: la capacidad la define la RENTA (crédito
+ * máximo / % de financiamiento), no el ahorro. El diseño original hacía del
+ * ahorro un tercer tope y con ahorro $0 el titular colapsaba a 0 UF junto a un
+ * perfil "viable" — contradictorio en reunión. Ahora el pie se informa como
+ * brecha: cuánto exige este valor y cuánto falta de ahorro para cubrirlo.
  */
 export function capacidadDeCompra(params: {
   rentaMensual: number;
@@ -189,49 +194,36 @@ export function capacidadDeCompra(params: {
     limitadoPor: credito.limitadoPor,
     creditoMaximoCLP: 0,
     pieRequeridoCLP: 0,
+    brechaPieCLP: 0,
     dividendoEstimadoCLP: 0,
     financiamiento,
     plazoAnios,
-    topesUF: { porCredito: 0, porAhorro: 0 },
   };
 
   if (valorUF <= 0 || credito.monto <= 0) return vacio;
 
-  // Tope 1: hasta dónde alcanza el crédito, dado cuánto financia el banco.
-  const porCreditoCLP = credito.monto / financiamiento;
-  // Tope 2: hasta dónde alcanza el ahorro para cubrir el pie.
-  const pieProporcion = 1 - financiamiento;
-  const porAhorroCLP =
-    pieProporcion <= 0
-      ? Number.POSITIVE_INFINITY // financiamiento 100%: el ahorro no restringe
-      : Math.max(0, ahorroDisponibleCLP) / pieProporcion;
-
-  const valorCLP = Math.min(porCreditoCLP, porAhorroCLP);
-
-  const limitadoPor =
-    porAhorroCLP < porCreditoCLP ? "ahorro_disponible" : credito.limitadoPor;
-
-  // El crédito EFECTIVO puede ser menor que el máximo: si manda el ahorro, no se
-  // pide todo lo que el banco daría. Presentar el máximo teórico junto a un valor
-  // de propiedad menor sería incoherente.
-  const creditoEfectivo = valorCLP * financiamiento;
+  // Hasta dónde alcanza el crédito, dado cuánto financia el banco. El resto del
+  // valor es el pie, y ese pie se informa — no restringe.
+  const valorCLP = credito.monto / financiamiento;
+  const pieRequeridoCLP = valorCLP - credito.monto;
+  const brechaPieCLP = Math.max(
+    0,
+    pieRequeridoCLP - Math.max(0, ahorroDisponibleCLP),
+  );
 
   return {
     valorMaximoPropiedadUF: valorCLP / valorUF,
-    limitadoPor,
-    creditoMaximoCLP: creditoEfectivo,
-    pieRequeridoCLP: valorCLP * pieProporcion,
+    limitadoPor: credito.limitadoPor,
+    creditoMaximoCLP: credito.monto,
+    pieRequeridoCLP,
+    brechaPieCLP,
     dividendoEstimadoCLP: dividendoPorCredito({
-      credito: creditoEfectivo,
+      credito: credito.monto,
       tasaAnual,
       plazoAnios,
     }),
     financiamiento,
     plazoAnios,
-    topesUF: {
-      porCredito: porCreditoCLP / valorUF,
-      porAhorro: Number.isFinite(porAhorroCLP) ? porAhorroCLP / valorUF : Infinity,
-    },
   };
 }
 

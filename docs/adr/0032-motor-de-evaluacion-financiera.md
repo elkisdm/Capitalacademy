@@ -51,6 +51,15 @@ pública no se mueva.
 
 ### 3. Ante varios topes, manda el menor
 
+> **Enmienda 2026-08-12**: el ahorro deja de ser un tope. En uso real, una ficha con
+> renta que califica y ahorro $0 mostraba "0 UF" junto a un perfil "viable" —
+> contradictorio frente al cliente. Decisión de producto (Elkis): la capacidad la define
+> la renta; el pie se informa como brecha (`brechaPieCLP`: cuánto exige ese valor y
+> cuánto falta de ahorro), nunca colapsa el titular. Consecuencia asumida: un perfil que
+> financia menos (amarillo, 80%) muestra un valor levemente mayor que uno verde para el
+> mismo crédito, porque admite más pie — condicionado a cubrirlo, y la brecha queda a la
+> vista. Los topes que quedan son capacidad de pago y 60× renta.
+
 Capacidad de pago, 60× renta y ahorro disponible son restricciones **simultáneas**, no
 alternativas. Gana la más restrictiva.
 

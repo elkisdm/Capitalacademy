@@ -151,8 +151,6 @@ export function evaluarFicha(
  * reunión el asesor lo repite como si fuera cierto.
  */
 const PALANCA: Record<CapacidadDeCompra["limitadoPor"], string> = {
-  ahorro_disponible:
-    "El tope lo pone el pie: cada peso adicional de ahorro sube directamente el valor de propiedad alcanzable.",
   capacidad_de_pago:
     "El tope lo pone la cuota que la renta soporta: subir la renta o prepagar deudas vigentes es lo que mueve la cifra. Más pie no la cambia.",
   multiplo_de_renta:

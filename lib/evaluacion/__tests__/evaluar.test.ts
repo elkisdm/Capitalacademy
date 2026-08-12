@@ -110,22 +110,38 @@ describe("evaluarFicha — la cadena completa respeta cada regla", () => {
     );
   });
 
-  // E3: el ahorro es un tope real, no un dato de contexto.
-  it("con poco ahorro el tope lo pone el pie y la palanca lo dice", () => {
-    const r = evaluarFicha({ ...SOLVENTE, ahorroDisponible: 6_000_000 }, OPC);
+  // E3 (enmienda 2026-08-12): el ahorro no limita el titular; el pie se informa
+  // como brecha para que el asesor lo diga en la misma frase.
+  it("con poco ahorro el titular no cambia y la brecha dice cuánto falta", () => {
+    const con = evaluarFicha(SOLVENTE, OPC);
+    const poco = evaluarFicha({ ...SOLVENTE, ahorroDisponible: 6_000_000 }, OPC);
 
-    if (!r.califica) throw new Error("debía calificar");
-    expect(r.capacidad.limitadoPor).toBe("ahorro_disponible");
-    expect(r.palanca).toContain("pie");
+    if (!con.califica || !poco.califica) throw new Error("ambos debían calificar");
+    expect(poco.capacidad.valorMaximoPropiedadUF).toBeCloseTo(
+      con.capacidad.valorMaximoPropiedadUF,
+      6,
+    );
+    expect(poco.capacidad.brechaPieCLP).toBeCloseTo(
+      poco.capacidad.pieRequeridoCLP - 6_000_000,
+      2,
+    );
   });
 
-  // La contracara: cuando el pie no es el límite, la herramienta lo dice
-  // explícitamente en vez de recomendar algo que no cambiaría nada.
-  it("cuando el pie no limita, la palanca avisa que más pie no mueve la cifra", () => {
+  // El caso que motivó la enmienda: ahorro $0 con renta que califica.
+  it("sin ahorro igual hay titular, y la brecha es el pie completo", () => {
+    const r = evaluarFicha({ ...SOLVENTE, ahorroDisponible: 0 }, OPC);
+
+    if (!r.califica) throw new Error("debía calificar");
+    expect(r.capacidad.valorMaximoPropiedadUF).toBeGreaterThan(0);
+    expect(r.capacidad.brechaPieCLP).toBeCloseTo(r.capacidad.pieRequeridoCLP, 2);
+  });
+
+  // La palanca solo habla de lo que mueve el titular, y el pie ya no lo mueve.
+  it("la palanca avisa que más pie no mueve la cifra", () => {
     const r = evaluarFicha({ ...SOLVENTE, ahorroDisponible: 400_000_000 }, OPC);
 
     if (!r.califica) throw new Error("debía calificar");
-    expect(r.capacidad.limitadoPor).not.toBe("ahorro_disponible");
+    expect(r.capacidad.brechaPieCLP).toBe(0);
     expect(r.palanca).toContain("Más pie no la cambia");
   });
 

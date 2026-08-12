@@ -37,9 +37,9 @@ type Props = { valorUF: ValorUF };
 /**
  * Motor de Evaluación Financiera (ADR-0032).
  *
- * Todo el cálculo corre en el navegador y la ficha NO viaja a ningún servidor
- * (decisión 1 del ADR-0032). El historial es LOCAL: localStorage de este
- * computador, guardado explícito por el asesor (enmienda 2 del ADR-0032).
+ * Todo el cálculo corre en el navegador y la ficha NO se autoguarda nunca
+ * (decisión 1 del ADR-0032). El historial es por USUARIO (enmienda 3): solo lo
+ * que el asesor guarda explícito persiste, en su cuenta y con RLS estricta.
  *
  * Dos vistas: mientras se llena la ficha, formulario + columna de resultado.
  * Con el análisis listo, la ficha se COLAPSA a una barra y el resultado toma
@@ -57,13 +57,18 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
   const [avisosImport, setAvisosImport] = useState<string[]>([]);
   const [historial, setHistorial] = useState<EntradaHistorial[]>([]);
   const [guardadoId, setGuardadoId] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
   const [confirmandoLimpiar, setConfirmandoLimpiar] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultadoRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setHistorial(listarHistorial(window.localStorage));
+    let vivo = true;
+    listarHistorial().then((h) => {
+      if (vivo) setHistorial(h);
+    });
     return () => {
+      vivo = false;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
@@ -160,17 +165,21 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
     setGuardadoId(null);
   }
 
-  function guardar() {
-    if (!evaluacion) return;
-    const entrada = guardarEnHistorial(window.localStorage, {
+  async function guardar() {
+    if (!evaluacion || guardando) return;
+    setGuardando(true);
+    const entrada = await guardarEnHistorial({
       nombre: ficha.nombre,
       valorUF: valorUF.valor,
       ficha,
       evaluacion,
     });
+    setGuardando(false);
     if (entrada) {
       setGuardadoId(entrada.id);
-      setHistorial(listarHistorial(window.localStorage));
+      setHistorial(await listarHistorial());
+    } else {
+      setErrores(["No se pudo guardar en el historial. Revisa tu conexión e intenta de nuevo."]);
     }
   }
 
@@ -186,10 +195,12 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
     setGuardadoId(entrada.id);
   }
 
-  function eliminarEntrada(id: string) {
-    eliminarDelHistorial(window.localStorage, id);
-    setHistorial(listarHistorial(window.localStorage));
+  async function eliminarEntrada(id: string) {
+    // Optimista: la fila desaparece al tiro y se reconcilia con el servidor.
+    setHistorial((h) => h.filter((e) => e.id !== id));
     if (guardadoId === id) setGuardadoId(null);
+    const ok = await eliminarDelHistorial(id);
+    if (!ok) setHistorial(await listarHistorial());
   }
 
   // Imprime SOLO el informe (reglas en globals.css bajo [data-print-informe]).
@@ -217,7 +228,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         <p className="mt-1.5 text-[13px] leading-relaxed text-ca-ink-soft">
           Se pierde todo lo digitado{evaluacion ? " y el análisis en pantalla" : ""}. Los datos no
           se guardan en ninguna parte, así que no hay forma de recuperarlos
-          {guardadoId ? " (la copia del historial se conserva)" : ""}.
+          {guardadoId ? " (la copia guardada en tu historial se conserva)" : ""}.
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setConfirmandoLimpiar(false)}>
@@ -249,10 +260,19 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
             <Button variant="outline" size="sm" onClick={() => setEditando(true)}>
               <Pencil size={14} /> Editar ficha
             </Button>
-            <Button variant="outline" size="sm" onClick={guardar} disabled={guardadoId !== null}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={guardar}
+              disabled={guardadoId !== null || guardando}
+            >
               {guardadoId ? (
                 <>
                   <Check size={14} /> Guardado
+                </>
+              ) : guardando ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Guardando…
                 </>
               ) : (
                 <>
@@ -278,8 +298,8 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
 
         <p className="flex items-start gap-2 px-1 text-[11px] leading-relaxed text-ca-ink-soft print:hidden">
           <ShieldCheck size={13} className="mt-0.5 shrink-0" />
-          Los datos del cliente no se envían a ningún servidor. "Guardar" deja una copia solo en
-          este computador.
+          El cálculo corre en este navegador y nada se guarda solo: al presionar "Guardar", el
+          análisis queda en tu cuenta para retomarlo después.
         </p>
 
         {dialogoLimpiar}
@@ -407,8 +427,8 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
 
         <p className="mt-4 flex items-start gap-2 px-1 text-[11px] leading-relaxed text-ca-ink-soft">
           <ShieldCheck size={13} className="mt-0.5 shrink-0" />
-          Los datos del cliente no se envían a ningún servidor. El historial guarda copias solo
-          en este computador.
+          El cálculo corre en este navegador y nada se guarda solo: el historial conserva
+          únicamente los análisis que guardaste, en tu cuenta.
         </p>
       </aside>
 
@@ -418,8 +438,8 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
 }
 
 /**
- * Historial local (enmienda 2 del ADR-0032): análisis guardados a mano por el
- * asesor, solo en el localStorage de esta máquina.
+ * Historial por usuario (enmienda 3 del ADR-0032): análisis guardados a mano
+ * por el asesor, en su cuenta.
  */
 function HistorialLocal({
   historial,
@@ -435,7 +455,7 @@ function HistorialLocal({
   return (
     <div className="ca-card mt-4 p-4">
       <h3 className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.14em] text-ca-ink-soft">
-        <Clock size={13} /> Historial en este computador
+        <Clock size={13} /> Historial
       </h3>
       <ul className="mt-2 divide-y divide-ca-ink/[0.06]">
         {historial.map((e) => (

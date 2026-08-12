@@ -1293,6 +1293,36 @@ export type Database = {
           },
         ]
       }
+      evaluation_history: {
+        Row: {
+          created_at: string
+          evaluacion: Json
+          ficha: Json
+          id: string
+          nombre: string
+          user_id: string
+          valor_uf: number
+        }
+        Insert: {
+          created_at?: string
+          evaluacion: Json
+          ficha: Json
+          id?: string
+          nombre?: string
+          user_id: string
+          valor_uf: number
+        }
+        Update: {
+          created_at?: string
+          evaluacion?: Json
+          ficha?: Json
+          id?: string
+          nombre?: string
+          user_id?: string
+          valor_uf?: number
+        }
+        Relationships: []
+      }
       evaluations: {
         Row: {
           closes_at: string | null

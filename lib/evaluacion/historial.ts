@@ -1,20 +1,16 @@
 /**
- * Historial LOCAL de evaluaciones (enmienda 2 al ADR-0032).
+ * Historial de evaluaciones a nivel de USUARIO (enmienda 3 al ADR-0032).
  *
- * Vive en localStorage del computador del asesor, NUNCA en el servidor: la
- * decisión 1 del ADR-0032 sigue en pie — la ficha contiene datos financieros de
- * un tercero identificado y no viaja a ninguna parte. Guardar es una acción
- * explícita del asesor, con la advertencia de que queda solo en esa máquina.
+ * Vive en la tabla `evaluation_history` con RLS estricta (cada asesor ve solo
+ * lo suyo, migración 0098). Guardar sigue siendo una acción EXPLÍCITA: la ficha
+ * no se autoguarda nunca — lo que no se guarda desaparece al cerrar.
  *
- * El tope de entradas evita que el almacén crezca sin control y acota la
- * exposición: lo viejo se descarta primero.
+ * Este módulo es el cliente del endpoint; el tope de entradas y la validación
+ * viven en `app/api/classroom/evaluaciones/historial/route.ts`.
  */
 
 import type { Ficha } from "./ficha";
 import type { Evaluacion } from "./evaluar";
-
-const CLAVE = "ca-evaluaciones-historial-v1";
-export const HISTORIAL_MAXIMO = 20;
 
 export type EntradaHistorial = {
   id: string;
@@ -27,65 +23,67 @@ export type EntradaHistorial = {
   evaluacion: Evaluacion;
 };
 
-function leerTodo(storage: Storage): EntradaHistorial[] {
+const ENDPOINT = "/api/classroom/evaluaciones/historial";
+
+type FilaRemota = {
+  id: string;
+  nombre: string;
+  valor_uf: number;
+  ficha: Ficha;
+  evaluacion: Evaluacion;
+  created_at: string;
+};
+
+const aEntrada = (f: FilaRemota): EntradaHistorial => ({
+  id: f.id,
+  guardadoEn: new Date(f.created_at).getTime(),
+  nombre: f.nombre,
+  valorUF: Number(f.valor_uf),
+  ficha: f.ficha,
+  evaluacion: f.evaluacion,
+});
+
+export async function listarHistorial(): Promise<EntradaHistorial[]> {
   try {
-    const crudo = storage.getItem(CLAVE);
-    if (!crudo) return [];
-    const lista = JSON.parse(crudo);
-    if (!Array.isArray(lista)) return [];
-    // Filtro estructural mínimo: si otra versión dejó basura, se ignora esa
-    // entrada en vez de romper toda la pantalla.
-    return lista.filter(
-      (e): e is EntradaHistorial =>
-        typeof e === "object" &&
-        e !== null &&
-        typeof e.id === "string" &&
-        typeof e.guardadoEn === "number" &&
-        typeof e.valorUF === "number" &&
-        typeof e.ficha === "object" &&
-        typeof e.evaluacion === "object",
-    );
-  } catch {
+    const res = await fetch(ENDPOINT);
+    if (!res.ok) return [];
+    const { entradas } = (await res.json()) as { entradas: FilaRemota[] };
+    return entradas.map(aEntrada);
+  } catch (e) {
+    console.error("No se pudo leer el historial de evaluaciones", e);
     return [];
   }
 }
 
-function escribirTodo(storage: Storage, lista: EntradaHistorial[]): boolean {
+export async function guardarEnHistorial(datos: {
+  nombre: string;
+  valorUF: number;
+  ficha: Ficha;
+  evaluacion: Evaluacion;
+}): Promise<EntradaHistorial | null> {
   try {
-    storage.setItem(CLAVE, JSON.stringify(lista));
-    return true;
-  } catch {
-    // Cuota llena o storage bloqueado: se avisa arriba, no se revienta.
-    return false;
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(datos),
+    });
+    if (!res.ok) return null;
+    const { entrada } = (await res.json()) as { entrada: FilaRemota };
+    return aEntrada(entrada);
+  } catch (e) {
+    console.error("No se pudo guardar en el historial de evaluaciones", e);
+    return null;
   }
 }
 
-export function listarHistorial(storage: Storage): EntradaHistorial[] {
-  // Más reciente primero: es la entrada que el asesor va a buscar.
-  return leerTodo(storage).sort((a, b) => b.guardadoEn - a.guardadoEn);
-}
-
-export function guardarEnHistorial(
-  storage: Storage,
-  datos: { nombre: string; valorUF: number; ficha: Ficha; evaluacion: Evaluacion; ahora?: number },
-): EntradaHistorial | null {
-  const entrada: EntradaHistorial = {
-    id: `ev-${(datos.ahora ?? Date.now()).toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-    guardadoEn: datos.ahora ?? Date.now(),
-    nombre: datos.nombre.trim() || "Ficha sin nombre",
-    valorUF: datos.valorUF,
-    ficha: datos.ficha,
-    evaluacion: datos.evaluacion,
-  };
-
-  const lista = listarHistorial(storage);
-  const recortada = [entrada, ...lista].slice(0, HISTORIAL_MAXIMO);
-  return escribirTodo(storage, recortada) ? entrada : null;
-}
-
-export function eliminarDelHistorial(storage: Storage, id: string): void {
-  escribirTodo(
-    storage,
-    leerTodo(storage).filter((e) => e.id !== id),
-  );
+export async function eliminarDelHistorial(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${ENDPOINT}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch (e) {
+    console.error("No se pudo eliminar del historial de evaluaciones", e);
+    return false;
+  }
 }

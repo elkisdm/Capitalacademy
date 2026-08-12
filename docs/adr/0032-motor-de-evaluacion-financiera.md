@@ -51,14 +51,22 @@ pública no se mueva.
 
 ### 3. Ante varios topes, manda el menor
 
-> **Enmienda 2 — 2026-08-12 (tarde)**: se agrega un HISTORIAL LOCAL y export a
-> PDF, sin tocar la decisión 1. El asesor puede guardar un análisis con un botón
-> explícito; la copia vive SOLO en el localStorage de su computador (tope de 20
-> entradas, `lib/evaluacion/historial.ts`) y se elimina desde la misma pantalla.
-> Nada viaja al servidor: si algún día se quiere historial compartido entre
-> asesores, ESA decisión reabre consentimiento, retención y RLS. El "PDF" es la
-> hoja de impresión del informe (`window.print()` + reglas en `globals.css`),
-> también sin servidor.
+> **Enmienda 3 — 2026-08-12 (noche)**: el historial pasa a NIVEL DE USUARIO,
+> por decisión de Elkis, y revierte PARCIALMENTE la decisión 1. Lo que se
+> mantiene: la ficha NUNCA se autoguarda — persiste únicamente lo que el asesor
+> guarda con el botón explícito (ese acto es el consentimiento operativo). Lo
+> que cambia: la copia vive en la tabla `evaluation_history` (migración 0098)
+> con RLS estricta `user_id = auth.uid()` en select/insert/delete — sin
+> excepción para admin/ops, sin política de UPDATE (cada entrada es una foto
+> inmutable) — tope de 20 por usuario recortado en el endpoint
+> (`/api/classroom/evaluaciones/historial`). Retención: manual, el asesor
+> elimina desde la pantalla; si algún día se quiere historial COMPARTIDO entre
+> asesores o retención automática, eso es una nueva decisión. El export a PDF
+> sigue sin servidor: hoja de impresión del informe (`window.print()` + reglas
+> en `globals.css`).
+>
+> *(La enmienda 2 de esa misma tarde — historial en localStorage — quedó
+> reemplazada por esta antes de usarse en producción.)*
 
 > **Enmienda 2026-08-12**: el ahorro deja de ser un tope. En uso real, una ficha con
 > renta que califica y ahorro $0 mostraba "0 UF" junto a un perfil "viable" —

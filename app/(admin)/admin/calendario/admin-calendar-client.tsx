@@ -55,10 +55,12 @@ export function AdminCalendarClient({
   sessions,
   programName,
   multiCohort,
+  cohorts,
 }: {
   sessions: AdminCalendarSession[];
   programName: string;
   multiCohort: boolean;
+  cohorts: { id: string; name: string }[];
 }) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const router = useRouter();
@@ -74,12 +76,33 @@ export function AdminCalendarClient({
 
   return (
     <div className="ca-fade-up mx-auto flex w-full max-w-[1000px] flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
-      <div>
-        <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
-          Operaciones
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
+            Operaciones
+          </div>
+          <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Calendario</h1>
+          <p className="mt-1 text-[14px] font-semibold text-ca-ink-soft">{programName}</p>
         </div>
-        <h1 className="mt-1 text-[34px] font-black tracking-[-0.025em] text-ca-ink">Calendario</h1>
-        <p className="mt-1 text-[14px] font-semibold text-ca-ink-soft">{programName}</p>
+
+        {/* El calendario era read-only y la creación vivía escondida en
+            Cohorte → Sesiones: este es el lugar donde el equipo VIENE a crear
+            una clase, así que el botón va acá y aterriza allá con el
+            formulario ya abierto. Con varias cohortes, un botón por cada una. */}
+        {cohorts.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {cohorts.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => router.push(`/admin/cohorts/${c.id}/sesiones?nueva=1`)}
+                className="ca-btn-interactive min-h-11 rounded-full bg-ca-ink px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ca-violet/40 md:min-h-0"
+              >
+                + Nueva clase{cohorts.length > 1 ? ` · ${c.name}` : ""}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {sessions.length === 0 ? (

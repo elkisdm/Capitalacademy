@@ -12,11 +12,11 @@ import { SessionsManagerClient } from "./sessions-manager-client";
 export default async function AdminCohortSessionsPage(
   props: {
     params: Promise<{ cohortId: string }>;
-    searchParams: Promise<{ session?: string }>;
+    searchParams: Promise<{ session?: string; nueva?: string }>;
   },
 ) {
   const { cohortId } = await props.params;
-  const { session: focusSessionId } = await props.searchParams;
+  const { session: focusSessionId, nueva } = await props.searchParams;
 
   const supabase = await createClient();
   const {
@@ -105,6 +105,7 @@ export default async function AdminCohortSessionsPage(
         initialResources={resources}
         modules={modules}
         focusSessionId={focusSessionId ?? null}
+        abrirCreacion={nueva === "1"}
         readyRecordingSessionIds={readyRecordingSessionIds}
       />
     </div>

@@ -73,6 +73,7 @@ export default async function AdminCalendarPage(props: {
       sessions={sessions}
       programName={programName}
       multiCohort={cohortList.length > 1}
+      cohorts={cohortList}
     />
   );
 }

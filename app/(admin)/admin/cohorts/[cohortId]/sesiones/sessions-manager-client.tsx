@@ -217,6 +217,7 @@ export function SessionsManagerClient({
   initialResources,
   modules = [],
   focusSessionId = null,
+  abrirCreacion = false,
   readyRecordingSessionIds = [],
 }: {
   cohort: CohortInfo;
@@ -227,6 +228,7 @@ export function SessionsManagerClient({
   initialResources: SessionResource[];
   modules?: ModuleOption[];
   focusSessionId?: string | null;
+  abrirCreacion?: boolean;
   /** Clases cuya repetición ya está publicada: no se les ofrece el atajo. */
   readyRecordingSessionIds?: string[];
 }) {
@@ -301,6 +303,17 @@ export function SessionsManagerClient({
     if (recordingFocus === 0 || !editing) return;
     recordingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [recordingFocus, editing]);
+
+  // Deep-link desde el calendario del admin (?nueva=1): abre el formulario de
+  // creación de una vez — quien llegó acá desde "+ Nueva clase" no tiene que
+  // encontrar el botón de nuevo. Solo al montar.
+  const creacionAbierta = useRef(false);
+  useEffect(() => {
+    if (!abrirCreacion || creacionAbierta.current) return;
+    creacionAbierta.current = true;
+    openCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abrirCreacion]);
 
   // Deep-link desde el editor de Lecciones (?session=<id>): abre directamente el
   // formulario de edición de esa clase. Solo una vez al montar.

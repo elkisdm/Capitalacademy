@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { DatePicker } from "@/components/ui/date-picker";
 import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
+import { meetingPath } from "@/lib/livekit/meeting-code";
 
 const TZ = "America/Santiago";
 
@@ -238,6 +239,20 @@ export function SessionsManagerClient({
   // un cambio de horario y ANTES de borrar una clase.
   const [avisoTarget, setAvisoTarget] = useState<AvisoTarget | null>(null);
   const [avisoMsg, setAvisoMsg] = useState<string | null>(null);
+  // Enlace de sala recién copiado (id de la sesión), para el swap "¡Copiado!".
+  const [salaCopiada, setSalaCopiada] = useState<string | null>(null);
+
+  async function copiarSala(s: ClassSession) {
+    const base =
+      typeof window !== "undefined" ? window.location.origin : "https://capitalacademy.cl";
+    try {
+      await navigator.clipboard.writeText(`${base}${meetingPath(s.code)}`);
+      setSalaCopiada(s.id);
+      setTimeout(() => setSalaCopiada((prev) => (prev === s.id ? null : prev)), 2000);
+    } catch {
+      // El portapapeles puede estar bloqueado por el navegador; no es fatal.
+    }
+  }
 
   useEffect(() => {
     setNow(Date.now());
@@ -534,6 +549,30 @@ export function SessionsManagerClient({
                 >
                   Enlace
                 </a>
+              </>
+            )}
+            {/* La sala propia existe para toda clase no grabada: el código nace
+                con la sesión (0089), pero hasta ahora el admin no lo veía en
+                ninguna parte — solo el alumno, en su pantalla de clase. */}
+            {s.modality !== "recorded" && s.code && (
+              <>
+                <span>·</span>
+                <a
+                  href={meetingPath(s.code)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-ca-violet hover:underline"
+                >
+                  Abrir sala
+                </a>
+                <button
+                  type="button"
+                  onClick={() => copiarSala(s)}
+                  aria-label={`Copiar enlace de la sala de ${s.title ?? "la clase"}`}
+                  className="font-bold text-ca-violet hover:underline"
+                >
+                  {salaCopiada === s.id ? "¡Copiado!" : "Copiar enlace de la sala"}
+                </button>
               </>
             )}
           </div>

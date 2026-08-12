@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import { Calculator, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FichaEstadoSituacion } from "./FichaEstadoSituacion";
+import { ImportarFicha } from "./ImportarFicha";
 import { ResultadoEvaluacion } from "./ResultadoEvaluacion";
 import { fichaSchema, fichaVacia, type Ficha } from "@/lib/evaluacion/ficha";
 import { evaluarFicha, type Evaluacion } from "@/lib/evaluacion/evaluar";
+import type { ImporteEESS } from "@/lib/evaluacion/importar-eess";
 import type { ValorUF } from "@/lib/indicadores/uf";
 
 type Props = { valorUF: ValorUF };
@@ -24,6 +26,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
   const [ficha, setFicha] = useState<Ficha>(fichaVacia);
   const [evaluacion, setEvaluacion] = useState<Evaluacion | null>(null);
   const [errores, setErrores] = useState<string[]>([]);
+  const [avisosImport, setAvisosImport] = useState<string[]>([]);
 
   // El botón se habilita solo cuando hay lo mínimo para calcular algo honesto:
   // sin ingresos no hay renta, y sin renta cualquier cifra sería inventada.
@@ -47,6 +50,16 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
     setFicha(fichaVacia());
     setEvaluacion(null);
     setErrores([]);
+    setAvisosImport([]);
+  }
+
+  // La ficha importada REEMPLAZA lo que hubiera: es el inicio del llenado, no
+  // un merge. Cualquier análisis previo deja de corresponder a los datos.
+  function aplicarImport({ ficha: importada, avisos }: ImporteEESS) {
+    setFicha(importada);
+    setEvaluacion(null);
+    setErrores([]);
+    setAvisosImport(avisos);
   }
 
   return (
@@ -61,6 +74,25 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
             valor de propiedad puede evaluar hoy.
           </p>
         </header>
+
+        <div className="mb-6">
+          <ImportarFicha valorUF={valorUF.valor} onImport={aplicarImport} />
+          {avisosImport.length > 0 && (
+            <ul
+              role="status"
+              className="mt-3 space-y-1 rounded-xl bg-ca-amber/10 px-4 py-3"
+            >
+              <li className="text-[12px] font-bold text-ca-amber-text">
+                Ficha importada — revisa estos puntos antes de analizar:
+              </li>
+              {avisosImport.map((a) => (
+                <li key={a} className="text-[12px] text-ca-amber-text">
+                  {a}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <FichaEstadoSituacion ficha={ficha} onChange={setFicha} />
 

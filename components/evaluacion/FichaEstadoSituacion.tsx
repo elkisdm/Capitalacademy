@@ -270,33 +270,48 @@ function ListaMontos({
   const set = (i: number, v: number) => onChange(valores.map((x, j) => (j === i ? v : x)));
   const quitar = (i: number) => onChange(valores.filter((_, j) => j !== i));
 
+  // Filas verticales, no columnas: tres campos en línea hacían colisionar las
+  // etiquetas y truncaban los montos — el asesor no podía verificar lo que
+  // digitó. Una etiqueta de grupo y numeración por fila.
   return (
     <div className="space-y-2">
-      <div className="grid gap-3 sm:grid-cols-3">
-        {valores.map((v, i) => (
-          <div key={i} className="flex items-end gap-1.5">
-            <div className="flex-1">
-              <CampoMonto
-                label={`${label} ${i + 1}`}
-                value={v}
-                onChange={(nv) => set(i, nv)}
-              />
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => quitar(i)}
-              aria-label={`Quitar ${label.toLowerCase()} ${i + 1}`}
-              className="mb-0.5 px-2"
-            >
-              <Trash2 size={15} />
-            </Button>
-          </div>
-        ))}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ca-ink-soft">
+          {label}
+        </p>
+        {hint && <p className="mt-0.5 text-[12px] text-ca-ink-soft">{hint}</p>}
       </div>
 
-      {valores.length === 0 && hint && (
-        <p className="text-[11px] text-ca-ink-soft">{hint}</p>
+      {valores.length > 0 && (
+        <div className="max-w-md space-y-2">
+          {valores.map((v, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className="w-5 shrink-0 text-right text-[12px] font-bold tabular-nums text-ca-ink-soft"
+              >
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <CampoMonto
+                  label={`${label} ${i + 1}`}
+                  labelOculta
+                  value={v}
+                  onChange={(nv) => set(i, nv)}
+                />
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => quitar(i)}
+                aria-label={`Quitar ${label.toLowerCase()} ${i + 1}`}
+                className="h-11 w-11 shrink-0 px-0 md:h-9 md:w-9"
+              >
+                <Trash2 size={15} />
+              </Button>
+            </div>
+          ))}
+        </div>
       )}
 
       {valores.length < maximo && (
@@ -321,43 +336,47 @@ function Pasivos({
   return (
     <div className="space-y-3">
       {pasivos.map((p, i) => (
-        <div
-          key={i}
-          className="grid gap-3 rounded-xl border border-ca-ink/[0.08] p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
-        >
-          <Campo label="Tipo">
-            <Select
-              value={p.tipo}
-              onChange={(e) => set(i, { tipo: e.target.value as typeof p.tipo })}
+        <div key={i} className="space-y-3 rounded-xl border border-ca-ink/[0.08] p-3">
+          {/* El tipo a lo ancho y los montos abajo: tres columnas apretaban el
+              select hasta truncarlo y descuadraban las etiquetas. */}
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Campo label={`Deuda ${i + 1} — tipo`}>
+                <Select
+                  value={p.tipo}
+                  onChange={(e) => set(i, { tipo: e.target.value as typeof p.tipo })}
+                >
+                  {TIPOS_PASIVO.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </Select>
+              </Campo>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onChange(pasivos.filter((_, j) => j !== i))}
+              aria-label={`Quitar deuda ${i + 1}`}
+              className="h-11 w-11 shrink-0 px-0 md:h-9 md:w-9"
             >
-              {TIPOS_PASIVO.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
-          </Campo>
+              <Trash2 size={15} />
+            </Button>
+          </div>
 
-          <CampoMonto
-            label="Saldo total"
-            value={p.deudaTotal}
-            onChange={(v) => set(i, { deudaTotal: v })}
-          />
-          <CampoMonto
-            label="Cuota mensual"
-            value={p.valorCuota}
-            onChange={(v) => set(i, { valorCuota: v })}
-          />
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange(pasivos.filter((_, j) => j !== i))}
-            aria-label={`Quitar deuda ${i + 1}`}
-            className="self-end px-2 pb-2.5"
-          >
-            <Trash2 size={15} />
-          </Button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CampoMonto
+              label="Saldo total"
+              value={p.deudaTotal}
+              onChange={(v) => set(i, { deudaTotal: v })}
+            />
+            <CampoMonto
+              label="Cuota mensual"
+              value={p.valorCuota}
+              onChange={(v) => set(i, { valorCuota: v })}
+            />
+          </div>
         </div>
       ))}
 

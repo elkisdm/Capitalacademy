@@ -370,6 +370,7 @@
 | `lib/evaluacion/evaluar.ts` | `evaluarFicha`: la cadena completa del botón "Analizar capacidad de compra"; calcula el perfil ANTES que la capacidad y resuelve la palanca real según qué tope manda | — | 0032 |
 | `app/(classroom)/classroom/[cohortSlug]/evaluacion/` · `components/evaluacion/` | Pantalla del Motor de Evaluación Financiera: ficha por secciones, resultado con el valor máximo en UF como protagonista y semáforo. Tras login; el cálculo corre en el navegador y nada se envía ni se guarda | `/classroom/[cohortSlug]/evaluacion` | 0032 |
 | `lib/evaluacion/importar-eess.ts` · `components/evaluacion/ImportarFicha.tsx` | Import del Excel EESS del portal de crédito: mapea celdas fijas de la hoja DECLARACION a la `Ficha` (parsing 100% en el navegador, xlsx por import dinámico); los totales se suman de las componentes, nunca de las celdas fórmula | — | 0032 |
+| `lib/evaluacion/historial.ts` | Historial local de evaluaciones (localStorage del asesor, tope 20, guardado explícito): nada viaja al servidor | — | 0032 |
 | `lib/indicadores/uf.ts` | Valor UF del día desde mindicador.cl, cacheado 12h; el fallback nunca se cachea | — | 0027 |
 | `lib/utils/money.ts` | Helper único de formateo CLP/UF y máscara de montos para inputs | — | 0027 |
 

@@ -361,7 +361,9 @@ export function Select({
         position: "fixed",
         top: coords?.top ?? -9999,
         left: coords?.left ?? -9999,
-        width: coords?.width,
+        // Piso de ancho: con un trigger angosto, las opciones se partían en
+        // tres o cuatro líneas dentro de un panel de ~130px.
+        width: coords ? Math.max(coords.width, 240) : undefined,
         maxWidth: "calc(100vw - 2rem)",
       }}
       className="ca-card ca-scale-in z-[90] overflow-hidden p-0 shadow-xl outline-none"

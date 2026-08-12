@@ -13,6 +13,12 @@ type Props = {
    * no la pasa y se ve igual que siempre.
    */
   resaltar?: { pie: number; plazoAnios: number };
+  /**
+   * Renta con la que se calificó. Cuando está, las celdas que no alcanzan
+   * dicen cuánto FALTA de renta ("Te faltan $X de renta") en vez de la cifra
+   * absoluta, que se leía como dinero a aportar. La pública no la pasa.
+   */
+  rentaDisponible?: number;
 };
 
 const porcentaje = (v: number) => `${Math.round(v * 100)}%`;
@@ -24,7 +30,7 @@ const porcentaje = (v: number) => `${Math.round(v * 100)}%`;
  * dividendos y la de renta requerida y era el usuario quien comparaba a ojo.
  * Acá cada celda ya viene resuelta como califica / no califica.
  */
-export function MatrizDividendos({ matriz, plazoMaximo, resaltar }: Props) {
+export function MatrizDividendos({ matriz, plazoMaximo, resaltar, rentaDisponible }: Props) {
   const pies = matriz[0]?.map((c) => c.pie) ?? [];
   // El legend de edad se muestra si ALGUNA celda está bloqueada por edad, no
   // según `plazoMaximo`: cuando la edad excede todos los plazos, `plazoMaximo`
@@ -36,8 +42,14 @@ export function MatrizDividendos({ matriz, plazoMaximo, resaltar }: Props) {
   return (
     <div>
       {/* La tabla scrollea dentro de su contenedor: en móvil el body nunca
-          scrollea en horizontal (convención §6 del overlay). */}
-      <div className="-mx-1 overflow-x-auto px-1">
+          scrollea en horizontal (convención §6 del overlay). Es enfocable y con
+          rol de región para que el teclado también pueda desplazarla (WCAG 2.1.1). */}
+      <div
+        className="-mx-1 overflow-x-auto px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ca-violet/40"
+        tabIndex={0}
+        role="region"
+        aria-label="Tabla de dividendos por pie y plazo (se desplaza horizontalmente)"
+      >
         <table className="w-full min-w-[34rem] border-separate border-spacing-1 text-left">
           <caption className="sr-only">
             Dividendo mensual estimado según pie y plazo, con el detalle de si
@@ -72,6 +84,7 @@ export function MatrizDividendos({ matriz, plazoMaximo, resaltar }: Props) {
                   <td key={`${celda.plazoAnios}-${celda.pie}`} className="p-0">
                     <CeldaEscenario
                       celda={celda}
+                      rentaDisponible={rentaDisponible}
                       resaltada={
                         resaltar !== undefined &&
                         Math.abs(celda.pie - resaltar.pie) < 1e-9 &&
@@ -117,14 +130,26 @@ export function MatrizDividendos({ matriz, plazoMaximo, resaltar }: Props) {
   );
 }
 
-function CeldaEscenario({ celda, resaltada = false }: { celda: Celda; resaltada?: boolean }) {
+function CeldaEscenario({
+  celda,
+  resaltada = false,
+  rentaDisponible,
+}: {
+  celda: Celda;
+  resaltada?: boolean;
+  rentaDisponible?: number;
+}) {
   const bloqueadaPorEdad = celda.motivo === "plazo_excede_edad";
 
+  // Con la renta a mano, la celda dice cuánto FALTA — "Necesitas $4.011.946" se
+  // leía como dinero a aportar, cuando es la renta que exige ese escenario.
   const estado = bloqueadaPorEdad
     ? "No disponible por edad"
     : celda.califica
       ? "Tu renta alcanza"
-      : `Necesitas ${formatCLP(celda.rentaRequerida)}`;
+      : rentaDisponible !== undefined
+        ? `Faltan ${formatCLP(celda.rentaRequerida - rentaDisponible)} de renta`
+        : `Necesitas ${formatCLP(celda.rentaRequerida)}`;
 
   return (
     <div

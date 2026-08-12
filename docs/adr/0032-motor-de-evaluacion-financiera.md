@@ -51,6 +51,15 @@ pública no se mueva.
 
 ### 3. Ante varios topes, manda el menor
 
+> **Enmienda 2 — 2026-08-12 (tarde)**: se agrega un HISTORIAL LOCAL y export a
+> PDF, sin tocar la decisión 1. El asesor puede guardar un análisis con un botón
+> explícito; la copia vive SOLO en el localStorage de su computador (tope de 20
+> entradas, `lib/evaluacion/historial.ts`) y se elimina desde la misma pantalla.
+> Nada viaja al servidor: si algún día se quiere historial compartido entre
+> asesores, ESA decisión reabre consentimiento, retención y RLS. El "PDF" es la
+> hoja de impresión del informe (`window.print()` + reglas en `globals.css`),
+> también sin servidor.
+
 > **Enmienda 2026-08-12**: el ahorro deja de ser un tope. En uso real, una ficha con
 > renta que califica y ahorro $0 mostraba "0 UF" junto a un perfil "viable" —
 > contradictorio frente al cliente. Decisión de producto (Elkis): la capacidad la define

@@ -261,10 +261,10 @@ export function perfilCrediticio(d: DatosPerfil, valorUF: number): PerfilCrediti
  * una preaprobación bancaria si nadie aclara lo contrario, y esa confusión la
  * paga el cliente semanas después cuando el banco dice que no.
  */
+// Sin repetir el color en el texto: el título del bloque ya dice "Perfil
+// favorable/intermedio/restringido" y duplicarlo leía como eco.
 const RESUMEN: Record<ColorPerfil, string> = {
-  verde:
-    "Perfil favorable para evaluar alternativas: los antecedentes respaldan bien la operación.",
-  amarillo:
-    "Perfil intermedio: la operación es viable, y hay variables concretas que la mejorarían.",
-  rojo: "Perfil restringido: conviene trabajar los puntos de abajo antes de postular al banco.",
+  verde: "Los antecedentes respaldan bien la operación: se pueden evaluar alternativas.",
+  amarillo: "La operación es viable, y hay variables concretas que la mejorarían.",
+  rojo: "Conviene trabajar los puntos de abajo antes de postular al banco.",
 };

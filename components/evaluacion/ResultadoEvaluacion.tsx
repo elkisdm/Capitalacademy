@@ -20,6 +20,9 @@ type Props = {
    * Sin `amplio`, es la columna angosta junto al formulario y omite la matriz.
    */
   amplio?: boolean;
+  /** Para el encabezado del informe impreso. */
+  nombreCliente?: string;
+  valorUFDia?: number;
 };
 
 const TONO: Record<ColorPerfil, { punto: string; texto: string; fondo: string; label: string }> = {
@@ -43,7 +46,7 @@ const TONO: Record<ColorPerfil, { punto: string; texto: string; fondo: string; l
   },
 };
 
-export function ResultadoEvaluacion({ evaluacion, amplio = false }: Props) {
+export function ResultadoEvaluacion({ evaluacion, amplio = false, nombreCliente, valorUFDia }: Props) {
   if (!evaluacion.califica) return <NoCalifica evaluacion={evaluacion} />;
 
   if (!amplio) {
@@ -52,8 +55,7 @@ export function ResultadoEvaluacion({ evaluacion, amplio = false }: Props) {
         <Titular evaluacion={evaluacion} />
         <Perfil evaluacion={evaluacion} />
         <Cifras evaluacion={evaluacion} />
-        <BrechaPie evaluacion={evaluacion} />
-        <Palanca evaluacion={evaluacion} />
+        <QueMover evaluacion={evaluacion} />
         <Listas evaluacion={evaluacion} />
         <Advertencias evaluacion={evaluacion} />
         <Avisos />
@@ -62,19 +64,35 @@ export function ResultadoEvaluacion({ evaluacion, amplio = false }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
+    <div id="informe-evaluacion" className="space-y-6">
+      {/* Solo existe al imprimir: identifica el informe que se le entrega al cliente. */}
+      <div className="hidden print:block">
+        <p className="text-[18px] font-black tracking-tight text-ca-ink">
+          Evaluación financiera{nombreCliente ? ` — ${nombreCliente}` : ""}
+        </p>
+        <p className="text-[12px] text-ca-ink-soft">
+          {new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(new Date())}
+          {valorUFDia ? ` · UF del día $${valorUFDia.toLocaleString("es-CL")}` : ""}
+        </p>
+      </div>
+
+      {/* Dos columnas recién en xl: bajo ~1280px la tabla necesita el ancho
+          completo — es el entregable de la asesoría y no puede vivir recortada
+          tras un scroll horizontal. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)] xl:items-start">
         {/* Riel de resumen: lo que el asesor dice en voz alta, de arriba abajo. */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <Titular evaluacion={evaluacion} />
           <Perfil evaluacion={evaluacion} />
           <Cifras evaluacion={evaluacion} />
-          <BrechaPie evaluacion={evaluacion} />
-          <Palanca evaluacion={evaluacion} />
+          <QueMover evaluacion={evaluacion} />
         </div>
 
-        {/* La conversación: escenarios y qué mover. Visible sin scroll. */}
-        <div className="space-y-5">
+        {/* La conversación: escenarios y qué mover. Visible sin scroll. El
+            min-w-0 es lo que permite al track encogerse bajo el min-content de
+            la tabla — sin él, la matriz estira el documento completo en móvil
+            en vez de scrollear dentro de su contenedor. */}
+        <div className="min-w-0 space-y-5">
           <section
             className="ca-card ca-fade-up p-5 sm:p-6"
             style={{ animationDelay: "160ms" }}
@@ -96,6 +114,7 @@ export function ResultadoEvaluacion({ evaluacion, amplio = false }: Props) {
             <MatrizDividendos
               matriz={evaluacion.escenarios}
               plazoMaximo={evaluacion.capacidad.plazoAnios}
+              rentaDisponible={evaluacion.rentaFinal}
               resaltar={{
                 pie: 1 - evaluacion.capacidad.financiamiento,
                 plazoAnios: evaluacion.capacidad.plazoAnios,
@@ -118,7 +137,7 @@ export function ResultadoEvaluacion({ evaluacion, amplio = false }: Props) {
 function Titular({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
   const { capacidad } = evaluacion;
   return (
-    <div className="ca-fade-up rounded-2xl bg-ca-ink px-6 py-5 text-center text-white">
+    <div aria-live="polite" className="ca-fade-up rounded-2xl bg-ca-ink px-6 py-5 text-center text-white">
       <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/60">
         Podría evaluar propiedades hasta
       </p>
@@ -145,7 +164,7 @@ function Perfil({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
         <span className={cn("mt-1 h-2.5 w-2.5 shrink-0 rounded-full", tono.punto)} aria-hidden />
         <div>
           <p className={cn("text-[14px] font-black tracking-tight", tono.texto)}>{tono.label}</p>
-          <p className="mt-0.5 text-[12px] leading-relaxed text-ca-ink-soft">
+          <p className="mt-0.5 text-[13px] leading-relaxed text-ca-ink-soft">
             {evaluacion.perfil.resumen}
           </p>
         </div>
@@ -208,8 +227,8 @@ function Fila({
   return (
     <div className="flex items-baseline justify-between gap-4 py-2.5">
       <dt className="min-w-0">
-        <span className="block text-[12px] font-semibold text-ca-ink">{label}</span>
-        {nota && <span className="block text-[11px] leading-tight text-ca-ink-soft">{nota}</span>}
+        <span className="block text-[13px] font-semibold text-ca-ink">{label}</span>
+        {nota && <span className="block text-[12px] leading-tight text-ca-ink-soft">{nota}</span>}
       </dt>
       <dd
         className={cn(
@@ -223,31 +242,37 @@ function Fila({
   );
 }
 
-function BrechaPie({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
-  if (evaluacion.capacidad.brechaPieCLP <= 0) return null;
+/**
+ * Una sola narrativa en dos niveles: qué mueve el TITULAR (la palanca) y qué
+ * hace falta para EJECUTAR a ese valor (el pie). Antes eran dos cajas de
+ * colores distintos que se leían como contradicción — "faltan $30M de pie" al
+ * lado de "más pie no cambia la cifra" — cuando son dos preguntas diferentes.
+ */
+function QueMover({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
+  const { brechaPieCLP } = evaluacion.capacidad;
   return (
     <div
-      className="ca-fade-up flex items-start gap-2.5 rounded-xl bg-ca-amber/10 px-4 py-3"
-      style={{ animationDelay: "140ms" }}
+      className="ca-fade-up space-y-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3"
+      style={{ animationDelay: "150ms" }}
     >
-      <TriangleAlert size={15} className="mt-0.5 shrink-0 text-ca-amber-text" />
-      <p className="text-[12px] leading-relaxed text-ca-ink">
-        El ahorro declarado no cubre el pie de este valor: faltan{" "}
-        <strong className="tabular-nums">{formatCLP(evaluacion.capacidad.brechaPieCLP)}</strong>. La
-        cifra de arriba supone que el pie se completa.
+      <p className="flex items-start gap-2.5 text-[13px] leading-relaxed text-ca-ink">
+        <ArrowRight size={15} className="mt-0.5 shrink-0 text-ca-violet" />
+        <span>
+          <strong>Para subir la cifra:</strong> {evaluacion.palanca}
+        </span>
       </p>
-    </div>
-  );
-}
-
-function Palanca({ evaluacion }: { evaluacion: EvaluacionAprobada }) {
-  return (
-    <div
-      className="ca-fade-up flex items-start gap-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3"
-      style={{ animationDelay: "180ms" }}
-    >
-      <ArrowRight size={15} className="mt-0.5 shrink-0 text-ca-violet" />
-      <p className="text-[12px] leading-relaxed text-ca-ink">{evaluacion.palanca}</p>
+      {brechaPieCLP > 0 && (
+        <p className="flex items-start gap-2.5 border-t border-ca-violet/15 pt-2.5 text-[13px] leading-relaxed text-ca-ink">
+          <TriangleAlert size={15} className="mt-0.5 shrink-0 text-ca-amber-text" />
+          <span>
+            <strong>Para comprar a este valor:</strong> el pie exige{" "}
+            <span className="tabular-nums">{formatCLP(evaluacion.capacidad.pieRequeridoCLP)}</span> y
+            al ahorro declarado le faltan{" "}
+            <strong className="tabular-nums">{formatCLP(brechaPieCLP)}</strong>. El titular supone
+            que el pie se completa.
+          </span>
+        </p>
+      )}
     </div>
   );
 }
@@ -267,7 +292,7 @@ function Listas({
       {fortalezas.length > 0 && (
         <Bloque titulo="Fortalezas detectadas">
           {fortalezas.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-[12px] leading-relaxed text-ca-ink">
+            <li key={f} className="flex items-start gap-2 text-[13px] leading-relaxed text-ca-ink">
               <Check size={14} className="mt-0.5 shrink-0 text-ca-lime-text" />
               {f}
             </li>
@@ -278,7 +303,7 @@ function Listas({
       {mejoras.length > 0 && (
         <Bloque titulo="Variables que mejorarían la evaluación">
           {mejoras.map((m) => (
-            <li key={m} className="flex items-start gap-2 text-[12px] leading-relaxed text-ca-ink">
+            <li key={m} className="flex items-start gap-2 text-[13px] leading-relaxed text-ca-ink">
               <AlertCircle size={14} className="mt-0.5 shrink-0 text-ca-ink-soft" />
               {m}
             </li>

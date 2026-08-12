@@ -532,3 +532,36 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
   --lk-border-radius: 12px;
   --lk-connection-excellent: var(--color-ca-lime);
 }
+
+/* === Informe de la Evaluación Financiera (impresión / PDF) =================
+   El botón "Descargar PDF" marca <body data-print-informe> y llama a
+   window.print(): estas reglas imprimen SOLO #informe-evaluacion, limpio y a
+   página completa, para entregárselo al cliente. Sin el atributo, imprimir la
+   página se comporta normal. */
+@media print {
+  body[data-print-informe] {
+    background: #fff;
+  }
+  body[data-print-informe] * {
+    visibility: hidden;
+  }
+  body[data-print-informe] #informe-evaluacion,
+  body[data-print-informe] #informe-evaluacion * {
+    visibility: visible;
+  }
+  body[data-print-informe] #informe-evaluacion {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    padding: 1.5rem;
+  }
+  /* La tabla se imprime completa, sin su scroll de pantalla. */
+  body[data-print-informe] #informe-evaluacion [role="region"] {
+    overflow: visible !important;
+  }
+  /* Sin sombras ni animaciones pendientes en papel. */
+  body[data-print-informe] #informe-evaluacion .ca-card {
+    box-shadow: none;
+    border: 1px solid rgba(23, 23, 43, 0.12);
+  }
+}

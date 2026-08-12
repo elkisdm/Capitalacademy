@@ -12,6 +12,11 @@ type Props = {
   sufijo?: string;
   placeholder?: string;
   hint?: string;
+  /**
+   * Oculta la etiqueta visualmente (queda para lectores de pantalla). Para
+   * filas numeradas donde el grupo ya tiene su etiqueta única.
+   */
+  labelOculta?: boolean;
 };
 
 /**
@@ -28,6 +33,7 @@ export function CampoMonto({
   sufijo,
   placeholder,
   hint,
+  labelOculta = false,
 }: Props) {
   const id = useId();
   const hintId = `${id}-hint`;
@@ -37,7 +43,11 @@ export function CampoMonto({
     <div>
       <label
         htmlFor={id}
-        className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-ca-ink-soft"
+        className={
+          labelOculta
+            ? "sr-only"
+            : "mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-ca-ink-soft"
+        }
       >
         {label}
       </label>

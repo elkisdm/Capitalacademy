@@ -36,6 +36,7 @@ type SessionItem = {
   title: string;
   startsAt: string;
   modality: string;
+  code?: string | null;
   teacherName: string | null;
   resources: SessionResource[];
   recording: SessionRecording | null;
@@ -202,10 +203,26 @@ export function ModuleSessionsList({
                 </Select>
               )}
 
+              {/* La sala vive con la clase, no con las lecciones grabadas: este
+                  es el lugar donde ops la busca primero, así que el acceso va acá
+                  también, no solo en la gestión de sesiones de la cohorte. */}
+              {s.modality !== "recorded" && s.code && (
+                <a
+                  href={`/sala/${s.code}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-violet hover:underline"
+                  title={`Abrir la sala en vivo (${s.code})`}
+                >
+                  <Video className="h-3.5 w-3.5" />
+                  Abrir sala
+                </a>
+              )}
+
               <Link
                 href={`/admin/cohorts/${cohortId}/sesiones?session=${s.id}`}
                 className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ca-ink-soft hover:text-ca-violet"
-                title="Editar esta clase (fecha, docente, enlace)"
+                title="Editar esta clase (fecha, docente, sala, grabación y portada)"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Editar

@@ -15,6 +15,7 @@ type SessionRow = {
   title: string | null;
   starts_at: string;
   modality: string;
+  code: string | null;
   module_id: string | null;
   lesson_id: string | null;
   teacher: { full_name: string | null } | null;
@@ -113,7 +114,7 @@ export default async function AdminLessonsPage(props: {
   if (selectedCohortId) {
     const { data: sessionRows } = await supabase
       .from("class_sessions")
-      .select("id, title, starts_at, modality, module_id, lesson_id, teacher:instructors(full_name)")
+      .select("id, title, starts_at, modality, module_id, lesson_id, code, teacher:instructors(full_name)")
       .eq("cohort_id", selectedCohortId)
       .not("module_id", "is", null)
       .neq("status", "cancelled")
@@ -282,6 +283,7 @@ export default async function AdminLessonsPage(props: {
                       title: s.title ?? "Clase",
                       startsAt: s.starts_at,
                       modality: s.modality,
+                      code: s.code,
                       teacherName: s.teacher?.full_name ?? null,
                       resources: resourcesBySession.get(s.id) ?? [],
                       recording: s.lesson_id ? (recordingByLessonId.get(s.lesson_id) ?? null) : null,

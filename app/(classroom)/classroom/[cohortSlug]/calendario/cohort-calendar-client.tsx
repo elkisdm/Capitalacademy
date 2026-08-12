@@ -7,6 +7,7 @@ import { BrandShapes, Avatar } from "@/components/classroom/primitives";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import type { ScheduleSession, SessionTiming } from "@/lib/classroom/types";
 import { TZ_SANTIAGO, dayKeyOf } from "@/lib/calendar/month-grid";
+import { meetingPath } from "@/lib/livekit/meeting-code";
 
 const TZ = TZ_SANTIAGO;
 
@@ -134,7 +135,11 @@ function SessionRow({
   const isCancelled = s.status === "cancelled";
   const pill = TIMING_PILL[timing];
   // Una sesión cancelada no se "entra", aunque sea online futura con enlace vivo.
-  const showJoin = isOnline && timing !== "past" && !!s.meeting_url && !isCancelled;
+  // La sala PROPIA manda sobre el enlace externo heredado (Zoom/Meet): si la
+  // clase tiene código, se entra por /sala/<código>; el meeting_url queda como
+  // respaldo de las clases antiguas creadas con uno.
+  const salaHref = s.code ? meetingPath(s.code) : (s.meeting_url ?? null);
+  const showJoin = isOnline && timing !== "past" && !!salaHref && !isCancelled;
 
   return (
     <div
@@ -221,6 +226,17 @@ function SessionRow({
 
         <ResourceLinks resources={s.resources} />
 
+        {/* La pantalla de la clase concentra todo (material, sala, repetición):
+            cada entrada del calendario debe llevar ahí, no solo mostrar datos. */}
+        {!isCancelled && (
+          <Link
+            href={`/classroom/${cohortSlug}/clase/${s.id}`}
+            className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-ca-ink/[0.06] px-3 py-1.5 text-[11px] font-bold text-ca-ink transition-colors hover:bg-ca-violet hover:text-white"
+          >
+            Ver la clase
+          </Link>
+        )}
+
         {s.evaluation && !isCancelled && (
           <Link
             href={`/classroom/quiz/${s.evaluation.id}`}
@@ -237,9 +253,8 @@ function SessionRow({
 
       {showJoin && (
         <a
-          href={s.meeting_url!}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={salaHref!}
+          {...(s.code ? {} : { target: "_blank", rel: "noopener noreferrer" })}
           className="ca-btn-primary inline-flex items-center gap-2 self-center rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-white"
         >
           Entrar

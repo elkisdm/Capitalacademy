@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { BrandShapes, Avatar } from "@/components/classroom/primitives";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import type { ScheduleSession, SessionTiming } from "@/lib/classroom/types";
@@ -153,6 +154,22 @@ function SessionRow({
           {fmtDay(s.starts_at)}
         </div>
       </div>
+
+      {/* Portada de la clase (0096). Se oculta bajo sm: en móvil la fila ya va
+          apretada entre el día y el botón de entrar. Sin portada no se dibuja
+          el recuadro: nada de marcos vacíos. */}
+      {s.cover_image_url && (
+        <div className="relative hidden h-16 w-28 shrink-0 self-center overflow-hidden rounded-xl bg-ca-bg-soft sm:block">
+          <Image
+            src={s.cover_image_url}
+            alt=""
+            fill
+            sizes="112px"
+            className="object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
         <div className="flex flex-wrap items-center gap-2">

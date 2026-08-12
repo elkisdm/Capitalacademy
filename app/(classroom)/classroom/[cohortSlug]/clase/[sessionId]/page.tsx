@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getViewerProfile } from "@/lib/supabase/auth";
@@ -206,6 +207,21 @@ export default async function ClassSessionPage(
           />
         </div>
       </div>
+
+      {/* Portada de la clase (0096). Solo si el admin subió una: sin imagen no
+          se reserva el espacio, para no dejar un marco vacío arriba. */}
+      {session.cover_image_url && (
+        <div className="relative mb-5 aspect-[16/9] w-full overflow-hidden rounded-[18px] bg-ca-bg-soft md:aspect-[21/9]">
+          <Image
+            src={session.cover_image_url}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 1200px"
+            className="object-cover"
+            priority
+          />
+        </div>
+      )}
 
       {/* Header de la clase */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">

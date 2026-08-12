@@ -6,12 +6,15 @@ import { ImagePlus, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type CoverImageFieldProps = {
-  target: "module" | "lesson";
+  target: "module" | "lesson" | "session";
   id: string;
   initialUrl: string | null;
+  /** Para pantallas que mantienen la fila en estado local: router.refresh()
+      no reemplaza un useState ya inicializado y la portada quedaría vieja. */
+  onChanged?: (url: string | null) => void;
 };
 
-export function CoverImageField({ target, id, initialUrl }: CoverImageFieldProps) {
+export function CoverImageField({ target, id, initialUrl, onChanged }: CoverImageFieldProps) {
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [busy, setBusy] = useState(false);
@@ -33,6 +36,7 @@ export function CoverImageField({ target, id, initialUrl }: CoverImageFieldProps
         return;
       }
       setUrl(j.cover_image_url);
+      onChanged?.(j.cover_image_url ?? null);
       router.refresh();
     } catch {
       setError("Error de red al subir la portada");
@@ -56,6 +60,7 @@ export function CoverImageField({ target, id, initialUrl }: CoverImageFieldProps
         return;
       }
       setUrl(null);
+      onChanged?.(null);
       router.refresh();
     } catch {
       setError("Error de red al quitar la portada");

@@ -8,10 +8,20 @@ export const runtime = "nodejs";
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-type Target = "module" | "lesson";
+type Target = "module" | "lesson" | "session";
 
-function targetTable(target: Target): "program_modules" | "lessons" {
-  return target === "module" ? "program_modules" : "lessons";
+const TARGET_TABLE = {
+  module: "program_modules",
+  lesson: "lessons",
+  session: "class_sessions",
+} as const;
+
+function isTarget(value: unknown): value is Target {
+  return value === "module" || value === "lesson" || value === "session";
+}
+
+function targetTable(target: Target) {
+  return TARGET_TABLE[target];
 }
 
 export async function POST(req: Request) {
@@ -20,14 +30,14 @@ export async function POST(req: Request) {
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
-  const target = formData.get("target") as Target | null;
+  const target = formData.get("target");
   const id = formData.get("id") as string | null;
 
   if (!file) {
     return NextResponse.json({ error: "No se recibió archivo" }, { status: 400 });
   }
 
-  if (target !== "module" && target !== "lesson") {
+  if (!isTarget(target)) {
     return NextResponse.json({ error: "target inválido" }, { status: 400 });
   }
 
@@ -113,14 +123,16 @@ export async function DELETE(req: Request) {
   if ("error" in auth) return auth.error;
 
   const { searchParams } = new URL(req.url);
-  const target = searchParams.get("target") as Target | null;
+  const target = searchParams.get("target");
   const id = searchParams.get("id");
 
-  if (target !== "module" && target !== "lesson") {
+  if (!isTarget(target)) {
     return NextResponse.json({ error: "target inválido" }, { status: 400 });
   }
 
-  if (!id) {
+  // El mismo `uuidLike` del POST: un id arbitrario acá se convierte en prefijo
+  // de list/remove sobre el bucket, y en un 22P02 (500) en el update de abajo.
+  if (!id || !uuidLike.safeParse(id).success) {
     return NextResponse.json({ error: "id es requerido" }, { status: 400 });
   }
 

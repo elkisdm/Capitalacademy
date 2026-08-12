@@ -41,9 +41,13 @@ function makeBuilder(table: string) {
   return builder;
 }
 
+// Registra la tabla contra la que se escribe: cada target apunta a una distinta
+// y es lo único que distingue a "session" de "lesson" en la ruta.
+const fromSpy = vi.fn((table: string) => makeBuilder(table));
+
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
-    from: (table: string) => makeBuilder(table),
+    from: fromSpy,
     storage: {
       from: () => ({
         upload: uploadSpy,
@@ -117,7 +121,7 @@ describe("POST /api/admin/covers", () => {
     expect(json.error).toBe("No se recibió archivo");
   });
 
-  it("400 cuando target no es module ni lesson", async () => {
+  it("400 cuando target no es module, lesson ni session", async () => {
     const res = await POST(postReq({ file: makeFile(), target: "curso", id: MODULE_ID }));
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -216,6 +220,38 @@ describe("POST /api/admin/covers", () => {
     expect(removeSpy).not.toHaveBeenCalled();
   });
 
+  it("200 sube la portada de una clase en vivo y escribe en class_sessions", async () => {
+    state.listFiles = [{ name: "cover.png" }];
+    const res = await POST(
+      postReq({ file: makeFile({ type: "image/png" }), target: "session", id: MODULE_ID }),
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.cover_image_url).toContain(`session/${MODULE_ID}/cover.png`);
+    expect(uploadSpy).toHaveBeenCalledWith(
+      `session/${MODULE_ID}/cover.png`,
+      expect.anything(),
+      expect.objectContaining({ upsert: true, contentType: "image/png" }),
+    );
+    expect(fromSpy).toHaveBeenCalledWith("class_sessions");
+    expect(fromSpy).not.toHaveBeenCalledWith("lessons");
+  });
+
+  it("aplica las mismas validaciones al target session (422 por formato)", async () => {
+    const res = await POST(
+      postReq({ file: makeFile({ type: "image/gif" }), target: "session", id: MODULE_ID }),
+    );
+    expect(res.status).toBe(422);
+    expect(uploadSpy).not.toHaveBeenCalled();
+  });
+
+  it("404 cuando la clase en vivo no existe", async () => {
+    state.existing = { data: null, error: null };
+    const res = await POST(postReq({ file: makeFile(), target: "session", id: MODULE_ID }));
+    expect(res.status).toBe(404);
+    expect(uploadSpy).not.toHaveBeenCalled();
+  });
+
   it("200 sin huérfanos cuando list() no devuelve archivos (staleFiles null)", async () => {
     state.listFiles = null;
     const res = await POST(postReq({ file: makeFile({ type: "image/webp" }), target: "module", id: MODULE_ID }));
@@ -232,7 +268,7 @@ describe("DELETE /api/admin/covers", () => {
     expect(removeSpy).not.toHaveBeenCalled();
   });
 
-  it("400 cuando target no es module ni lesson", async () => {
+  it("400 cuando target no es module, lesson ni session", async () => {
     const res = await DELETE(delReq("curso", MODULE_ID));
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -260,6 +296,16 @@ describe("DELETE /api/admin/covers", () => {
     const res = await DELETE(delReq("lesson", MODULE_ID));
     expect(res.status).toBe(200);
     expect(removeSpy).not.toHaveBeenCalled();
+  });
+
+  it("200 borra la portada de una clase en vivo y limpia class_sessions", async () => {
+    state.listFiles = [{ name: "cover.webp" }];
+    const res = await DELETE(delReq("session", MODULE_ID));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.cover_image_url).toBeNull();
+    expect(removeSpy).toHaveBeenCalledWith([`session/${MODULE_ID}/cover.webp`]);
+    expect(fromSpy).toHaveBeenCalledWith("class_sessions");
   });
 
   it("200 sin llamar remove() cuando list() devuelve null", async () => {

@@ -84,6 +84,30 @@ export async function getSessionRecordingLessonIds(lessonIds: string[]): Promise
   }
 }
 
+/**
+ * De un set de lecciones-repetición, cuáles ya tienen el video listo en Mux
+ * (`mux_playback_id`). El calendario de admin lo usa para saber a qué clase
+ * pasada le falta la repetición y ofrecer ahí el atajo de subida: el estado
+ * real vive en `lessons`, no en `class_sessions`. Admin SOLO para leer ids
+ * (sin PII) y, como en el reverse-lookup de arriba, degrada a set vacío en vez
+ * de tumbar la vista: sin este dato el atajo se ofrece de más, nunca de menos.
+ */
+export async function getReadyRecordingLessonIds(lessonIds: string[]): Promise<Set<string>> {
+  if (lessonIds.length === 0) return new Set();
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("lessons")
+      .select("id")
+      .in("id", lessonIds)
+      .not("mux_playback_id", "is", null);
+    return new Set(((data ?? []) as Array<{ id: string }>).map((r) => r.id));
+  } catch (err) {
+    console.error("getReadyRecordingLessonIds: fallo lookup de repeticiones listas", err);
+    return new Set();
+  }
+}
+
 export async function getCohortSlugById(cohortId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase

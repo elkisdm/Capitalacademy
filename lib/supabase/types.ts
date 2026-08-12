@@ -293,6 +293,7 @@ export type Database = {
           audience: string
           code: string
           cohort_id: string
+          cover_image_url: string | null
           created_at: string
           created_by: string | null
           ends_at: string
@@ -312,6 +313,7 @@ export type Database = {
           audience?: string
           code?: string
           cohort_id: string
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           ends_at: string
@@ -331,6 +333,7 @@ export type Database = {
           audience?: string
           code?: string
           cohort_id?: string
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           ends_at?: string
@@ -2471,6 +2474,72 @@ export type Database = {
           {
             foreignKeyName: "session_attendance_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_recordings: {
+        Row: {
+          duration_seconds: number | null
+          egress_id: string | null
+          ended_at: string | null
+          error: string | null
+          file_size_bytes: number | null
+          id: string
+          ingested_at: string | null
+          mux_asset_id: string | null
+          session_id: string
+          started_at: string
+          started_by: string | null
+          status: string
+          storage_deleted_at: string | null
+          storage_path: string | null
+        }
+        Insert: {
+          duration_seconds?: number | null
+          egress_id?: string | null
+          ended_at?: string | null
+          error?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          ingested_at?: string | null
+          mux_asset_id?: string | null
+          session_id: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          storage_deleted_at?: string | null
+          storage_path?: string | null
+        }
+        Update: {
+          duration_seconds?: number | null
+          egress_id?: string | null
+          ended_at?: string | null
+          error?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          ingested_at?: string | null
+          mux_asset_id?: string | null
+          session_id?: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          storage_deleted_at?: string | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_recordings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_recordings_started_by_fkey"
+            columns: ["started_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

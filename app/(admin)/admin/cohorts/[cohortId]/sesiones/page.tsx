@@ -6,6 +6,7 @@ import type {
   SessionInstructor,
   SessionResource,
 } from "@/lib/classroom/types";
+import { getReadyRecordingLessonIds } from "@/lib/classroom/queries";
 import { SessionsManagerClient } from "./sessions-manager-client";
 
 export default async function AdminCohortSessionsPage(
@@ -75,6 +76,17 @@ export default async function AdminCohortSessionsPage(
   ]);
 
   const sessions = (sessionsData ?? []) as unknown as ClassSession[];
+
+  // Qué clases ya tienen su repetición publicada. El estado real vive en la
+  // lección-repetición (mux_playback_id), no en class_sessions: sin esto el
+  // listado no puede distinguir "preparada pero sin video" de "lista".
+  const readyLessonIds = await getReadyRecordingLessonIds(
+    sessions.map((s) => s.lesson_id).filter((id): id is string => Boolean(id)),
+  );
+  const readyRecordingSessionIds = sessions
+    .filter((s) => Boolean(s.lesson_id && readyLessonIds.has(s.lesson_id)))
+    .map((s) => s.id);
+
   const instructors = (instructorsData ?? []) as SessionInstructor[];
   const resources = (resourcesData ?? []) as SessionResource[];
   const modules = (modulesData ?? []) as { id: string; title: string; position: number }[];
@@ -93,6 +105,7 @@ export default async function AdminCohortSessionsPage(
         initialResources={resources}
         modules={modules}
         focusSessionId={focusSessionId ?? null}
+        readyRecordingSessionIds={readyRecordingSessionIds}
       />
     </div>
   );

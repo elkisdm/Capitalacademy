@@ -5,6 +5,7 @@ import {
   UploadCloud,
   QrCode,
   Video,
+  MonitorPlay,
   ClipboardList,
   NotebookPen,
   MessagesSquare,
@@ -165,6 +166,48 @@ export const TEACHER_ARTICLES: Article[] = [
     ],
     tips: [
       "Si necesitas que una repetición se publique más rápido, o notas que falta, avísale al equipo de Capital Academy.",
+      "Ojo: la grabación no arranca sola. Alguien tiene que estar grabando la pantalla mientras dictas. Si esa persona eres tú, revisa “Grabar una clase en vivo y publicar su repetición”.",
+    ],
+    route: () => "/docente",
+    routeLabel: "Ir a tu agenda",
+  },
+  {
+    slug: "docente-grabar-clase",
+    audience: "teacher",
+    category: "Tu clase",
+    icon: MonitorPlay,
+    title: "Grabar una clase en vivo y publicar su repetición",
+    summary: "Graba la pantalla mientras dictas; el archivo hace el resto.",
+    overview:
+      "La sala de clases de la plataforma todavía no tiene un botón para grabar: hoy la grabación la hace tu computador. Alguien graba la pantalla mientras la clase ocurre y ese archivo es el que se sube. Desde ahí en adelante la plataforma trabaja sola: procesa el video, lo transcribe, arma el resumen y los capítulos, y avisa a los alumnos.",
+    steps: [
+      "Antes de la clase define quién graba: tú o alguien del equipo que esté acompañando. Que sea una sola persona; dos grabaciones del mismo día solo generan confusión.",
+      "Abre tu sala de clase como siempre y deja esa ventana a pantalla completa.",
+      "Empieza a grabar antes de que entre el primer alumno. En Mac: Shift + Command + 5 → “Grabar pantalla completa”. En Windows: tecla Windows + G → botón de grabar. Si ya usas OBS Studio, sirve igual: una fuente de “Captura de pantalla” y “Iniciar grabación”.",
+      "Haz una prueba de un minuto y revísala: la grabación tiene que traer el sonido del computador (las voces de la sala) y tu micrófono. Es el error más caro y el más fácil de evitar.",
+      "Al terminar, detén la grabación y guarda el archivo en MP4, MOV o WebM. El límite de subida son 12 GB, de sobra para una clase de dos horas.",
+      "Entrega el archivo al equipo de Capital Academy para que lo suba a la clase correspondiente del calendario. Si tú tienes acceso al panel, súbelo con el botón “Subir grabación” de esa clase.",
+      "Eso es todo: cuando el video queda procesado, la repetición aparece en la pantalla de la clase con transcripción, resumen, capítulos y comentarios, y tus alumnos reciben el aviso por correo.",
+    ],
+    tips: [
+      "Graba la pantalla completa, no solo la ventana del navegador: así queda registrado todo lo que muestres fuera de la sala (una planilla, un PDF, otra aplicación).",
+      "Computador enchufado y con espacio libre en disco: una clase larga ocupa varios giga y una grabación que se corta por espacio no se recupera.",
+      "Si la clase se cortó y quedaste con dos archivos, avísalo al entregarlos: se publica un solo video por clase, así que hay que unirlos antes de subir.",
+      "Recuerda que lo que grabas queda publicado para tus alumnos: si en la clase se comentan datos personales de alguien, mejor no dejarlos en pantalla.",
+    ],
+    faqs: [
+      {
+        q: "¿La plataforma no graba sola la clase en vivo?",
+        a: "La sala tiene grabación automática, pero requiere que el servicio de grabación esté habilitado en la plataforma. Cuando lo está, la grabación parte sola al conectarte y todos ven la insignia \"Grabando\"; cuando no, la sala te lo indica al intentarlo y la clase se graba como describe esta guía: grabando la pantalla del computador. Si nadie graba y el servicio no está habilitado, esa clase se queda sin repetición.",
+      },
+      {
+        q: "¿Puedo grabar apuntando el celular a la pantalla?",
+        a: "Se puede, pero el resultado es malo: el texto no se lee y el audio queda ambiente. Graba la pantalla del computador; es la diferencia entre una repetición que se usa y una que nadie ve.",
+      },
+      {
+        q: "¿Cuánto demora en aparecer la repetición?",
+        a: "El procesamiento del video toma unos minutos desde que termina la subida; la transcripción, el resumen y los capítulos se agregan solos enseguida. Si pasa mucho más que eso, avísale al equipo.",
+      },
     ],
     route: () => "/docente",
     routeLabel: "Ir a tu agenda",

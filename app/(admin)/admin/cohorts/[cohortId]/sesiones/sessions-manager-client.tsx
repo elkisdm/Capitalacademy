@@ -19,17 +19,20 @@ import {
   type AvisoTarget,
 } from "@/components/admin/session-change-notice-dialog";
 import { SessionResourcesPanel } from "@/components/admin/session-resources-panel";
+import { CoverImageField } from "@/components/admin/cover-image-field";
 import {
   ArrowLeftIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon,
   CalendarIcon,
+  UploadIcon,
 } from "@/components/admin/icons";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { DatePicker } from "@/components/ui/date-picker";
 import { chileWallTimeToIso, isoToChileWallTime } from "@/lib/time";
+import { needsRecordingUpload } from "@/lib/classroom/session-recording";
 import { meetingPath } from "@/lib/livekit/meeting-code";
 
 const TZ = "America/Santiago";
@@ -214,6 +217,7 @@ export function SessionsManagerClient({
   initialResources,
   modules = [],
   focusSessionId = null,
+  readyRecordingSessionIds = [],
 }: {
   cohort: CohortInfo;
   programId: string | null;
@@ -223,6 +227,8 @@ export function SessionsManagerClient({
   initialResources: SessionResource[];
   modules?: ModuleOption[];
   focusSessionId?: string | null;
+  /** Clases cuya repetición ya está publicada: no se les ofrece el atajo. */
+  readyRecordingSessionIds?: string[];
 }) {
   const router = useRouter();
   const [sessions, setSessions] = useState<ClassSession[]>(initialSessions);
@@ -241,6 +247,11 @@ export function SessionsManagerClient({
   const [avisoMsg, setAvisoMsg] = useState<string | null>(null);
   // Enlace de sala recién copiado (id de la sesión), para el swap "¡Copiado!".
   const [salaCopiada, setSalaCopiada] = useState<string | null>(null);
+  // El panel de grabación vive dentro de la edición y nadie lo encontraba: el
+  // atajo de la fila abre la edición y deja ese panel abierto y a la vista.
+  const [recordingFocus, setRecordingFocus] = useState(false);
+  const recordingSectionRef = useRef<HTMLDivElement | null>(null);
+  const readyRecordings = new Set(readyRecordingSessionIds);
 
   async function copiarSala(s: ClassSession) {
     const base =
@@ -272,8 +283,21 @@ export function SessionsManagerClient({
     setForm(formFromSession(s));
     setError(null);
     setCreating(false);
+    setRecordingFocus(false);
     setEditing(s);
   }
+
+  // Atajo "Subir grabación" de la fila: misma edición, pero con el panel de
+  // repetición abierto y desplazado a la vista.
+  function openRecording(s: ClassSession) {
+    openEdit(s);
+    setRecordingFocus(true);
+  }
+
+  useEffect(() => {
+    if (!recordingFocus || !editing) return;
+    recordingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [recordingFocus, editing]);
 
   // Deep-link desde el editor de Lecciones (?session=<id>): abre directamente el
   // formulario de edición de esa clase. Solo una vez al montar.
@@ -304,6 +328,16 @@ export function SessionsManagerClient({
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // La portada se guarda por su propio endpoint, fuera del PATCH del formulario.
+  // Sin esto la fila en memoria queda con la portada vieja y al reabrir la
+  // edición el campo aparecería vacío aunque la imagen sí exista.
+  function applyCoverChange(sessionId: string, url: string | null) {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, cover_image_url: url } : s)),
+    );
+    setEditing((prev) => (prev && prev.id === sessionId ? { ...prev, cover_image_url: url } : prev));
   }
 
   async function reloadSessions() {
@@ -492,6 +526,12 @@ export function SessionsManagerClient({
     const pillLabel = useDerivedPill ? TIME_STATE_LABEL[timeState] : STATUS_LABELS[status];
     const pillClass = useDerivedPill ? TIME_STATE_PILL[timeState] : STATUS_PILL[status];
     const isPast = timeState === "past";
+    const needsRecording = needsRecordingUpload({
+      isPast,
+      status,
+      modality: s.modality,
+      hasReadyRecording: readyRecordings.has(s.id),
+    });
 
     const qrButton = (
       <SessionQrButton
@@ -581,6 +621,17 @@ export function SessionsManagerClient({
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {isPast ? (
             <>
+              {needsRecording && (
+                <Button
+                  variant="outline"
+                  onClick={() => openRecording(s)}
+                  aria-label={`Subir la grabación de ${s.title ?? "la clase"}`}
+                  className="!h-auto gap-1.5 rounded-xl border-ca-violet/40 px-3 py-2 text-[12px] text-ca-violet hover:border-ca-violet hover:text-ca-violet"
+                >
+                  <UploadIcon size={14} />
+                  Subir grabación
+                </Button>
+              )}
               {attendanceButton}
               {qrButton}
             </>
@@ -694,8 +745,9 @@ export function SessionsManagerClient({
             modules={modules}
             saving={saving}
             error={error}
-            isEditing={editing !== null}
+            editingSession={editing}
             onChange={updateField}
+            onCoverChanged={applyCoverChange}
             onCancel={closeForm}
             onSubmit={handleSubmit}
           />
@@ -730,12 +782,18 @@ export function SessionsManagerClient({
       )}
 
       {editing && (
-        <CollapsibleSection
-          title="Repetición de la clase"
-          subtitle="Sube la grabación de la clase en vivo"
-        >
-          <SessionRecordingPanel sessionId={editing.id} />
-        </CollapsibleSection>
+        <div ref={recordingSectionRef}>
+          {/* `key` por clase y foco: `<details open>` no se reabre solo si el
+              usuario lo cerró a mano, así que cada apertura monta uno nuevo. */}
+          <CollapsibleSection
+            key={`${editing.id}:${recordingFocus}`}
+            title="Repetición de la clase"
+            subtitle="Sube la grabación de la clase en vivo"
+            defaultOpen={recordingFocus}
+          >
+            <SessionRecordingPanel sessionId={editing.id} />
+          </CollapsibleSection>
+        </div>
       )}
 
       {view === "month" ? (
@@ -833,8 +891,9 @@ function SessionForm({
   modules,
   saving,
   error,
-  isEditing,
+  editingSession,
   onChange,
+  onCoverChanged,
   onCancel,
   onSubmit,
 }: {
@@ -843,11 +902,15 @@ function SessionForm({
   modules: ModuleOption[];
   saving: boolean;
   error: string | null;
-  isEditing: boolean;
+  /** null = creando. La portada necesita el id de la fila, así que solo se
+      ofrece sobre una clase que ya existe. */
+  editingSession: ClassSession | null;
   onChange: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  onCoverChanged: (sessionId: string, url: string | null) => void;
   onCancel: () => void;
   onSubmit: () => void;
 }) {
+  const isEditing = editingSession !== null;
   const fieldCls = "text-[16px] md:text-[13px] font-medium";
   const labelCls =
     "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-ca-ink-soft";
@@ -1007,6 +1070,25 @@ function SessionForm({
             className={fieldCls}
           />
         </div>
+
+        {/* La portada se sube contra la fila, no contra el formulario: por eso
+            solo aparece al editar y se guarda sola, sin pasar por "Guardar
+            cambios". `key` por clase: el campo tiene estado propio y al saltar
+            de una clase a otra mostraría la portada anterior. */}
+        {editingSession && (
+          <div className={groupCls}>
+            <CoverImageField
+              key={editingSession.id}
+              target="session"
+              id={editingSession.id}
+              initialUrl={editingSession.cover_image_url}
+              onChanged={(url) => onCoverChanged(editingSession.id, url)}
+            />
+            <p className="mt-2 text-[12px] text-ca-ink-soft">
+              Opcional. Se muestra al alumno en la pantalla de la clase y en su calendario.
+            </p>
+          </div>
+        )}
       </div>
 
       {error && (

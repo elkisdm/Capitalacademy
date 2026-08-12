@@ -92,15 +92,17 @@ export const ACTIVITY_TYPE_LABELS: Record<
 export const COMPLETION_THRESHOLD = 90;
 
 // --- Calendario de sesiones (clases en vivo) ---------------------------------
-// `title` y `teacher_id` se agregan en la migración 0022; `audience` en la 0024.
-// Hasta regenerar los tipos de Supabase (`supabase gen types`) no están en
-// Tables<"class_sessions">, por eso se declaran aquí explícitamente.
+// `title` y `teacher_id` se agregan en la migración 0022; `audience` en la 0024;
+// `cover_image_url` en la 0096. Hasta regenerar los tipos de Supabase
+// (`supabase gen types`) no están en Tables<"class_sessions">, por eso se
+// declaran aquí explícitamente.
 export type SessionAudience = "all" | "capital_inteligente";
 
 export type ClassSession = Tables<"class_sessions"> & {
   title: string | null;
   teacher_id: string | null;
   audience: SessionAudience;
+  cover_image_url: string | null;
 };
 
 export type SessionInstructor = {

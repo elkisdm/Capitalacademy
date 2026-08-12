@@ -239,3 +239,138 @@ describe("POST /api/classroom/clase/[sessionId]/moderar", () => {
     expect((await POST(...req({ action: "remove", identity: "otro" }))).status).toBe(502);
   });
 });
+
+describe("acciones sobre la sala entera", () => {
+  /** Respuesta de `ListParticipants` con los micrófonos que se indiquen. */
+  function sala(participantes: Array<{ identity: string; abierto?: boolean }>) {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).endsWith("ListParticipants")) {
+        return Promise.resolve({
+          ok: true,
+          text: async () => "",
+          json: async () => ({
+            participants: participantes.map((p, i) => ({
+              identity: p.identity,
+              tracks: [
+                { sid: `TR_${i}`, source: "MICROPHONE", muted: p.abierto === false },
+                // Una cámara encendida no se toca: "silenciar" es el micrófono.
+                { sid: `TRV_${i}`, source: "CAMERA", muted: false },
+              ],
+            })),
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, text: async () => "", json: async () => ({}) });
+    });
+  }
+
+  it("silenciar a todos apaga un micrófono por persona, y ninguna cámara", async () => {
+    sala([{ identity: "a" }, { identity: "b" }, { identity: "c" }]);
+
+    const res = await POST(...req({ action: "mute_all" }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ action: "mute_all", silenciados: 3, total: 3 });
+
+    const mutes = fetchMock.mock.calls
+      .filter((c) => String(c[0]).endsWith("MutePublishedTrack"))
+      .map((c) => JSON.parse(String((c[1] as RequestInit).body)));
+    expect(mutes).toHaveLength(3);
+    expect(mutes.every((m) => m.track_sid.startsWith("TR_") && m.muted === true)).toBe(true);
+  });
+
+  it("no silencia al propio docente: se quedaría explicando la clase en mudo", async () => {
+    sala([{ identity: userId }, { identity: "alumna" }]);
+
+    const res = await POST(...req({ action: "mute_all" }));
+
+    expect((await res.json()).silenciados).toBe(1);
+    const mutes = fetchMock.mock.calls
+      .filter((c) => String(c[0]).endsWith("MutePublishedTrack"))
+      .map((c) => JSON.parse(String((c[1] as RequestInit).body)));
+    expect(mutes.map((m) => m.identity)).toEqual(["alumna"]);
+  });
+
+  it("no vuelve a silenciar a quien ya estaba en silencio", async () => {
+    sala([{ identity: "a", abierto: false }, { identity: "b" }]);
+
+    const res = await POST(...req({ action: "mute_all" }));
+
+    expect((await res.json()).silenciados).toBe(1);
+  });
+
+  it("con la sala en silencio responde 200 y cero, no un error", async () => {
+    sala([{ identity: "a", abierto: false }]);
+
+    const res = await POST(...req({ action: "mute_all" }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, silenciados: 0, total: 0 });
+  });
+
+  it("502 si LiveKit no deja ni listar la sala", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => "boom" });
+
+    expect((await POST(...req({ action: "mute_all" }))).status).toBe(502);
+  });
+
+  it("502 si NINGÚN silencio se aplica; una falla suelta no tumba el resto", async () => {
+    sala([{ identity: "a" }, { identity: "b" }]);
+    const listar = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      String(url).endsWith("MutePublishedTrack")
+        ? Promise.resolve({ ok: false, status: 500, text: async () => "no" })
+        : listar(url, init),
+    );
+
+    expect((await POST(...req({ action: "mute_all" }))).status).toBe(502);
+  });
+
+  it("terminar la clase borra la sala, en vez de sacar a cada uno", async () => {
+    // Sacarlos uno por uno dejaría la sala abierta: cualquiera con el enlace
+    // volvería a entrar mientras el docente se despide.
+    const res = await POST(...req({ action: "end_room" }));
+
+    expect(res.status).toBe(200);
+    const [endpoint, cuerpo] = ultimaLlamada()!;
+    expect(endpoint).toBe("DeleteRoom");
+    expect(cuerpo).toMatchObject({ room: "clase-ses-uuid" });
+  });
+
+  it("borrar la sala necesita `roomCreate`, y solo esa acción lo lleva", async () => {
+    const permisos = async (body: unknown) => {
+      await POST(...req(body));
+      const auth = String(
+        (fetchMock.mock.calls.at(-1)![1] as RequestInit & { headers: Record<string, string> })
+          .headers.Authorization,
+      ).replace("Bearer ", "");
+      return JSON.parse(
+        Buffer.from(auth.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
+      ).video;
+    };
+
+    expect((await permisos({ action: "end_room" })).roomCreate).toBe(true);
+    expect((await permisos({ action: "remove", identity: "otro" })).roomCreate).toBeUndefined();
+  });
+
+  it("502 si LiveKit rechaza borrar la sala", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => "boom" });
+
+    expect((await POST(...req({ action: "end_room" }))).status).toBe(502);
+  });
+
+  it("un ALUMNO no puede silenciar a todos ni terminar la clase", async () => {
+    mockAccess.mockResolvedValue({ enrollment: { id: "e1" }, isStaff: false });
+
+    expect((await POST(...req({ action: "mute_all" }))).status).toBe(403);
+    expect((await POST(...req({ action: "end_room" }))).status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("las acciones sobre la sala no necesitan destinatario, y lo ignoran si llega", async () => {
+    // Exigir una identidad obligaría al cliente a inventar una para que la
+    // validación pase.
+    expect((await POST(...req({ action: "end_room", identity: "quien-sea" }))).status).toBe(200);
+    expect(ultimaLlamada()![1]).not.toHaveProperty("identity");
+  });
+});

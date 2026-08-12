@@ -7,6 +7,14 @@
 
 export type ModerarAccion = "mute" | "remove";
 
+/**
+ * Acciones sobre la sala entera, no sobre una persona.
+ *
+ * Van separadas de `ModerarAccion` a propósito: no llevan destinatario, y
+ * mezclarlas obligaría a que media UI acepte un nombre que no existe.
+ */
+export type ModerarAccionMasiva = "mute_all" | "end_room";
+
 export type ParticipanteModerable = {
   identity: string;
   name: string;
@@ -31,6 +39,48 @@ export function etiquetaSilenciar(micAbierto: boolean): string {
  */
 export function confirmacionSacar(nombre: string): string {
   return `¿Sacar a ${nombre} de la clase? Podrá volver a entrar si tiene el enlace.`;
+}
+
+/**
+ * Confirmación antes de silenciar a toda la sala.
+ *
+ * Dice el número porque es lo que distingue "silencio a los tres que quedaron
+ * hablando" de "corto a la clase entera", y aclara que es reversible: quien
+ * quiera hablar vuelve a abrir su micrófono sin pedir permiso.
+ */
+export function confirmacionSilenciarATodos(cantidad: number): string {
+  const quienes = cantidad === 1 ? "a la única persona conectada" : `a las ${cantidad} personas conectadas`;
+  return `¿Silenciar ${quienes}? Cada una puede volver a abrir su micrófono cuando quiera hablar.`;
+}
+
+/**
+ * Confirmación antes de terminar la clase para todos.
+ *
+ * Es la acción más destructiva de la sala —saca a todo el mundo de una vez— y
+ * la única que un clic distraído no puede deshacer sin que cada persona vuelva
+ * a entrar por su cuenta. Por eso el texto nombra la consecuencia completa.
+ */
+export function confirmacionTerminarClase(cantidad: number): string {
+  const quienes = cantidad === 1 ? "1 persona" : `${cantidad} personas`;
+  return `¿Terminar la clase para todos? Se desconectará a las ${quienes} que están en la sala y se cerrará la clase.`;
+}
+
+/** Mensaje de resultado de una acción sobre la sala entera. */
+export function resultadoMasivo(
+  accion: ModerarAccionMasiva,
+  ok: boolean,
+  silenciados = 0,
+): string {
+  if (!ok) {
+    return accion === "mute_all"
+      ? "No se pudo silenciar a todos."
+      : "No se pudo terminar la clase.";
+  }
+  if (accion === "end_room") return "Terminaste la clase para todos.";
+  // Cero silenciados no es un fallo: es que nadie tenía el micrófono abierto, y
+  // decirlo evita que el docente vuelva a pulsar creyendo que no funcionó.
+  if (silenciados === 0) return "Nadie tenía el micrófono abierto.";
+  return silenciados === 1 ? "Silenciaste a 1 persona." : `Silenciaste a ${silenciados} personas.`;
 }
 
 /** Mensaje de resultado, en la voz del producto. */

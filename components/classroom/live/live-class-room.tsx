@@ -17,6 +17,7 @@ import {
 } from "@/lib/livekit/room-state";
 import { ModerationPanel } from "./moderation-panel";
 import { AplicarEleccion } from "./aplicar-eleccion";
+import { GrabacionControl } from "./grabacion-control";
 
 /**
  * Sala de clase en vivo del alumno (ADR-0031).
@@ -352,6 +353,9 @@ export function LiveClassRoom({
             camara={eleccion?.videoEnabled ?? false}
           />
           <VideoConference />
+          {/* Se monta para TODOS: la insignia "Grabando" tiene que verla quien
+              aparece en el video, no solo quien la enciende. */}
+          <GrabacionControl sessionId={sessionId} esDocente={conexion.role === "teacher"} />
           {conexion.role === "teacher" && <ModerationPanel sessionId={sessionId} />}
         </div>
       </LiveKitRoom>

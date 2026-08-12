@@ -6,9 +6,13 @@ import { Track } from "livekit-client";
 import {
   etiquetaSilenciar,
   confirmacionSacar,
+  confirmacionSilenciarATodos,
+  confirmacionTerminarClase,
   resultadoModeracion,
+  resultadoMasivo,
   ordenarParaModerar,
   type ModerarAccion,
+  type ModerarAccionMasiva,
 } from "@/lib/livekit/moderation";
 
 /**
@@ -127,6 +131,40 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
     [sessionId],
   );
 
+  /**
+   * Acciones sobre la sala entera. Las dos se confirman antes: silenciar a
+   * todos interrumpe a quien esté hablando, y terminar la clase saca a la sala
+   * completa de una vez.
+   */
+  const moderarSala = useCallback(
+    async (accion: ModerarAccionMasiva) => {
+      const cantidad = remotos.length;
+      const texto =
+        accion === "mute_all"
+          ? confirmacionSilenciarATodos(cantidad)
+          : confirmacionTerminarClase(cantidad);
+      if (!window.confirm(texto)) return;
+
+      setEnCurso(accion);
+      setAviso(null);
+      try {
+        const res = await fetch(`/api/classroom/clase/${sessionId}/moderar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: accion }),
+        });
+        const cuerpo = (await res.json().catch(() => null)) as { silenciados?: number } | null;
+        setAviso(resultadoMasivo(accion, res.ok, cuerpo?.silenciados ?? 0));
+      } catch (e) {
+        console.error("[moderación] falló la acción sobre la sala", e);
+        setAviso(resultadoMasivo(accion, false));
+      } finally {
+        setEnCurso(null);
+      }
+    },
+    [sessionId, remotos.length],
+  );
+
   return (
     <div className="pointer-events-none absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
       <button
@@ -148,6 +186,15 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
 
       {abierto && (
         <div className="pointer-events-auto max-h-[60%] w-64 overflow-y-auto rounded-xl bg-black/80 p-2 text-white backdrop-blur">
+          <button
+            type="button"
+            disabled={lista.length === 0 || enCurso === "mute_all"}
+            onClick={() => moderarSala("mute_all")}
+            className="mb-2 min-h-11 w-full rounded-lg bg-white/10 px-2 py-2 text-[11px] font-bold transition-colors hover:bg-white/20 disabled:opacity-40 md:min-h-0"
+          >
+            Silenciar a todos
+          </button>
+
           {solicitudes.length > 0 && (
             <div className="mb-2 rounded-lg bg-white/10 p-2">
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
@@ -215,6 +262,19 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
               </div>
             </div>
           ))}
+
+          {/* Separada del resto y al final: es la única acción de este panel que
+              afecta a la sala entera y no se puede deshacer desde acá. */}
+          <div className="mt-2 border-t border-white/10 pt-2">
+            <button
+              type="button"
+              disabled={enCurso === "end_room"}
+              onClick={() => moderarSala("end_room")}
+              className="min-h-11 w-full rounded-lg bg-ca-rose/80 px-2 py-2 text-[11px] font-bold transition-colors hover:bg-ca-rose disabled:opacity-40 md:min-h-0"
+            >
+              Terminar la clase para todos
+            </button>
+          </div>
 
           {aviso && (
             <p aria-live="polite" className="px-2 pt-2 text-[11px] text-white/70">

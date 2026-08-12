@@ -26,11 +26,19 @@ export const runtime = "nodejs";
 
 const moderarLimiter = createRateLimiter({ limit: 30, windowSeconds: 60 });
 
-const schema = z.object({
-  action: z.enum(["mute", "remove"]),
-  /** Identidad del participante (es el id de su perfil). */
-  identity: z.string().min(1).max(100),
-});
+/** Identidad del participante (es el id de su perfil). */
+const identity = z.string().min(1).max(100);
+
+// Una rama por acción, con `literal` y no `enum`: es lo que deja a TypeScript
+// angostar el cuerpo y saber en cada rama si hay destinatario o no. Las acciones
+// sobre la sala entera NO lo llevan; pedirlo obligaría al cliente a mandar una
+// identidad de mentira para que la validación pase.
+const schema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("mute"), identity }),
+  z.object({ action: z.literal("remove"), identity }),
+  z.object({ action: z.literal("mute_all") }),
+  z.object({ action: z.literal("end_room") }),
+]);
 
 export async function POST(
   req: Request,
@@ -59,6 +67,9 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: "Validación fallida" }, { status: 422 });
   }
+  // En una variable propia porque es lo que TypeScript sabe angostar: sobre
+  // `parsed.data` cada rama tendría que volver a comprobar la acción.
+  const orden = parsed.data;
 
   let config;
   try {
@@ -106,7 +117,7 @@ export async function POST(
 
   // Nadie puede moderarse a sí mismo: silenciarse es un botón propio, y
   // "sacarse" es simplemente salir.
-  if (parsed.data.identity === user.id) {
+  if ("identity" in orden && orden.identity === user.id) {
     return NextResponse.json({ error: "Esa acción es sobre otra persona." }, { status: 422 });
   }
 
@@ -123,6 +134,11 @@ export async function POST(
       canSubscribe: false,
       canPublishData: false,
       roomAdmin: true,
+      // `DeleteRoom` es la única llamada de este endpoint que LiveKit no cubre
+      // con `roomAdmin`. Se concede solo cuando se va a usar — y es un permiso
+      // GLOBAL (LiveKit no lo acota por sala): este token puede borrar
+      // cualquier sala mientras vive, así que jamás debe salir del handler.
+      ...(orden.action === "end_room" ? { roomCreate: true } : {}),
     },
     issuedAt: now,
     // Un minuto alcanza de sobra para una llamada y no deja una credencial de
@@ -141,8 +157,78 @@ export async function POST(
       body: JSON.stringify(payload),
     });
 
-  if (parsed.data.action === "remove") {
-    const res = await llamar("RemoveParticipant", { room, identity: parsed.data.identity });
+  // Terminar la clase para todos: se borra la sala, lo que desconecta a cada
+  // participante de una vez. Sacarlos uno por uno dejaría la sala abierta y
+  // cualquiera con el enlace volvería a entrar mientras el docente se despide.
+  if (orden.action === "end_room") {
+    const res = await llamar("DeleteRoom", { room });
+    if (!res.ok) {
+      const detalle = await res.text().catch(() => "");
+      console.error("[clase/moderar] no se pudo terminar la clase", res.status, detalle.slice(0, 200));
+      return NextResponse.json({ error: "No se pudo aplicar la acción" }, { status: 502 });
+    }
+    return NextResponse.json({ ok: true, action: "end_room" });
+  }
+
+  // Silenciar a todos: una sola llamada para saber quién está publicando y
+  // después un mute por micrófono abierto. LiveKit no tiene un "mute all", y
+  // recorrer el panel del docente a mano es justo lo que esto evita.
+  if (orden.action === "mute_all") {
+    const listaRes = await llamar("ListParticipants", { room });
+    if (!listaRes.ok) {
+      const detalle = await listaRes.text().catch(() => "");
+      console.error("[clase/moderar] no se pudo listar la sala", listaRes.status, detalle.slice(0, 200));
+      return NextResponse.json({ error: "No se pudo aplicar la acción" }, { status: 502 });
+    }
+
+    const lista = (await listaRes.json().catch(() => null)) as {
+      participants?: Array<{
+        identity?: string;
+        tracks?: Array<{ sid?: string; source?: string; muted?: boolean }>;
+      }>;
+    } | null;
+
+    // El propio docente queda fuera: silenciarse a sí mismo al pedir silencio a
+    // la sala lo dejaría explicando la clase en mudo.
+    const objetivos = (lista?.participants ?? []).flatMap((p) =>
+      p.identity && p.identity !== user.id
+        ? (p.tracks ?? [])
+            .filter((t) => t.source === "MICROPHONE" && !t.muted && t.sid)
+            .map((t) => ({ identity: p.identity as string, sid: t.sid as string }))
+        : [],
+    );
+
+    const resultados = await Promise.all(
+      objetivos.map((o) =>
+        llamar("MutePublishedTrack", {
+          room,
+          identity: o.identity,
+          track_sid: o.sid,
+          muted: true,
+        })
+          .then((r) => r.ok)
+          .catch(() => false),
+      ),
+    );
+    const silenciados = resultados.filter(Boolean).length;
+
+    // Que fallen TODAS es un problema del servicio y hay que decirlo. Que falle
+    // alguna suelta no: el resto de la sala sí quedó en silencio, y el número
+    // que se devuelve ya dice cuántas se lograron.
+    if (objetivos.length > 0 && silenciados === 0) {
+      return NextResponse.json({ error: "No se pudo aplicar la acción" }, { status: 502 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      action: "mute_all",
+      silenciados,
+      total: objetivos.length,
+    });
+  }
+
+  if (orden.action === "remove") {
+    const res = await llamar("RemoveParticipant", { room, identity: orden.identity });
     if (!res.ok) {
       const detalle = await res.text().catch(() => "");
       console.error("[clase/moderar] no se pudo sacar", res.status, detalle.slice(0, 200));
@@ -153,7 +239,7 @@ export async function POST(
 
   // Silenciar necesita el SID de la pista, no basta la identidad: por eso hay
   // que preguntar primero qué está publicando esa persona.
-  const infoRes = await llamar("GetParticipant", { room, identity: parsed.data.identity });
+  const infoRes = await llamar("GetParticipant", { room, identity: orden.identity });
   if (!infoRes.ok) {
     return NextResponse.json({ error: "No encontramos a esa persona en la sala" }, { status: 404 });
   }
@@ -168,7 +254,7 @@ export async function POST(
 
   const muteRes = await llamar("MutePublishedTrack", {
     room,
-    identity: parsed.data.identity,
+    identity: orden.identity,
     track_sid: micro.sid,
     muted: true,
   });

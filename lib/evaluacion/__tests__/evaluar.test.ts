@@ -68,6 +68,37 @@ describe("evaluarFicha — el caso que da sentido a la herramienta (E1)", () => 
     expect(celda!.califica).toBe(true);
   });
 
+  // Regresión del hallazgo de punto flotante: cuando manda la capacidad de
+  // pago, la renta requerida de la celda del perfil es (por construcción) IGUAL
+  // a la renta final, pero llega por otro camino de flotantes. Sin comparar en
+  // pesos redondeados, la celda resaltada decía "Necesitas $X" bajo un panel
+  // que decía que el cliente sí califica.
+  it("la celda del perfil califica aunque la renta requerida difiera por fracciones de peso", () => {
+    const r = evaluarFicha(
+      {
+        ...SOLVENTE,
+        sueldos: [1_400_000],
+        anioNacimiento: 1986,
+      },
+      { valorUF: 38_123.45, hoy: HOY },
+    );
+
+    if (!r.califica) throw new Error("debía calificar");
+    if (r.capacidad.limitadoPor !== "capacidad_de_pago") {
+      throw new Error("el caso debe estar limitado por capacidad de pago");
+    }
+
+    const celda = r.escenarios
+      .flat()
+      .find(
+        (c) =>
+          Math.abs(c.pie - (1 - r.capacidad.financiamiento)) < 1e-9 &&
+          c.plazoAnios === r.capacidad.plazoAnios,
+      )!;
+
+    expect(celda.califica).toBe(true);
+  });
+
   // La coherencia que motivó el parámetro `carga`: SOLVENTE tiene renta sobre
   // $2,5M, así que las celdas deben calificar con la carga del 30%, no con el
   // 25% fijo de la calculadora pública.

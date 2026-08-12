@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Calculator, RotateCcw, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Calculator, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MatrizDividendos } from "@/components/calculadora/MatrizDividendos";
 import { FichaEstadoSituacion } from "./FichaEstadoSituacion";
 import { ImportarFicha } from "./ImportarFicha";
@@ -28,8 +29,15 @@ type Props = { valorUF: ValorUF };
 export function EvaluacionFinanciera({ valorUF }: Props) {
   const [ficha, setFicha] = useState<Ficha>(fichaVacia);
   const [evaluacion, setEvaluacion] = useState<Evaluacion | null>(null);
+  const [analizando, setAnalizando] = useState(false);
   const [errores, setErrores] = useState<string[]>([]);
   const [avisosImport, setAvisosImport] = useState<string[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultadoRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   // El botón se habilita solo cuando hay lo mínimo para calcular algo honesto:
   // sin ingresos no hay renta, y sin renta cualquier cifra sería inventada.
@@ -46,19 +54,42 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
       return;
     }
     setErrores([]);
-    setEvaluacion(evaluarFicha(parsed.data, { valorUF: valorUF.valor }));
+    setEvaluacion(null);
+    setAnalizando(true);
+
+    // El cálculo es instantáneo; la pausa breve le da peso al resultado y deja
+    // ver el skeleton en vez de un cambio brusco de pantalla.
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setEvaluacion(evaluarFicha(parsed.data, { valorUF: valorUF.valor }));
+      setAnalizando(false);
+      // En móvil el resultado queda bajo el formulario: llevar la vista hasta él.
+      if (window.innerWidth < 1024) {
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        resultadoRef.current?.scrollIntoView({
+          behavior: reduce ? "auto" : "smooth",
+          block: "start",
+        });
+      }
+    }, 750);
   }
 
   function limpiar() {
+    if (timerRef.current) clearTimeout(timerRef.current);
     setFicha(fichaVacia());
     setEvaluacion(null);
+    setAnalizando(false);
     setErrores([]);
     setAvisosImport([]);
   }
 
   // La ficha importada REEMPLAZA lo que hubiera: es el inicio del llenado, no
-  // un merge. Cualquier análisis previo deja de corresponder a los datos.
+  // un merge. Cualquier análisis previo deja de corresponder a los datos —
+  // incluido uno EN VUELO: sin cancelar el timer, el resultado del cliente
+  // anterior aterrizaría sobre la ficha recién importada.
   function aplicarImport({ ficha: importada, avisos }: ImporteEESS) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setAnalizando(false);
     setFicha(importada);
     setEvaluacion(null);
     setErrores([]);
@@ -111,10 +142,18 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         )}
 
         <div className="mt-7 flex flex-wrap gap-2">
-          <Button size="lg" onClick={analizar} disabled={!hayIngresos}>
-            <Calculator size={16} /> Analizar capacidad de compra
+          <Button size="lg" onClick={analizar} disabled={!hayIngresos || analizando}>
+            {analizando ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Analizando…
+              </>
+            ) : (
+              <>
+                <Calculator size={16} /> Analizar capacidad de compra
+              </>
+            )}
           </Button>
-          <Button variant="ghost" size="lg" onClick={limpiar}>
+          <Button variant="ghost" size="lg" onClick={limpiar} disabled={analizando}>
             <RotateCcw size={15} /> Limpiar
           </Button>
         </div>
@@ -126,8 +165,10 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         )}
       </div>
 
-      <aside className="lg:sticky lg:top-6">
-        {evaluacion ? (
+      <aside ref={resultadoRef} className="scroll-mt-6 lg:sticky lg:top-6">
+        {analizando ? (
+          <SkeletonResultado />
+        ) : evaluacion ? (
           <ResultadoEvaluacion evaluacion={evaluacion} />
         ) : (
           <div className="ca-card p-6 text-center">
@@ -154,7 +195,7 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         dividendo sobre el valor máximo que arrojó la evaluación. A lo ancho,
         porque la matriz 4×4 no cabe en la columna del resultado. */}
     {evaluacion?.califica && (
-      <section className="ca-card p-5 sm:p-7">
+      <section className="ca-card ca-fade-up p-5 sm:p-7" style={{ animationDelay: "180ms" }}>
         <header className="mb-5">
           <h2 className="text-[17px] font-black tracking-tight text-ca-ink">
             Escenarios de dividendo
@@ -172,9 +213,32 @@ export function EvaluacionFinanciera({ valorUF }: Props) {
         <MatrizDividendos
           matriz={evaluacion.escenarios}
           plazoMaximo={evaluacion.capacidad.plazoAnios}
+          resaltar={{
+            pie: 1 - evaluacion.capacidad.financiamiento,
+            plazoAnios: evaluacion.capacidad.plazoAnios,
+          }}
         />
       </section>
     )}
+    </div>
+  );
+}
+
+/**
+ * Skeleton fiel al layout del resultado (§4.1 de las convenciones): titular,
+ * franja de perfil y grilla de cifras, para que el contenido no salte al llegar.
+ */
+function SkeletonResultado() {
+  return (
+    <div role="status" aria-label="Analizando la ficha" className="space-y-5">
+      <Skeleton className="h-40 rounded-2xl" />
+      <Skeleton className="h-20 rounded-2xl" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={i} className="h-[86px]" />
+        ))}
+      </div>
+      <Skeleton className="h-14" />
     </div>
   );
 }

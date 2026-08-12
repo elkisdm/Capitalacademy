@@ -87,7 +87,10 @@ export function fichaVacia(): Ficha {
     anioNacimiento: new Date().getFullYear() - 35,
     fuenteRenta: "sueldo_indefinido",
     antiguedadMeses: 0,
-    sueldos: [],
+    // Las 3 liquidaciones parten visibles: siempre se piden las últimas 3, y
+    // así el asesor tipea directo en vez de dar 3 clics de "Agregar". Un 0 no
+    // afecta el cálculo (el motor promedia solo montos positivos).
+    sueldos: [0, 0, 0],
     boletas: [],
     arriendoMensual: 0,
     retirosAnuales: 0,

@@ -231,7 +231,10 @@ export function matrizDividendos(params: {
 
       const excedeEdad =
         edadProvista && (plazoTope === null || plazoAnios > plazoTope);
-      const rentaAlcanza = rentaDisponible >= requerida;
+      // Se compara en pesos redondeados: `requerida` llega por otro camino de
+      // punto flotante y una diferencia de fracciones de peso pintaba "Necesitas
+      // $X" junto a un panel que decía que la renta SÍ alcanza.
+      const rentaAlcanza = Math.round(rentaDisponible) >= Math.round(requerida);
 
       return {
         pie,

@@ -238,8 +238,20 @@ export function importarEESS(
   // --- Ingresos ---------------------------------------------------------------
   const sueldo = montoDesdeCelda(celda(CELDAS.sueldo));
   const honorarios = montoDesdeCelda(celda(CELDAS.honorarios));
-  if (sueldo > 0) ficha.sueldos = [sueldo];
-  if (honorarios > 0) ficha.boletas = [honorarios];
+  // El Excel trae UN monto de sueldo; la ficha pide las últimas 3 liquidaciones.
+  // Se replica en las 3 (el promedio no cambia) para que la ficha quede completa
+  // y el asesor solo ajuste los meses que difieran.
+  if (sueldo > 0) {
+    ficha.sueldos = [sueldo, sueldo, sueldo];
+    avisos.push(
+      "Sueldo: el monto del Excel se replicó en las 3 liquidaciones — ajusta las que difieran.",
+    );
+  }
+  // Igual que el sueldo: una sola boleta ni siquiera se reconoce (el motor
+  // exige BOLETAS_MINIMAS), así que el cliente a honorarios importado quedaba
+  // rechazado por "renta insuficiente" ganando $3M. Se replica el monto mensual
+  // en 3 y el aviso pide reemplazarlas por las reales.
+  if (honorarios > 0) ficha.boletas = [honorarios, honorarios, honorarios];
   ficha.arriendoMensual = montoDesdeCelda(celda(CELDAS.arriendos));
 
   // La celda RETIROS del Excel no dice si es mensual o anual; la ficha pide el
@@ -269,7 +281,7 @@ export function importarEESS(
   }
   if (honorarios > 0) {
     avisos.push(
-      "Honorarios: el Excel trae un solo monto; agrega más boletas para un promedio real (el banco exige al menos 3).",
+      "Honorarios: el monto del Excel se replicó en 3 boletas — reemplázalas por las últimas boletas reales para un promedio fiel.",
     );
   }
 

@@ -7,6 +7,12 @@ import { formatCLP } from "@/lib/utils/money";
 type Props = {
   matriz: Celda[][];
   plazoMaximo: number | null;
+  /**
+   * Celda a destacar (pie + plazo). La usa la Evaluación Financiera para
+   * conectar la matriz con el escenario del análisis; la calculadora pública
+   * no la pasa y se ve igual que siempre.
+   */
+  resaltar?: { pie: number; plazoAnios: number };
 };
 
 const porcentaje = (v: number) => `${Math.round(v * 100)}%`;
@@ -18,7 +24,7 @@ const porcentaje = (v: number) => `${Math.round(v * 100)}%`;
  * dividendos y la de renta requerida y era el usuario quien comparaba a ojo.
  * Acá cada celda ya viene resuelta como califica / no califica.
  */
-export function MatrizDividendos({ matriz, plazoMaximo }: Props) {
+export function MatrizDividendos({ matriz, plazoMaximo, resaltar }: Props) {
   const pies = matriz[0]?.map((c) => c.pie) ?? [];
   // El legend de edad se muestra si ALGUNA celda está bloqueada por edad, no
   // según `plazoMaximo`: cuando la edad excede todos los plazos, `plazoMaximo`
@@ -64,7 +70,14 @@ export function MatrizDividendos({ matriz, plazoMaximo }: Props) {
                 </th>
                 {fila.map((celda) => (
                   <td key={`${celda.plazoAnios}-${celda.pie}`} className="p-0">
-                    <CeldaEscenario celda={celda} />
+                    <CeldaEscenario
+                      celda={celda}
+                      resaltada={
+                        resaltar !== undefined &&
+                        Math.abs(celda.pie - resaltar.pie) < 1e-9 &&
+                        celda.plazoAnios === resaltar.plazoAnios
+                      }
+                    />
                   </td>
                 ))}
               </tr>
@@ -90,12 +103,21 @@ export function MatrizDividendos({ matriz, plazoMaximo }: Props) {
               : "Tu edad supera el plazo máximo del banco"}
           </li>
         )}
+        {resaltar && (
+          <li className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="h-3 w-3 rounded-full border-2 border-ca-violet bg-ca-surface"
+            />
+            Escenario del análisis
+          </li>
+        )}
       </ul>
     </div>
   );
 }
 
-function CeldaEscenario({ celda }: { celda: Celda }) {
+function CeldaEscenario({ celda, resaltada = false }: { celda: Celda; resaltada?: boolean }) {
   const bloqueadaPorEdad = celda.motivo === "plazo_excede_edad";
 
   const estado = bloqueadaPorEdad
@@ -114,6 +136,7 @@ function CeldaEscenario({ celda }: { celda: Celda }) {
           !bloqueadaPorEdad &&
           "border-ca-outline bg-ca-surface text-ca-ink-soft",
         bloqueadaPorEdad && "border-ca-amber/30 bg-ca-amber/5 text-ca-ink-soft",
+        resaltada && "ring-2 ring-ca-violet/50",
       )}
     >
       <p

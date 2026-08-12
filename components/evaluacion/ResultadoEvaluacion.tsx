@@ -42,7 +42,7 @@ export function ResultadoEvaluacion({ evaluacion }: Props) {
   return (
     <div className="space-y-5">
       {/* El dato que el asesor dice en voz alta. Todo lo demás lo respalda. */}
-      <div className="rounded-2xl bg-ca-ink px-6 py-7 text-center text-white">
+      <div className="ca-fade-up rounded-2xl bg-ca-ink px-6 py-7 text-center text-white">
         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/60">
           Podría evaluar propiedades hasta
         </p>
@@ -58,7 +58,10 @@ export function ResultadoEvaluacion({ evaluacion }: Props) {
         </p>
       </div>
 
-      <div className={cn("rounded-2xl border px-5 py-4", tono.fondo)}>
+      <div
+        className={cn("ca-fade-up rounded-2xl border px-5 py-4", tono.fondo)}
+        style={{ animationDelay: "60ms" }}
+      >
         <div className="flex items-start gap-3">
           <span className={cn("mt-1.5 h-3 w-3 shrink-0 rounded-full", tono.punto)} aria-hidden />
           <div>
@@ -69,26 +72,32 @@ export function ResultadoEvaluacion({ evaluacion }: Props) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Cifra label="Dividendo estimado" valor={formatCLP(capacidad.dividendoEstimadoCLP)} nota="sin seguros" />
+        <Cifra indice={0} label="Dividendo estimado" valor={formatCLP(capacidad.dividendoEstimadoCLP)} nota="sin seguros" />
         <Cifra
+          indice={1}
           label="Pie requerido"
           valor={formatCLP(capacidad.pieRequeridoCLP)}
           nota={
+            // La cifra de la brecha vive en el aviso ámbar de abajo: repetirla acá
+            // desnivela la tarjeta respecto de sus vecinas.
             capacidad.brechaPieCLP > 0
-              ? `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor — faltan ${formatCLP(capacidad.brechaPieCLP)} de ahorro`
-              : `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor, cubierto con el ahorro declarado`
+              ? `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor — no cubierto`
+              : `${Math.round((1 - capacidad.financiamiento) * 100)}% del valor · cubierto`
           }
         />
-        <Cifra label="Crédito estimado" valor={formatCLP(capacidad.creditoMaximoCLP)} nota={`financiamiento ${Math.round(capacidad.financiamiento * 100)}%`} />
-        <Cifra label="Plazo sugerido" valor={`${capacidad.plazoAnios} años`} nota={`edad: ${evaluacion.edad}`} />
-        <Cifra label="Renta reconocida" valor={formatCLP(evaluacion.ingresoReconocido)} nota={evaluacion.cuotasMensuales > 0 ? `menos ${formatCLP(evaluacion.cuotasMensuales)} en cuotas` : "sin deudas vigentes"} />
-        <Cifra label="Renta final" valor={formatCLP(evaluacion.rentaFinal)} nota="base del cálculo" />
+        <Cifra indice={2} label="Crédito estimado" valor={formatCLP(capacidad.creditoMaximoCLP)} nota={`financiamiento ${Math.round(capacidad.financiamiento * 100)}%`} />
+        <Cifra indice={3} label="Plazo sugerido" valor={`${capacidad.plazoAnios} años`} nota={`edad: ${evaluacion.edad}`} />
+        <Cifra indice={4} label="Renta reconocida" valor={formatCLP(evaluacion.ingresoReconocido)} nota={evaluacion.cuotasMensuales > 0 ? `menos ${formatCLP(evaluacion.cuotasMensuales)} en cuotas` : "sin deudas vigentes"} />
+        <Cifra indice={5} label="Renta final" valor={formatCLP(evaluacion.rentaFinal)} nota="base del cálculo" />
       </div>
 
       {/* El pie no limita el titular, pero el asesor tiene que decirlo en la
           misma frase: la cifra de arriba supone que el pie se completa. */}
       {capacidad.brechaPieCLP > 0 && (
-        <div className="flex items-start gap-2.5 rounded-xl bg-ca-amber/10 px-4 py-3">
+        <div
+          className="ca-fade-up flex items-start gap-2.5 rounded-xl bg-ca-amber/10 px-4 py-3"
+          style={{ animationDelay: "320ms" }}
+        >
           <TriangleAlert size={16} className="mt-0.5 shrink-0 text-ca-amber-text" />
           <p className="text-[13px] leading-relaxed text-ca-ink">
             El ahorro declarado no cubre el pie de este valor: faltan{" "}
@@ -100,7 +109,10 @@ export function ResultadoEvaluacion({ evaluacion }: Props) {
 
       {/* La palanca real: cuál de los dos topes de crédito está mandando. Es lo
           que evita que el asesor recomiende algo que no cambiaría la cifra. */}
-      <div className="flex items-start gap-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3">
+      <div
+        className="ca-fade-up flex items-start gap-2.5 rounded-xl border border-ca-violet/25 bg-ca-violet/5 px-4 py-3"
+        style={{ animationDelay: "360ms" }}
+      >
         <ArrowRight size={16} className="mt-0.5 shrink-0 text-ca-violet" />
         <p className="text-[13px] leading-relaxed text-ca-ink">{palanca}</p>
       </div>
@@ -184,13 +196,26 @@ function NoCalifica({ evaluacion }: { evaluacion: Extract<Evaluacion, { califica
   );
 }
 
-function Cifra({ label, valor, nota }: { label: string; valor: string; nota?: string }) {
+function Cifra({
+  label,
+  valor,
+  nota,
+  indice = 0,
+}: {
+  label: string;
+  valor: string;
+  nota?: string;
+  indice?: number;
+}) {
   return (
-    <div className="rounded-xl border border-ca-ink/[0.08] bg-ca-surface px-4 py-3">
+    <div
+      className="ca-fade-up rounded-xl border border-ca-ink/[0.08] bg-ca-surface px-4 py-3"
+      style={{ animationDelay: `${100 + indice * 40}ms` }}
+    >
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ca-ink-soft">
         {label}
       </p>
-      <p className="mt-1 text-[18px] font-black tracking-tight text-ca-ink">{valor}</p>
+      <p className="mt-1 text-[18px] font-black tabular-nums tracking-tight text-ca-ink">{valor}</p>
       {nota && <p className="mt-0.5 text-[11px] text-ca-ink-soft">{nota}</p>}
     </div>
   );

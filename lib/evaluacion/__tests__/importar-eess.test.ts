@@ -128,7 +128,7 @@ describe("importarEESS", () => {
     expect(ficha.anioNacimiento).toBe(1988);
     expect(ficha.antiguedadMeses).toBe(89);
     expect(ficha.fuenteRenta).toBe("sueldo_indefinido");
-    expect(ficha.sueldos).toEqual([2_800_000]);
+    expect(ficha.sueldos).toEqual([2_800_000, 2_800_000, 2_800_000]);
     expect(ficha.boletas).toEqual([]);
     expect(ficha.arriendoMensual).toBe(350_000);
     expect(ficha.pasivos).toEqual([
@@ -168,7 +168,9 @@ describe("importarEESS", () => {
     );
 
     expect(ficha.fuenteRenta).toBe("honorarios");
-    expect(ficha.boletas).toEqual([1_800_000]);
+    // Replicadas ×3: con una sola boleta el motor reconoce $0 y rechaza a
+    // alguien que sí tiene renta.
+    expect(ficha.boletas).toEqual([1_800_000, 1_800_000, 1_800_000]);
     expect(avisos.some((a) => a.includes("boletas"))).toBe(true);
   });
 
@@ -279,7 +281,7 @@ describe("importarEESS", () => {
     const { ficha } = importarEESS((c) => ws[c]?.v, { valorUF: UF, hoy: HOY });
     expect(ficha.nombre).toBe("Juan Díaz");
     expect(ficha.anioNacimiento).toBe(1985);
-    expect(ficha.sueldos).toEqual([2_600_000]);
+    expect(ficha.sueldos).toEqual([2_600_000, 2_600_000, 2_600_000]);
     expect(ficha.ahorroDisponible).toBe(5_000_000);
   });
 });

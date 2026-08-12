@@ -108,7 +108,12 @@ export async function GET(req: Request) {
       }
 
       const trabajo =
-        trabajos.find((t) => t.egressId && t.egressId === fila.egress_id) ?? trabajos[0];
+        fila.egress_id
+        ? (trabajos.find((t) => t.egressId === fila.egress_id) ?? null)
+        : (trabajos[0] ?? null);
+      // El respaldo trabajos[0] SOLO cuando la fila no alcanzó a guardar su
+      // egress_id: con id conocido y sin match, agarrar un trabajo cualquiera
+      // de la sala podría cerrar la fila con el archivo de OTRA grabación.
 
       if (!trabajo) {
         // LiveKit ya no sabe nada de esa sala y nunca llegó el archivo.
@@ -232,7 +237,12 @@ export async function GET(req: Request) {
         continue;
       }
       const trabajo =
-        trabajos.find((t) => t.egressId && t.egressId === fila.egress_id) ?? trabajos[0];
+        fila.egress_id
+        ? (trabajos.find((t) => t.egressId === fila.egress_id) ?? null)
+        : (trabajos[0] ?? null);
+      // El respaldo trabajos[0] SOLO cuando la fila no alcanzó a guardar su
+      // egress_id: con id conocido y sin match, agarrar un trabajo cualquiera
+      // de la sala podría cerrar la fila con el archivo de OTRA grabación.
 
       if (trabajo && !egressTerminado(trabajo.status)) {
         // El docente pidió detener y el trabajo sigue vivo: se corta acá y la

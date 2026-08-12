@@ -1,5 +1,5 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
-import { uniqueSlug } from "@/lib/utils/slug";
+import { slugify, uniqueSlug } from "@/lib/utils/slug";
 
 /**
  * Crea-si-no-existe la lección-repetición de una clase en vivo.
@@ -46,10 +46,16 @@ export async function ensureRecordingLesson(
     .maybeSingle();
   const position = ((lastPos?.position as number | undefined) ?? 0) + 1;
 
-  // Slug único GLOBAL (lessons_slug_idx es global).
-  const { data: slugRows } = await admin.from("lessons").select("slug").not("slug", "is", null);
-  const taken = (slugRows ?? []).map((r) => r.slug as string);
+  // Slug único GLOBAL (lessons_slug_idx es global). Solo interesan los que
+  // comparten prefijo con el candidato: traerse TODOS los slugs de la tabla
+  // era aceptable cuando esto corría solo desde un clic del admin, pero ahora
+  // corre en cada ingesta automatizada (webhook + cron).
   const title = `Repetición — ${session.title ?? "Clase en vivo"}`;
+  const { data: slugRows } = await admin
+    .from("lessons")
+    .select("slug")
+    .like("slug", `${slugify(title)}%`);
+  const taken = (slugRows ?? []).map((r) => r.slug as string);
   const slug = uniqueSlug(title, taken);
 
   const { data: lesson, error: insertError } = await admin
@@ -69,15 +75,35 @@ export async function ensureRecordingLesson(
     return { ok: false, reason: "insert_error" };
   }
 
-  const { error: linkError } = await admin
+  // Enlace CONDICIONAL: solo si la sesión sigue sin repetición. Dos llamadores
+  // pueden correr a la vez (el clic del admin y la ingesta automatizada del
+  // webhook/cron); sin la guarda, el segundo pisaría el enlace del primero y
+  // su lección quedaría huérfana pero VISIBLE para los alumnos en el módulo.
+  const { data: enlazada, error: linkError } = await admin
     .from("class_sessions")
     .update({ lesson_id: lesson.id })
-    .eq("id", session.id);
+    .eq("id", session.id)
+    .is("lesson_id", null)
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
   if (linkError) {
     // Rollback de la lección huérfana para no dejar basura.
     await admin.from("lessons").delete().eq("id", lesson.id);
     console.error("[ensureRecordingLesson] enlace falló", linkError);
+    return { ok: false, reason: "link_error" };
+  }
+
+  if (!enlazada) {
+    // Otro llamador ganó la carrera: su lección es LA lección. Se borra la
+    // nuestra y se devuelve la del ganador.
+    await admin.from("lessons").delete().eq("id", lesson.id);
+    const { data: actual } = await admin
+      .from("class_sessions")
+      .select("lesson_id")
+      .eq("id", session.id)
+      .maybeSingle<{ lesson_id: string | null }>();
+    if (actual?.lesson_id) return { ok: true, lessonId: actual.lesson_id, created: false };
     return { ok: false, reason: "link_error" };
   }
 

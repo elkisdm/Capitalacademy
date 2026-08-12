@@ -187,19 +187,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
 
+  // Solo EGRESS_COMPLETE es éxito. Un status desconocido (una versión nueva de
+  // Egress, un payload malformado) NO puede caer al camino feliz: se deja la
+  // fila como está, con log, y la reconciliación del cron la resuelve contra
+  // ListEgress con el estado real.
+  if (estado !== "uploaded") {
+    console.warn("[webhooks/livekit] egress_ended con status no mapeado:", info.status ?? "");
+    return NextResponse.json({ received: true });
+  }
+
   const archivo = info.fileResults?.[0];
 
   // Reserva-antes-de-actuar: el `in(status)` es lo que hace que una reentrega no
-  // vuelva a pasar por acá con la fila ya cerrada.
+  // vuelva a pasar por acá con la fila ya cerrada. Tamaño y duración solo se
+  // escriben cuando el evento TRAE el archivo: una reentrega sin fileResults no
+  // debe borrar con null lo que la entrega original ya dejó.
   const { data: cerrada } = await admin
     .from("session_recordings")
     .update({
       status: "uploaded",
       ended_at: ahora,
       storage_path: archivo?.filename || fila.storage_path,
-      file_size_bytes: archivo?.size ?? null,
-      duration_seconds: segundosDesde(archivo?.duration),
       egress_id: info.egressId ?? null,
+      ...(archivo
+        ? {
+            file_size_bytes: archivo.size ?? null,
+            duration_seconds: segundosDesde(archivo.duration),
+          }
+        : {}),
     })
     .eq("id", fila.id)
     .in("status", ["starting", "active", "uploaded"])

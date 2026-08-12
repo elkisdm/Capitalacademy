@@ -33,6 +33,8 @@ function makeBuilder(table: string) {
     "order",
     "limit",
     "not",
+    "is",
+    "like",
   ];
   const b: Record<string, unknown> = {};
   for (const m of methods) {
@@ -129,7 +131,7 @@ beforeEach(() => {
     lastPosResult: { data: null, error: null },
     slugRowsResult: { data: [{ slug: "otra-cosa" }], error: null },
     insertResult: { data: { id: LESSON_ID }, error: null },
-    linkResult: { error: null },
+    linkResult: { data: { id: "11111111-1111-4111-8111-111111111111" }, error: null },
     unlinkResult: { error: null },
     lessonsDeleteResult: { error: null },
     progressCountResult: { count: 0, error: null },

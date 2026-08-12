@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useConnectionState, useIsRecording } from "@livekit/components-react";
 import {
+  ESTADOS_EN_PROCESO,
   MENSAJE_GRABACION_DESHABILITADA,
   confirmacionDetenerGrabacion,
   estaGrabando,
@@ -67,8 +68,7 @@ export function GrabacionControl({
   // por sondeos que corrían todo el rato. La primera consulta sí es siempre: el
   // docente puede haber recargado con la grabación ya en curso, y sin ella vería
   // el botón de arrancar sobre una grabación viva.
-  const enMovimiento =
-    estado === "starting" || estado === "active" || estado === "uploaded" || estado === "ingesting";
+  const enMovimiento = estado !== null && ESTADOS_EN_PROCESO.includes(estado);
 
   useEffect(() => {
     if (!esDocente) return;

@@ -6,6 +6,7 @@ import { useToast } from "@/components/admin/toast";
 import { MuxUploader } from "@/components/admin/mux-uploader";
 import { LoaderIcon } from "@/components/admin/quiz/icons";
 import { Button } from "@/components/ui/button";
+import { ESTADOS_EN_PROCESO } from "@/lib/livekit/egress-estado";
 
 type RecordingState = {
   lessonId: string | null;
@@ -28,7 +29,7 @@ type RecordingState = {
 };
 
 /** Estados en que la grabación automática sigue trabajando en la repetición. */
-const NATIVA_EN_CURSO = new Set(["starting", "active", "uploaded", "ingesting"]);
+const NATIVA_EN_CURSO = new Set<string>(ESTADOS_EN_PROCESO);
 
 /**
  * Cuánto se le cree a una grabación "en curso" antes de devolver la subida
@@ -117,6 +118,17 @@ export function SessionRecordingPanel({
     !hasError &&
     (justUploaded || Boolean(rec?.mux_upload_id));
 
+  // La grabación nativa trabaja SIN mux_upload_id (crea el asset por ingesta de
+  // URL), así que el gate de arriba nunca la ve: sin esta condición el panel
+  // muestra "se está grabando / preparando" y no vuelve a consultar jamás —
+  // congelado hasta que alguien recargue la página.
+  const nativaActiva = Boolean(
+    !isReady &&
+      state?.nativa &&
+      NATIVA_EN_CURSO.has(state.nativa.estado) &&
+      nativaSigueFresca(state.nativa),
+  );
+
   // Avisa una sola vez cuando la repetición pasa a lista.
   useEffect(() => {
     if (isReady && !wasReadyRef.current) {
@@ -140,7 +152,7 @@ export function SessionRecordingPanel({
 
   // Polling automático mientras Mux procesa.
   useEffect(() => {
-    if (!isProcessing) return;
+    if (!isProcessing && !nativaActiva) return;
     attemptsRef.current = 0;
     const id = setInterval(() => {
       if (attemptsRef.current >= POLL_MAX_ATTEMPTS) {
@@ -152,7 +164,7 @@ export function SessionRecordingPanel({
       void load({ silent: true });
     }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [isProcessing, load]);
+  }, [isProcessing, nativaActiva, load]);
 
   const prepare = async () => {
     setBusy(true);
@@ -221,12 +233,7 @@ export function SessionRecordingPanel({
   // en camino sola. Subir un archivo a mano encima haría chocar los dos caminos
   // — la ingesta nativa se detiene si la lección ya tiene video. El bloqueo
   // VENCE (nativaSigueFresca): una fila colgada no puede secuestrar el panel.
-  if (
-    !isReady &&
-    state?.nativa &&
-    NATIVA_EN_CURSO.has(state.nativa.estado) &&
-    nativaSigueFresca(state.nativa)
-  ) {
+  if (nativaActiva && state?.nativa) {
     return (
       <>
         <ToastContainer />

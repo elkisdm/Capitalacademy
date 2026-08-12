@@ -21,7 +21,7 @@ let calls: Array<{ table: string; method: string; args: unknown[] }>;
 function builder(table: string) {
   const propios: Array<{ method: string; args: unknown[] }> = [];
   const b: Record<string, unknown> = {};
-  for (const m of ["select", "insert", "update", "delete", "eq", "order", "limit", "not"]) {
+  for (const m of ["select", "insert", "update", "delete", "eq", "order", "limit", "not", "is", "like"]) {
     b[m] = (...args: unknown[]) => {
       propios.push({ method: m, args });
       calls.push({ table, method: m, args });
@@ -61,7 +61,7 @@ beforeEach(() => {
     lastPos: { data: { position: 4 }, error: null },
     slugRows: { data: [{ slug: "repeticion-clase-3-evaluacion" }], error: null },
     insert: { data: { id: "lesson-nueva" }, error: null },
-    link: { error: null },
+    link: { data: { id: "ses-1" }, error: null },
   };
   vi.spyOn(console, "error").mockImplementation(() => {});
 });

@@ -170,6 +170,39 @@ export async function DELETE(
 
   const admin = createAdminClient();
 
+  // Las grabaciones nativas cuelgan de la sesión con ON DELETE CASCADE: si se
+  // borra la fila sin mirar, el registro desaparece pero el MP4 (caras y voces
+  // de alumnos) queda huérfano en el bucket para siempre — la limpieza del cron
+  // busca por esas filas. Y una grabación VIVA quedaría grabando sin dueño.
+  const { data: grabaciones } = await admin
+    .from("session_recordings")
+    .select("id, status, storage_path, storage_deleted_at")
+    .eq("session_id", parsedId.data);
+
+  const viva = (grabaciones ?? []).some((g) => g.status === "starting" || g.status === "active");
+  if (viva) {
+    return NextResponse.json(
+      { error: "Esta clase se está grabando: detén la grabación antes de eliminarla." },
+      { status: 409 },
+    );
+  }
+
+  const objetos = (grabaciones ?? [])
+    .filter((g) => g.storage_path && !g.storage_deleted_at)
+    .map((g) => g.storage_path as string);
+  if (objetos.length > 0) {
+    const { error: storageError } = await admin.storage.from("grabaciones").remove(objetos);
+    if (storageError) {
+      // Sin el borrado del objeto no se borra la fila que lo referencia: mejor
+      // un intento fallido visible que PII huérfana e invisible.
+      console.error("session delete: no se pudieron borrar las grabaciones", storageError);
+      return NextResponse.json(
+        { error: "No se pudieron eliminar las grabaciones de la clase. Intenta de nuevo." },
+        { status: 500 },
+      );
+    }
+  }
+
   const { error } = await admin
     .from("class_sessions")
     .delete()

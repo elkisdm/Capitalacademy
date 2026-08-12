@@ -15,6 +15,7 @@ type State = {
   moduleResult: Result; // program_modules select("program_id").eq(id).single()
   updateResult: Result; // class_sessions update(...).eq(id).select("*").single()
   deleteResult: Result; // class_sessions delete().eq(id)
+  recordingsResult: Result; // session_recordings select(...).eq(session_id)
 };
 let state: State;
 
@@ -36,6 +37,7 @@ function makeBuilder(table: string) {
       if (hasCall("delete")) return state.deleteResult;
       return state.sessionResult;
     }
+    if (table === "session_recordings") return state.recordingsResult;
     if (table === "cohorts") return state.cohortResult;
     if (table === "program_modules") return state.moduleResult;
     return { data: null, error: null };
@@ -47,8 +49,13 @@ function makeBuilder(table: string) {
   return b;
 }
 
+const storageRemove = vi.fn(async () => ({ error: null }));
+
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: vi.fn(() => ({ from: (table: string) => makeBuilder(table) })),
+  createAdminClient: vi.fn(() => ({
+    from: (table: string) => makeBuilder(table),
+    storage: { from: () => ({ remove: storageRemove }) },
+  })),
 }));
 
 const { PATCH, DELETE } = await import(
@@ -92,6 +99,7 @@ beforeEach(() => {
       },
       error: null,
     },
+    recordingsResult: { data: [], error: null },
     cohortResult: { data: { program_id: "program-1" }, error: null },
     moduleResult: { data: { program_id: "program-1" }, error: null },
     updateResult: {
@@ -254,6 +262,43 @@ describe("DELETE /api/admin/sessions/[sessionId]", () => {
     expect(res!.status).toBe(500);
     const json = await res!.json();
     expect(json.error).toBe("Error al eliminar la sesión");
+  });
+
+
+  it("409 cuando la clase tiene una grabación nativa VIVA", async () => {
+    state.recordingsResult = {
+      data: [{ id: "rec-1", status: "active", storage_path: null, storage_deleted_at: null }],
+      error: null,
+    };
+    const res = await DELETE(req("DELETE"), ctx());
+    expect(res!.status).toBe(409);
+    expect(storageRemove).not.toHaveBeenCalled();
+  });
+
+  it("borra del bucket los MP4 de las grabaciones antes de eliminar la clase", async () => {
+    // Sin esto, el ON DELETE CASCADE de session_recordings borra la fila que
+    // referencia al objeto y el MP4 con PII queda huérfano para siempre.
+    state.recordingsResult = {
+      data: [
+        { id: "rec-1", status: "ready", storage_path: "ses/rec-1.mp4", storage_deleted_at: null },
+        { id: "rec-2", status: "failed", storage_path: "ses/rec-2.mp4", storage_deleted_at: "2026-08-01" },
+      ],
+      error: null,
+    };
+    const res = await DELETE(req("DELETE"), ctx());
+    expect(res!.status).toBe(200);
+    // Solo el objeto que sigue en el bucket; el ya borrado no se re-borra.
+    expect(storageRemove).toHaveBeenCalledWith(["ses/rec-1.mp4"]);
+  });
+
+  it("500 y NO elimina la clase si el borrado del objeto falla", async () => {
+    state.recordingsResult = {
+      data: [{ id: "rec-1", status: "ready", storage_path: "ses/rec-1.mp4", storage_deleted_at: null }],
+      error: null,
+    };
+    storageRemove.mockResolvedValueOnce({ error: { message: "boom" } } as never);
+    const res = await DELETE(req("DELETE"), ctx());
+    expect(res!.status).toBe(500);
   });
 
   it("200 cuando elimina correctamente", async () => {

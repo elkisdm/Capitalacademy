@@ -33,6 +33,19 @@ export type EstadoGrabacion = (typeof ESTADOS_GRABACION)[number];
 /** Estados en los que hay un trabajo de Egress vivo para esa sala. */
 export const ESTADOS_VIVOS: readonly EstadoGrabacion[] = ["starting", "active"];
 
+/**
+ * Estados en que la grabación sigue TRABAJANDO en la repetición (grabando,
+ * subiendo o ingestando): lo que la UI sondea y lo que bloquea la subida
+ * manual. Compartido por el control de la sala y el panel admin para que no
+ * diverjan.
+ */
+export const ESTADOS_EN_PROCESO: readonly EstadoGrabacion[] = [
+  "starting",
+  "active",
+  "uploaded",
+  "ingesting",
+];
+
 export function estaGrabando(estado: EstadoGrabacion | null | undefined): boolean {
   return estado != null && ESTADOS_VIVOS.includes(estado);
 }

@@ -249,20 +249,28 @@ export async function POST(_req: Request, ctxParams: { params: Promise<{ session
     });
 
     const estado = estadoDesdeEgress(info.status) ?? "starting";
-    // Guarda de estado: solo se avanza desde `starting`. Si en el ~1-3 s que
-    // tardó StartEgress el docente pulsó "Detener", el DELETE ya marcó la fila
-    // `failed` (sin egress_id que detener) — resucitar la fila dejaría un
-    // trabajo de Egress grabando y facturando que el docente cree detenido.
-    const { data: actualizada } = await ctx.admin
+
+    // Dos escrituras con papeles distintos, porque en el ~1-3 s de StartEgress
+    // pueden haber pasado dos cosas INCOMPATIBLES entre sí:
+    //  a) el docente pulsó "Detener" → el DELETE cerró la fila (`failed`), y el
+    //     trabajo recién iniciado sobra: hay que detenerlo (compensación).
+    //  b) el webhook `egress_started` llegó ANTES que nosotros (tiene respaldo
+    //     de match por sala, no necesita el egress_id) y ya movió la fila a
+    //     `active` — ahí NO hay nada que compensar, y pisarla con `starting`
+    //     regresaría el estado que la sala ya muestra.
+    //
+    // 1. Adjuntar egress_id/archivo a la fila mientras siga VIVA, sin tocar el
+    //    status: es válido tanto en `starting` como en `active`.
+    const { data: viva2 } = await ctx.admin
       .from("session_recordings")
-      .update({ egress_id: info.egressId ?? null, status: estado, storage_path: filepath })
+      .update({ egress_id: info.egressId ?? null, storage_path: filepath })
       .eq("id", registro.id)
-      .eq("status", "starting")
+      .in("status", ["starting", "active"])
       .select(COLUMNAS_FILA)
       .maybeSingle();
 
-    if (!actualizada) {
-      // Alguien cerró la fila entremedio: el trabajo recién iniciado sobra.
+    if (!viva2) {
+      // Caso (a): la fila ya no está viva — el trabajo recién iniciado sobra.
       if (info.egressId) {
         try {
           await stopEgress({ config: conf.config, room: ctx.room, egressId: info.egressId });
@@ -273,7 +281,21 @@ export async function POST(_req: Request, ctxParams: { params: Promise<{ session
       return estadoResponse(await ultimaFila(ctx), ctx.session.lesson_id);
     }
 
-    return estadoResponse(actualizada as RecordingRow, ctx.session.lesson_id, {
+    // 2. Avanzar el status SOLO hacia adelante (`starting` → `active`): si el
+    //    webhook ya lo avanzó, esta escritura simplemente no matchea.
+    if (estado === "active" && viva2.status === "starting") {
+      await ctx.admin
+        .from("session_recordings")
+        .update({ status: "active" })
+        .eq("id", registro.id)
+        .eq("status", "starting");
+    }
+
+    const filaFinal = {
+      ...(viva2 as RecordingRow),
+      status: estado === "active" ? ("active" as EstadoGrabacion) : (viva2 as RecordingRow).status,
+    };
+    return estadoResponse(filaFinal, ctx.session.lesson_id, {
       egressId: info.egressId ?? null,
     });
   } catch (e) {

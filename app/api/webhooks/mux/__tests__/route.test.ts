@@ -126,7 +126,9 @@ describe("POST /api/webhooks/mux", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     recordedCalls = [];
-    existingLessonResult = { data: null };
+    // La lección matchea por defecto (sin miniatura previa): desde el retorno
+    // temprano, `data: null` significa "asset ajeno" y corta el flujo entero.
+    existingLessonResult = { data: { thumbnail_url: null } };
     updateReadyResult = { data: [{ id: "lesson-1" }], error: null };
     trackReadyLessonResult = { data: { id: "lesson-1", mux_playback_id: "pb-1" } };
     trackUpdateResult = { data: null, error: null };

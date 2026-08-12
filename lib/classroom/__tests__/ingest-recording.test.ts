@@ -35,7 +35,7 @@ const createSignedUrl = vi.fn(async () => state.signed);
 function builder(table: string) {
   const propios: Array<{ method: string; args: unknown[] }> = [];
   const b: Record<string, unknown> = {};
-  for (const m of ["select", "insert", "update", "delete", "eq", "in", "order", "limit"]) {
+  for (const m of ["select", "insert", "update", "delete", "eq", "in", "is", "order", "limit"]) {
     b[m] = (...args: unknown[]) => {
       propios.push({ method: m, args });
       calls.push({ table, method: m, args });
@@ -137,7 +137,11 @@ describe("ingestRecording", () => {
     const reserva = calls.filter(
       (c) => c.table === "session_recordings" && c.method === "update",
     )[0];
-    expect(reserva.args[0]).toEqual({ status: "ingesting" });
+    // `ingested_at` se estampa AL RESERVAR: es el reloj con que el cron mide si
+    // la ingesta está colgada — al final la gracia sería cero (mediría desde el
+    // inicio de la grabación) y preemptaría ingestas en vuelo.
+    expect(reserva.args[0]).toMatchObject({ status: "ingesting" });
+    expect((reserva.args[0] as Record<string, unknown>).ingested_at).toBeTruthy();
     // El `.eq("status", "uploaded")` es lo que hace que una reentrega no cree un
     // segundo asset.
     const condiciones = calls.filter((c) => c.table === "session_recordings" && c.method === "eq");

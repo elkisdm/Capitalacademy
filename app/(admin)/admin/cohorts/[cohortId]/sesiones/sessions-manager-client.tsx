@@ -249,7 +249,10 @@ export function SessionsManagerClient({
   const [salaCopiada, setSalaCopiada] = useState<string | null>(null);
   // El panel de grabación vive dentro de la edición y nadie lo encontraba: el
   // atajo de la fila abre la edición y deja ese panel abierto y a la vista.
-  const [recordingFocus, setRecordingFocus] = useState(false);
+  // Contador y no booleano: el segundo clic en "Subir grabación" sobre la
+  // MISMA clase debe volver a abrir la sección y scrollear — con un booleano
+  // ya en true, React descarta el set y el clic era un no-op.
+  const [recordingFocus, setRecordingFocus] = useState(0);
   const recordingSectionRef = useRef<HTMLDivElement | null>(null);
   const readyRecordings = new Set(readyRecordingSessionIds);
 
@@ -283,7 +286,7 @@ export function SessionsManagerClient({
     setForm(formFromSession(s));
     setError(null);
     setCreating(false);
-    setRecordingFocus(false);
+    setRecordingFocus(0);
     setEditing(s);
   }
 
@@ -291,11 +294,11 @@ export function SessionsManagerClient({
   // repetición abierto y desplazado a la vista.
   function openRecording(s: ClassSession) {
     openEdit(s);
-    setRecordingFocus(true);
+    setRecordingFocus((n) => n + 1);
   }
 
   useEffect(() => {
-    if (!recordingFocus || !editing) return;
+    if (recordingFocus === 0 || !editing) return;
     recordingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [recordingFocus, editing]);
 
@@ -789,9 +792,11 @@ export function SessionsManagerClient({
             key={`${editing.id}:${recordingFocus}`}
             title="Repetición de la clase"
             subtitle="Sube la grabación de la clase en vivo"
-            defaultOpen={recordingFocus}
+            defaultOpen={recordingFocus > 0}
           >
-            <SessionRecordingPanel sessionId={editing.id} />
+            {/* Cuando la repetición queda lista, el atajo "Subir grabación" de la
+                fila debe desaparecer: la lista viene del server, así que se refresca. */}
+            <SessionRecordingPanel sessionId={editing.id} onReady={() => router.refresh()} />
           </CollapsibleSection>
         </div>
       )}

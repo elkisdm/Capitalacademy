@@ -68,9 +68,13 @@ export async function ingestRecording(admin: Admin, recordingId: string): Promis
   // ADR-0020): el update condicional es lo que hace que una reentrega del
   // webhook de LiveKit no cree un segundo asset en Mux. Si otra corrida ya la
   // tomó, esta se va sin hacer nada.
+  // `ingested_at` se estampa AL RESERVAR, no al terminar: es el reloj contra el
+  // que el cron decide si una ingesta está colgada. Si se estampara al final,
+  // el cron mediría desde el inicio de la GRABACIÓN (horas antes) y podría
+  // preemptar una ingesta en vuelo, creando dos assets en Mux del mismo MP4.
   const { data: reservada } = await admin
     .from("session_recordings")
-    .update({ status: "ingesting" })
+    .update({ status: "ingesting", ingested_at: new Date().toISOString() })
     .eq("id", recordingId)
     .eq("status", "uploaded")
     .select("id")
@@ -180,7 +184,9 @@ export async function ingestRecording(admin: Admin, recordingId: string): Promis
     console.error("[ingestRecording] no se pudo enlazar el asset a la lección", lessonError);
   }
 
-  await admin
+  // Guarda de estado: si otra corrida preemptó esta fila entremedio, su
+  // mux_asset_id es el que vale — pisarlo dejaría el asset del ganador huérfano.
+  const { data: escrita } = await admin
     .from("session_recordings")
     .update({
       status: "ingesting",
@@ -188,7 +194,19 @@ export async function ingestRecording(admin: Admin, recordingId: string): Promis
       ingested_at: new Date().toISOString(),
       error: null,
     })
-    .eq("id", recordingId);
+    .eq("id", recordingId)
+    .eq("status", "ingesting")
+    .is("mux_asset_id", null)
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (!escrita) {
+    console.error(
+      "[ingestRecording] otra corrida tomó la fila mientras se creaba el asset; queda un asset duplicado en Mux",
+      { recordingId, assetId },
+    );
+    return { ok: false, estado: "ingesting", motivo: "Otra corrida completó la ingesta primero." };
+  }
 
   return { ok: true, estado: "ingesting", muxAssetId: assetId, lessonId: leccion.lessonId };
 }

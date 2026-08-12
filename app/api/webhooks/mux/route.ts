@@ -148,6 +148,20 @@ export async function POST(req: Request) {
       .eq(matchColumn, matchValue)
       .maybeSingle();
 
+    // Sin lección que matchee, no hay nada que actualizar: se corta ANTES de la
+    // miniatura por IA (hasta 8 s de OpenAI que se botarían) y CON log — la
+    // cuenta de Mux es compartida entre proyectos, así que un asset ajeno acá
+    // es normal, pero uno nuestro que no matchea es la carrera de la ingesta
+    // nativa (el asset_id aún no se escribió en la lección) y el cron de
+    // grabaciones la repara y notifica después.
+    if (!existingLesson) {
+      console.warn("Mux webhook: asset.ready sin lección que matchee", {
+        matchColumn,
+        matchValue,
+      });
+      return NextResponse.json({ received: true });
+    }
+
     // Miniatura: intenta que la IA elija el frame más atractivo ANTES del update.
     // Si no logra elegir (o falla/expira), cae al frame default de Mux. Este paso
     // NUNCA rompe el flujo: pickSmartThumbnailTime jamás lanza y responde en <8s.

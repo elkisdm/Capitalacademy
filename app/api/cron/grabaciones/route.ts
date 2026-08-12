@@ -11,6 +11,10 @@ import { roomNameForSession } from "@/lib/livekit/access";
 import { GRABACIONES_BUCKET, listEgress, stopEgress } from "@/lib/livekit/egress";
 import { egressTerminado, estadoDesdeEgress } from "@/lib/livekit/egress-estado";
 import { ingestRecording } from "@/lib/classroom/ingest-recording";
+import {
+  dispatchCapacitacionFollowup,
+  dispatchRecordingAvailableNotification,
+} from "@/lib/classroom/recording-notifications";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -308,11 +312,16 @@ export async function GET(req: Request) {
   // -------------------------------------------------------------------------
   {
     const corte = new Date(ahora - INGESTA_PERDIDA_MIN * MINUTO_MS).toISOString();
+    // El reloj es `ingested_at` (estampado al RESERVAR la ingesta), no
+    // `started_at`: ese es el inicio de la grabación, horas antes, y medir con
+    // él dejaba la gracia en cero — el cron preemptaba ingestas en vuelo y
+    // creaba dos assets del mismo MP4. El `is null` cubre filas reservadas por
+    // código anterior a este reloj.
     const { data: ingestando } = await admin
       .from("session_recordings")
       .select(COLUMNAS)
       .eq("status", "ingesting")
-      .lt("started_at", corte)
+      .or(`ingested_at.is.null,ingested_at.lt.${corte}`)
       .limit(MAX_PER_RUN);
 
     for (const fila of (ingestando ?? []) as FilaPendiente[]) {
@@ -362,7 +371,7 @@ export async function GET(req: Request) {
 
       const playbackId = asset.playback_ids?.[0]?.id ?? null;
       if (sesion?.lesson_id && playbackId) {
-        await admin
+        const { data: reparada } = await admin
           .from("lessons")
           .update({
             mux_asset_id: fila.mux_asset_id,
@@ -371,7 +380,18 @@ export async function GET(req: Request) {
             mux_error: null,
           })
           .eq("id", sesion.lesson_id)
-          .is("mux_playback_id", null);
+          .is("mux_playback_id", null)
+          .select("id")
+          .maybeSingle<{ id: string }>();
+
+        // Si la reparación efectivamente publicó el playback, el webhook de Mux
+        // nunca va a avisarle a nadie (su match falló: por eso estamos acá).
+        // Sin esto, la repetición se publica en silencio y la cohorte no recibe
+        // el correo. Ambas funciones son idempotentes y excluyentes por programa.
+        if (reparada) {
+          await dispatchCapacitacionFollowup(admin, reparada.id);
+          await dispatchRecordingAvailableNotification(admin, reparada.id);
+        }
       }
 
       await admin

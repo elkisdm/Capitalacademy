@@ -31,6 +31,7 @@ vi.mock("@/lib/mux/client", () => ({
 type Result = { data?: unknown; error?: unknown };
 
 let state: {
+  cerradasSinIngesta?: unknown[];
   abiertas: unknown[];
   arrancando: unknown[];
   ingestando: unknown[];
@@ -45,7 +46,7 @@ let calls: Array<{ table: string; method: string; args: unknown[] }>;
 function builder(table: string) {
   const propios: Array<{ method: string; args: unknown[] }> = [];
   const b: Record<string, unknown> = {};
-  for (const m of ["select", "update", "eq", "in", "is", "not", "lt", "limit", "order"]) {
+  for (const m of ["select", "update", "eq", "in", "is", "not", "lt", "or", "limit", "order"]) {
     b[m] = (...args: unknown[]) => {
       propios.push({ method: m, args });
       calls.push({ table, method: m, args });
@@ -62,6 +63,8 @@ function builder(table: string) {
     if (tiene("update")) return tiene("select") ? state.cierre : { data: null, error: null };
     if (tiene("in")) return { data: state.abiertas, error: null };
     switch (estadoPedido()) {
+      case "uploaded":
+        return { data: state.cerradasSinIngesta ?? [], error: null };
       case "starting":
         return { data: state.arrancando, error: null };
       case "ingesting":
@@ -81,6 +84,13 @@ function builder(table: string) {
     Promise.resolve(resolve()).then(res, rej);
   return b;
 }
+
+const mFollowup = vi.fn(async () => {});
+const mAviso = vi.fn(async () => {});
+vi.mock("@/lib/classroom/recording-notifications", () => ({
+  dispatchCapacitacionFollowup: mFollowup,
+  dispatchRecordingAvailableNotification: mAviso,
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
@@ -123,6 +133,7 @@ beforeEach(() => {
   process.env.LIVEKIT_API_SECRET = "secreto-de-prueba";
 
   state = {
+    cerradasSinIngesta: [],
     abiertas: [],
     arrancando: [],
     ingestando: [],
@@ -325,4 +336,28 @@ describe("GET /api/cron/grabaciones", () => {
     expect(listEgress).not.toHaveBeenCalled();
     expect((await res.json()).borradas).toBe(1);
   });
+  it("1b — una fila cerrada (`uploaded` + ended_at) con archivo se rescata e ingesta", async () => {
+    // Es lo que deja el "Detener" del docente cuando el `egress_ended` se
+    // pierde: ninguna otra rama la mira, y sin esto el MP4 con PII queda en el
+    // bucket para siempre y la clase sin repetición.
+    state.cerradasSinIngesta = [
+      { ...FILA_ABIERTA, status: "uploaded", storage_path: "ses-1/rec-1.mp4" },
+    ];
+
+    await GET(req());
+
+    expect(ingestRecording).toHaveBeenCalledWith(expect.anything(), "rec-1");
+  });
+
+  it("1b — cerrada SIN archivo y sin trabajo en LiveKit se marca fallida", async () => {
+    state.cerradasSinIngesta = [{ ...FILA_ABIERTA, status: "uploaded", storage_path: null }];
+    listEgress.mockResolvedValue([]);
+
+    await GET(req());
+
+    expect(ingestRecording).not.toHaveBeenCalled();
+    const fallo = escrituras().find((e) => e.status === "failed");
+    expect(fallo?.error).toContain("no dejó ningún archivo");
+  });
+
 });

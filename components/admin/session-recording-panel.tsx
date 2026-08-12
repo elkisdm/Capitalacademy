@@ -50,8 +50,11 @@ function fmtDuration(seconds: number | null): string {
  */
 export function SessionRecordingPanel({
   sessionId,
+  onReady,
 }: {
   sessionId: string;
+  /** Se dispara UNA vez cuando la repetición pasa a lista (para refrescar listas del server). */
+  onReady?: () => void;
 }) {
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState<RecordingState | null>(null);
@@ -101,10 +104,11 @@ export function SessionRecordingPanel({
     if (isReady && !wasReadyRef.current) {
       wasReadyRef.current = true;
       toast("Repetición lista", "success");
+      onReady?.();
     } else if (!isReady) {
       wasReadyRef.current = false;
     }
-  }, [isReady, toast]);
+  }, [isReady, toast, onReady]);
 
   // Avisa una sola vez cuando Mux reporta un error de procesamiento.
   useEffect(() => {

@@ -82,4 +82,5 @@ reunion_capital_academy.*
 /deno.lock
 
 # Logs locales de scripts one-off (anti-duplicado de envíos)
-/scripts/.sent-novedades-2026-07-12.json
+# Padrones de correos de alumnos que dejan los scripts de envío (PII): nunca al repo
+/scripts/.sent-*.json

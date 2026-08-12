@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Fixed
+- La sala en vivo ahora se encuentra desde donde se la busca: la pantalla de la clase del alumno muestra siempre la tarjeta de la sala (con la hora en que abre, en vez de no mostrar nada hasta 30 minutos antes), el botón "Entrar" del calendario del alumno usa la sala de la plataforma en vez del enlace externo antiguo y cada clase suma "Ver la clase", y la vista de Lecciones del equipo muestra "Abrir sala" en cada clase en vivo (`2ad70ed`)
 - Eliminar una clase que tuvo grabación automática ahora limpia primero sus archivos de video del almacenamiento (antes quedaban huérfanos e invisibles para siempre) y se bloquea si la grabación sigue en curso; el panel de repetición además se actualiza solo mientras la grabación automática procesa, sin necesidad de recargar la página (`cc2e3a2`)
 - El atajo "Subir grabación" del calendario de sesiones ahora desaparece solo cuando la repetición queda lista (antes seguía visible hasta recargar, invitando a subir un segundo archivo encima), y hacer clic de nuevo vuelve a abrir y desplazar el panel; además se cerraron carreras internas de la grabación automática detectadas en la revisión cruzada — ninguna estaba activa en producción porque el servicio de grabación sigue apagado (`f3c9034`)
 

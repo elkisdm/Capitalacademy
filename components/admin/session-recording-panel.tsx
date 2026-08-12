@@ -30,6 +30,24 @@ type RecordingState = {
 /** Estados en que la grabación automática sigue trabajando en la repetición. */
 const NATIVA_EN_CURSO = new Set(["starting", "active", "uploaded", "ingesting"]);
 
+/**
+ * Cuánto se le cree a una grabación "en curso" antes de devolver la subida
+ * manual. Si el webhook de cierre se pierde Y la reconciliación no puede
+ * correr, la fila queda `uploaded` para siempre — y sin este vencimiento el
+ * panel quedaría bloqueado sin NINGUNA forma de publicar la repetición.
+ * Una ingesta sana termina en minutos; una hora es holgura de sobra.
+ */
+const NATIVA_BLOQUEO_MAX_MS = 60 * 60_000;
+
+function nativaSigueFresca(nativa: NonNullable<RecordingState["nativa"]>): boolean {
+  const referencia = nativa.terminadaEn ?? nativa.iniciadaEn;
+  const t = referencia ? Date.parse(referencia) : NaN;
+  // Sin timestamp legible se asume vencida: bloquear para siempre es el modo
+  // de fallo caro; subir a mano encima de una ingesta viva lo absorbe E8.
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t < NATIVA_BLOQUEO_MAX_MS;
+}
+
 // Polling mientras Mux procesa: cada 8s, hasta ~6 min (45 intentos).
 const POLL_INTERVAL_MS = 8000;
 const POLL_MAX_ATTEMPTS = 45;
@@ -201,8 +219,14 @@ export function SessionRecordingPanel({
 
   // La sala se grabó (o se está grabando) automáticamente: la repetición viene
   // en camino sola. Subir un archivo a mano encima haría chocar los dos caminos
-  // — la ingesta nativa se detiene si la lección ya tiene video.
-  if (!isReady && state?.nativa && NATIVA_EN_CURSO.has(state.nativa.estado)) {
+  // — la ingesta nativa se detiene si la lección ya tiene video. El bloqueo
+  // VENCE (nativaSigueFresca): una fila colgada no puede secuestrar el panel.
+  if (
+    !isReady &&
+    state?.nativa &&
+    NATIVA_EN_CURSO.has(state.nativa.estado) &&
+    nativaSigueFresca(state.nativa)
+  ) {
     return (
       <>
         <ToastContainer />
@@ -344,13 +368,24 @@ export function SessionRecordingPanel({
     );
   }
 
-  // La grabación automática falló: la subida manual sigue disponible abajo,
-  // pero ops tiene que saber POR QUÉ está subiendo a mano.
+  // La grabación automática falló o quedó colgada: la subida manual sigue
+  // disponible abajo, pero ops tiene que saber POR QUÉ está subiendo a mano.
+  const nativaColgada =
+    state?.nativa && NATIVA_EN_CURSO.has(state.nativa.estado) && !nativaSigueFresca(state.nativa);
   const avisoNativaFallida =
     state?.nativa?.estado === "failed" ? (
       <div className="mb-3 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[13px] leading-relaxed text-[#8b6914]">
         <span className="font-bold">La grabación automática de esta clase falló:</span>{" "}
         {state.nativa.error ?? "sin motivo registrado"}. Sube la repetición a mano.
+      </div>
+    ) : nativaColgada ? (
+      <div className="mb-3 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[13px] leading-relaxed text-[#8b6914]">
+        <span className="font-bold">
+          La grabación automática quedó a medio camino (sin confirmación hace más de una
+          hora).
+        </span>{" "}
+        Puedes subir la repetición a mano; si la automática se completa después, no pisará
+        lo que subas.
       </div>
     ) : null;
 

@@ -202,8 +202,27 @@ export async function GET(req: Request) {
         continue;
       }
 
-      // Sin archivo hay que preguntarle a LiveKit qué dejó el trabajo.
-      if (!config) continue;
+      // Sin archivo hay que preguntarle a LiveKit qué dejó el trabajo. Sin
+      // credenciales eso es imposible — pero la fila no puede fingir progreso
+      // para siempre: tras 24 h sin webhook se declara fallida, y el panel
+      // admin vuelve a ofrecer la subida manual con el motivo a la vista.
+      if (!config) {
+        const corte24h = new Date(ahora - 24 * 60 * MINUTO_MS).toISOString();
+        const { data: vencida } = await admin
+          .from("session_recordings")
+          .update({
+            status: "failed",
+            error:
+              "La grabación terminó pero nunca llegó la confirmación de Egress y no hay credenciales para reconciliar. Sube la repetición a mano.",
+          })
+          .eq("id", fila.id)
+          .eq("status", "uploaded")
+          .lt("ended_at", corte24h)
+          .select("id")
+          .maybeSingle<{ id: string }>();
+        if (vencida) resumen.fallidas++;
+        continue;
+      }
       const room = roomNameForSession(fila.session_id);
       let trabajos;
       try {

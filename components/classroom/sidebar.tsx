@@ -444,9 +444,21 @@ export function ClassroomSidebar({
       return pathname === "/classroom";
     }
     if (path === `/classroom/${activeCohort}`) {
+      // "Inicio" cubre la raíz de la cohorte y las clases/lecciones, pero NO
+      // las secciones que tienen su propio ítem en este menú — sin esta lista,
+      // "Inicio" quedaba resaltado junto con la sección visitada.
+      const secciones = [
+        "calendario",
+        "recursos",
+        "entregables",
+        "notas",
+        "conversaciones",
+        "evaluacion",
+        "quiz",
+      ];
       return (
         pathname.startsWith(`/classroom/${activeCohort}`) &&
-        !pathname.startsWith(`/classroom/${activeCohort}/calendario`)
+        !secciones.some((s) => pathname.startsWith(`/classroom/${activeCohort}/${s}`))
       );
     }
     return pathname.startsWith(path);

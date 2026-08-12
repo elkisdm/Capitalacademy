@@ -18,7 +18,17 @@ type RecordingState = {
     thumbnail_url: string | null;
   } | null;
   moduleMissing: boolean;
+  /** Última grabación automática de la sala (ADR-0034); null si nunca hubo. */
+  nativa: {
+    estado: string;
+    error: string | null;
+    iniciadaEn: string;
+    terminadaEn: string | null;
+  } | null;
 };
+
+/** Estados en que la grabación automática sigue trabajando en la repetición. */
+const NATIVA_EN_CURSO = new Set(["starting", "active", "uploaded", "ingesting"]);
 
 // Polling mientras Mux procesa: cada 8s, hasta ~6 min (45 intentos).
 const POLL_INTERVAL_MS = 8000;
@@ -185,6 +195,29 @@ export function SessionRecordingPanel({
     );
   }
 
+  // La sala se grabó (o se está grabando) automáticamente: la repetición viene
+  // en camino sola. Subir un archivo a mano encima haría chocar los dos caminos
+  // — la ingesta nativa se detiene si la lección ya tiene video.
+  if (!isReady && state?.nativa && NATIVA_EN_CURSO.has(state.nativa.estado)) {
+    return (
+      <>
+        <ToastContainer />
+        <div
+          role="status"
+          className="rounded-xl border border-ca-violet/30 bg-ca-violet/10 px-4 py-3 text-[13px] leading-relaxed text-ca-ink"
+        >
+          <span className="font-bold">
+            {state.nativa.estado === "starting" || state.nativa.estado === "active"
+              ? "Esta clase se está grabando automáticamente."
+              : "La grabación automática de esta clase está preparando la repetición."}
+          </span>{" "}
+          No subas un archivo a mano: la repetición se publicará sola cuando termine de
+          procesarse. Si algo falla, este panel volverá a ofrecer la subida manual.
+        </div>
+      </>
+    );
+  }
+
   // Repetición lista: video procesado en Mux.
   if (isReady && rec) {
     return (
@@ -307,11 +340,22 @@ export function SessionRecordingPanel({
     );
   }
 
+  // La grabación automática falló: la subida manual sigue disponible abajo,
+  // pero ops tiene que saber POR QUÉ está subiendo a mano.
+  const avisoNativaFallida =
+    state?.nativa?.estado === "failed" ? (
+      <div className="mb-3 rounded-xl border border-ca-amber/40 bg-ca-amber/10 px-4 py-3 text-[13px] leading-relaxed text-[#8b6914]">
+        <span className="font-bold">La grabación automática de esta clase falló:</span>{" "}
+        {state.nativa.error ?? "sin motivo registrado"}. Sube la repetición a mano.
+      </div>
+    ) : null;
+
   // Repetición preparada, lista para subir el archivo.
   if (hasLesson && state?.lessonId) {
     return (
       <>
         <ToastContainer />
+        {avisoNativaFallida}
         <MuxUploader lessonId={state.lessonId} onUploadComplete={handleUploaded} />
       </>
     );
@@ -321,6 +365,7 @@ export function SessionRecordingPanel({
   return (
     <>
       <ToastContainer />
+      {avisoNativaFallida}
       <div className="rounded-xl border-2 border-dashed border-ca-ink/[0.10] p-6 text-center">
         <p className="text-[14px] font-semibold text-ca-ink">
           Esta clase en vivo no tiene repetición.

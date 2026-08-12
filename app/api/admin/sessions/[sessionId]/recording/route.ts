@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
-import { uniqueSlug } from "@/lib/utils/slug";
+import { ensureRecordingLesson } from "@/lib/classroom/ensure-recording-lesson";
 
 export const runtime = "nodejs";
 
@@ -37,11 +37,43 @@ async function loadSession(
 }
 
 /**
+ * Última grabación NATIVA de la clase (ADR-0034), si existe. El panel la
+ * necesita para no invitar a subir a mano encima de una grabación automática
+ * en curso: sin esto, ops ve "sin repetición" mientras la ingesta trabaja,
+ * sube el archivo, y la ingesta nativa muere contra la subida manual.
+ */
+async function grabacionNativa(
+  admin: ReturnType<typeof createAdminClient>,
+  sessionId: string,
+) {
+  const { data } = await admin
+    .from("session_recordings")
+    .select("status, error, started_at, ended_at")
+    .eq("session_id", sessionId)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{
+      status: string;
+      error: string | null;
+      started_at: string;
+      ended_at: string | null;
+    }>();
+  if (!data) return null;
+  return {
+    estado: data.status,
+    error: data.error,
+    iniciadaEn: data.started_at,
+    terminadaEn: data.ended_at,
+  };
+}
+
+/**
  * GET /api/admin/sessions/:sessionId/recording
  * Devuelve el estado de la repetición de una clase en vivo.
  *  - moduleMissing: la sesión no tiene módulo (no se puede crear la repetición).
  *  - lessonId: id de la lección-repetición, si ya fue preparada.
  *  - recording: estado Mux de la repetición (null mientras no haya video listo).
+ *  - nativa: última grabación automática de la sala (null si nunca hubo).
  */
 export async function GET(
   _req: Request,
@@ -62,11 +94,14 @@ export async function GET(
     return NextResponse.json({ error: "Sesión no encontrada" }, { status: 404 });
   }
 
+  const nativa = await grabacionNativa(admin, parsedId.data);
+
   if (!session.lesson_id) {
     return NextResponse.json({
       lessonId: null,
       recording: null,
       moduleMissing: !session.module_id,
+      nativa,
     });
   }
 
@@ -82,6 +117,7 @@ export async function GET(
     lessonId: session.lesson_id,
     recording: lesson ?? null,
     moduleMissing: !session.module_id,
+    nativa,
   });
 }
 
@@ -111,76 +147,33 @@ export async function POST(
     return NextResponse.json({ error: "Sesión no encontrada" }, { status: 404 });
   }
 
-  // Idempotente: si ya hay repetición preparada, devuélvela.
-  if (session.lesson_id) {
-    return NextResponse.json({ lessonId: session.lesson_id });
-  }
+  // La creación vive en lib/classroom/ensure-recording-lesson.ts porque la
+  // comparte con la grabación nativa (ADR-0034): los dos caminos tienen que
+  // producir la misma lección. Los mensajes al usuario siguen siendo de acá.
+  const resultado = await ensureRecordingLesson(admin, session);
 
-  if (!session.module_id) {
+  if (!resultado.ok) {
+    if (resultado.reason === "module_missing") {
+      return NextResponse.json(
+        {
+          error:
+            "Asigna un módulo a la sesión antes de preparar la repetición.",
+        },
+        { status: 422 },
+      );
+    }
     return NextResponse.json(
       {
         error:
-          "Asigna un módulo a la sesión antes de preparar la repetición.",
+          resultado.reason === "link_error"
+            ? "Error al enlazar la repetición"
+            : "Error al preparar la repetición",
       },
-      { status: 422 },
-    );
-  }
-
-  // Posición al final del módulo (unique(module_id, position)).
-  const { data: lastPos } = await admin
-    .from("lessons")
-    .select("position")
-    .eq("module_id", session.module_id)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const position = ((lastPos?.position as number | undefined) ?? 0) + 1;
-
-  // Slug único GLOBAL (lessons_slug_idx es global).
-  const { data: slugRows } = await admin
-    .from("lessons")
-    .select("slug")
-    .not("slug", "is", null);
-  const taken = (slugRows ?? []).map((r) => r.slug as string);
-  const title = `Repetición — ${session.title ?? "Clase en vivo"}`;
-  const slug = uniqueSlug(title, taken);
-
-  const { data: lesson, error: insertError } = await admin
-    .from("lessons")
-    .insert({
-      module_id: session.module_id,
-      title,
-      kind: "recorded",
-      position,
-      slug,
-    })
-    .select("id")
-    .single<{ id: string }>();
-
-  if (insertError || !lesson) {
-    console.error("recording lesson insert error", insertError);
-    return NextResponse.json(
-      { error: "Error al preparar la repetición" },
       { status: 500 },
     );
   }
 
-  const { error: linkError } = await admin
-    .from("class_sessions")
-    .update({ lesson_id: lesson.id })
-    .eq("id", parsedId.data);
-
-  if (linkError) {
-    // Rollback de la lección huérfana para no dejar basura.
-    await admin.from("lessons").delete().eq("id", lesson.id);
-    console.error("recording link error", linkError);
-    return NextResponse.json(
-      { error: "Error al enlazar la repetición" },
-      { status: 500 },
-    );
-  }
-
-  return NextResponse.json({ lessonId: lesson.id });
+  return NextResponse.json({ lessonId: resultado.lessonId });
 }
 
 /**

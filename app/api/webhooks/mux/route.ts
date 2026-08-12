@@ -122,7 +122,15 @@ export async function POST(req: Request) {
   if (event.type === "video.asset.ready") {
     const { id: assetId, upload_id, playback_ids, duration } = event.data;
 
-    if (!upload_id) {
+    // Un asset creado por INGESTA DE URL (grabación nativa, ADR-0034) no trae
+    // `upload_id`: nace de POST /video/v1/assets, no de un direct upload. Antes
+    // salía por acá en silencio, la lección nunca recibía `mux_playback_id` y la
+    // repetición quedaba en "Procesando en Mux…" para siempre sin un solo error
+    // en los logs. Se ubica por `mux_asset_id`, que la ingesta escribe en la
+    // lección en el mismo momento en que Mux devuelve el asset.
+    const matchColumn = upload_id ? "mux_upload_id" : "mux_asset_id";
+    const matchValue = upload_id ?? assetId;
+    if (!matchValue) {
       return NextResponse.json({ received: true });
     }
 
@@ -137,7 +145,7 @@ export async function POST(req: Request) {
     const { data: existingLesson } = await supabase
       .from("lessons")
       .select("thumbnail_url")
-      .eq("mux_upload_id", upload_id)
+      .eq(matchColumn, matchValue)
       .maybeSingle();
 
     // Miniatura: intenta que la IA elija el frame más atractivo ANTES del update.
@@ -167,7 +175,7 @@ export async function POST(req: Request) {
         // El asset quedó listo: limpia cualquier error de procesamiento previo.
         mux_error: null,
       })
-      .eq("mux_upload_id", upload_id)
+      .eq(matchColumn, matchValue)
       .select("id");
 
     if (error) {

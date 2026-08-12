@@ -259,10 +259,41 @@ describe("POST /api/webhooks/mux", () => {
   // ---------------------------------------------------------------------
 
   describe("video.asset.ready", () => {
-    it("responde 200 sin tocar la BD si no viene upload_id", async () => {
+    // E2 de docs/specs/grabacion-nativa.md (D4 de ADR-0034). Antes de este
+    // cambio el handler salía por un `if (!upload_id) return` y la repetición de
+    // una grabación nativa —que nace de POST /video/v1/assets y por eso NO tiene
+    // upload_id— quedaba "Procesando en Mux…" para siempre, sin un error en los
+    // logs. Con el código viejo esta prueba falla.
+    it("sin upload_id ubica la lección por mux_asset_id (grabación nativa)", async () => {
       const res = await POST(
-        jsonRequest({ type: "video.asset.ready", data: { id: "asset-1" } }),
+        jsonRequest({
+          type: "video.asset.ready",
+          data: {
+            id: "asset-nativo",
+            playback_ids: [{ id: "pb-nativo", policy: "public" }],
+            duration: 4211,
+          },
+        }),
       );
+
+      expect(res.status).toBe(200);
+      const updateCall = recordedCalls.find((c) => c.op === "update.eq" && c.table === "lessons");
+      expect(updateCall?.col).toBe("mux_asset_id");
+      expect(updateCall?.val).toBe("asset-nativo");
+      expect(updateCall?.obj).toMatchObject({
+        mux_playback_id: "pb-nativo",
+        video_duration_seconds: 4211,
+        mux_error: null,
+      });
+      // Y el aviso "grabación disponible" sale igual que en el camino manual.
+      expect(mDispatchRecordingAvailableNotification).toHaveBeenCalledWith(
+        expect.anything(),
+        "lesson-1",
+      );
+    });
+
+    it("responde 200 sin tocar la BD si el evento no trae ni upload_id ni asset id", async () => {
+      const res = await POST(jsonRequest({ type: "video.asset.ready", data: {} }));
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ received: true });
       expect(recordedCalls).toHaveLength(0);

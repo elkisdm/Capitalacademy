@@ -24,6 +24,28 @@ export type VideoGrant = {
   canPublishData: boolean;
   /** Moderación (silenciar, expulsar). Solo para quien dicta la clase. */
   roomAdmin?: boolean;
+  /**
+   * Crear y BORRAR salas.
+   *
+   * `DeleteRoom` —lo que hay detrás de "Terminar la clase para todos"— es la
+   * única llamada de moderación que LiveKit no cubre con `roomAdmin`.
+   *
+   * OJO: este permiso es GLOBAL del servidor. A diferencia de `roomJoin` y
+   * `roomAdmin`, LiveKit NO acota `roomCreate` al campo `room` del grant: un
+   * token que lo lleve puede borrar CUALQUIER sala mientras viva. Por eso
+   * nunca va en el token de un participante ni cruza al navegador: solo en el
+   * token de servicio de 60 s que se firma y consume dentro del mismo handler.
+   */
+  roomCreate?: boolean;
+  /**
+   * Permite pedirle a Egress que grabe (ADR-0034).
+   *
+   * GLOBAL igual que `roomCreate`: LiveKit no lo acota por sala. Un token con
+   * este permiso puede arrancar egress —facturables— sobre cualquier sala del
+   * servidor. Solo en el token de servicio de 60 s de `StartRoomCompositeEgress`,
+   * nunca en el de un participante ni de vuelta al cliente.
+   */
+  roomRecord?: boolean;
 };
 
 export type AccessTokenInput = {

@@ -168,14 +168,14 @@ describe("GET /api/admin/sessions/[sessionId]/recording", () => {
     const res = await GET(req("GET"), ctx());
     expect(res!.status).toBe(200);
     const json = await res!.json();
-    expect(json).toEqual({ lessonId: null, recording: null, moduleMissing: true });
+    expect(json).toEqual({ lessonId: null, recording: null, moduleMissing: true, nativa: null });
   });
 
   it("200 sin lección: moduleMissing=false cuando la sesión sí tiene módulo", async () => {
     const res = await GET(req("GET"), ctx());
     expect(res!.status).toBe(200);
     const json = await res!.json();
-    expect(json).toEqual({ lessonId: null, recording: null, moduleMissing: false });
+    expect(json).toEqual({ lessonId: null, recording: null, moduleMissing: false, nativa: null });
   });
 
   it("200 con lección preparada: devuelve el estado Mux de la repetición", async () => {

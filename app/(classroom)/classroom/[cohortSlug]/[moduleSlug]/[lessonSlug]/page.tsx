@@ -163,7 +163,8 @@ export default async function LessonPage(
       supabase
         .from("lesson_comments")
         .select("id", { count: "exact", head: true })
-        .eq("lesson_id", lessonId),
+        .eq("lesson_id", lessonId)
+        .is("deleted_at", null),
       supabase
         .from("evaluations")
         .select("id, title, is_active, opens_at, closes_at")

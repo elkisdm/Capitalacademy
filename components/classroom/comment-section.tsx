@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { timeAgo } from "@/lib/utils/time-ago";
 import { getInitials } from "@/lib/utils/initials";
 import { linkify } from "@/lib/conversaciones/linkify";
+import { buildCommentTree, type SortOrder } from "@/lib/classroom/comment-tree";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -44,8 +45,6 @@ type Comment = {
   deleted?: boolean;
   profiles: Profile;
 };
-
-type SortOrder = "newest" | "oldest";
 
 // ── SVG Icons ───────────────────────────────────────────────
 
@@ -816,25 +815,10 @@ export function CommentSection({
 
   // Árbol root/replies + orden, memoizado: solo se recomputa si cambian los
   // comentarios o el orden (no en cada render ajeno, p.ej. abrir el dropdown).
-  const { repliesMap, sortedRoots } = useMemo(() => {
-    const rootComments = comments.filter((c) => !c.parent_id);
-    const repliesMap = new Map<string, Comment[]>();
-    for (const c of comments) {
-      if (c.parent_id) {
-        const existing = repliesMap.get(c.parent_id) ?? [];
-        existing.push(c);
-        repliesMap.set(c.parent_id, existing);
-      }
-    }
-    const sortedRoots = [...rootComments].sort((a, b) => {
-      const timeA = new Date(a.created_at).getTime();
-      const timeB = new Date(b.created_at).getTime();
-      return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
-    });
-    return { repliesMap, sortedRoots };
-  }, [comments, sortOrder]);
-
-  const totalCount = comments.length;
+  const { repliesMap, sortedRoots, totalCount } = useMemo(
+    () => buildCommentTree(comments, sortOrder),
+    [comments, sortOrder],
+  );
 
   const commentsRef = useRef(comments);
   commentsRef.current = comments;
@@ -1080,7 +1064,7 @@ export function CommentSection({
       )}
 
       {/* Empty state */}
-      {!loading && !error && totalCount === 0 && (
+      {!loading && !error && sortedRoots.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
           <span className="text-ca-ink-soft">
             <MessageIcon size={28} />

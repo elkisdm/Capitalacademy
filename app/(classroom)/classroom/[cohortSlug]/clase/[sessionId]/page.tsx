@@ -129,7 +129,8 @@ export default async function ClassSessionPage(
         supabase
           .from("lesson_comments")
           .select("id", { count: "exact", head: true })
-          .eq("lesson_id", recording.id),
+          .eq("lesson_id", recording.id)
+          .is("deleted_at", null),
       ]),
       getViewerProfile(user.id),
     ]);

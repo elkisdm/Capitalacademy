@@ -154,6 +154,7 @@
 | `lib/livekit/webhook.ts` | Verificación **pura** del webhook de LiveKit: JWT HS256 + `sha256` del cuerpo crudo. Sin el hash, un token válido serviría para mandar cualquier cuerpo | — | 0034 |
 | `app/api/classroom/clase/[sessionId]/grabacion/route.ts` | GET/POST/DELETE de la grabación nativa. El POST lo llama solo el navegador del docente al conectarse y es idempotente; mismo gate que `moderar` (solo quien dicta) | `GET/POST/DELETE /api/classroom/clase/[sessionId]/grabacion` | 0034 |
 | `app/api/webhooks/livekit/route.ts` | `egress_started/updated/ended`. Cierra la fila con el archivo y **awaitea** la ingesta a Mux; fail-closed en producción e idempotente por `egress_id` | `POST /api/webhooks/livekit` | 0034 |
+| `lib/classroom/session-recording.ts` | Regla **pura** `needsRecordingUpload`: decide en qué clases pasadas el calendario admin ofrece el atajo "Subir grabación" | — | 0041 |
 | `lib/classroom/ensure-recording-lesson.ts` | Crea-si-no-existe la lección-repetición. La comparten el camino manual y el nativo: si divergieran, el alumno vería dos repeticiones de la misma clase | — | 0034, 0041 |
 | `lib/classroom/ingest-recording.ts` | Firma la URL del MP4, crea el asset en Mux con la MISMA configuración que la subida manual y lo enlaza a la lección. Nunca pisa una repetición que ya tiene video | — | 0034 |
 | `app/api/cron/grabaciones/route.ts` · `netlify/functions/grabaciones-cron.mjs` | Cada 15 min: aplica el cierre que se perdió, corta el egress colgado (que factura por minuto), confirma la ingesta contra Mux y borra el MP4 con PII del bucket | `GET/POST /api/cron/grabaciones` | 0034 |
@@ -219,6 +220,7 @@
 | `components/classroom/comment-section.tsx` | Comentarios de lección: 1 nivel de respuesta, edición propia ("(editado)"), moderación (staff borra comentarios ajenos), badge Profesor/Equipo, timestamps `mm:ss` clicables que saltan el video (`onSeek`), linkify, paginación "cargar más" | — | 0014 |
 | `app/(classroom)/classroom/go/thread/[threadId]/page.tsx` · `go/lesson/[lessonId]/page.tsx` | Rutas neutras de redirección: resuelven `program_id` del hilo/lección → cohorte del viewer con acceso (matrícula, teacher/assistant o admin/ops) → `redirect()` a la URL real, o `notFound()`. Único mecanismo para los enlaces de campana y correo (foro y lección), evita 404 cross-programa/cross-cohorte | `/classroom/go/thread/[id]`, `/classroom/go/lesson/[id]` | 0014 |
 | `lib/classroom/resolve-viewer-cohort.ts` | `resolveViewerCohortForProgram`: dado un `programId`, resuelve una cohorte donde el viewer tenga acceso (matrícula active/completed → docente/asistente → staff transversal), sin distinguir "no existe" de "sin acceso"; usado por las rutas `classroom/go/*` | — | 0014 |
+| `lib/classroom/comment-tree.ts` | Árbol **puro** de comentarios de lección (raíz + 1 nivel): oculta los soft-deleted sin romper hilos y calcula el conteo sobre lo visible (no sobre las filas crudas) | — | — |
 | `lib/notifications/lesson-comment.ts` | `notifyLessonComment`: notifica (campana + correo, admin client) respuestas y comentarios nuevos de lección — `lesson_reply` al autor del padre, `lesson_comment_new` a los docentes/asistentes del programa; cooldown de correo de 1h por usuario/lección | — | 0014 |
 | `lib/profiles/program-staff.ts` | `getProgramStaffIds`: resuelve el set de `user_id` staff de un programa (`cohort_roles` teacher/assistant + admin/ops transversal), para overlayar el badge "Profesor/Equipo" sobre `getPublicAuthorsMap` | — | 0014 |
 | `lib/classroom/queries.ts` · `admin-queries.ts` | Lecturas de módulos/lecciones/progreso (alumno y admin); `getModulesWithLessons` excluye del playlist las lecciones-repetición de clases en vivo; `getSessionForStudent` arma la pantalla de clase | — | — |
@@ -330,6 +332,7 @@
 | `app/api/admin/session-resources/upload-url/route.ts` | Signed upload URL para archivos de recursos de clases en vivo (calendario) | `POST /api/admin/session-resources/upload-url` | — |
 | `components/admin/lesson-content-editor.tsx` · `app/api/admin/lesson-content/upload-url/route.ts` | Editor de clases de texto/diapositiva (markdown + imágenes intercaladas) y su signed upload URL | `POST /api/admin/lesson-content/upload-url` | — |
 | `components/admin/cover-image-field.tsx` · `app/api/admin/covers/route.ts` | Subida/quita de portada (módulo o lección) al bucket público `covers` (service-role); columna `cover_image_url` separada de `thumbnail_url` (Mux) | `POST/DELETE /api/admin/covers` | — |
+| `db/migrations/0096_portadas_de_clases.sql` | `cover_image_url` en `class_sessions`: portada manual para clases en vivo (mismo endpoint de covers, target `session`) | — | — |
 | `components/admin/program-filter.tsx` | Selector de entorno/programa para scopear recursos y lecciones en el admin | — | — |
 | `app/api/admin/{generate-summary,generate-chapters,generate-quiz,correct-transcript,transcript-segments}/route.ts` | Generación de contenido por IA (resumen, capítulos, quiz, transcripción) | — | — |
 | `lib/classroom/generate-chapters.ts` · `generate-summary.ts` | Lógica de generación IA de capítulos y resumen de una lección, invocada por su ruta admin y por el pipeline post-procesamiento de Mux | — | — |
@@ -351,6 +354,9 @@
 | `app/page.tsx` | Landing del Diplomado (hero, programas, syllabus, comparador, FAQ, contacto) | `/` | — |
 | `components/landing/` | Secciones de la landing (Hero, Programas, Comparador, Syllabus, FAQ, Formulario, …) | — | — |
 | `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images`, `cohort` (fecha de inicio de la próxima cohorte del Diplomado, en vivo desde `cohorts`) | — | — |
+| `app/liderazgo/page.tsx` | Landing pública del Programa de Liderazgo (prospecto sobrio: 11 secciones + formulario de captación) | `/liderazgo` | — |
+| `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`, `FaqLiderazgo`) | — | — |
+| `lib/landing/liderazgo.ts` · `lib/landing/liderazgo-lead.ts` | Contenido tipado del CSV de la landing de Liderazgo y payload del lead (`program_interest: liderazgo`, `source: landing-liderazgo`) | — | — |
 | `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
 
@@ -368,6 +374,7 @@
 | `lib/evaluacion/perfil-constants.ts` | Umbrales del semáforo: son política del banco, no matemática, y se ajustan acá | — | 0032 |
 | `lib/evaluacion/ficha.ts` | Ficha de Estado de Situación (Paso 7): tipo + validación Zod, saldo hipotecario vigente y patrimonio neto. NO se persiste (decisión 1 del ADR-0032) | — | 0032 |
 | `lib/evaluacion/evaluar.ts` | `evaluarFicha`: la cadena completa del botón "Analizar capacidad de compra"; calcula el perfil ANTES que la capacidad y resuelve la palanca real según qué tope manda | — | 0032 |
+| `db/migrations/0098_historial_evaluaciones.sql` | Tabla `evaluation_history` (guardado explícito por usuario): RLS estricta `user_id = auth.uid()` sin excepción staff, entradas inmutables (sin UPDATE) | — | 0032 |
 | `app/(classroom)/classroom/[cohortSlug]/evaluacion/` · `components/evaluacion/` | Pantalla del Motor de Evaluación Financiera: ficha por secciones, resultado con el valor máximo en UF como protagonista y semáforo. Tras login; el cálculo corre en el navegador y nada se envía ni se guarda | `/classroom/[cohortSlug]/evaluacion` | 0032 |
 | `lib/evaluacion/importar-eess.ts` · `components/evaluacion/ImportarFicha.tsx` | Import del Excel EESS del portal de crédito: mapea celdas fijas de la hoja DECLARACION a la `Ficha` (parsing 100% en el navegador, xlsx por import dinámico); los totales se suman de las componentes, nunca de las celdas fórmula | — | 0032 |
 | `lib/evaluacion/historial.ts` · `app/api/classroom/evaluaciones/historial/route.ts` | Historial de evaluaciones por usuario (tabla `evaluation_history`, RLS `user_id = auth.uid()`, tope 20, guardado explícito — la ficha nunca se autoguarda) | `GET/POST/DELETE /api/classroom/evaluaciones/historial` | 0032 |

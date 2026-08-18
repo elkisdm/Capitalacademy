@@ -26,9 +26,13 @@ export const runtime = "nodejs";
 
 const pedirLimiter = createRateLimiter({ limit: 10, windowSeconds: 60 });
 
-const schema = z.discriminatedUnion("action", [
+// `union` y no `discriminatedUnion`: aprobar a un usuario y aprobar a un
+// invitado comparten el mismo `action` y se distinguen por el id que traen
+// (`userId` contra `guestId`), que es justo lo que un discriminado no admite.
+const schema = z.union([
   z.object({ action: z.literal("request") }),
   z.object({ action: z.enum(["approve", "deny"]), userId: z.string().uuid() }),
+  z.object({ action: z.enum(["approve", "deny"]), guestId: z.string().uuid() }),
 ]);
 
 type Contexto = {
@@ -92,7 +96,11 @@ export async function GET(
   // La lista completa es solo para quien dicta: a un alumno no le incumbe
   // quién más está pidiendo entrar a su clase.
   if (!c.esStaff) {
-    return NextResponse.json({ estado: propia?.status ?? null, pendientes: null });
+    return NextResponse.json({
+      estado: propia?.status ?? null,
+      pendientes: null,
+      invitadosPendientes: null,
+    });
   }
 
   const { data: pendientes } = await admin
@@ -104,8 +112,23 @@ export async function GET(
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
+  // Invitados sin cuenta (0099). Van en una lista aparte porque no tienen
+  // `user_id` que mostrar: al docente se le identifican solo por el nombre que
+  // escribieron, y el panel los marca como invitados para que eso quede claro.
+  const { data: invitados } = await admin
+    .from("room_guests")
+    .select("id, display_name, created_at")
+    .eq("session_id", c.session.id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
   return NextResponse.json({
     estado: propia?.status ?? null,
+    invitadosPendientes: (invitados ?? []).map((g) => ({
+      guestId: g.id as string,
+      nombre: g.display_name as string,
+      desde: g.created_at as string,
+    })),
     pendientes: (pendientes ?? []).map((r) => {
       const p = r.profiles as { full_name: string | null; email: string } | null;
       return {
@@ -195,6 +218,34 @@ export async function POST(
   /* ── Aprobar o rechazar ────────────────────────────────────── */
   if (!c.esStaff) {
     return NextResponse.json({ error: "No puedes decidir sobre esta clase." }, { status: 403 });
+  }
+
+  if ("guestId" in parsed.data) {
+    const { error, data } = await admin
+      .from("room_guests")
+      .update({
+        status: parsed.data.action === "approve" ? "approved" : "denied",
+        decided_at: new Date().toISOString(),
+        decided_by: user.id,
+      })
+      .eq("id", parsed.data.guestId)
+      // Acotado a ESTA sesión: sin esto, el docente de una clase podría decidir
+      // sobre el invitado de otra con solo cambiar el id.
+      .eq("session_id", c.session.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("[clase/acceso] no se pudo decidir sobre el invitado", error);
+      return NextResponse.json({ error: "No se pudo aplicar la decisión" }, { status: 500 });
+    }
+    if (!data) {
+      return NextResponse.json({ error: "Esa solicitud ya no existe." }, { status: 404 });
+    }
+    return NextResponse.json({
+      ok: true,
+      estado: parsed.data.action === "approve" ? "approved" : "denied",
+    });
   }
 
   const { error, data } = await admin

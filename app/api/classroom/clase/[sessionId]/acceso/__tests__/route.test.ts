@@ -12,6 +12,10 @@ const mockPropia = vi.fn();
 const mockPendientes = vi.fn();
 const mockUpsert = vi.fn();
 const mockUpdate = vi.fn();
+/** Invitados sin cuenta (0099): lista de pendientes y decisión sobre ellos. */
+const mockInvitados = vi.fn();
+const mockUpdateGuest = vi.fn();
+const updateGuestFiltros: Array<[string, unknown]> = [];
 /** Filtros del UPDATE, para verificar que se acota a la sesión y persona correctas. */
 const updateFiltros: Array<[string, unknown]> = [];
 let updateValues: Record<string, unknown> | null = null;
@@ -25,6 +29,25 @@ vi.mock("@/lib/supabase/admin", () => ({
     from: (tabla: string) => {
       if (tabla === "class_sessions") {
         return { select: () => ({ eq: () => ({ maybeSingle: mockSession }) }) };
+      }
+      if (tabla === "room_guests") {
+        return {
+          select: () => {
+            const chain = { eq: () => chain, order: () => mockInvitados() };
+            return chain;
+          },
+          update: (v: Record<string, unknown>) => {
+            const chain = {
+              eq: (c: string, val: unknown) => {
+                updateGuestFiltros.push([c, val]);
+                return chain;
+              },
+              select: () => chain,
+              maybeSingle: mockUpdateGuest,
+            };
+            return chain;
+          },
+        };
       }
       // room_join_requests
       return {
@@ -108,6 +131,9 @@ beforeEach(() => {
   mockAccess.mockResolvedValue(null);
   mockPropia.mockResolvedValue({ data: null });
   mockPendientes.mockResolvedValue({ data: [] });
+  mockInvitados.mockResolvedValue({ data: [] });
+  updateGuestFiltros.length = 0;
+  mockUpdateGuest.mockResolvedValue({ data: { id: "guest-1" }, error: null });
   mockUpsert.mockResolvedValue({ error: null });
   mockUpdate.mockResolvedValue({ data: { user_id: OTRO }, error: null });
 });
@@ -248,7 +274,9 @@ describe("GET /acceso", () => {
 
     const body = await (await GET(...get())).json();
 
-    expect(body).toEqual({ estado: "pending", pendientes: null });
+    // `invitadosPendientes` viaja en null por el mismo motivo que `pendientes`:
+    // al alumno no le incumbe quién más está pidiendo entrar a su clase.
+    expect(body).toEqual({ estado: "pending", pendientes: null, invitadosPendientes: null });
     expect(mockPendientes).not.toHaveBeenCalled();
   });
 
@@ -314,5 +342,80 @@ describe("guardas comunes", () => {
     let ultima = 200;
     for (let i = 0; i < 12; i++) ultima = (await POST(...post({ action: "request" }))).status;
     expect(ultima).toBe(429);
+  });
+});
+
+/**
+ * Invitados SIN CUENTA (ADR-0035, 0099). Comparten la lista de espera del
+ * docente con las solicitudes normales, pero viven en otra tabla y se deciden
+ * por otro id.
+ */
+describe("/acceso — invitados sin cuenta", () => {
+  const GUEST = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+
+  function comoDocente() {
+    mockAccess.mockResolvedValue({ enrollment: null, isStaff: true });
+  }
+
+  it("al docente le llegan los invitados junto con las solicitudes normales", async () => {
+    comoDocente();
+    mockInvitados.mockResolvedValue({
+      data: [{ id: GUEST, display_name: "Diego", created_at: "2026-08-06T15:20:00Z" }],
+    });
+
+    const body = await (await GET(...get())).json();
+    expect(body.invitadosPendientes).toEqual([
+      { guestId: GUEST, nombre: "Diego", desde: "2026-08-06T15:20:00Z" },
+    ]);
+  });
+
+  it("a un alumno no le incumbe quién está esperando", async () => {
+    mockInvitados.mockResolvedValue({
+      data: [{ id: GUEST, display_name: "Diego", created_at: "2026-08-06T15:20:00Z" }],
+    });
+
+    const body = await (await GET(...get())).json();
+    expect(body.invitadosPendientes).toBeNull();
+  });
+
+  it("el docente deja entrar a un invitado", async () => {
+    comoDocente();
+
+    const res = await POST(...post({ action: "approve", guestId: GUEST }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).estado).toBe("approved");
+  });
+
+  it("la decisión sobre un invitado se acota a ESA sesión", async () => {
+    comoDocente();
+    await POST(...post({ action: "deny", guestId: GUEST }));
+
+    // Sin el filtro por sesión, el docente de una clase decidiría sobre el
+    // invitado de otra con solo cambiar el id.
+    expect(updateGuestFiltros).toContainEqual(["id", GUEST]);
+    expect(updateGuestFiltros).toContainEqual(["session_id", "ses-uuid"]);
+  });
+
+  it("un alumno NO puede aprobar invitados", async () => {
+    mockAccess.mockResolvedValue({ enrollment: { id: "e1" }, isStaff: false });
+
+    const res = await POST(...post({ action: "approve", guestId: GUEST }));
+    expect(res.status).toBe(403);
+    expect(mockUpdateGuest).not.toHaveBeenCalled();
+  });
+
+  it("404 si el invitado ya no existe", async () => {
+    comoDocente();
+    mockUpdateGuest.mockResolvedValue({ data: null, error: null });
+
+    expect((await POST(...post({ action: "approve", guestId: GUEST }))).status).toBe(404);
+  });
+
+  it("exige un guestId con forma de UUID", async () => {
+    comoDocente();
+
+    const res = await POST(...post({ action: "approve", guestId: "no-es-uuid" }));
+    expect(res.status).toBe(422);
+    expect(mockUpdateGuest).not.toHaveBeenCalled();
   });
 });

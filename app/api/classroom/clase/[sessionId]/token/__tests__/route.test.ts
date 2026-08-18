@@ -16,6 +16,14 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const mockSolicitud = vi.fn();
+/** Fila de `room_guests`: la credencial del invitado sin cuenta (0099). */
+const mockGuest = vi.fn();
+/** La cookie que nombra esa fila. */
+const mockCookieGet = vi.fn();
+
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: mockCookieGet }),
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
@@ -30,7 +38,9 @@ vi.mock("@/lib/supabase/admin", () => ({
               ? mockSession
               : table === "room_join_requests"
                 ? mockSolicitud
-                : mockProfile,
+                : table === "room_guests"
+                  ? mockGuest
+                  : mockProfile,
         };
         return chain;
       },
@@ -90,11 +100,14 @@ beforeEach(() => {
       starts_at: "2026-08-06T15:00:00Z",
       ends_at: "2026-08-06T17:00:00Z",
       modality: "live_online",
+      guest_access: false,
     },
     error: null,
   });
   mockProfile.mockResolvedValue({ data: { full_name: "Ana Pérez", email: "ana@x.cl" } });
   mockSolicitud.mockResolvedValue({ data: null });
+  mockGuest.mockResolvedValue({ data: null });
+  mockCookieGet.mockReturnValue(undefined);
   mockAccess.mockResolvedValue({ enrollment: { id: "enr-1" }, isStaff: false });
 });
 
@@ -166,13 +179,17 @@ describe("POST /api/classroom/clase/[sessionId]/token", () => {
     expect(decodePayload(body.token).video.roomAdmin).toBeUndefined();
   });
 
-  it("rechaza a quien no está autenticado, sin tocar la base", async () => {
+  it("rechaza a quien no está autenticado en una sala normal", async () => {
+    // Desde 0099 esto ya no puede resolverse sin leer la sesión: hay que saber
+    // si la sala admite invitados antes de decidir. Se responde 404 —el mismo
+    // "no encontramos esta clase" del invitado sin permiso— para no revelar que
+    // el código existe pero está cerrado.
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
     const res = await POST(...req());
 
-    expect(res.status).toBe(401);
-    expect(mockSession).not.toHaveBeenCalled();
+    expect(res.status).toBe(404);
+    expect((await res.json()).token).toBeUndefined();
   });
 
   it("a quien no tiene acceso se le ofrece pedir entrar (sala de espera)", async () => {
@@ -259,5 +276,121 @@ describe("POST /api/classroom/clase/[sessionId]/token", () => {
       ultima = (await POST(...req())).status;
     }
     expect(ultima).toBe(429);
+  });
+});
+
+/**
+ * Invitados SIN CUENTA (ADR-0035, migración 0099). Es la rama más expuesta de
+ * esta ruta: la recorre gente de la que no sabemos absolutamente nada.
+ */
+describe("POST .../token — invitado sin cuenta", () => {
+  /** Sesión abierta a invitados, con una fila de invitado en el estado dado. */
+  function salaAbierta(status: "pending" | "approved" | "denied" | null) {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockSession.mockResolvedValue({
+      data: {
+        id: "ses-uuid-real",
+        cohort_id: "cohorte-1",
+        starts_at: "2026-08-06T15:00:00Z",
+        ends_at: "2026-08-06T17:00:00Z",
+        modality: "live_online",
+        guest_access: true,
+      },
+      error: null,
+    });
+    mockCookieGet.mockReturnValue({ value: "guest-uuid-1" });
+    mockGuest.mockResolvedValue({
+      data: status ? { id: "guest-uuid-1", display_name: "Diego", status } : null,
+    });
+  }
+
+  it("emite token al invitado aprobado, marcándolo como invitado en la sala", async () => {
+    salaAbierta("approved");
+
+    const res = await POST(...req());
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.role).toBe("guest");
+    expect(body.room).toBe("clase-ses-uuid-real");
+
+    const payload = decodePayload(body.token);
+    expect(payload.name).toBe("Diego (invitado)");
+    expect(payload.sub).toBe("guest-guest-uuid-1");
+    expect(payload.video.canPublish).toBe(true);
+    // Lo que no puede tener NUNCA: moderación.
+    expect(payload.video.roomAdmin).toBeUndefined();
+  });
+
+  it("no emite token mientras el docente no lo acepta", async () => {
+    salaAbierta("pending");
+
+    const res = await POST(...req());
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.esperando).toBe(true);
+    expect(body.token).toBeUndefined();
+  });
+
+  it("no emite token a quien fue rechazado", async () => {
+    salaAbierta("denied");
+
+    const res = await POST(...req());
+    expect(res.status).toBe(403);
+    expect((await res.json()).token).toBeUndefined();
+  });
+
+  it("no emite token sin cookie: sin solicitud no hay invitado", async () => {
+    salaAbierta(null);
+    mockCookieGet.mockReturnValue(undefined);
+
+    const res = await POST(...req());
+    expect(res.status).toBe(401);
+  });
+
+  it("la credencial de otra clase no sirve: la fila se lee acotada a ESTA sesión", async () => {
+    salaAbierta("approved");
+    // El filtro por `session_id` de la ruta hace que la consulta no devuelva nada
+    // cuando la cookie es de otra clase.
+    mockGuest.mockResolvedValue({ data: null });
+
+    const res = await POST(...req());
+    expect(res.status).toBe(401);
+  });
+
+  it("una sala que NO admite invitados responde como si no existiera", async () => {
+    salaAbierta("approved");
+    mockSession.mockResolvedValue({
+      data: {
+        id: "ses-uuid-real",
+        cohort_id: "cohorte-1",
+        starts_at: "2026-08-06T15:00:00Z",
+        ends_at: "2026-08-06T17:00:00Z",
+        modality: "live_online",
+        guest_access: false,
+      },
+      error: null,
+    });
+
+    const res = await POST(...req());
+    // 404 y no 403: distinguir los dos casos convertiría esto en un detector de
+    // códigos de reunión válidos.
+    expect(res.status).toBe(404);
+  });
+
+  it("mantiene fuera al invitado aprobado si la sala ya cerró", async () => {
+    salaAbierta("approved");
+    vi.setSystemTime(new Date("2026-08-06T19:30:00Z"));
+
+    const res = await POST(...req());
+    expect(res.status).toBe(409);
+  });
+
+  it("sigue rechazando a quien no tiene sesión en una sala normal", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const res = await POST(...req());
+    expect(res.status).toBe(404);
+    expect((await res.json()).token).toBeUndefined();
   });
 });

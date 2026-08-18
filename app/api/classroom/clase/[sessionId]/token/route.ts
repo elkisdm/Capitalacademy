@@ -5,8 +5,14 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getLiveKitConfig, LiveKitNotConfiguredError } from "@/lib/livekit/config";
 import { decideRoomAccess, type RoomSession } from "@/lib/livekit/access";
+import {
+  decideGuestAccess,
+  guestCookieName,
+  type GuestStatus,
+} from "@/lib/livekit/guest-access";
 import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { createAccessToken } from "@/lib/livekit/token";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
@@ -72,7 +78,7 @@ const DENIAL: Record<
 };
 
 export async function POST(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ sessionId: string }> },
 ) {
   const { sessionId } = await ctx.params;
@@ -82,11 +88,11 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
-  const limit = tokenLimiter.check(user.id);
+  // Sin sesión iniciada NO se rechaza de entrada: puede ser un invitado de una
+  // sala abierta (0099). La bifurcación ocurre más abajo, cuando ya se sabe si
+  // ESTA sala admite invitados; antes de eso no hay nada que decidir.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "sin-ip";
+  const limit = tokenLimiter.check(user?.id ?? `ip:${ip}`);
   if (!limit.ok) return rateLimitResponse(limit);
 
   let config;
@@ -113,7 +119,7 @@ export async function POST(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("class_sessions")
-    .select("id, cohort_id, starts_at, ends_at, modality")
+    .select("id, cohort_id, starts_at, ends_at, modality, guest_access")
     .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
 
@@ -126,6 +132,11 @@ export async function POST(
   }
 
   const session = data as RoomSession;
+  const guestAccess = Boolean((data as { guest_access?: boolean }).guest_access);
+
+  if (!user) {
+    return tokenDeInvitado({ session, guestAccess, config });
+  }
 
   // La cohorte sale de la sesión, no del cliente: la matrícula se verifica
   // contra la cohorte REAL de la clase.
@@ -186,6 +197,88 @@ export async function POST(
     url: config.url,
     room: decision.grant.room,
     role: decision.role,
+    expiresAt: decision.expiresAt.toISOString(),
+  });
+}
+
+/** Mensajes de rechazo del invitado. `esperando` le dice a la pantalla que siga consultando. */
+const GUEST_DENIAL: Record<
+  string,
+  { status: number; error: string; esperando?: boolean }
+> = {
+  // Una sala que no admite invitados se comporta como si no existiera: distinguir
+  // los dos casos convertiría esta ruta en un detector de códigos válidos.
+  guests_not_allowed: { status: 404, error: "No encontramos esta clase." },
+  not_live: { status: 409, error: "Esta clase no es en vivo." },
+  outside_window: {
+    status: 409,
+    error:
+      "La sala se abre 30 minutos antes de la clase y se cierra 2 horas después de que termina.",
+  },
+  no_request: { status: 401, error: "Escribe tu nombre para pedir entrar." },
+  awaiting_approval: {
+    status: 403,
+    error: "Ya pediste entrar. Estamos esperando que el docente te acepte.",
+    esperando: true,
+  },
+  denied: { status: 403, error: "El docente no aceptó tu solicitud para entrar a esta clase." },
+};
+
+/**
+ * Token de un INVITADO SIN CUENTA (0099).
+ *
+ * Su identidad no sale de `auth`, sino de la fila de `room_guests` que nombra su
+ * cookie — y esa fila se lee filtrando por `session_id`, así que la credencial de
+ * una clase no sirve en otra. El nombre visible se construye en el servidor con
+ * el sufijo "(invitado)": si se aceptara del cliente, cualquiera podría aparecer
+ * en la sala con el nombre de la docente.
+ */
+async function tokenDeInvitado({
+  session,
+  guestAccess,
+  config,
+}: {
+  session: RoomSession;
+  guestAccess: boolean;
+  config: { url: string; apiKey: string; apiSecret: string };
+}) {
+  const store = await cookies();
+  const guestId = store.get(guestCookieName(session.id))?.value ?? null;
+
+  let guest: { id: string; display_name: string; status: GuestStatus } | null = null;
+  if (guestId) {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("room_guests")
+      .select("id, display_name, status")
+      .eq("id", guestId)
+      .eq("session_id", session.id)
+      .maybeSingle();
+    guest = (data as typeof guest) ?? null;
+  }
+
+  const decision = decideGuestAccess({ session, guestAccess, guest, now: new Date() });
+
+  if (!decision.allowed) {
+    const { status, error, esperando } = GUEST_DENIAL[decision.reason];
+    return NextResponse.json({ error, reason: decision.reason, esperando }, { status });
+  }
+
+  const token = createAccessToken({
+    apiKey: config.apiKey,
+    apiSecret: config.apiSecret,
+    identity: decision.identity,
+    name: decision.name,
+    grant: decision.grant,
+    issuedAt: new Date(),
+    expiresAt: decision.expiresAt,
+  });
+
+  return NextResponse.json({
+    token,
+    url: config.url,
+    room: decision.grant.room,
+    role: "guest",
     expiresAt: decision.expiresAt.toISOString(),
   });
 }

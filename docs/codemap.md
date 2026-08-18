@@ -136,7 +136,9 @@
 | `lib/livekit/config.ts` | Credenciales (`LIVEKIT_URL/API_KEY/API_SECRET`) con error tipado que nombra la variable faltante → 503 | — | 0031 |
 | `lib/livekit/token.ts` | Firma **pura** del JWT HS256 de acceso (`node:crypto`, sin SDK). El token ES la autorización: LiveKit no consulta nada más | — | 0031 |
 | `lib/livekit/access.ts` | Decisión **pura** de acceso a la sala: modalidad en vivo, cohorte, matrícula/staff, ventana (−30/+120 min) y grants. La sala se deriva del id de sesión, nunca del cliente | — | 0031 |
-| `app/api/classroom/clase/[sessionId]/acceso/route.ts` | Sala de espera (0091): pedir entrar, listar pendientes y aprobar/rechazar. Quien espera NO recibe token ni entra a la sala hasta que el docente decide | `GET/POST /api/classroom/clase/[sessionId]/acceso` | 0031 |
+| `lib/livekit/guest-access.ts` | Decisión **pura** de acceso de un invitado SIN cuenta: flag `guest_access` de la sala, ventana, estado de su solicitud, identidad `guest-<id>` y nombre con sufijo `(invitado)` | — | 0035 |
+| `app/api/classroom/clase/[sessionId]/acceso/route.ts` | Sala de espera (0091 + invitados de 0099): pedir entrar, listar pendientes y aprobar/rechazar. Quien espera NO recibe token ni entra a la sala hasta que el docente decide | `GET/POST /api/classroom/clase/[sessionId]/acceso` | 0031, 0035 |
+| `app/api/sala/[code]/invitado/route.ts` | Puerta del invitado sin cuenta: pedir entrar con un nombre y consultar su estado. Deja la credencial en cookie `httpOnly`; límite por IP | `GET/POST /api/sala/[code]/invitado` | 0035 |
 | `app/api/classroom/clase/[sessionId]/moderar/route.ts` | Silenciar o sacar a alguien, silenciar a toda la sala y terminar la clase para todos (`DeleteRoom`, único caso que necesita `roomCreate` en el token de servicio). Re-verifica contra la base que quien pide es staff de ESA cohorte —no basta el `roomAdmin` del token— y actúa con una credencial de servicio de 1 minuto acotada a esa sala | `POST /api/classroom/clase/[sessionId]/moderar` | 0031 |
 | `app/api/classroom/clase/[sessionId]/token/route.ts` | Emite el token del participante. Deriva cohorte y sala de la sesión; el nombre visible sale del perfil. 10/min por usuario | `POST /api/classroom/clase/[sessionId]/token` | 0031 |
 | `lib/livekit/room-state.ts` | Lógica **pura** de la pantalla: mensajes por estado de conexión y traducción de los rechazos del token | — | 0031 |
@@ -145,7 +147,8 @@
 | `components/classroom/live/grabacion-control.tsx` | Botón de grabar/detener del docente + insignia "Grabando" para TODA la sala. La insignia sale de `useIsRecording()` (LiveKit la propaga a cada participante), no de nuestra API: al alumno `/grabacion` le responde 403 a propósito | — | 0034 |
 | `components/classroom/live/live-class-room.tsx` | Sala embebida del alumno. El interior lo pone `<VideoConference />` de `@livekit/components-react` (pantalla compartida, chat, grilla paginada, dispositivos); tematizado con `.ca-live-room` en `globals.css`. El token se pide al pulsar "Entrar", no al montar | en `/classroom/[cohortSlug]/clase/[sessionId]` | 0031 |
 | `lib/security/csp.ts` | CSP y Permissions-Policy del sitio, fuera de `next.config.ts` para poder testearlos: un origen que falta no rompe el build ni los tests, solo la función en producción | — | 0031 |
-| `app/sala/[code]/page.tsx` | Sala en pantalla COMPLETA, fuera del grupo `(classroom)`: sin barra lateral, como una videollamada. La URL usa el código legible | `/sala/[code]` | 0031 |
+| `app/sala/[code]/page.tsx` | Sala en pantalla COMPLETA, fuera del grupo `(classroom)`: sin barra lateral, como una videollamada. La URL usa el código legible. Sin sesión iniciada, manda al login salvo que la sala admita invitados | `/sala/[code]` | 0031, 0035 |
+| `components/classroom/live/guest-join.tsx` | Pantalla del invitado sin cuenta: nombre → esperando → dentro de la sala | en `/sala/[code]` | 0035 |
 | `lib/classroom/ref.ts` | `resolveRef`: decide si lo que llega por la URL es slug legible o UUID, y con qué columna buscar. Lo usan docente, hilo y evaluación (0090); devolver `null` ante basura evita un 500 de Postgres donde corresponde un 404 | — | — |
 | `db/migrations/0093_slugs_para_filas_nuevas.sql` | Triggers para que hilos, evaluaciones y fichas de docente nuevos nazcan con slug (la 0090 solo hizo backfill) y `rtrim` del doble guion que `SLUG_RE` rechaza | — | — |
 | `lib/livekit/meeting-code.ts` | Código legible de reunión (formato Meet `abc-defg-hij`, migración 0089) y `parseSessionRef`, que acepta código o UUID para no romper los enlaces ya enviados por correo | — | 0031 |
@@ -158,6 +161,7 @@
 | `lib/classroom/ensure-recording-lesson.ts` | Crea-si-no-existe la lección-repetición. La comparten el camino manual y el nativo: si divergieran, el alumno vería dos repeticiones de la misma clase | — | 0034, 0041 |
 | `lib/classroom/ingest-recording.ts` | Firma la URL del MP4, crea el asset en Mux con la MISMA configuración que la subida manual y lo enlaza a la lección. Nunca pisa una repetición que ya tiene video | — | 0034 |
 | `app/api/cron/grabaciones/route.ts` · `netlify/functions/grabaciones-cron.mjs` | Cada 15 min: aplica el cierre que se perdió, corta el egress colgado (que factura por minuto), confirma la ingesta contra Mux y borra el MP4 con PII del bucket | `GET/POST /api/cron/grabaciones` | 0034 |
+| `db/migrations/0099_salas_publicas_invitados.sql` | `class_sessions.guest_access` (apagado por defecto) + tabla `room_guests` con la sala de espera de invitados sin cuenta. RLS activa y sin policies: solo `service_role` | — | 0035 |
 | `db/migrations/0097_grabacion_nativa.sql` | `session_recordings` (una fila por intento) + índice único parcial de una grabación viva por sala + bucket privado `grabaciones`. RLS activa y sin policies: solo `service_role` | — | 0034 |
 
 ## Asistencia (QR)
@@ -357,7 +361,7 @@
 | `app/liderazgo/page.tsx` | Landing pública del Programa de Liderazgo (prospecto sobrio: 11 secciones + formulario de captación) | `/liderazgo` | — |
 | `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`, `FaqLiderazgo`) | — | — |
 | `lib/landing/liderazgo.ts` · `lib/landing/liderazgo-lead.ts` | Contenido tipado del CSV de la landing de Liderazgo y payload del lead (`program_interest: liderazgo`, `source: landing-liderazgo`) | — | — |
-| `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
+| `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landing de Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
 
 ## Calculadora de crédito (público)

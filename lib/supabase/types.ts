@@ -297,6 +297,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           ends_at: string
+          guest_access: boolean
           id: string
           lesson_id: string | null
           meeting_url: string | null
@@ -317,6 +318,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ends_at: string
+          guest_access?: boolean
           id?: string
           lesson_id?: string | null
           meeting_url?: string | null
@@ -337,6 +339,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ends_at?: string
+          guest_access?: boolean
           id?: string
           lesson_id?: string | null
           meeting_url?: string | null
@@ -2399,6 +2402,51 @@ export type Database = {
           },
         ]
       }
+      room_guests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          id: string
+          session_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name: string
+          id?: string
+          session_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name?: string
+          id?: string
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_guests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_guests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_join_requests: {
         Row: {
           created_at: string
@@ -2506,6 +2554,76 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_change_notices: {
+        Row: {
+          cohort_id: string
+          created_at: string
+          id: string
+          kind: string
+          motivo: string | null
+          new_ends_at: string | null
+          new_starts_at: string | null
+          previous_ends_at: string
+          previous_starts_at: string
+          recipients_count: number
+          sent_by: string | null
+          session_id: string | null
+          session_title: string
+        }
+        Insert: {
+          cohort_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          motivo?: string | null
+          new_ends_at?: string | null
+          new_starts_at?: string | null
+          previous_ends_at: string
+          previous_starts_at: string
+          recipients_count?: number
+          sent_by?: string | null
+          session_id?: string | null
+          session_title: string
+        }
+        Update: {
+          cohort_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          motivo?: string | null
+          new_ends_at?: string | null
+          new_starts_at?: string | null
+          previous_ends_at?: string
+          previous_starts_at?: string
+          recipients_count?: number
+          sent_by?: string | null
+          session_id?: string | null
+          session_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_change_notices_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_change_notices_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_change_notices_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -2626,54 +2744,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      session_change_notices: {
-        Row: {
-          cohort_id: string
-          created_at: string
-          id: string
-          kind: string
-          motivo: string | null
-          new_ends_at: string | null
-          new_starts_at: string | null
-          previous_ends_at: string
-          previous_starts_at: string
-          recipients_count: number
-          sent_by: string | null
-          session_id: string | null
-          session_title: string
-        }
-        Insert: {
-          cohort_id: string
-          created_at?: string
-          id?: string
-          kind: string
-          motivo?: string | null
-          new_ends_at?: string | null
-          new_starts_at?: string | null
-          previous_ends_at: string
-          previous_starts_at: string
-          recipients_count?: number
-          sent_by?: string | null
-          session_id?: string | null
-          session_title: string
-        }
-        Update: {
-          cohort_id?: string
-          created_at?: string
-          id?: string
-          kind?: string
-          motivo?: string | null
-          new_ends_at?: string | null
-          new_starts_at?: string | null
-          previous_ends_at?: string
-          previous_starts_at?: string
-          recipients_count?: number
-          sent_by?: string | null
-          session_id?: string | null
-          session_title?: string
-        }
-        Relationships: []
       }
       session_reminders: {
         Row: {
@@ -3128,7 +3198,12 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      slug_unico: {
+        Args: { base: string; fallback: string; tabla: unknown }
+        Returns: string
+      }
       slugify: { Args: { texto: string }; Returns: string }
+      thread_slug: { Args: { id: string; titulo: string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
       unaccent_bytes: { Args: { texto: string }; Returns: string }
     }

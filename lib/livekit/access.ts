@@ -28,6 +28,18 @@ const MINUTE_MS = 60_000;
 /** Modalidades que tienen sala en vivo. Una clase grabada no la necesita. */
 const LIVE_MODALITIES = new Set(["live_online", "live_in_person"]);
 
+/**
+ * ¿Esta sesión tiene sala en vivo?
+ *
+ * Se expone para que el acceso de invitados (`guest-access.ts`, 0099) aplique
+ * exactamente el mismo criterio que el de los usuarios con cuenta. Si cada uno
+ * tuviera su propia lista, agregar una modalidad nueva arreglaría un camino y
+ * dejaría el otro mintiendo.
+ */
+export function isLiveModality(modality: string | null): boolean {
+  return LIVE_MODALITIES.has(modality ?? "");
+}
+
 export type RoomSession = {
   id: string;
   cohort_id: string;
@@ -105,7 +117,7 @@ export type RoomAccessInput = {
 export function decideRoomAccess(input: RoomAccessInput): RoomAccessDecision {
   const { session, cohortId, hasActiveEnrollment, isStaff, now } = input;
 
-  if (!LIVE_MODALITIES.has(session.modality ?? "")) {
+  if (!isLiveModality(session.modality)) {
     return { allowed: false, reason: "not_live" };
   }
 

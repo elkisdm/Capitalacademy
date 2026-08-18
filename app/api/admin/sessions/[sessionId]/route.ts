@@ -28,6 +28,8 @@ const updateSessionSchema = z
     meeting_url: z.string().trim().url().max(500).nullable(),
     audience: audienceSchema,
     status: statusSchema,
+    // Sala abierta a invitados sin cuenta (0099).
+    guest_access: z.boolean(),
   })
   .partial();
 

@@ -6,6 +6,7 @@ import { getClassroomAccess } from "@/lib/classroom/access";
 import { getViewerProfile } from "@/lib/supabase/auth";
 import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { LiveClassRoom } from "@/components/classroom/live/live-class-room";
+import { GuestJoin } from "@/components/classroom/live/guest-join";
 
 /**
  * Sala de clase en vivo, como pantalla PROPIA (ADR-0031).
@@ -46,19 +47,35 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   const ref = parseSessionRef(code);
   if (ref.kind === "invalid") notFound();
 
-  const {
-    data: { user },
-  } = await getAuthUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/sala/${code}`)}`);
-
+  // La sesión se carga ANTES de exigir sesión iniciada: si esta sala admite
+  // invitados (0099), quien no tiene cuenta no va al login sino a la pantalla de
+  // nombre. Sin saber qué sala es, esa decisión no se puede tomar.
   const admin = createAdminClient();
   const { data: session } = await admin
     .from("class_sessions")
-    .select("id, code, title, cohort_id, modality, cohorts(slug)")
+    .select("id, code, title, cohort_id, modality, guest_access, cohorts(slug)")
     .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
 
   if (!session) notFound();
+
+  const {
+    data: { user },
+  } = await getAuthUser();
+
+  const title = (session.title as string | null) ?? "Clase en vivo";
+
+  if (!user) {
+    // Sala cerrada a invitados: el camino de siempre, login y de vuelta acá.
+    if (!session.guest_access) {
+      redirect(`/login?next=${encodeURIComponent(`/sala/${code}`)}`);
+    }
+    return (
+      <SalaShell title={title} code={session.code as string} volverA={null}>
+        <GuestJoin code={session.code as string} titulo={title} />
+      </SalaShell>
+    );
+  }
 
   // El acceso se decide igual que en el resto del aula. La ruta del token lo
   // vuelve a verificar por su cuenta: esto es para no mostrar una sala a la que
@@ -68,19 +85,51 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
 
   const perfil = await getViewerProfile(user.id);
   const cohortSlug = (session.cohorts as { slug: string | null } | null)?.slug ?? null;
-  const title = (session.title as string | null) ?? "Clase en vivo";
 
+  return (
+    <SalaShell
+      title={title}
+      code={session.code as string}
+      volverA={cohortSlug ? `/classroom/${cohortSlug}/clase/${session.code as string}` : null}
+    >
+      <LiveClassRoom
+        sessionId={session.code as string}
+        fill
+        userName={perfil?.full_name ?? null}
+      />
+    </SalaShell>
+  );
+}
+
+/**
+ * Marco de la sala: encabezado mínimo y el resto de la pantalla para el video.
+ *
+ * Lo comparten el participante con cuenta y el invitado, para que la sala se vea
+ * igual en los dos casos. Lo único que cambia es el "Volver a la clase", que un
+ * invitado no tiene adónde seguir.
+ */
+function SalaShell({
+  title,
+  code,
+  volverA,
+  children,
+}: {
+  title: string;
+  code: string;
+  volverA: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex h-dvh flex-col bg-ca-ink">
       <header className="flex shrink-0 items-center justify-between gap-4 px-4 py-3">
         <div className="min-w-0">
           <h1 className="truncate text-[15px] font-black tracking-tight text-white">{title}</h1>
           {/* El código a la vista: es lo que se dicta o se pega para invitar. */}
-          <p className="font-mono text-[11px] text-white/50">{session.code as string}</p>
+          <p className="font-mono text-[11px] text-white/50">{code}</p>
         </div>
-        {cohortSlug && (
+        {volverA && (
           <Link
-            href={`/classroom/${cohortSlug}/clase/${session.code as string}`}
+            href={volverA}
             className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/80 transition-colors hover:bg-white/20 hover:text-white"
           >
             Volver a la clase
@@ -88,13 +137,7 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
         )}
       </header>
 
-      <main className="min-h-0 flex-1 px-3 pb-3">
-        <LiveClassRoom
-          sessionId={session.code as string}
-          fill
-          userName={perfil?.full_name ?? null}
-        />
-      </main>
+      <main className="min-h-0 flex-1 px-3 pb-3">{children}</main>
     </div>
   );
 }

@@ -53,6 +53,8 @@ type FormState = {
   meeting_url: string;
   audience: Audience;
   status: SessionStatus;
+  /** Sala abierta a invitados sin cuenta (0099). */
+  guest_access: boolean;
 };
 
 const MODALITY_LABELS: Record<Modality, string> = {
@@ -189,6 +191,7 @@ function emptyForm(): FormState {
     meeting_url: "",
     audience: "all",
     status: "scheduled",
+    guest_access: false,
   };
 }
 
@@ -203,6 +206,7 @@ function formFromSession(s: ClassSession): FormState {
     meeting_url: s.meeting_url ?? "",
     audience: (s.audience as Audience) ?? "all",
     status: s.status as SessionStatus,
+    guest_access: Boolean(s.guest_access),
   };
 }
 
@@ -396,6 +400,7 @@ export function SessionsManagerClient({
       meeting_url: form.meeting_url.trim() || null,
       audience: form.audience,
       status: form.status,
+      guest_access: form.guest_access,
     };
 
     setSaving(true);
@@ -1053,6 +1058,26 @@ function SessionForm({
                   </option>
                 ))}
               </Select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-ca-ink/[0.08] p-3">
+                <input
+                  type="checkbox"
+                  checked={form.guest_access}
+                  onChange={(e) => onChange("guest_access", e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-ca-violet"
+                />
+                <span>
+                  <span className="block text-[13px] font-bold text-ca-ink">
+                    Permitir invitados sin cuenta
+                  </span>
+                  <span className="block text-[12px] text-ca-ink-soft">
+                    Cualquiera con el enlace podrá pedir entrar escribiendo su nombre, y el
+                    docente lo acepta desde la sala. Déjalo apagado en las clases del programa.
+                  </span>
+                </span>
+              </label>
             </div>
 
             <div>

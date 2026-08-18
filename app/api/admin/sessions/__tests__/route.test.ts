@@ -237,7 +237,7 @@ describe("POST /api/admin/sessions", () => {
     expect(json.error).toBe("Error al crear la sesión");
   });
 
-  it("201 y crea la sesión con los defaults (audience: all, status: scheduled, sin módulo)", async () => {
+  it("201 y crea la sesión con los defaults (audience: all, status: scheduled, sin invitados, sin módulo)", async () => {
     const res = (await POST(postReq(validBody)))!;
     expect(res.status).toBe(201);
     const json = await res.json();
@@ -253,6 +253,9 @@ describe("POST /api/admin/sessions", () => {
       meeting_url: null,
       audience: "all",
       status: "scheduled",
+      // Sala cerrada a invitados sin cuenta salvo que se pida lo contrario
+      // (0099): abrirla es un acto deliberado, nunca un default.
+      guest_access: false,
       created_by: "admin-1",
     });
   });

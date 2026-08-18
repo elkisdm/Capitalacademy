@@ -28,7 +28,15 @@ import {
  * cohorte. El `roomAdmin` del token alcanzaría técnicamente, pero significaría
  * que cualquiera que copie ese token modera la clase.
  */
-type Solicitud = { userId: string; nombre: string; desde: string };
+/**
+ * Una solicitud en la lista de espera del docente.
+ *
+ * Las de usuarios con cuenta y las de invitados sin cuenta (0099) se muestran
+ * juntas y ordenadas por llegada: al docente le importa quién está esperando, no
+ * de qué tabla salió. `id` es el `user_id` en un caso y el `room_guests.id` en el
+ * otro; `invitado` decide cuál de los dos manda la API al decidir.
+ */
+type Solicitud = { id: string; nombre: string; desde: string; invitado: boolean };
 
 export function ModerationPanel({ sessionId }: { sessionId: string }) {
   const remotos = useRemoteParticipants();
@@ -53,8 +61,15 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
       try {
         const res = await fetch(`/api/classroom/clase/${sessionId}/acceso`);
         if (!res.ok || !vivo) return;
-        const { pendientes } = (await res.json()) as { pendientes: Solicitud[] | null };
-        if (vivo) setSolicitudes(pendientes ?? []);
+        const { pendientes, invitadosPendientes } = (await res.json()) as {
+          pendientes: { userId: string; nombre: string; desde: string }[] | null;
+          invitadosPendientes: { guestId: string; nombre: string; desde: string }[] | null;
+        };
+        const todas: Solicitud[] = [
+          ...(pendientes ?? []).map((r) => ({ ...r, id: r.userId, invitado: false })),
+          ...(invitadosPendientes ?? []).map((g) => ({ ...g, id: g.guestId, invitado: true })),
+        ].sort((a, b) => a.desde.localeCompare(b.desde));
+        if (vivo) setSolicitudes(todas);
       } catch {
         // Un fallo puntual no cambia nada: se reintenta al próximo tick.
       }
@@ -68,18 +83,23 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
   }, [sessionId, ritmoMs]);
 
   const decidir = useCallback(
-    async (accion: "approve" | "deny", userId: string, nombre: string) => {
-      setEnCurso(userId);
+    async (accion: "approve" | "deny", s: Solicitud) => {
+      const { id, nombre } = s;
+      setEnCurso(id);
       try {
         const res = await fetch(`/api/classroom/clase/${sessionId}/acceso`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: accion, userId }),
+          // El id viaja con el nombre que le corresponde a su tabla: la API
+          // distingue las dos solicitudes por eso, no por un campo aparte.
+          body: JSON.stringify(
+            s.invitado ? { action: accion, guestId: id } : { action: accion, userId: id },
+          ),
         });
         if (res.ok) {
           // Se saca de la lista de inmediato: esperar al próximo sondeo dejaría
           // el botón ahí ocho segundos, invitando a pulsarlo dos veces.
-          setSolicitudes((prev) => prev.filter((s) => s.userId !== userId));
+          setSolicitudes((prev) => prev.filter((x) => x.id !== id));
           setAviso(accion === "approve" ? `Dejaste entrar a ${nombre}.` : `Rechazaste a ${nombre}.`);
         } else {
           setAviso(`No se pudo decidir sobre ${nombre}.`);
@@ -201,21 +221,30 @@ export function ModerationPanel({ sessionId }: { sessionId: string }) {
                 Piden entrar
               </p>
               {solicitudes.map((s) => (
-                <div key={s.userId} className="mb-1.5 last:mb-0">
-                  <p className="truncate text-[12px] font-semibold">{s.nombre}</p>
+                <div key={s.id} className="mb-1.5 last:mb-0">
+                  <p className="truncate text-[12px] font-semibold">
+                    {s.nombre}
+                    {/* Marcado explícito: el docente tiene que saber que de esta
+                        persona solo conocemos el nombre que ella escribió. */}
+                    {s.invitado && (
+                      <span className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white/50">
+                        invitado
+                      </span>
+                    )}
+                  </p>
                   <div className="mt-1 flex gap-1.5">
                     <button
                       type="button"
-                      disabled={enCurso === s.userId}
-                      onClick={() => decidir("approve", s.userId, s.nombre)}
+                      disabled={enCurso === s.id}
+                      onClick={() => decidir("approve", s)}
                       className="rounded-lg bg-ca-lime px-2 py-1 text-[11px] font-bold text-ca-ink transition-opacity hover:opacity-90 disabled:opacity-40"
                     >
                       Dejar entrar
                     </button>
                     <button
                       type="button"
-                      disabled={enCurso === s.userId}
-                      onClick={() => decidir("deny", s.userId, s.nombre)}
+                      disabled={enCurso === s.id}
+                      onClick={() => decidir("deny", s)}
                       className="rounded-lg bg-white/10 px-2 py-1 text-[11px] font-bold transition-colors hover:bg-white/20 disabled:opacity-40"
                     >
                       Rechazar

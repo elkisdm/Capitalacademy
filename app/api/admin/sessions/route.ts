@@ -27,6 +27,9 @@ const createSessionSchema = z.object({
   meeting_url: z.string().trim().url().max(500).nullable().optional(),
   audience: audienceSchema.default("all"),
   status: statusSchema.default("scheduled"),
+  // Sala abierta a invitados sin cuenta (0099). Nace apagada: encenderla es un
+  // acto deliberado por clase, nunca un default heredado.
+  guest_access: z.boolean().default(false),
 });
 
 /**
@@ -101,6 +104,7 @@ export async function POST(req: Request) {
     meeting_url,
     audience,
     status,
+    guest_access,
   } = parsed.data;
 
   if (new Date(ends_at).getTime() <= new Date(starts_at).getTime()) {
@@ -154,6 +158,7 @@ export async function POST(req: Request) {
     meeting_url: meeting_url ?? null,
     audience,
     status,
+    guest_access,
     created_by: auth.user.id,
   };
 

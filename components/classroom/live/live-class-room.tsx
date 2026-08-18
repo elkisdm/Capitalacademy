@@ -38,7 +38,11 @@ import { GrabacionControl } from "./grabacion-control";
  * pantalla de la clase solo a mirar el material.
  */
 
-type Conexion = { token: string; url: string; role: "teacher" | "student" };
+// `guest`: invitado sin cuenta (0099). Se distingue de `student` porque no es
+// alumno de nada —no tiene matrícula ni perfil—, y porque ninguna pieza que
+// mire el rol debe tratarlo como tal. Para la moderación, lo que importa es que
+// no es `teacher`.
+type Conexion = { token: string; url: string; role: "teacher" | "student" | "guest" };
 
 /**
  * Lo que la persona eligió en la antesala: si entra con micrófono y cámara

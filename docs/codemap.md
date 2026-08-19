@@ -306,7 +306,9 @@
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
 | `app/(admin)/admin/users/` + `[userId]/` | Gestión de usuarios y roles por cohorte (RBAC) | `/admin/users` | 0004 |
-| `app/(admin)/admin/docentes/page.tsx` · `components/admin/instructor-edit-form.tsx` | Edición del titular, la reseña y las redes de cada docente. Solo edita: el alta sigue viniendo del seed | `/admin/docentes` | 0028 |
+| `app/(admin)/admin/docentes/page.tsx` · `components/admin/instructor-edit-form.tsx` · `instructor-create-form.tsx` | Alta de fichas docentes y edición del titular, la reseña y las redes. No borra: una ficha con sesiones asignadas es operación de datos | `/admin/docentes` | 0028, 0036 |
+| `app/api/admin/instructors/route.ts` | POST de alta de una ficha docente. Con `profile_id` reusa `ensureInstructorForProfile` para no duplicar; sin él crea la ficha del relator invitado que no usa la plataforma | `POST /api/admin/instructors` | 0036 |
+| `lib/instructors/ensure.ts` | `ensureInstructorForProfile`: puente idempotente cuenta→ficha. Un fallo de LECTURA no se degrada a "no existe" (duplicaría la identidad pública). Lo usan el alta manual y el rol docente | — | 0036 |
 | `app/api/admin/instructors/[instructorId]/route.ts` | PATCH de la ficha docente, con `authorizeAdmin()` antes de leer el cuerpo. Acepta además `profile_id` para enlazar la ficha con una cuenta, que es lo que habilita el autoservicio del docente | `PATCH /api/admin/instructors/[instructorId]` | 0028 |
 | `components/admin/instructor-link-account.tsx` | Selector con el que operaciones enlaza una ficha a una cuenta (candidatos: quien tenga rol docente/asistente en alguna cohorte) | en `/admin/docentes` | 0028 |
 | `app/(docente)/docente/perfil/page.tsx` · `app/api/docente/perfil/route.ts` | El docente edita SU propia ficha. Resuelve siempre por `instructors.profile_id = auth.uid()`, nunca por un id de la URL; escribe con service_role para acotar las columnas editables sin abrir una policy | `/docente/perfil`, `PATCH /api/docente/perfil` | 0028 |
@@ -328,7 +330,7 @@
 | `lib/admin/student-panel-queries.ts` | `getStudentPanelReport(programId, cohortId?)`: agrega asistencia/avance/evaluaciones por alumno en consultas bulk (sin N+1), service-role | — | — |
 | `components/admin/students/shared.tsx` | Componentes presentacionales compartidos por `/admin/alumnos` y `/admin/progress` (StatStrip, hook `useIsDesktop`, etc.), agnósticos del dominio (props planas, no tipos de queries) | — | — |
 | `app/api/admin/users/` (`route`·`bulk`·`template`·`[userId]`) | CRUD de usuarios + importación CSV masiva | — | — |
-| `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte | — | 0004 |
+| `app/api/admin/cohort-roles/route.ts` | Asignación de roles por cohorte. `student` sincroniza la matrícula; `teacher` además deriva la ficha de `instructors` (sin ella no aparece en el selector al crear la clase); `assistant` no deriva nada | `POST/DELETE /api/admin/cohort-roles` | 0004, 0036 |
 | `app/api/admin/send-invitation/route.ts` | Envío/reenvío de invitación por email | — | — |
 | `app/api/admin/mux/upload/route.ts` | Crea upload directo a Mux para una lección (`video_quality:basic`); limpia `mux_error`; el cliente sube con UpChunk (chunked + reintentos) vía `mux-uploader` | — | — |
 | `app/api/admin/sessions/[sessionId]/recording/route.ts` · `components/admin/session-recording-panel.tsx` | Repetición (grabación Mux) de una clase EN VIVO: crea-si-no-existe una lección `kind='recorded'` bajo el módulo de la sesión y la enlaza vía `class_sessions.lesson_id`; reusa `MuxUploader` + webhook Mux. Panel embebido en el editor de sesiones | `GET/POST/DELETE /api/admin/sessions/[id]/recording` | 0041 |

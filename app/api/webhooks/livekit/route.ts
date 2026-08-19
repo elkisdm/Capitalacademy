@@ -11,6 +11,7 @@ import { estadoDesdeEgress, type EstadoGrabacion } from "@/lib/livekit/egress-es
 import { ingestRecording } from "@/lib/classroom/ingest-recording";
 import { iniciarGrabacionDeSesion } from "@/lib/classroom/iniciar-grabacion";
 import { isWithinRoomWindow, isLiveModality, roomNameForSession } from "@/lib/livekit/access";
+import { isEgressEnabled } from "@/lib/livekit/egress";
 
 export const runtime = "nodejs";
 // La ingesta a Mux se AWAITEA dentro del handler: en serverless la instancia se
@@ -135,6 +136,7 @@ export async function POST(req: Request) {
       evento = {
         event: String(crudo.event ?? ""),
         egressInfo: normalizeEgressInfo(crudo.egressInfo ?? crudo.egress_info),
+        roomName: nombreDeSalaCruda(crudo.room),
       };
     } catch {
       return NextResponse.json({ error: "Body inválido" }, { status: 400 });
@@ -147,7 +149,11 @@ export async function POST(req: Request) {
   // —por ejemplo porque el docente de la clase no tiene cuenta— la clase no se
   // grababa, sin error y sin aviso. Ahora la enciende el servidor cuando entra
   // el PRIMER participante, sea quien sea.
-  if (evento.event === "participant_joined" || evento.event === "room_started") {
+  // Solo `participant_joined`. `room_started` llega ANTES de que el primero
+  // termine de conectarse: la reserva se crearía, StartEgress fallaría con
+  // "sala inexistente" y el `participant_joined` que viene detrás encontraría
+  // esa fila y no haría nada. Resultado: clase sin grabar y nada que reintente.
+  if (evento.event === "participant_joined") {
     await intentarArranqueAutomatico(evento.roomName);
     return NextResponse.json({ received: true });
   }
@@ -256,15 +262,29 @@ export async function POST(req: Request) {
  */
 async function intentarArranqueAutomatico(roomName: string | undefined): Promise<void> {
   const sessionId = sessionIdDeSala(roomName);
-  if (!sessionId) return;
+  if (!sessionId) return; // no es una sala nuestra: ni se registra, es ruido normal.
+
+  // El interruptor se mira ANTES de ir a la base: apagado, cada ingreso a
+  // cualquier sala costaría una consulta para nada.
+  if (!isEgressEnabled()) return;
 
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from("class_sessions")
     .select("id, cohort_id, starts_at, ends_at, modality, status")
     .eq("id", sessionId)
     .maybeSingle();
-  if (!data) return;
+
+  // Un fallo de base NO es lo mismo que "no es nuestra clase", y confundirlos es
+  // exactamente la ceguera que este cambio vino a eliminar.
+  if (error) {
+    console.error("[webhooks/livekit] no se pudo leer la clase", sessionId, error.message);
+    return;
+  }
+  if (!data) {
+    console.warn("[webhooks/livekit] sala sin clase:", sessionId);
+    return;
+  }
 
   const sesion = data as {
     id: string;
@@ -278,9 +298,12 @@ async function intentarArranqueAutomatico(roomName: string | undefined): Promise
   // Las mismas dos condiciones que gobiernan la sala. Se repiten acá porque el
   // webhook entra por fuera de la app: LiveKit avisa de CUALQUIER sala, incluida
   // una que alguien abra con un token viejo fuera de horario.
-  if (!isLiveModality(sesion.modality)) return;
-  if (sesion.status === "cancelled") return;
-  if (!isWithinRoomWindow(sesion, new Date())) return;
+  const descartar = (motivo: string) => {
+    console.warn("[webhooks/livekit] no se graba", sesion.id, "→", motivo);
+  };
+  if (!isLiveModality(sesion.modality)) return descartar("no es una clase en vivo");
+  if (sesion.status === "cancelled") return descartar("clase cancelada");
+  if (!isWithinRoomWindow(sesion, new Date())) return descartar("fuera de la ventana");
 
   const res = await iniciarGrabacionDeSesion(admin, {
     sessionId: sesion.id,
@@ -288,9 +311,18 @@ async function intentarArranqueAutomatico(roomName: string | undefined): Promise
     // Sin autor: la encendió el sistema, no una persona. Queda distinguible de
     // las que prendió alguien a mano.
     startedBy: null,
+    automatico: true,
   });
 
   if (!res.ok && res.motivo !== "deshabilitado") {
     console.warn("[webhooks/livekit] no se pudo arrancar la grabación:", sesion.id, res.motivo);
   }
+}
+
+/** El nombre de la sala en un cuerpo crudo (camino local sin firma). */
+function nombreDeSalaCruda(raw: unknown): string | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const nombre = o.name ?? o.room_name ?? o.roomName;
+  return typeof nombre === "string" && nombre ? nombre : undefined;
 }

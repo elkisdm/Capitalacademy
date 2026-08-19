@@ -304,6 +304,20 @@ describe("arranque automático de la grabación", () => {
   beforeEach(() => {
     mockIniciar.mockClear();
     sesionDeClase = { data: enVentana(), error: null };
+    // El webhook mira el interruptor ANTES de consultar la base, para no pagar
+    // una consulta por cada ingreso cuando la grabación está apagada.
+    process.env.LIVEKIT_EGRESS_ENABLED = "1";
+  });
+
+  afterEach(() => {
+    delete process.env.LIVEKIT_EGRESS_ENABLED;
+  });
+
+  it("con la grabación apagada no consulta ni intenta nada", async () => {
+    delete process.env.LIVEKIT_EGRESS_ENABLED;
+    const res = await POST(req(evento(`clase-${SESSION}`)));
+    expect(res.status).toBe(200);
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   it("enciende la grabación cuando entra el primer participante", async () => {
@@ -320,6 +334,22 @@ describe("arranque automático de la grabación", () => {
     // si ese docente no tenía cuenta, la clase no se grababa.
     await POST(req(evento(`clase-${SESSION}`)));
     expect(mockIniciar).toHaveBeenCalledTimes(1);
+  });
+
+  it("room_started NO dispara: llega antes de que nadie se conecte", async () => {
+    // Con room_started la reserva se crearía y StartEgress fallaría por sala
+    // inexistente; el participant_joined siguiente vería esa fila y no haría
+    // nada. La clase quedaría sin grabar y sin nada que reintente.
+    await POST(req({ event: "room_started", room: { name: `clase-${SESSION}` } }));
+    expect(mockIniciar).not.toHaveBeenCalled();
+  });
+
+  it("pide el arranque marcándolo como automático", async () => {
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ automatico: true }),
+    );
   });
 
   it("no graba una clase fuera de su ventana", async () => {

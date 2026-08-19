@@ -40,12 +40,20 @@ export type FilaGrabacion = {
   error: string | null;
 };
 
+/**
+ * Estados que significan "esta clase YA tiene su grabación": o se completó, o
+ * alguien la detuvo a mano (el DELETE deja la fila en `uploaded`). `failed`
+ * queda fuera a propósito: un fallo transitorio sí se puede reintentar.
+ */
+const ESTADOS_YA_GRABADA = ["uploaded", "ingesting", "ready"] as const;
+
 export type ResultadoInicio =
   | { ok: true; fila: FilaGrabacion; egressId: string | null; yaEstaba?: true }
   | { ok: false; motivo: "deshabilitado" }
   | { ok: false; motivo: "sin_configuracion"; missing: string[] }
   | { ok: false; motivo: "cancelada"; fila: FilaGrabacion | null }
   | { ok: false; motivo: "sala_vacia" }
+  | { ok: false; motivo: "ya_grabada" }
   | { ok: false; motivo: "error"; detalle: string };
 
 export function configuracionGrabacion():
@@ -93,7 +101,9 @@ async function ultimaFila(
     .from("session_recordings")
     .select(COLUMNAS_FILA)
     .eq("session_id", sessionId)
-    .order("created_at", { ascending: false })
+    // `started_at`, no `created_at`: esta tabla no tiene esa columna y
+    // PostgREST responde 42703, que acá se tragaría como "no hay filas".
+    .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   return (data as FilaGrabacion | null) ?? null;
@@ -110,7 +120,18 @@ async function ultimaFila(
  */
 export async function iniciarGrabacionDeSesion(
   admin: SupabaseClient,
-  input: { sessionId: string; room: string; startedBy: string | null },
+  input: {
+    sessionId: string;
+    room: string;
+    startedBy: string | null;
+    /**
+     * Arranque del sistema (webhook). Respeta una decisión humana previa: si la
+     * clase ya se grabó —o el docente detuvo a mano para una conversación
+     * privada— el siguiente que entre NO la vuelve a encender. Con el botón es
+     * al revés: volver a grabar es justamente lo que se está pidiendo.
+     */
+    automatico?: boolean;
+  },
 ): Promise<ResultadoInicio> {
   if (!isEgressEnabled()) return { ok: false, motivo: "deshabilitado" };
 
@@ -120,6 +141,17 @@ export async function iniciarGrabacionDeSesion(
   const yaViva = await filaViva(admin, input.sessionId);
   if (yaViva) {
     return { ok: true, fila: yaViva, egressId: yaViva.egress_id, yaEstaba: true };
+  }
+
+  if (input.automatico) {
+    const { data: previa } = await admin
+      .from("session_recordings")
+      .select("id")
+      .eq("session_id", input.sessionId)
+      .in("status", ESTADOS_YA_GRABADA as unknown as string[])
+      .limit(1)
+      .maybeSingle();
+    if (previa) return { ok: false, motivo: "ya_grabada" };
   }
 
   // La fila se crea ANTES de llamar a Egress: es la reserva que hace valer el

@@ -15,15 +15,11 @@ import {
   EgressNotConfiguredError,
   EgressRequestError,
   getEgressStorageConfig,
-  isEgressEnabled,
-  startRoomComposite,
   stopEgress,
   type EgressStorageConfig,
 } from "@/lib/livekit/egress";
 import {
-  estadoDesdeEgress,
   estaGrabando,
-  filePathFor,
   type EstadoGrabacion,
 } from "@/lib/livekit/egress-estado";
 
@@ -222,6 +218,10 @@ export async function POST(_req: Request, ctxParams: { params: Promise<{ session
   }
   if (res.motivo === "cancelada") {
     return estadoResponse((res.fila as RecordingRow | null), ctx.session.lesson_id);
+  }
+  // `ya_grabada` solo lo produce el arranque automático; por el botón no llega.
+  if (res.motivo === "ya_grabada") {
+    return estadoResponse(await ultimaFila(ctx), ctx.session.lesson_id);
   }
   return NextResponse.json({ error: res.detalle }, { status: 502 });
 }

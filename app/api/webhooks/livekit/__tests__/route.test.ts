@@ -35,6 +35,7 @@ function builder(table: string) {
   const eq0 = () => propios.find((c) => c.method === "eq")?.args[0];
 
   const resolve = (): Result => {
+    if (table === "class_sessions") return sesionDeClase;
     if (tiene("update")) return tiene("select") ? state.cierre : { data: null, error: null };
     return eq0() === "egress_id" ? state.porEgress : state.porSala;
   };
@@ -49,6 +50,13 @@ function builder(table: string) {
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ from: (table: string) => builder(table) }),
 }));
+
+const mockIniciar = vi.fn(async () => ({ ok: true, fila: { id: "r1" }, egressId: "EG_1" }));
+vi.mock("@/lib/classroom/iniciar-grabacion", () => ({
+  iniciarGrabacionDeSesion: (...a: unknown[]) => mockIniciar(...(a as [])),
+}));
+
+let sesionDeClase: Result = { data: null, error: null };
 
 vi.mock("@/lib/classroom/ingest-recording", () => ({
   ingestRecording: (...a: unknown[]) => mockIngest(...a),
@@ -273,5 +281,81 @@ describe("POST /api/webhooks/livekit", () => {
 
     expect(res.status).toBe(200);
     expect(ultimaEscritura()).toMatchObject({ file_size_bytes: 10, duration_seconds: 120 });
+  });
+});
+
+describe("arranque automático de la grabación", () => {
+  const SESSION = "aaaaaaaa-bbbb-4ccc-8ddd-999999999999";
+  const enVentana = () => ({
+    id: SESSION,
+    cohort_id: "c1",
+    starts_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+    ends_at: new Date(Date.now() + 60 * 60_000).toISOString(),
+    modality: "live_online",
+    status: "scheduled",
+  });
+
+  const evento = (nombreSala: string) => ({
+    event: "participant_joined",
+    room: { name: nombreSala },
+    participant: { identity: "alumno-1" },
+  });
+
+  beforeEach(() => {
+    mockIniciar.mockClear();
+    sesionDeClase = { data: enVentana(), error: null };
+  });
+
+  it("enciende la grabación cuando entra el primer participante", async () => {
+    const res = await POST(req(evento(`clase-${SESSION}`)));
+    expect(res.status).toBe(200);
+    expect(mockIniciar).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sessionId: SESSION, room: `clase-${SESSION}`, startedBy: null }),
+    );
+  });
+
+  it("no depende de que quien entra sea docente: la enciende igual", async () => {
+    // Es el punto del cambio. Antes la disparaba el navegador de un `teacher`;
+    // si ese docente no tenía cuenta, la clase no se grababa.
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).toHaveBeenCalledTimes(1);
+  });
+
+  it("no graba una clase fuera de su ventana", async () => {
+    sesionDeClase = {
+      data: {
+        ...enVentana(),
+        starts_at: new Date(Date.now() - 8 * 3600_000).toISOString(),
+        ends_at: new Date(Date.now() - 6 * 3600_000).toISOString(),
+      },
+      error: null,
+    };
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).not.toHaveBeenCalled();
+  });
+
+  it("no graba una clase grabada (no es en vivo)", async () => {
+    sesionDeClase = { data: { ...enVentana(), modality: "recorded" }, error: null };
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).not.toHaveBeenCalled();
+  });
+
+  it("no graba una clase cancelada", async () => {
+    sesionDeClase = { data: { ...enVentana(), status: "cancelled" }, error: null };
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).not.toHaveBeenCalled();
+  });
+
+  it("ignora una sala que no es de una clase nuestra", async () => {
+    await POST(req(evento("una-sala-cualquiera")));
+    expect(mockIniciar).not.toHaveBeenCalled();
+  });
+
+  it("responde 200 aunque la sesión no exista, para que LiveKit no reintente en bucle", async () => {
+    sesionDeClase = { data: null, error: null };
+    const res = await POST(req(evento(`clase-${SESSION}`)));
+    expect(res.status).toBe(200);
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 });

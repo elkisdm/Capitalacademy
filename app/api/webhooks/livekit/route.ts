@@ -9,6 +9,8 @@ import {
 } from "@/lib/livekit/webhook";
 import { estadoDesdeEgress, type EstadoGrabacion } from "@/lib/livekit/egress-estado";
 import { ingestRecording } from "@/lib/classroom/ingest-recording";
+import { iniciarGrabacionDeSesion } from "@/lib/classroom/iniciar-grabacion";
+import { isWithinRoomWindow, isLiveModality, roomNameForSession } from "@/lib/livekit/access";
 
 export const runtime = "nodejs";
 // La ingesta a Mux se AWAITEA dentro del handler: en serverless la instancia se
@@ -23,10 +25,9 @@ export const maxDuration = 300;
  * `Authorization` que incluye el hash del cuerpo, así que el cuerpo se lee CRUDO
  * antes de parsear (ver `lib/livekit/webhook.ts`).
  *
- * Todos los eventos entran por la misma URL: `room_started`,
- * `participant_joined` y compañía llegan igual y se responden 200 sin hacer
- * nada. Son ruido hoy; convertirlos en error haría que LiveKit reintentara para
- * siempre algo que nunca nos importó.
+ * Todos los eventos entran por la misma URL. `participant_joined` enciende la
+ * grabación (ver abajo); el resto se responde 200 sin hacer nada — convertirlos
+ * en error haría que LiveKit reintentara para siempre algo que no nos importa.
  */
 
 const COLUMNAS = "id, session_id, status, storage_path";
@@ -140,6 +141,17 @@ export async function POST(req: Request) {
     }
   }
 
+  // ── Arranque automático ────────────────────────────────────────────────
+  // La grabación dejó de depender de que entre un DOCENTE. Antes la disparaba
+  // el navegador de quien tuviera rol `teacher`; si esa persona no entraba
+  // —por ejemplo porque el docente de la clase no tiene cuenta— la clase no se
+  // grababa, sin error y sin aviso. Ahora la enciende el servidor cuando entra
+  // el PRIMER participante, sea quien sea.
+  if (evento.event === "participant_joined" || evento.event === "room_started") {
+    await intentarArranqueAutomatico(evento.roomName);
+    return NextResponse.json({ received: true });
+  }
+
   const info = evento.egressInfo;
 
   if (!info || !evento.event.startsWith("egress_")) {
@@ -232,4 +244,53 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Enciende la grabación de la clase a la que pertenece la sala.
+ *
+ * Silencioso a propósito: es un webhook, y devolver error haría que LiveKit lo
+ * reintentara en bucle por algo que no se arregla reintentando (una clase fuera
+ * de ventana, una sala que no es nuestra). Lo que sí se registra es el motivo,
+ * para poder responder "por qué no se grabó" sin adivinar.
+ */
+async function intentarArranqueAutomatico(roomName: string | undefined): Promise<void> {
+  const sessionId = sessionIdDeSala(roomName);
+  if (!sessionId) return;
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("class_sessions")
+    .select("id, cohort_id, starts_at, ends_at, modality, status")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (!data) return;
+
+  const sesion = data as {
+    id: string;
+    cohort_id: string;
+    starts_at: string;
+    ends_at: string;
+    modality: string | null;
+    status: string | null;
+  };
+
+  // Las mismas dos condiciones que gobiernan la sala. Se repiten acá porque el
+  // webhook entra por fuera de la app: LiveKit avisa de CUALQUIER sala, incluida
+  // una que alguien abra con un token viejo fuera de horario.
+  if (!isLiveModality(sesion.modality)) return;
+  if (sesion.status === "cancelled") return;
+  if (!isWithinRoomWindow(sesion, new Date())) return;
+
+  const res = await iniciarGrabacionDeSesion(admin, {
+    sessionId: sesion.id,
+    room: roomNameForSession(sesion.id),
+    // Sin autor: la encendió el sistema, no una persona. Queda distinguible de
+    // las que prendió alguien a mano.
+    startedBy: null,
+  });
+
+  if (!res.ok && res.motivo !== "deshabilitado") {
+    console.warn("[webhooks/livekit] no se pudo arrancar la grabación:", sesion.id, res.motivo);
+  }
 }

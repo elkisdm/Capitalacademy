@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { iniciarGrabacionDeSesion } from "@/lib/classroom/iniciar-grabacion";
 import { getClassroomAccess } from "@/lib/classroom/access";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import {
@@ -191,138 +192,38 @@ export async function POST(_req: Request, ctxParams: { params: Promise<{ session
   const ctx = await autorizar(sessionId);
   if (ctx instanceof Response) return ctx;
 
-  // Interruptor apagado: la sala funciona exactamente como hoy y no se crea
-  // ninguna fila. No es un error, es una decisión de despliegue.
-  if (!isEgressEnabled()) {
-    return NextResponse.json({ grabando: false, estado: null, deshabilitado: true });
+  // El arranque vive en `lib/classroom/iniciar-grabacion`: lo comparte con el
+  // webhook, que enciende la grabación cuando entra el primer participante. La
+  // coreografía de la reserva es delicada y no puede existir dos veces.
+  const res = await iniciarGrabacionDeSesion(ctx.admin, {
+    sessionId: ctx.session.id,
+    room: ctx.room,
+    startedBy: ctx.userId,
+  });
+
+  if (res.ok) {
+    return estadoResponse(res.fila as RecordingRow, ctx.session.lesson_id, {
+      egressId: res.egressId,
+      ...(res.yaEstaba ? { yaEstaba: true as const } : {}),
+    });
   }
 
-  const conf = configuracion();
-  if (!conf.ok) {
+  if (res.motivo === "deshabilitado") {
+    return NextResponse.json({ grabando: false, estado: null, deshabilitado: true });
+  }
+  if (res.motivo === "sin_configuracion") {
     return NextResponse.json(
-      { error: "La grabación no está configurada.", missing: conf.missing },
+      { error: "La grabación no está configurada.", missing: res.missing },
       { status: 503 },
     );
   }
-
-  const viva = await filaViva(ctx);
-  if (viva) {
-    return estadoResponse(viva, ctx.session.lesson_id, {
-      yaEstaba: true,
-      egressId: viva.egress_id,
-    });
+  if (res.motivo === "sala_vacia") {
+    return NextResponse.json({ error: "Entra a la sala antes de grabar." }, { status: 409 });
   }
-
-  // La fila se crea ANTES de llamar a Egress: es la reserva que hace valer el
-  // índice único parcial. Si dos pestañas del docente llaman a la vez, una sola
-  // inserta y la otra rebota acá, no en LiveKit con dos Chrome levantados.
-  const { data: fila, error: insertError } = await ctx.admin
-    .from("session_recordings")
-    .insert({ session_id: ctx.session.id, status: "starting", started_by: ctx.userId })
-    .select(COLUMNAS_FILA)
-    .single();
-
-  if (insertError || !fila) {
-    // 23505 = choque con el índice único parcial: alguien ganó la carrera.
-    if ((insertError as { code?: string } | null)?.code === "23505") {
-      const otra = await filaViva(ctx);
-      if (otra) {
-        return estadoResponse(otra, ctx.session.lesson_id, {
-          yaEstaba: true,
-          egressId: otra.egress_id,
-        });
-      }
-    }
-    console.error("[clase/grabacion] no se pudo crear la fila", insertError);
-    return NextResponse.json({ error: "No se pudo iniciar la grabación." }, { status: 500 });
+  if (res.motivo === "cancelada") {
+    return estadoResponse((res.fila as RecordingRow | null), ctx.session.lesson_id);
   }
-
-  const registro = fila as RecordingRow;
-  const filepath = filePathFor(ctx.session.id, registro.id);
-
-  try {
-    const info = await startRoomComposite({
-      config: conf.config,
-      storage: conf.storage,
-      room: ctx.room,
-      filepath,
-    });
-
-    const estado = estadoDesdeEgress(info.status) ?? "starting";
-
-    // Dos escrituras con papeles distintos, porque en el ~1-3 s de StartEgress
-    // pueden haber pasado dos cosas INCOMPATIBLES entre sí:
-    //  a) el docente pulsó "Detener" → el DELETE cerró la fila (`failed`), y el
-    //     trabajo recién iniciado sobra: hay que detenerlo (compensación).
-    //  b) el webhook `egress_started` llegó ANTES que nosotros (tiene respaldo
-    //     de match por sala, no necesita el egress_id) y ya movió la fila a
-    //     `active` — ahí NO hay nada que compensar, y pisarla con `starting`
-    //     regresaría el estado que la sala ya muestra.
-    //
-    // 1. Adjuntar egress_id/archivo a la fila mientras siga VIVA, sin tocar el
-    //    status: es válido tanto en `starting` como en `active`.
-    const { data: viva2 } = await ctx.admin
-      .from("session_recordings")
-      .update({ egress_id: info.egressId ?? null, storage_path: filepath })
-      .eq("id", registro.id)
-      .in("status", ["starting", "active"])
-      .select(COLUMNAS_FILA)
-      .maybeSingle();
-
-    if (!viva2) {
-      // Caso (a): la fila ya no está viva — el trabajo recién iniciado sobra.
-      if (info.egressId) {
-        try {
-          await stopEgress({ config: conf.config, room: ctx.room, egressId: info.egressId });
-        } catch (stopError) {
-          console.error("[clase/grabacion] StopEgress compensatorio falló", stopError);
-        }
-      }
-      return estadoResponse(await ultimaFila(ctx), ctx.session.lesson_id);
-    }
-
-    // 2. Avanzar el status SOLO hacia adelante (`starting` → `active`): si el
-    //    webhook ya lo avanzó, esta escritura simplemente no matchea.
-    if (estado === "active" && viva2.status === "starting") {
-      await ctx.admin
-        .from("session_recordings")
-        .update({ status: "active" })
-        .eq("id", registro.id)
-        .eq("status", "starting");
-    }
-
-    const filaFinal = {
-      ...(viva2 as RecordingRow),
-      status: estado === "active" ? ("active" as EstadoGrabacion) : (viva2 as RecordingRow).status,
-    };
-    return estadoResponse(filaFinal, ctx.session.lesson_id, {
-      egressId: info.egressId ?? null,
-    });
-  } catch (e) {
-    const salaInexistente = e instanceof EgressRequestError && e.salaInexistente;
-    const motivo = salaInexistente
-      ? "Nadie estaba conectado a la sala al pedir la grabación."
-      : `No se pudo iniciar la grabación en Egress: ${e instanceof Error ? e.message : "error desconocido"}`;
-
-    // La fila queda `failed` con el motivo —y fuera del índice único parcial,
-    // así que reintentar es posible—. La clase NUNCA se cae por esto: el docente
-    // ve "no se está grabando" y el panel admin conserva la subida manual.
-    // Solo desde `starting`: si el fetch falló por red pero LiveKit SÍ arrancó
-    // y su webhook ya movió la fila (`active`/`uploaded`), pisarla con `failed`
-    // dejaría el MP4 sin ingestar.
-    await ctx.admin
-      .from("session_recordings")
-      .update({ status: "failed", error: motivo, ended_at: new Date().toISOString() })
-      .eq("id", registro.id)
-      .eq("status", "starting");
-
-    console.error("[clase/grabacion] StartEgress falló", motivo);
-
-    if (salaInexistente) {
-      return NextResponse.json({ error: "Entra a la sala antes de grabar." }, { status: 409 });
-    }
-    return NextResponse.json({ error: "No se pudo iniciar la grabación." }, { status: 502 });
-  }
+  return NextResponse.json({ error: res.detalle }, { status: 502 });
 }
 
 export async function DELETE(_req: Request, ctxParams: { params: Promise<{ sessionId: string }> }) {

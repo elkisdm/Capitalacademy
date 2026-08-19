@@ -37,6 +37,12 @@ export type LiveKitWebhookEvent = {
   event: string;
   id?: string;
   egressInfo?: EgressInfo;
+  /**
+   * Sala del evento. Los eventos de sala (`room_started`, `participant_joined`)
+   * la traen acá, no dentro de `egressInfo`: es de donde se deduce a qué clase
+   * pertenece lo que está pasando.
+   */
+  roomName?: string;
 };
 
 export type LiveKitWebhookResult =
@@ -165,8 +171,17 @@ export function verifyLiveKitWebhook(
     ok: true,
     event: {
       event: String(evento.event ?? ""),
+      roomName: nombreDeSala(evento.room),
       id: typeof evento.id === "string" ? evento.id : undefined,
       egressInfo: normalizeEgressInfo(evento.egressInfo ?? evento.egress_info),
     },
   };
+}
+
+/** El nombre de la sala, venga en `room.name` o en `room.room_name`. */
+function nombreDeSala(raw: unknown): string | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const nombre = o.name ?? o.room_name ?? o.roomName;
+  return typeof nombre === "string" && nombre ? nombre : undefined;
 }

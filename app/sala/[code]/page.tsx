@@ -1,5 +1,4 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { getClassroomAccess } from "@/lib/classroom/access";
@@ -7,6 +6,8 @@ import { getViewerProfile } from "@/lib/supabase/auth";
 import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { LiveClassRoom } from "@/components/classroom/live/live-class-room";
 import { GuestJoin } from "@/components/classroom/live/guest-join";
+import { SalaShell } from "@/components/classroom/live/sala-shell";
+import { formatChile } from "@/lib/time";
 
 /**
  * Sala de clase en vivo, como pantalla PROPIA (ADR-0031).
@@ -53,7 +54,9 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   const admin = createAdminClient();
   const { data: session } = await admin
     .from("class_sessions")
-    .select("id, code, title, cohort_id, modality, guest_access, cohorts(slug)")
+    .select(
+      "id, code, title, cohort_id, modality, guest_access, starts_at, ends_at, instructors(full_name), cohorts(slug, programs(name))",
+    )
     .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
 
@@ -64,6 +67,22 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   } = await getAuthUser();
 
   const title = (session.title as string | null) ?? "Clase en vivo";
+  const docente =
+    (session.instructors as { full_name: string | null } | null)?.full_name ?? null;
+  const programa =
+    (session.cohorts as { programs: { name: string } | null } | null)?.programs?.name ?? null;
+  // Una franja ("19:00 – 21:00"), no una fecha: quien abre el enlace ya sabe
+  // qué día es — lo que necesita confirmar es que llegó a la hora correcta.
+  const horario = session.starts_at
+    ? [
+        formatChile(session.starts_at as string, { hour: "2-digit", minute: "2-digit", hour12: false }),
+        session.ends_at
+          ? formatChile(session.ends_at as string, { hour: "2-digit", minute: "2-digit", hour12: false })
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" – ")
+    : null;
 
   if (!user) {
     // Sala cerrada a invitados: el camino de siempre, login y de vuelta acá.
@@ -71,9 +90,13 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
       redirect(`/login?next=${encodeURIComponent(`/sala/${code}`)}`);
     }
     return (
-      <SalaShell title={title} code={session.code as string} volverA={null}>
-        <GuestJoin code={session.code as string} titulo={title} />
-      </SalaShell>
+      <GuestJoin
+        code={session.code as string}
+        titulo={title}
+        docente={docente}
+        horario={horario}
+        programa={programa}
+      />
     );
   }
 
@@ -98,46 +121,5 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
         userName={perfil?.full_name ?? null}
       />
     </SalaShell>
-  );
-}
-
-/**
- * Marco de la sala: encabezado mínimo y el resto de la pantalla para el video.
- *
- * Lo comparten el participante con cuenta y el invitado, para que la sala se vea
- * igual en los dos casos. Lo único que cambia es el "Volver a la clase", que un
- * invitado no tiene adónde seguir.
- */
-function SalaShell({
-  title,
-  code,
-  volverA,
-  children,
-}: {
-  title: string;
-  code: string;
-  volverA: string | null;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex h-dvh flex-col bg-ca-ink">
-      <header className="flex shrink-0 items-center justify-between gap-4 px-4 py-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-black tracking-tight text-white">{title}</h1>
-          {/* El código a la vista: es lo que se dicta o se pega para invitar. */}
-          <p className="font-mono text-[11px] text-white/50">{code}</p>
-        </div>
-        {volverA && (
-          <Link
-            href={volverA}
-            className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/80 transition-colors hover:bg-white/20 hover:text-white"
-          >
-            Volver a la clase
-          </Link>
-        )}
-      </header>
-
-      <main className="min-h-0 flex-1 px-3 pb-3">{children}</main>
-    </div>
   );
 }

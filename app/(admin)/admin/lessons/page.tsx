@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { AddLessonButton } from "@/components/admin/add-lesson-button";
 import { LessonReorderList } from "@/components/admin/lesson-reorder-list";
+import { ModuleReorderControls } from "@/components/admin/module-reorder-controls";
 import { AddModuleButton } from "@/components/admin/add-module-button";
 import { ModuleEditForm } from "@/components/admin/module-edit-form";
 import { LessonsScopeFilter } from "@/components/admin/lessons-scope-filter";
@@ -83,6 +84,9 @@ export default async function AdminLessonsPage(props: {
       .eq("program_id", selectedProgramId)
       .order("position", { ascending: true }),
   ]);
+
+  // Orden actual de los módulos: el reorden manda la lista COMPLETA, no un delta.
+  const orderedModuleIds = (modules ?? []).map((m) => m.id as string);
 
   const cohortOptions = (cohorts ?? []) as { id: string; name: string }[];
   const selectedCohortId =
@@ -212,7 +216,13 @@ export default async function AdminLessonsPage(props: {
                   <h2 className="text-lg font-semibold text-ca-ink">
                     {mod.code} — {mod.title}
                   </h2>
-                  <ModuleEditForm
+                  <div className="flex items-center gap-2">
+                    <ModuleReorderControls
+                      programId={selectedProgramId}
+                      moduleId={mod.id as string}
+                      orderedModuleIds={orderedModuleIds}
+                    />
+                    <ModuleEditForm
                     module={{
                       id: mod.id as string,
                       code: mod.code as string,
@@ -220,8 +230,9 @@ export default async function AdminLessonsPage(props: {
                       description: (mod.description as string | null) ?? null,
                       cover_image_url:
                         ((mod as Record<string, unknown>).cover_image_url as string | null) ?? null,
-                    }}
-                  />
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 

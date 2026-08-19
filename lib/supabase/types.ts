@@ -3196,6 +3196,10 @@ export type Database = {
         Args: { p_module_id: string; p_ordered_ids: string[] }
         Returns: undefined
       }
+      reorder_modules: {
+        Args: { p_ordered_ids: string[]; p_program_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       slug_unico: {

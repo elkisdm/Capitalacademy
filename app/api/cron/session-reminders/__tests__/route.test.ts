@@ -190,6 +190,7 @@ const BASE_SESSION = {
   ends_at: "2026-08-01T11:00:00.000Z",
   modality: "live_online",
   meeting_url: "https://meet.example.com/x",
+  code: "abc-defg-hij",
   status: "scheduled",
   teacher_id: null as string | null,
   audience: "all",
@@ -305,6 +306,62 @@ describe("processWindow — consulta de sesiones y filtro de idempotencia", () =
 
     expect(json.windows[1]).toEqual({ kind: "24h", sessions: 0, emails: 0 });
     expect(callCount("session_reminders.insert")).toBe(0);
+  });
+
+  it("sin meeting_url, el correo apunta a la sala de la plataforma", async () => {
+    // El 19-ago los recordatorios de 72 h y 24 h salieron SIN botón para entrar:
+    // la sala vive en `code` y el correo solo miraba `meeting_url`.
+    adminTables = {
+      class_sessions: withSessionsWindow24h([
+        { ...BASE_SESSION, meeting_url: null, code: "ziy-jlpp-lue" },
+      ]),
+      session_reminders: { selectResults: [{ data: [], error: null }] },
+      cohorts: defaultCohorts(),
+      enrollments: defaultEnrollments(),
+    };
+    mockSendEmailBatch.mockResolvedValue({ sent: ["stu1@test.cl"], failed: [] });
+
+    await GET(makeRequest());
+
+    expect(mockBuildSessionReminderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ meetingUrl: "https://capitalacademy.cl/sala/ziy-jlpp-lue" }),
+    );
+  });
+
+  it("con meeting_url cargado a mano, ese enlace externo manda", async () => {
+    adminTables = {
+      class_sessions: withSessionsWindow24h([
+        { ...BASE_SESSION, meeting_url: "https://zoom.us/j/123", code: "ziy-jlpp-lue" },
+      ]),
+      session_reminders: { selectResults: [{ data: [], error: null }] },
+      cohorts: defaultCohorts(),
+      enrollments: defaultEnrollments(),
+    };
+    mockSendEmailBatch.mockResolvedValue({ sent: ["stu1@test.cl"], failed: [] });
+
+    await GET(makeRequest());
+
+    expect(mockBuildSessionReminderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ meetingUrl: "https://zoom.us/j/123" }),
+    );
+  });
+
+  it("sin meeting_url y sin código, el correo sale sin enlace en vez de con uno roto", async () => {
+    adminTables = {
+      class_sessions: withSessionsWindow24h([
+        { ...BASE_SESSION, meeting_url: null, code: null },
+      ]),
+      session_reminders: { selectResults: [{ data: [], error: null }] },
+      cohorts: defaultCohorts(),
+      enrollments: defaultEnrollments(),
+    };
+    mockSendEmailBatch.mockResolvedValue({ sent: ["stu1@test.cl"], failed: [] });
+
+    await GET(makeRequest());
+
+    expect(mockBuildSessionReminderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ meetingUrl: null }),
+    );
   });
 
   it("reintenta sesiones con recordatorio 'failed' o 'pending' viejo (no las excluye)", async () => {

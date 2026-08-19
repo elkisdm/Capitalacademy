@@ -8,6 +8,7 @@ import {
   type ReminderKind,
 } from "@/lib/email/send-batch";
 import { sendAttendanceWarningEmail } from "@/lib/email/attendance-warning";
+import { getPublicBaseUrl } from "@/lib/api/base-url";
 import { getStudentsAtAbsenceThreshold } from "@/lib/asistencia/queries";
 import { authorizeCron } from "@/lib/api/cron-auth";
 
@@ -67,6 +68,7 @@ type SessionRow = {
   meeting_url: string | null;
   status: string;
   teacher_id: string | null;
+  code: string | null;
   audience: string;
 };
 
@@ -91,7 +93,7 @@ async function processWindow(
   const { data: sessionsData, error: sessErr } = await admin
     .from("class_sessions")
     .select(
-      "id, cohort_id, title, starts_at, ends_at, modality, meeting_url, status, teacher_id, audience",
+      "id, cohort_id, title, starts_at, ends_at, modality, meeting_url, code, status, teacher_id, audience",
     )
     .eq("status", "scheduled")
     // Las grabadas no son eventos en vivo: no se recuerdan.
@@ -288,6 +290,15 @@ async function processWindow(
     const missing = recipients.filter((r) => !alreadyDelivered.has(r.studentId));
 
     const studentIdByEmail = new Map(missing.map((r) => [r.email, r.studentId]));
+
+    // A dónde entra el alumno. `meeting_url` es la columna vieja del enlace
+    // externo (Zoom); las salas de la plataforma viven en `code`, así que sin
+    // esto una clase con sala propia sale SIN botón para entrar — que es lo que
+    // pasó con los recordatorios de 72 h y 24 h del 19-ago.
+    // El externo manda cuando existe: si alguien lo cargó a mano, es porque esa
+    // clase se dicta ahí y no en la sala nuestra.
+    const enlaceParaEntrar =
+      session.meeting_url ?? (session.code ? `${getPublicBaseUrl()}/sala/${session.code}` : null);
     const messages: BatchMessage[] = missing.map((r) => {
       const content = isCapacitacion
         ? buildCapacitacionReminderEmail({
@@ -297,7 +308,7 @@ async function processWindow(
             startsAtIso: session.starts_at,
             endsAtIso: session.ends_at,
             modality: session.modality,
-            meetingUrl: session.meeting_url,
+            meetingUrl: enlaceParaEntrar,
             kind,
           })
         : buildSessionReminderEmail({
@@ -307,7 +318,7 @@ async function processWindow(
             startsAtIso: session.starts_at,
             endsAtIso: session.ends_at,
             modality: session.modality,
-            meetingUrl: session.meeting_url,
+            meetingUrl: enlaceParaEntrar,
             teacherName,
             kind,
           });

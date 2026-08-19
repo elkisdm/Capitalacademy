@@ -93,10 +93,13 @@ describe("POST /api/sala/[code]/invitado", () => {
       display_name: "Diego",
     });
 
-    const cookie = res.cookies.get("ca_guest_ses-uuid-real");
-    expect(cookie?.value).toBe("guest-uuid-1");
+    // Se lee del header y no de `res.cookies` porque la ruta puede devolver un
+    // Response pelado (`rateLimitResponse`), así que el tipo de la unión no
+    // tiene `cookies`. El Set-Cookie es además lo que realmente ve el navegador.
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("ca_guest_ses-uuid-real=guest-uuid-1");
     // No la puede leer el JavaScript de la página: es una credencial.
-    expect(cookie?.httpOnly).toBe(true);
+    expect(setCookie).toContain("HttpOnly");
   });
 
   it("nace pendiente: pedir entrar NO entrega ningún token", async () => {

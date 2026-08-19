@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { InstructorEditForm } from "@/components/admin/instructor-edit-form";
 import { InstructorLinkAccount, type TeacherAccount } from "@/components/admin/instructor-link-account";
+import { InstructorCreateForm } from "@/components/admin/instructor-create-form";
 import { INSTRUCTOR_PROFILE_COLUMNS, type InstructorProfile } from "@/lib/instructors/types";
 
 export const metadata = {
@@ -13,9 +14,10 @@ export const metadata = {
  * CRUD mínimo del perfil público del docente (ADR-0028 §5).
  *
  * Hasta ahora `instructors` solo se editaba por SQL. Esta pantalla cubre lo que
- * el alumno ve: titular, reseña y redes. No crea ni borra fichas — el alta sigue
- * viniendo del seed del entorno, y borrar una ficha con sesiones asignadas es
- * una operación de datos que no corresponde a este panel.
+ * el alumno ve: titular, reseña y redes, más el alta (ADR-0036: sin ficha, el
+ * docente no aparece en el selector al crear una clase). No borra fichas: una
+ * ficha con sesiones asignadas es una operación de datos que no corresponde a
+ * este panel.
  *
  * El acceso ya lo gatea `app/(admin)/layout.tsx` (redirige a /classroom a quien
  * no sea ops/admin) y, en la escritura, la RLS `instructors_staff_write`.
@@ -86,6 +88,10 @@ export default async function DocentesAdminPage() {
           nombre y el correo no se editan aquí: son la identidad de la ficha con la que se
           asignan las clases.
         </p>
+
+        <div className="mt-4">
+          <InstructorCreateForm accounts={accounts} />
+        </div>
       </div>
 
       <div className="mb-6 rounded-xl border border-ca-violet/20 bg-ca-violet/5 p-4 text-[13px] leading-relaxed text-ca-ink-soft">
@@ -98,8 +104,8 @@ export default async function DocentesAdminPage() {
         <div className="ca-card p-8 text-center">
           <p className="text-[14px] font-bold text-ca-ink">Todavía no hay docentes cargados</p>
           <p className="mt-1 text-[13px] text-ca-ink-soft">
-            Las fichas se crean con el seed del entorno. Cuando exista alguna, la vas a poder
-            editar desde aquí.
+            Crea la primera con "Nueva ficha". Sin ficha, una persona no aparece en el
+            selector de docente al crear una clase.
           </p>
         </div>
       ) : (

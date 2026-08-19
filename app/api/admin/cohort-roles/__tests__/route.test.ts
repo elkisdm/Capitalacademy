@@ -14,6 +14,12 @@ let insertRoleResult: Result; // POST: insert cohort_roles -> select().single()
 let roleToDeleteResult: Result; // DELETE: lookup previo al borrado
 let deleteRoleResult: { error: unknown }; // DELETE: delete cohort_roles
 
+// instructors / profiles (ficha derivada del rol docente)
+let instructorLookupResult: Result; // POST: ficha ya enlazada a esa cuenta
+let instructorInsertResult: Result; // POST: alta de la ficha
+let profileLookupResult: Result; // POST: nombre desde el que se copia la ficha
+const instructorInsertSpy = vi.fn();
+
 // enrollments
 let enrollmentLookupResult: Result; // POST: matrícula existente
 const enrollmentInsertSpy = vi.fn(async () => ({ error: null as unknown }));
@@ -39,6 +45,30 @@ vi.mock("@/lib/supabase/server", () => ({
           }),
           delete: () => ({
             eq: () => Promise.resolve(deleteRoleResult),
+          }),
+        };
+      }
+      if (table === "instructors") {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({ maybeSingle: () => Promise.resolve(instructorLookupResult) }),
+              }),
+            }),
+          }),
+          insert: (row: unknown) => {
+            instructorInsertSpy(row);
+            return {
+              select: () => ({ single: () => Promise.resolve(instructorInsertResult) }),
+            };
+          },
+        };
+      }
+      if (table === "profiles") {
+        return {
+          select: () => ({
+            eq: () => ({ maybeSingle: () => Promise.resolve(profileLookupResult) }),
           }),
         };
       }
@@ -93,6 +123,9 @@ describe("admin/cohort-roles POST", () => {
     roleToDeleteResult = { data: null };
     deleteRoleResult = { error: null };
     enrollmentLookupResult = { data: null };
+    instructorLookupResult = { data: null };
+    instructorInsertResult = { data: { id: "inst-1", full_name: "Cristian Farias" }, error: null };
+    profileLookupResult = { data: { full_name: "Cristian Farias" } };
   });
 
   it("rechaza con 401/403 si authorizeAdmin deniega", async () => {
@@ -142,13 +175,57 @@ describe("admin/cohort-roles POST", () => {
     expect(res!.status).toBe(500);
   });
 
-  it("crea rol 'teacher' con 201 y NO toca enrollments", async () => {
+  it("crea rol 'teacher' con 201, le crea la ficha docente y NO toca enrollments", async () => {
     insertRoleResult = { data: { id: "cr2", role: "teacher" }, error: null };
     const res = await POST(postReq({ user_id: USER_ID, cohort_id: COHORT_ID, role: "teacher" }));
     expect(res!.status).toBe(201);
     const json = await res!.json();
-    expect(json).toEqual({ id: "cr2", role: "teacher" });
+    // La ficha viaja en la respuesta: es lo que hace visible al docente en el
+    // selector al crear una clase (`class_sessions.teacher_id` → `instructors`).
+    expect(json).toEqual({
+      id: "cr2",
+      role: "teacher",
+      instructor: { id: "inst-1", full_name: "Cristian Farias", created: true },
+    });
+    expect(instructorInsertSpy).toHaveBeenCalledWith({
+      full_name: "Cristian Farias",
+      profile_id: USER_ID,
+      is_active: true,
+    });
     expect(enrollmentInsertSpy).not.toHaveBeenCalled();
+  });
+
+  it("no duplica la ficha si el docente ya tenía una", async () => {
+    insertRoleResult = { data: { id: "cr2", role: "teacher" }, error: null };
+    instructorLookupResult = { data: { id: "inst-previa", full_name: "Paola Vicuña" } };
+    const res = await POST(postReq({ user_id: USER_ID, cohort_id: COHORT_ID, role: "teacher" }));
+    expect(res!.status).toBe(201);
+    const json = await res!.json();
+    expect(json.instructor).toEqual({
+      id: "inst-previa",
+      full_name: "Paola Vicuña",
+      created: false,
+    });
+    expect(instructorInsertSpy).not.toHaveBeenCalled();
+  });
+
+  it("un 'assistant' NO genera ficha: tiene permisos, no es cara visible de la clase", async () => {
+    insertRoleResult = { data: { id: "cr3", role: "assistant" }, error: null };
+    const res = await POST(postReq({ user_id: USER_ID, cohort_id: COHORT_ID, role: "assistant" }));
+    expect(res!.status).toBe(201);
+    const json = await res!.json();
+    expect(json.instructor).toBeNull();
+    expect(instructorInsertSpy).not.toHaveBeenCalled();
+  });
+
+  it("el rol queda asignado aunque falle el alta de la ficha (el permiso vale por sí solo)", async () => {
+    insertRoleResult = { data: { id: "cr2", role: "teacher" }, error: null };
+    instructorInsertResult = { data: null, error: { message: "rls" } };
+    const res = await POST(postReq({ user_id: USER_ID, cohort_id: COHORT_ID, role: "teacher" }));
+    expect(res!.status).toBe(201);
+    const json = await res!.json();
+    expect(json.id).toBe("cr2");
+    expect(json.instructor).toBeNull();
   });
 
   it("crea rol 'student' con 201 y matricula (enrollments.insert) cuando no había matrícula", async () => {

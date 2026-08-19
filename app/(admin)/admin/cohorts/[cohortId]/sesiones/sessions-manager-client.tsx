@@ -1019,6 +1019,15 @@ function SessionForm({
                   </option>
                 ))}
               </Select>
+              {/* La lista sale de `instructors`, no de los roles de cohorte: quien
+                  no tenga ficha no aparece acá por más que sea docente (ADR-0036). */}
+              <p className="mt-1 text-[12px] text-ca-ink-soft">
+                ¿Falta alguien? Crea su ficha en{" "}
+                <a href="/admin/docentes" className="underline hover:text-ca-ink">
+                  Docentes
+                </a>
+                .
+              </p>
             </div>
 
             {modules.length > 0 && (

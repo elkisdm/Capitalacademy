@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
+import { ensureInstructorForProfile, type EnsuredInstructor } from "@/lib/instructors/ensure";
 
 export const runtime = "nodejs";
 
@@ -116,7 +117,22 @@ export async function POST(req: Request) {
   // nombre del profe) y se llena explícitamente, no como efecto lateral de asignar
   // un rol.
 
-  return NextResponse.json(cohortRole, { status: 201 });
+  // La ficha SÍ se deriva (ADR-0036): `class_sessions.teacher_id` apunta a
+  // `instructors`, así que sin ficha el docente recién nombrado no aparece en el
+  // selector al crear una clase. Solo para 'teacher': un asistente tiene permisos
+  // pero no es cara visible de una clase.
+  let instructor: EnsuredInstructor | null = null;
+  if (role === "teacher") {
+    const ensured = await ensureInstructorForProfile(supabase, user_id);
+    // No revierte el rol si falla: el permiso ya es válido y útil por sí solo.
+    // Se informa para que la UI lo diga en vez de fingir que quedó completo.
+    if (ensured.error) {
+      console.error("ensure instructor error", ensured.error);
+    }
+    instructor = ensured.data;
+  }
+
+  return NextResponse.json({ ...cohortRole, instructor }, { status: 201 });
 }
 
 export async function DELETE(req: Request) {

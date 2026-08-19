@@ -8,7 +8,7 @@ import { LiveClassRoom } from "@/components/classroom/live/live-class-room";
 import { GuestJoin } from "@/components/classroom/live/guest-join";
 import { SalaShell } from "@/components/classroom/live/sala-shell";
 import { formatChile, TZ_CHILE } from "@/lib/time";
-import { isWithinRoomWindow } from "@/lib/livekit/access";
+import { isLiveModality } from "@/lib/livekit/access";
 import { getBrandByProgramId } from "@/lib/programs/registry";
 
 /**
@@ -83,22 +83,10 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   // puerta de entrada de un programa, no de la academia en abstracto.
   const marca = getBrandByProgramId(programaRow?.id ?? null);
 
-  // La sala solo existe dentro de su ventana (-30 min / +2 h). Sin esto la
-  // portada dice "En vivo ahora" y habilita el botón para un enlace reenviado
-  // dias antes, y el 409 llega recién al enviar.
-  const enVentana =
-    session.starts_at && session.ends_at
-      ? isWithinRoomWindow(
-          {
-            id: session.id as string,
-            cohort_id: session.cohort_id as string,
-            starts_at: session.starts_at as string,
-            ends_at: session.ends_at as string,
-            modality: session.modality as string | null,
-          },
-          new Date(),
-        )
-      : true;
+  // La ventana la recalcula el cliente (una pestaña abierta la cruza), así que
+  // acá solo viajan las fechas. La modalidad, en cambio, no cambia sola: es el
+  // primer rechazo de `decideGuestAccess`, antes que la ventana.
+  const esEnVivo = isLiveModality(session.modality as string | null);
   // La franja lleva el día cuando la clase NO es hoy: el enlace se reenvía por
   // WhatsApp y se abre días antes, así que "19:00 – 21:00" a secas se lee como
   // "es ahora".
@@ -144,7 +132,9 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
         docente={docente}
         horario={horario}
         programa={programa}
-        enVentana={enVentana}
+        inicioIso={session.starts_at as string}
+        finIso={session.ends_at as string}
+        esEnVivo={esEnVivo}
         marcaNombre={marca.shortName}
         marcaAcento={marca.accent}
       />

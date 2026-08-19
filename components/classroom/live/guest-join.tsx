@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { LiveClassRoom } from "./live-class-room";
 import { SalaShell } from "./sala-shell";
+import { faseDeVentana, type FaseVentana } from "@/lib/livekit/ventana-sala";
 
 /**
  * Entrada de un INVITADO SIN CUENTA a una sala abierta (ADR-0035, 0099).
@@ -27,7 +28,9 @@ export function GuestJoin({
   docente = null,
   horario = null,
   programa = null,
-  enVentana = true,
+  inicioIso,
+  finIso,
+  esEnVivo = true,
   marcaNombre = "Capital Academy",
   marcaAcento = "#5e17eb",
 }: {
@@ -38,11 +41,15 @@ export function GuestJoin({
   horario?: string | null;
   programa?: string | null;
   /**
-   * ¿La sala está dentro de su ventana (-30 min / +2 h)? Fuera de ella el
-   * servidor rechaza la solicitud, así que la portada no puede decir "en vivo"
-   * ni ofrecer el botón: sería prometer algo que el 409 desmiente al enviar.
+   * Inicio y fin de la clase. Viajan como fecha, no como un booleano ya
+   * resuelto: una pestaña abierta CRUZA la ventana (-30 min / +2 h), y un
+   * booleano calculado en el servidor deja la pantalla cerrada diez minutos
+   * después de que abrió, o con el botón vivo dos horas después de que cerró.
    */
-  enVentana?: boolean;
+  inicioIso: string;
+  finIso: string;
+  /** La modalidad es el primer rechazo del gate, antes que la ventana. */
+  esEnVivo?: boolean;
   /** Marca del programa (misma fuente que login y onboarding). */
   marcaNombre?: string;
   marcaAcento?: string;
@@ -51,6 +58,15 @@ export function GuestJoin({
   const [nombre, setNombre] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [fase, setFase] = useState<FaseVentana>(() => faseDeVentana(inicioIso, finIso));
+
+  // Se revisa cada 30 s para que la pantalla cruce la ventana sola: quien abre
+  // el enlace 40 minutos antes ve el formulario aparecer sin recargar, y quien
+  // deja la pestaña abierta deja de tener el botón vivo cuando la sala cierra.
+  useEffect(() => {
+    const id = setInterval(() => setFase(faseDeVentana(inicioIso, finIso)), 30_000);
+    return () => clearInterval(id);
+  }, [inicioIso, finIso]);
 
   const consultar = useCallback(async () => {
     try {
@@ -109,7 +125,31 @@ export function GuestJoin({
     [code, nombre],
   );
 
-  const puedeEnviar = !enviando && nombre.trim().length >= 2 && enVentana;
+  const abierta = esEnVivo && fase === "abierta";
+
+  const { etiquetaFase, tituloFase, detalleFase } = !esEnVivo
+    ? {
+        etiquetaFase: "Esta clase no es en vivo",
+        tituloFase: "Esta clase no tiene sala",
+        detalleFase:
+          "Es una clase grabada, así que no hay una reunión a la que entrar. Escríbele a quien te compartió el enlace.",
+      }
+    : fase === "cerrada"
+      ? {
+          etiquetaFase: "La clase ya terminó",
+          tituloFase: "Esta clase ya terminó",
+          detalleFase: horario
+            ? `Fue el ${horario}. La sala se cierra dos horas después de que termina.`
+            : "La sala se cierra dos horas después de que termina la clase.",
+        }
+      : {
+          etiquetaFase: "La sala todavía no abre",
+          tituloFase: "La sala todavía no está abierta",
+          detalleFase: horario
+            ? `Abre 30 minutos antes de que empiece: ${horario}. Vuelve a entrar con este mismo enlace.`
+            : "Abre 30 minutos antes de que empiece la clase. Vuelve a entrar con este mismo enlace.",
+        };
+  const puedeEnviar = !enviando && nombre.trim().length >= 2 && abierta;
 
   if (estado === "approved") {
     return (
@@ -152,7 +192,7 @@ export function GuestJoin({
         {/* Identidad de la clase */}
         <div className="px-5 pt-3 md:col-span-7 md:px-0 md:pt-0">
           <div className="mb-3.5 flex items-center gap-2 md:mb-6">
-            {enVentana ? (
+            {abierta ? (
               <>
                 <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-ca-lime md:h-2 md:w-2" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-lime md:text-[11px]">
@@ -163,7 +203,7 @@ export function GuestJoin({
               <>
                 <span className="h-[7px] w-[7px] rounded-full bg-white/30 md:h-2 md:w-2" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45 md:text-[11px]">
-                  La sala todavía no abre
+                  {etiquetaFase}
                 </span>
               </>
             )}
@@ -176,9 +216,13 @@ export function GuestJoin({
           <div className="mt-4 flex flex-col gap-3 md:mt-7 md:flex-row md:flex-wrap md:items-center md:gap-7">
             {docente && (
               <div className="flex items-center gap-2.5 md:gap-3">
+                {/* El acento va en el aro, no de fondo: ningún acento del
+                    registro alcanza 4.5:1 con texto encima — el rosa de
+                    Capacitaciones topa en 4.28:1 con blanco Y con tinta. Así la
+                    marca se ve y las iniciales se leen siempre. */}
                 <span
-                  style={{ background: marcaAcento }}
-                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[12px] font-bold md:h-[38px] md:w-[38px] md:text-[13px]"
+                  style={{ borderColor: marcaAcento }}
+                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border-2 bg-white/10 text-[12px] font-bold text-white md:h-[38px] md:w-[38px] md:text-[13px]"
                 >
                   {iniciales(docente)}
                 </span>
@@ -257,7 +301,7 @@ export function GuestJoin({
               </div>
             )}
 
-            {estado === "none" && !enVentana && (
+            {(estado === "none" || estado === "pending") && !abierta && (
               <div className="py-2 text-center">
                 <div className="mx-auto mb-5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white/[0.08]">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
@@ -265,17 +309,12 @@ export function GuestJoin({
                     <path d="M12 7.5v5l3 2" />
                   </svg>
                 </div>
-                <h2 className="mb-2 text-[20px] font-black tracking-[-0.025em]">
-                  La sala todavía no está abierta
-                </h2>
-                <p className="text-[13px] leading-relaxed text-white/55">
-                  Se abre 30 minutos antes de que empiece la clase
-                  {horario ? ` (${horario})` : ""}. Vuelve a entrar con este mismo enlace.
-                </p>
+                <h2 className="mb-2 text-[20px] font-black tracking-[-0.025em]">{tituloFase}</h2>
+                <p className="text-[13px] leading-relaxed text-white/55">{detalleFase}</p>
               </div>
             )}
 
-            {estado === "none" && enVentana && (
+            {estado === "none" && abierta && (
               <form onSubmit={pedir}>
                 <h2 className="mb-1.5 text-[21px] font-black tracking-[-0.025em] md:text-[24px]">
                   ¿Cómo te llamas?
@@ -330,7 +369,7 @@ export function GuestJoin({
               </form>
             )}
 
-            {estado === "pending" && (
+            {estado === "pending" && abierta && (
               <div className="text-center">
                 <div className="mx-auto mb-5 h-14 w-14 md:mb-6 md:h-[68px] md:w-[68px]">
                   <svg viewBox="0 0 56 56" className="h-full w-full animate-spin [animation-duration:1.6s]" aria-hidden>

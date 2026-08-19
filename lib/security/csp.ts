@@ -23,8 +23,15 @@ export function livekitConnectSources(livekitUrl: string | undefined): string[] 
   if (!raw) return [];
 
   let host: string;
+  let seguro: boolean;
   try {
-    host = new URL(raw).host;
+    const u = new URL(raw);
+    host = u.host;
+    // El esquema se respeta en vez de asumir TLS: un LiveKit local es
+    // `ws://localhost:7880`, y anunciar `wss://localhost` deja al navegador
+    // bloqueando la conexión con un error de CSP que no dice qué falta. En
+    // producción la URL es `wss://`, así que ahí no cambia nada.
+    seguro = u.protocol !== "ws:" && u.protocol !== "http:";
   } catch {
     // Una URL mal escrita no debe tumbar el build: se ignora y LiveKit
     // simplemente no funcionará, igual que si faltara la variable.
@@ -32,7 +39,7 @@ export function livekitConnectSources(livekitUrl: string | undefined): string[] 
   }
   if (!host) return [];
 
-  return [`wss://${host}`, `https://${host}`];
+  return seguro ? [`wss://${host}`, `https://${host}`] : [`ws://${host}`, `http://${host}`];
 }
 
 /**

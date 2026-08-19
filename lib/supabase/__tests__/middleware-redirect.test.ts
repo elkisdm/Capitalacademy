@@ -43,3 +43,34 @@ describe("updateSession — redirect al login del visitante sin sesión", () => 
     expect(res.status).toBe(401);
   });
 });
+
+describe("updateSession — el invitado sin cuenta y el token de la sala", () => {
+  it("deja pasar el token de la sala para que la ruta decida", async () => {
+    // El invitado NO tiene sesión: ese es el punto. Su autorización vive en la
+    // ruta (cookie + fila aprobada + ventana + modalidad). Bloquearlo acá dejaba
+    // toda esa rama como código inalcanzable y al invitado con un 401 genérico.
+    const { updateSession } = await import("../middleware");
+    const res = await updateSession(
+      new NextRequest(
+        new Request("http://x/api/classroom/clase/aaaa-bbbb-cccc/token", { method: "POST" }),
+      ),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("el resto de /api/classroom sigue cerrado sin sesión", async () => {
+    const { updateSession } = await import("../middleware");
+    const res = await updateSession(
+      new NextRequest(new Request("http://x/api/classroom/progress", { method: "POST" })),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("no se abre por parecerse: una subruta del token sigue cerrada", async () => {
+    const { updateSession } = await import("../middleware");
+    const res = await updateSession(
+      new NextRequest(new Request("http://x/api/classroom/clase/aaa/token/otra", { method: "POST" })),
+    );
+    expect(res.status).toBe(401);
+  });
+});

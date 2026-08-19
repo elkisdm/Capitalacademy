@@ -531,6 +531,108 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
   --lk-control-active-hover-bg: var(--color-ca-violet-deep);
   --lk-border-radius: 12px;
   --lk-connection-excellent: var(--color-ca-lime);
+
+  /* Fondos del prefab: por defecto trae grises propios que compiten con la
+     tinta de la marca. */
+  --lk-bg: var(--color-ca-ink);
+  --lk-bg2: var(--color-ca-navy-ink);
+  --lk-bg3: #1e2566;
+  --lk-fg: #ffffff;
+  --lk-fg2: rgba(255, 255, 255, 0.72);
+  --lk-danger: var(--color-ca-rose);
+  --lk-success: var(--color-ca-lime);
+}
+
+/* === Piel de la sala en vivo ===============================================
+   Se VISTE el prefab `VideoConference` en vez de reemplazarlo: la cuadrícula,
+   el foco de hablante, compartir pantalla y la selección de dispositivos son
+   suyos y funcionan. Todo lo de acá es apariencia; nada cambia estructura.
+   Por eso son selectores sobre sus clases y no componentes nuestros. */
+
+.ca-live-room .lk-participant-tile {
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--color-ca-navy-ink);
+}
+
+/* Quien habla: aro de marca en vez del contorno gris por defecto. */
+.ca-live-room .lk-participant-tile[data-lk-speaking="true"] {
+  outline: 2px solid var(--color-ca-lime);
+  outline-offset: -2px;
+}
+
+.ca-live-room .lk-participant-name {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* La chapa del nombre: píldora sobre el video, como en el resto del producto. */
+.ca-live-room .lk-participant-metadata-item {
+  background: rgba(15, 19, 64, 0.72);
+  border-radius: 9999px;
+  padding: 6px 12px;
+  backdrop-filter: blur(6px);
+}
+
+/* Barra de controles: flotante y redondeada, no una franja pegada al borde. */
+.ca-live-room .lk-control-bar {
+  border-top: none;
+  background: rgba(15, 19, 64, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  margin: 0 auto 14px auto;
+  padding: 8px 12px;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  gap: 8px;
+}
+
+.ca-live-room .lk-control-bar .lk-button {
+  border-radius: 9999px;
+  min-height: 46px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Salir NO se confunde con el resto: es el único destructivo de la barra. */
+.ca-live-room .lk-disconnect-button {
+  background: var(--color-ca-rose);
+  color: #ffffff;
+  border-radius: 9999px;
+}
+.ca-live-room .lk-disconnect-button:hover {
+  background: var(--color-ca-rose);
+  filter: brightness(1.1);
+}
+
+.ca-live-room .lk-button:focus-visible {
+  outline: 2px solid var(--color-ca-lime);
+  outline-offset: 2px;
+}
+
+/* Menús de dispositivo y chat: mismas superficies que el resto del aula. */
+.ca-live-room .lk-device-menu,
+.ca-live-room .lk-chat {
+  background: var(--color-ca-navy-ink);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.ca-live-room .lk-chat-form-input {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* El aviso de cámara apagada no debe verse como un error. */
+.ca-live-room .lk-camera-off-note {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* === Informe de la Evaluación Financiera (impresión / PDF) =================

@@ -62,6 +62,24 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // El invitado SIN cuenta pidiendo el token de la sala (ADR-0035). Su
+  // autorización no puede salir de `auth` —no tiene sesión, ese es el punto—,
+  // así que la resuelve la propia ruta: cookie httpOnly + fila aprobada en
+  // `room_guests` + interruptor de la clase + ventana horaria + modalidad en
+  // vivo (`decideGuestAccess`). El middleware la bloqueaba ANTES de llegar ahí,
+  // lo que dejaba toda esa rama como código inalcanzable: el invitado se
+  // quedaba en "no pudimos conectarte" con un 401 genérico.
+  //
+  // Solo este endpoint, y solo cuando no hay sesión: con sesión sigue el camino
+  // de siempre. No afloja nada — mueve la decisión a quien de verdad puede
+  // tomarla.
+  const esTokenDeSala = /^\/api\/classroom\/clase\/[^/]+\/token$/.test(pathname);
+
+  if (!user && esTokenDeSala) {
+    supabaseResponse.headers.set("x-pathname", pathname);
+    return supabaseResponse;
+  }
+
   if (!user) {
     // Para requests a /api/*, responder 401 JSON en vez de redirect HTML
     // (que rompía clientes esperando JSON, ej. fetch desde formularios públicos

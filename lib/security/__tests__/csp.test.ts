@@ -36,9 +36,12 @@ describe("livekitConnectSources", () => {
   });
 
   it("conserva el puerto cuando lo hay", () => {
-    expect(livekitConnectSources("ws://localhost:7880")).toEqual([
-      "wss://localhost:7880",
-      "https://localhost:7880",
+    // El fixture usa wss:// a propósito: lo que este test cuida es el PUERTO.
+    // Antes usaba ws:// y de paso congelaba un ascenso de esquema que rompía la
+    // conexión contra un servidor local (ver el test de esquema más abajo).
+    expect(livekitConnectSources("wss://livekit.example.com:7880")).toEqual([
+      "wss://livekit.example.com:7880",
+      "https://livekit.example.com:7880",
     ]);
   });
 });
@@ -108,5 +111,24 @@ describe("PERMISSIONS_POLICY", () => {
 
   it("deja la geolocalización prohibida, que nada la usa", () => {
     expect(PERMISSIONS_POLICY).toContain("geolocation=()");
+  });
+});
+
+describe("livekitConnectSources — esquema del servidor", () => {
+  it("un LiveKit con TLS se anuncia como wss/https", () => {
+    expect(livekitConnectSources("wss://livekit.example.com")).toEqual([
+      "wss://livekit.example.com",
+      "https://livekit.example.com",
+    ]);
+  });
+
+  it("un LiveKit local sin TLS se anuncia como ws/http", () => {
+    // Anunciar wss:// para un ws:// deja al navegador bloqueando la conexión
+    // con un error de CSP que no dice qué falta: es lo que impedía probar la
+    // sala en local contra un servidor propio.
+    expect(livekitConnectSources("ws://localhost:7880")).toEqual([
+      "ws://localhost:7880",
+      "http://localhost:7880",
+    ]);
   });
 });

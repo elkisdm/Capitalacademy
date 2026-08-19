@@ -25,16 +25,22 @@ export function SalaShell({
 }) {
   return (
     <div className="flex h-dvh flex-col bg-ca-ink">
-      <header className="flex shrink-0 items-center justify-between gap-4 px-4 py-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-black tracking-tight text-white">{title}</h1>
-          {/* El código a la vista: es lo que se dicta o se pega para invitar. */}
-          <p className="font-mono text-[11px] text-white/50">{code}</p>
+      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/[0.07] px-4 py-3 md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden className="hidden shrink-0 md:block">
+            <path d="M13 3L23 23H17.5L13 13.2L8.5 23H3L13 3Z" fill="#ffffff" />
+            <rect x="8" y="16.5" width="10" height="2.4" rx="1.2" fill="#c5f122" />
+          </svg>
+          <div className="min-w-0">
+            <h1 className="truncate text-[15px] font-black tracking-tight text-white">{title}</h1>
+            {/* El código a la vista: es lo que se dicta o se pega para invitar. */}
+            <p className="font-mono text-[11px] text-white/50">{code}</p>
+          </div>
         </div>
         {volverA && (
           <Link
             href={volverA}
-            className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+            className="shrink-0 rounded-full border border-white/12 px-4 py-2 text-[12px] font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
           >
             Volver a la clase
           </Link>

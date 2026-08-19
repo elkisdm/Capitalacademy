@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { AddLessonButton } from "@/components/admin/add-lesson-button";
 import { LessonReorderList } from "@/components/admin/lesson-reorder-list";
-import { ModuleReorderControls } from "@/components/admin/module-reorder-controls";
+import { ModuleOrderProvider, ModuleReorderControls } from "@/components/admin/module-order";
 import { AddModuleButton } from "@/components/admin/add-module-button";
 import { ModuleEditForm } from "@/components/admin/module-edit-form";
 import { LessonsScopeFilter } from "@/components/admin/lessons-scope-filter";
@@ -198,6 +198,7 @@ export default async function AdminLessonsPage(props: {
       <div className="mb-8">{scopeFilter}</div>
 
       <div className="space-y-10">
+        <ModuleOrderProvider programId={selectedProgramId} initialIds={orderedModuleIds}>
         {modules.map((mod) => {
           const program = mod.programs as { name: string; code: string } | null;
           const lessons = ((mod.lessons ?? []) as Array<Record<string, unknown>>)
@@ -217,11 +218,7 @@ export default async function AdminLessonsPage(props: {
                     {mod.code} — {mod.title}
                   </h2>
                   <div className="flex items-center gap-2">
-                    <ModuleReorderControls
-                      programId={selectedProgramId}
-                      moduleId={mod.id as string}
-                      orderedModuleIds={orderedModuleIds}
-                    />
+                    <ModuleReorderControls moduleId={mod.id as string} />
                     <ModuleEditForm
                     module={{
                       id: mod.id as string,
@@ -305,6 +302,7 @@ export default async function AdminLessonsPage(props: {
             </section>
           );
         })}
+        </ModuleOrderProvider>
       </div>
     </div>
   );

@@ -37,9 +37,11 @@ begin
 
   -- Un id faltante dejaría su módulo en el offset (+1000000), invisible al final
   -- de la lista y con la posición corrupta. Se exige la lista COMPLETA.
+  -- El comparador es >= y no >: un módulo guardado en position 0 aterriza en
+  -- EXACTAMENTE 1000000 y con > se escapaba justo del guardia que lo cuida.
   if exists (
     select 1 from public.program_modules
-    where program_id = p_program_id and position > 1000000
+    where program_id = p_program_id and position >= 1000000
   ) then
     raise exception 'reorder_modules: p_ordered_ids debe incluir todos los módulos del programa';
   end if;

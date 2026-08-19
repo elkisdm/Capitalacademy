@@ -7,7 +7,9 @@ import { parseSessionRef } from "@/lib/livekit/meeting-code";
 import { LiveClassRoom } from "@/components/classroom/live/live-class-room";
 import { GuestJoin } from "@/components/classroom/live/guest-join";
 import { SalaShell } from "@/components/classroom/live/sala-shell";
-import { formatChile } from "@/lib/time";
+import { formatChile, TZ_CHILE } from "@/lib/time";
+import { isWithinRoomWindow } from "@/lib/livekit/access";
+import { getBrandByProgramId } from "@/lib/programs/registry";
 
 /**
  * Sala de clase en vivo, como pantalla PROPIA (ADR-0031).
@@ -28,7 +30,12 @@ export const runtime = "nodejs";
 export async function generateMetadata(props: { params: Promise<{ code: string }> }) {
   const { code } = await props.params;
   const ref = parseSessionRef(code);
-  if (ref.kind === "invalid") return { title: "Sala" };
+  // La sala nunca se indexa: la portada del invitado es pública para quien
+  // tenga el código y muestra el nombre del docente, el programa y el código
+  // mismo. Un enlace filtrado a una superficie rastreable lo deja en un índice.
+  const noIndexar = { robots: { index: false, follow: false } };
+
+  if (ref.kind === "invalid") return { title: "Sala", ...noIndexar };
 
   const admin = createAdminClient();
   const { data } = await admin
@@ -39,7 +46,7 @@ export async function generateMetadata(props: { params: Promise<{ code: string }
 
   const titulo = (data?.title as string | null) ?? "Clase en vivo";
   // El sufijo "· Capital Academy" lo pone la plantilla del layout raíz.
-  return { title: titulo };
+  return { title: titulo, ...noIndexar };
 }
 
 export default async function SalaPage(props: { params: Promise<{ code: string }> }) {
@@ -55,7 +62,7 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   const { data: session } = await admin
     .from("class_sessions")
     .select(
-      "id, code, title, cohort_id, modality, guest_access, starts_at, ends_at, instructors(full_name), cohorts(slug, programs(name))",
+      "id, code, title, cohort_id, modality, guest_access, starts_at, ends_at, instructors(full_name), cohorts(slug, programs(id, name))",
     )
     .eq(ref.kind === "code" ? "code" : "id", ref.value)
     .maybeSingle();
@@ -69,19 +76,60 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
   const title = (session.title as string | null) ?? "Clase en vivo";
   const docente =
     (session.instructors as { full_name: string | null } | null)?.full_name ?? null;
-  const programa =
-    (session.cohorts as { programs: { name: string } | null } | null)?.programs?.name ?? null;
-  // Una franja ("19:00 – 21:00"), no una fecha: quien abre el enlace ya sabe
-  // qué día es — lo que necesita confirmar es que llegó a la hora correcta.
+  const programaRow = (session.cohorts as { programs: { id: string; name: string } | null } | null)
+    ?.programs;
+  const programa = programaRow?.name ?? null;
+  // La marca del entorno, igual que en login y onboarding: la portada es la
+  // puerta de entrada de un programa, no de la academia en abstracto.
+  const marca = getBrandByProgramId(programaRow?.id ?? null);
+
+  // La sala solo existe dentro de su ventana (-30 min / +2 h). Sin esto la
+  // portada dice "En vivo ahora" y habilita el botón para un enlace reenviado
+  // dias antes, y el 409 llega recién al enviar.
+  const enVentana =
+    session.starts_at && session.ends_at
+      ? isWithinRoomWindow(
+          {
+            id: session.id as string,
+            cohort_id: session.cohort_id as string,
+            starts_at: session.starts_at as string,
+            ends_at: session.ends_at as string,
+            modality: session.modality as string | null,
+          },
+          new Date(),
+        )
+      : true;
+  // La franja lleva el día cuando la clase NO es hoy: el enlace se reenvía por
+  // WhatsApp y se abre días antes, así que "19:00 – 21:00" a secas se lee como
+  // "es ahora".
   const horario = session.starts_at
     ? [
-        formatChile(session.starts_at as string, { hour: "2-digit", minute: "2-digit", hour12: false }),
-        session.ends_at
-          ? formatChile(session.ends_at as string, { hour: "2-digit", minute: "2-digit", hour12: false })
-          : null,
+        esHoyEnChile(session.starts_at as string)
+          ? null
+          : formatChile(session.starts_at as string, {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            }),
+        [
+          formatChile(session.starts_at as string, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }),
+          session.ends_at
+            ? formatChile(session.ends_at as string, {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" – "),
       ]
         .filter(Boolean)
-        .join(" – ")
+        .join(" · ")
     : null;
 
   if (!user) {
@@ -96,6 +144,9 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
         docente={docente}
         horario={horario}
         programa={programa}
+        enVentana={enVentana}
+        marcaNombre={marca.shortName}
+        marcaAcento={marca.accent}
       />
     );
   }
@@ -122,4 +173,16 @@ export default async function SalaPage(props: { params: Promise<{ code: string }
       />
     </SalaShell>
   );
+}
+
+/** ¿La clase es hoy en hora de Chile? Decide si la franja necesita fecha. */
+function esHoyEnChile(iso: string): boolean {
+  const dia = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ_CHILE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d);
+  return dia(new Date(iso)) === dia(new Date());
 }

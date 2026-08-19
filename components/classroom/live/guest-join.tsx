@@ -27,6 +27,9 @@ export function GuestJoin({
   docente = null,
   horario = null,
   programa = null,
+  enVentana = true,
+  marcaNombre = "Capital Academy",
+  marcaAcento = "#5e17eb",
 }: {
   code: string;
   titulo: string;
@@ -34,6 +37,15 @@ export function GuestJoin({
   docente?: string | null;
   horario?: string | null;
   programa?: string | null;
+  /**
+   * ¿La sala está dentro de su ventana (-30 min / +2 h)? Fuera de ella el
+   * servidor rechaza la solicitud, así que la portada no puede decir "en vivo"
+   * ni ofrecer el botón: sería prometer algo que el 409 desmiente al enviar.
+   */
+  enVentana?: boolean;
+  /** Marca del programa (misma fuente que login y onboarding). */
+  marcaNombre?: string;
+  marcaAcento?: string;
 }) {
   const [estado, setEstado] = useState<Estado>("cargando");
   const [nombre, setNombre] = useState("");
@@ -97,7 +109,7 @@ export function GuestJoin({
     [code, nombre],
   );
 
-  const puedeEnviar = !enviando && nombre.trim().length >= 2;
+  const puedeEnviar = !enviando && nombre.trim().length >= 2 && enVentana;
 
   if (estado === "approved") {
     return (
@@ -112,7 +124,8 @@ export function GuestJoin({
       {/* Círculos de marca recortados por el borde, como en el manual. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-28 -top-36 h-[300px] w-[300px] rounded-full bg-ca-violet opacity-[0.18] md:-right-36 md:-top-44 md:h-[420px] md:w-[420px] md:opacity-[0.16]"
+        style={{ background: marcaAcento }}
+        className="pointer-events-none absolute -right-28 -top-36 h-[300px] w-[300px] rounded-full opacity-[0.18] md:-right-36 md:-top-44 md:h-[420px] md:w-[420px] md:opacity-[0.16]"
       />
       <div
         aria-hidden
@@ -125,21 +138,35 @@ export function GuestJoin({
             <path d="M13 3L23 23H17.5L13 13.2L8.5 23H3L13 3Z" fill="#ffffff" />
             <rect x="8" y="16.5" width="10" height="2.4" rx="1.2" fill="#c5f122" />
           </svg>
-          <span className="text-[12px] font-bold text-white/85 md:text-[13px]">Capital Academy</span>
+          <span className="text-[12px] font-bold text-white/85 md:text-[13px]">{marcaNombre}</span>
         </div>
         <span className="font-mono text-[11px] text-white/40 md:rounded-full md:border md:border-white/10 md:bg-white/5 md:px-3.5 md:py-1.5 md:text-[12px] md:text-white/45">
           {code}
         </span>
       </header>
 
-      <div className="relative flex flex-1 flex-col justify-end overflow-y-auto md:grid md:grid-cols-12 md:items-center md:gap-12 md:overflow-visible md:px-14">
+      <main
+        id="main"
+        className="relative flex flex-1 flex-col justify-end overflow-y-auto md:grid md:grid-cols-12 md:items-center md:gap-12 md:overflow-visible md:px-14"
+      >
         {/* Identidad de la clase */}
         <div className="px-5 pt-3 md:col-span-7 md:px-0 md:pt-0">
           <div className="mb-3.5 flex items-center gap-2 md:mb-6">
-            <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-ca-lime md:h-2 md:w-2" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-lime md:text-[11px]">
-              En vivo ahora
-            </span>
+            {enVentana ? (
+              <>
+                <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-ca-lime md:h-2 md:w-2" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-ca-lime md:text-[11px]">
+                  En vivo ahora
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="h-[7px] w-[7px] rounded-full bg-white/30 md:h-2 md:w-2" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45 md:text-[11px]">
+                  La sala todavía no abre
+                </span>
+              </>
+            )}
           </div>
 
           <h1 className="text-balance text-[27px] font-black leading-[1.12] tracking-[-0.03em] md:text-[52px] md:leading-[1.04] md:tracking-[-0.035em]">
@@ -149,7 +176,10 @@ export function GuestJoin({
           <div className="mt-4 flex flex-col gap-3 md:mt-7 md:flex-row md:flex-wrap md:items-center md:gap-7">
             {docente && (
               <div className="flex items-center gap-2.5 md:gap-3">
-                <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-ca-violet text-[12px] font-bold md:h-[38px] md:w-[38px] md:text-[13px]">
+                <span
+                  style={{ background: marcaAcento }}
+                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[12px] font-bold md:h-[38px] md:w-[38px] md:text-[13px]"
+                >
                   {iniciales(docente)}
                 </span>
                 <div className="min-w-0">
@@ -206,15 +236,46 @@ export function GuestJoin({
                   </svg>
                 </div>
                 <h2 className="mb-2 text-[20px] font-black tracking-[-0.025em]">
-                  No pudimos cargar la sala
+                  No pudimos abrir esta sala
+                </h2>
+                <p className="mb-5 text-[13px] leading-relaxed text-white/55">
+                  Puede que el docente la haya cerrado a invitados, o que sea tu conexión.
+                </p>
+                {/* Sin este botón la pantalla es un callejón: el sondeo solo
+                    corre mientras espera, así que un error no se recupera solo
+                    aunque el docente vuelva a abrir la sala. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEstado("cargando");
+                    void consultar();
+                  }}
+                  className="h-11 rounded-full border border-white/15 px-6 text-[12px] font-bold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {estado === "none" && !enVentana && (
+              <div className="py-2 text-center">
+                <div className="mx-auto mb-5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white/[0.08]">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7.5v5l3 2" />
+                  </svg>
+                </div>
+                <h2 className="mb-2 text-[20px] font-black tracking-[-0.025em]">
+                  La sala todavía no está abierta
                 </h2>
                 <p className="text-[13px] leading-relaxed text-white/55">
-                  Puede ser tu conexión. Vuelve a intentarlo en un minuto.
+                  Se abre 30 minutos antes de que empiece la clase
+                  {horario ? ` (${horario})` : ""}. Vuelve a entrar con este mismo enlace.
                 </p>
               </div>
             )}
 
-            {estado === "none" && (
+            {estado === "none" && enVentana && (
               <form onSubmit={pedir}>
                 <h2 className="mb-1.5 text-[21px] font-black tracking-[-0.025em] md:text-[24px]">
                   ¿Cómo te llamas?
@@ -318,7 +379,7 @@ export function GuestJoin({
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

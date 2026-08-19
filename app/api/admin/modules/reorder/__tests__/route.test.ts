@@ -77,7 +77,9 @@ describe("POST /api/admin/modules/reorder", () => {
 
   it("422 legible cuando la lista llega incompleta (la excepción del RPC)", async () => {
     rpcError = {
-      message: 'reorder_modules: p_ordered_ids debe incluir todos los módulos del programa',
+      // Mensaje real del RPC, con el conteo que agrega el guardia.
+      message:
+        'reorder_modules: p_ordered_ids debe incluir todos los módulos del programa (4 de 6)',
     };
     const res = await POST(req({ programId: PROGRAM_ID, orderedIds: [M1] }));
     expect(res.status).toBe(422);

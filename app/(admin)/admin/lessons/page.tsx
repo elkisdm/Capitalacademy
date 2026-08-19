@@ -198,7 +198,7 @@ export default async function AdminLessonsPage(props: {
       <div className="mb-8">{scopeFilter}</div>
 
       <div className="space-y-10">
-        <ModuleOrderProvider programId={selectedProgramId} initialIds={orderedModuleIds}>
+        <ModuleOrderProvider programId={selectedProgramId} orderedIds={orderedModuleIds}>
         {modules.map((mod) => {
           const program = mod.programs as { name: string; code: string } | null;
           const lessons = ((mod.lessons ?? []) as Array<Record<string, unknown>>)

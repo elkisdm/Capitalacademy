@@ -20,7 +20,25 @@ as $$
 declare
   v_id uuid;
   v_pos int := 1;
+  v_total int;
+  v_recibidos int;
 begin
+  -- La lista tiene que venir COMPLETA: un módulo ausente se quedaría con la
+  -- posición del offset, invisible al final de la lista y corrupta. Se comprueba
+  -- por CONTEO y ANTES de mutar nada — un guardia basado en el rango del offset
+  -- se escapa con posiciones raras (un 0 aterriza justo en el límite, y una
+  -- negativa cae por debajo).
+  select count(*) into v_total
+    from public.program_modules where program_id = p_program_id;
+
+  select count(distinct pm.id) into v_recibidos
+    from public.program_modules pm
+    where pm.program_id = p_program_id and pm.id = any(p_ordered_ids);
+
+  if v_recibidos <> v_total then
+    raise exception 'reorder_modules: p_ordered_ids debe incluir todos los módulos del programa (% de %)', v_recibidos, v_total;
+  end if;
+
   -- Fuera de rango para no chocar con unique(program_id, position).
   update public.program_modules
     set position = position + 1000000
@@ -34,17 +52,6 @@ begin
       where id = v_id and program_id = p_program_id;
     v_pos := v_pos + 1;
   end loop;
-
-  -- Un id faltante dejaría su módulo en el offset (+1000000), invisible al final
-  -- de la lista y con la posición corrupta. Se exige la lista COMPLETA.
-  -- El comparador es >= y no >: un módulo guardado en position 0 aterriza en
-  -- EXACTAMENTE 1000000 y con > se escapaba justo del guardia que lo cuida.
-  if exists (
-    select 1 from public.program_modules
-    where program_id = p_program_id and position >= 1000000
-  ) then
-    raise exception 'reorder_modules: p_ordered_ids debe incluir todos los módulos del programa';
-  end if;
 end;
 $$;
 

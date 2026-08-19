@@ -1,29 +1,33 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 /**
  * Orden de los módulos de un programa (migración 0100).
  *
- * El orden vive en el PROVEEDOR y no en cada control por una razón concreta: los
- * chevrones se pintan uno por módulo, repartidos por la página, y la API recibe
- * la lista COMPLETA en cada llamada. Con estado por instancia, dos clics
- * seguidos —o en módulos distintos— se construyen sobre la misma foto vieja y el
- * segundo pisa al primero sin avisar. Con una sola fuente:
+ * Dos decisiones que parecen raras y no lo son:
  *
- * - el movimiento se aplica optimista y el siguiente clic parte de ahí;
- * - un fallo revierte al orden anterior;
- * - mientras se guarda, TODOS los controles quedan deshabilitados.
+ * 1. **El orden se lee de las props del servidor, no de un estado local.** La
+ *    lista de módulos la pinta el componente de servidor, así que un estado
+ *    "optimista" acá sería invisible: la pantalla seguiría mostrando el orden
+ *    viejo mientras el índice interno ya cambió, y el siguiente clic movería un
+ *    módulo distinto al que el usuario está apuntando. Se actúa sobre lo que se
+ *    ve, siempre.
+ * 2. **Los controles quedan bloqueados hasta que la pantalla se pone al día**,
+ *    no hasta que responde el POST. `router.refresh()` es un viaje al servidor
+ *    aparte; soltar los botones al terminar el fetch deja una ventana en la que
+ *    el DOM muestra el orden anterior. Por eso el refresh va dentro de una
+ *    transición y su `isPending` también deshabilita.
  *
- * Es el mismo trato que `LessonReorderList` le da a las lecciones; la diferencia
- * es que allá un solo componente pinta la lista entera y acá está repartida.
+ * El bloqueo es compartido por todos los controles porque la API recibe la lista
+ * COMPLETA en cada llamada: dos movimientos en vuelo se pisan entero, no se
+ * combinan.
  */
 type Estado = {
   ids: string[];
-  guardando: boolean;
-  error: string | null;
+  ocupado: boolean;
   mover: (moduleId: string, delta: -1 | 1) => void;
 };
 
@@ -31,20 +35,28 @@ const ModuleOrderContext = createContext<Estado | null>(null);
 
 export function ModuleOrderProvider({
   programId,
-  initialIds,
+  orderedIds,
   children,
 }: {
   programId: string;
-  initialIds: string[];
+  /** Módulos en el orden en que se están mostrando ahora mismo. */
+  orderedIds: string[];
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [ids, setIds] = useState(initialIds);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refrescando, startTransition] = useTransition();
 
-  const persistir = useCallback(
-    async (nuevo: string[], anterior: string[]) => {
+  const mover = useCallback(
+    async (moduleId: string, delta: -1 | 1) => {
+      const i = orderedIds.indexOf(moduleId);
+      const destino = i + delta;
+      if (i < 0 || destino < 0 || destino >= orderedIds.length) return;
+
+      const nuevo = [...orderedIds];
+      [nuevo[i], nuevo[destino]] = [nuevo[destino], nuevo[i]];
+
       setGuardando(true);
       setError(null);
       try {
@@ -56,38 +68,29 @@ export function ModuleOrderProvider({
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           setError(j.error ?? "No se pudo mover el módulo");
-          setIds(anterior); // revertir
           return;
         }
-        router.refresh();
+        startTransition(() => router.refresh());
       } catch {
         setError("Error de red al mover el módulo");
-        setIds(anterior);
       } finally {
         setGuardando(false);
       }
     },
-    [programId, router],
-  );
-
-  const mover = useCallback(
-    (moduleId: string, delta: -1 | 1) => {
-      setIds((actual) => {
-        const i = actual.indexOf(moduleId);
-        const destino = i + delta;
-        if (i < 0 || destino < 0 || destino >= actual.length) return actual;
-
-        const nuevo = [...actual];
-        [nuevo[i], nuevo[destino]] = [nuevo[destino], nuevo[i]];
-        void persistir(nuevo, actual);
-        return nuevo;
-      });
-    },
-    [persistir],
+    [programId, orderedIds, router],
   );
 
   return (
-    <ModuleOrderContext.Provider value={{ ids, guardando, error, mover }}>
+    <ModuleOrderContext.Provider
+      value={{ ids: orderedIds, ocupado: guardando || refrescando, mover }}
+    >
+      {/* El error se pinta UNA vez: vive en el proveedor, así que dentro de cada
+          control se repetiría tantas veces como módulos haya. */}
+      {error && (
+        <p role="alert" className="mb-4 text-[13px] font-medium text-red-600">
+          {error}
+        </p>
+      )}
       {children}
     </ModuleOrderContext.Provider>
   );
@@ -101,7 +104,7 @@ export function ModuleReorderControls({ moduleId }: { moduleId: string }) {
   const ctx = useContext(ModuleOrderContext);
   if (!ctx) return null;
 
-  const { ids, guardando, error, mover } = ctx;
+  const { ids, ocupado, mover } = ctx;
   const i = ids.indexOf(moduleId);
   const puedeSubir = i > 0;
   const puedeBajar = i >= 0 && i < ids.length - 1;
@@ -111,11 +114,10 @@ export function ModuleReorderControls({ moduleId }: { moduleId: string }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      {error && <span className="text-[12px] font-medium text-red-600">{error}</span>}
       <button
         type="button"
         onClick={() => mover(moduleId, -1)}
-        disabled={!puedeSubir || guardando}
+        disabled={!puedeSubir || ocupado}
         className={boton}
         aria-label="Subir módulo"
         title="Subir módulo"
@@ -125,7 +127,7 @@ export function ModuleReorderControls({ moduleId }: { moduleId: string }) {
       <button
         type="button"
         onClick={() => mover(moduleId, 1)}
-        disabled={!puedeBajar || guardando}
+        disabled={!puedeBajar || ocupado}
         className={boton}
         aria-label="Bajar módulo"
         title="Bajar módulo"

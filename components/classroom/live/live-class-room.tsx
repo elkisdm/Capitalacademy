@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   LiveKitRoom,
   VideoConference,
-  PreJoin,
   type LocalUserChoices,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
@@ -18,6 +17,7 @@ import {
 import { ModerationPanel } from "./moderation-panel";
 import { AplicarEleccion } from "./aplicar-eleccion";
 import { GrabacionControl } from "./grabacion-control";
+import { Antesala } from "./antesala";
 
 /**
  * Sala de clase en vivo del alumno (ADR-0031).
@@ -248,39 +248,9 @@ export function LiveClassRoom({
 
   /* ── Antesala ─────────────────────────────────────────────── */
   // Verse y probar el micrófono ANTES de entrar es lo que evita el clásico "no
-  // se me escucha" en los primeros cinco minutos de clase. `PreJoin` de la
-  // librería ya trae vista previa y selección de dispositivos.
+  // se me escucha" en los primeros cinco minutos de clase.
   if (enAntesala && estado.screen !== "connected") {
-    return (
-      <div
-        data-lk-theme="default"
-        className={[
-          "ca-live-room ca-live-prejoin overflow-hidden rounded-[18px]",
-          fill ? "h-full" : "",
-        ].join(" ")}
-        style={fill ? undefined : { height: "min(70vh, 560px)" }}
-      >
-        <PreJoin
-          onSubmit={entrar}
-          onError={(e) => {
-            console.warn("[clase en vivo] antesala", e);
-          }}
-          joinLabel="Entrar a la clase"
-          micLabel="Micrófono"
-          camLabel="Cámara"
-          // El nombre real lo fija el token; acá solo se muestra.
-          userLabel="Entrarás como"
-          // Arranca con el micrófono listo y la cámara apagada: es lo que
-          // conviene en un aula de 20, y desde acá se puede cambiar antes de
-          // entrar, que es justo el punto de la antesala.
-          defaults={{
-            audioEnabled: true,
-            videoEnabled: false,
-            ...(userName ? { username: userName } : {}),
-          }}
-        />
-      </div>
-    );
+    return <Antesala userName={userName ?? null} onSubmit={entrar} fill={fill} />;
   }
 
   /* ── Fuera de la sala ─────────────────────────────────────── */

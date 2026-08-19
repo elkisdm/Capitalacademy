@@ -1,5 +1,6 @@
 import { createAccessToken } from "./token";
 import { normalizeEgressInfo, type EgressInfo } from "./webhook";
+import { segmentPrefixFor } from "./egress-estado";
 import type { LiveKitConfig } from "./config";
 
 /**
@@ -187,7 +188,19 @@ export type StartRoomCompositeInput = {
   room: string;
   /** Ruta del objeto dentro del bucket (ver `filePathFor`). */
   filepath: string;
+  /** Ids para derivar la carpeta de segmentos (red de seguridad). */
+  sessionId: string;
+  recordingId: string;
 };
+
+/**
+ * Largo de cada segmento HLS, en segundos.
+ *
+ * Es el techo de lo que se pierde si el egress muere: con 6 s, una caída cuesta
+ * como mucho los últimos 6 segundos. Bajarlo más multiplica los objetos en el
+ * bucket sin ganar nada apreciable (una clase de 2 h ya son ~1.200 archivos).
+ */
+export const SEGMENT_DURATION_SEC = 6;
 
 /**
  * Arranca la grabación compuesta de una sala hacia el bucket privado.
@@ -198,23 +211,46 @@ export type StartRoomCompositeInput = {
  */
 export async function startRoomComposite(input: StartRoomCompositeInput): Promise<EgressInfo> {
   const { config, storage, room, filepath } = input;
+  const prefijo = segmentPrefixFor(input.sessionId, input.recordingId);
+  const s3 = {
+    access_key: storage.accessKeyId,
+    secret: storage.secretAccessKey,
+    region: storage.region,
+    endpoint: storage.endpoint,
+    bucket: storage.bucket,
+    // Supabase Storage no sirve buckets como subdominio.
+    force_path_style: true,
+  };
+
   const data = await llamarEgress(config, room, "StartRoomCompositeEgress", {
     room_name: room,
     layout: "speaker",
     audio_only: false,
+    // DOS salidas a propósito, no una alternativa a la otra:
+    //
+    // - `file_outputs` es el MP4 que se ingesta a Mux. Es el camino probado, y
+    //   Egress lo escribe en un temporal DENTRO de su contenedor: no existe en
+    //   el bucket hasta que la grabación termina.
+    // - `segment_outputs` sube trozos de 6 s MIENTRAS la clase ocurre. Si el
+    //   egress se cae en el minuto 100 de 120, el MP4 se pierde entero y estos
+    //   segmentos son lo único que queda de la clase.
+    //
+    // El costo es almacenamiento duplicado mientras la grabación vive; el cron
+    // borra ambos cuando la repetición ya está publicada.
+    segment_outputs: [
+      {
+        protocol: "HLS_PROTOCOL",
+        filename_prefix: `${prefijo}/clase`,
+        playlist_name: `${prefijo}/clase.m3u8`,
+        segment_duration: SEGMENT_DURATION_SEC,
+        s3,
+      },
+    ],
     file_outputs: [
       {
         file_type: "MP4",
         filepath,
-        s3: {
-          access_key: storage.accessKeyId,
-          secret: storage.secretAccessKey,
-          region: storage.region,
-          endpoint: storage.endpoint,
-          bucket: storage.bucket,
-          // Supabase Storage no sirve buckets como subdominio.
-          force_path_style: true,
-        },
+        s3,
       },
     ],
   });

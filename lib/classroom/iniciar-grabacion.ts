@@ -212,6 +212,8 @@ export async function iniciarGrabacionDeSesion(
       storage: conf.storage,
       room: input.room,
       filepath,
+      sessionId: input.sessionId,
+      recordingId: registro.id,
     });
 
     const estado = estadoDesdeEgress(info.status) ?? "starting";

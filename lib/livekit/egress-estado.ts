@@ -61,6 +61,17 @@ export function filePathFor(sessionId: string, recordingId: string): string {
 }
 
 /**
+ * Carpeta de los segmentos HLS de esa misma grabación (ADR-0034, enmienda).
+ *
+ * Se DERIVA de los mismos ids en vez de guardarse en una columna: dos fuentes
+ * para la misma ruta son dos fuentes que se pueden contradecir, y el síntoma
+ * sería una carpeta huérfana que nadie borra.
+ */
+export function segmentPrefixFor(sessionId: string, recordingId: string): string {
+  return `${sessionId}/${recordingId}-hls`;
+}
+
+/**
  * Traduce el `status` que reporta LiveKit al estado nuestro.
  *
  * Devuelve `null` para un status desconocido: preferimos no mover la fila antes

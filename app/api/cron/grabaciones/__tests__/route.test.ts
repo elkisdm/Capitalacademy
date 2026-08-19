@@ -13,6 +13,7 @@ const stopEgress = vi.fn();
 const ingestRecording = vi.fn();
 const assetsRetrieve = vi.fn();
 const storageRemove = vi.fn();
+const storageList = vi.fn();
 
 vi.mock("@/lib/livekit/egress", () => ({
   GRABACIONES_BUCKET: "grabaciones",
@@ -95,7 +96,7 @@ vi.mock("@/lib/classroom/recording-notifications", () => ({
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: (table: string) => builder(table),
-    storage: { from: () => ({ remove: storageRemove }) },
+    storage: { from: () => ({ remove: storageRemove, list: storageList }) },
   }),
 }));
 
@@ -147,6 +148,7 @@ beforeEach(() => {
   stopEgress.mockResolvedValue({});
   ingestRecording.mockResolvedValue({ ok: true, estado: "ingesting" });
   storageRemove.mockResolvedValue({ error: null });
+  storageList.mockResolvedValue({ data: [], error: null });
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
@@ -360,4 +362,35 @@ describe("GET /api/cron/grabaciones", () => {
     expect(fallo?.error).toContain("no dejó ningún archivo");
   });
 
+});
+
+describe("limpieza de los segmentos HLS", () => {
+  it("borra también la carpeta de segmentos, no solo el MP4", async () => {
+    // Los segmentos son la copia que sube durante la clase. Si no se borran al
+    // publicar la repetición, el bucket guarda para siempre el DOBLE de cada
+    // clase (~1,3 GB por cada 2 horas).
+    state.listas = [{ ...FILA_ABIERTA, status: "ready", storage_path: "ses-1/rec-1.mp4" }];
+    storageList.mockResolvedValue({
+      data: [{ name: "clase_00000.ts" }, { name: "clase_00001.ts" }, { name: "clase.m3u8" }],
+      error: null,
+    });
+
+    await GET(req());
+
+    expect(storageList).toHaveBeenCalledWith("ses-1/rec-1-hls", expect.anything());
+    expect(storageRemove).toHaveBeenCalledWith([
+      "ses-1/rec-1-hls/clase_00000.ts",
+      "ses-1/rec-1-hls/clase_00001.ts",
+      "ses-1/rec-1-hls/clase.m3u8",
+    ]);
+  });
+
+  it("un fallo listando los segmentos no impide borrar el MP4, que es lo que pesa", async () => {
+    state.listas = [{ ...FILA_ABIERTA, status: "ready", storage_path: "ses-1/rec-1.mp4" }];
+    storageList.mockResolvedValue({ data: null, error: { message: "storage caído" } });
+
+    await GET(req());
+
+    expect(storageRemove).toHaveBeenCalledWith(["ses-1/rec-1.mp4"]);
+  });
 });

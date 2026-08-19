@@ -9,6 +9,7 @@ import {
 } from "@/lib/livekit/config";
 import { roomNameForSession } from "@/lib/livekit/access";
 import { GRABACIONES_BUCKET, listEgress, stopEgress } from "@/lib/livekit/egress";
+import { segmentPrefixFor } from "@/lib/livekit/egress-estado";
 import { egressTerminado, estadoDesdeEgress } from "@/lib/livekit/egress-estado";
 import { ingestRecording } from "@/lib/classroom/ingest-recording";
 import {
@@ -472,6 +473,13 @@ export async function GET(req: Request) {
         console.error("[cron/grabaciones] no se pudo borrar el objeto", fila.storage_path, error);
         continue;
       }
+
+      // Los segmentos HLS son la copia de seguridad que sube durante la clase.
+      // Cumplida su función —la repetición ya está publicada, o la grabación
+      // venció— se borran también: sin esto el bucket guarda para siempre el
+      // DOBLE de cada clase. Un fallo acá no aborta el borrado del MP4, que es
+      // lo que de verdad pesa; queda en el log para revisarlo.
+      await borrarSegmentos(admin, fila.session_id, fila.id);
       await admin
         .from("session_recordings")
         .update({ storage_deleted_at: new Date().toISOString() })
@@ -485,3 +493,34 @@ export async function GET(req: Request) {
 
 // Algunos schedulers invocan por GET; otros prefieren POST.
 export const POST = GET;
+
+/**
+ * Borra la carpeta de segmentos HLS de una grabación.
+ *
+ * Storage no borra carpetas: hay que listar y borrar por lote. La ruta se
+ * DERIVA de los ids (`segmentPrefixFor`), así que no depende de ninguna columna
+ * que pudiera estar desincronizada.
+ */
+async function borrarSegmentos(
+  admin: ReturnType<typeof createAdminClient>,
+  sessionId: string,
+  recordingId: string,
+): Promise<void> {
+  const prefijo = segmentPrefixFor(sessionId, recordingId);
+  const { data, error } = await admin.storage.from(GRABACIONES_BUCKET).list(prefijo, {
+    limit: 5000,
+  });
+  if (error) {
+    console.error("[cron/grabaciones] no se pudieron listar los segmentos", prefijo, error);
+    return;
+  }
+  const rutas = (data ?? []).map((o) => `${prefijo}/${o.name}`);
+  if (rutas.length === 0) return;
+
+  const { error: borrarError } = await admin.storage
+    .from(GRABACIONES_BUCKET)
+    .remove(rutas);
+  if (borrarError) {
+    console.error("[cron/grabaciones] no se pudieron borrar los segmentos", prefijo, borrarError);
+  }
+}

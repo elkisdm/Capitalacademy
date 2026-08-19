@@ -66,6 +66,8 @@ describe("startRoomComposite", () => {
       storage,
       room: "clase-ses-1",
       filepath: "ses-1/rec-1.mp4",
+      sessionId: "s-1",
+      recordingId: "r-1",
     });
 
     const { url, body } = ultima();
@@ -94,7 +96,7 @@ describe("startRoomComposite", () => {
   });
 
   it("firma con un token de 60 s acotado a ESA sala y con roomRecord", async () => {
-    await startRoomComposite({ config, storage, room: "clase-ses-1", filepath: "a.mp4" });
+    await startRoomComposite({ config, storage, room: "clase-ses-1", filepath: "a.mp4", sessionId: "s-1", recordingId: "r-1" });
 
     const token = ultima().headers.Authorization.replace("Bearer ", "");
     const payload = JSON.parse(
@@ -112,7 +114,7 @@ describe("startRoomComposite", () => {
 
   it("acepta la respuesta con los nombres del proto", async () => {
     fetchMock.mockResolvedValue(ok({ egress_id: "EG_2", status: "EGRESS_ACTIVE" }));
-    const info = await startRoomComposite({ config, storage, room: "clase-1", filepath: "a.mp4" });
+    const info = await startRoomComposite({ config, storage, room: "clase-1", filepath: "a.mp4", sessionId: "s-1", recordingId: "r-1" });
     expect(info.egressId).toBe("EG_2");
   });
 
@@ -128,6 +130,8 @@ describe("startRoomComposite", () => {
       storage,
       room: "clase-1",
       filepath: "a.mp4",
+      sessionId: "s-1",
+      recordingId: "r-1",
     }).catch((e) => e);
 
     expect(error).toBeInstanceOf(EgressRequestError);
@@ -144,6 +148,8 @@ describe("startRoomComposite", () => {
       storage,
       room: "clase-1",
       filepath: "a.mp4",
+      sessionId: "s-1",
+      recordingId: "r-1",
     }).catch((e) => e);
 
     expect(error).toBeInstanceOf(EgressRequestError);
@@ -158,6 +164,8 @@ describe("startRoomComposite", () => {
       storage,
       room: "clase-1",
       filepath: "a.mp4",
+      sessionId: "s-1",
+      recordingId: "r-1",
     }).catch((e) => e);
 
     expect(error).toBeInstanceOf(EgressRequestError);
@@ -247,5 +255,39 @@ describe("isEgressEnabled", () => {
     // defecto de un entorno recién creado.
     expect(isEgressEnabled({ LIVEKIT_EGRESS_ENABLED: "" })).toBe(false);
     expect(isEgressEnabled({})).toBe(false);
+  });
+});
+
+describe("startRoomComposite — red de seguridad en segmentos", () => {
+  it("pide MP4 y segmentos HLS en la misma grabación", async () => {
+    // El MP4 vive en un temporal DENTRO del contenedor de Egress hasta que la
+    // grabación termina: si el proceso muere a mitad de clase se pierde entero.
+    // Los segmentos suben mientras la clase ocurre y son lo único que queda.
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ egress_id: "EG_1" }), { status: 200 }),
+    );
+
+    await startRoomComposite({
+      config,
+      storage,
+      room: "clase-ses-1",
+      filepath: "ses-1/rec-1.mp4",
+      sessionId: "ses-1",
+      recordingId: "rec-1",
+    });
+
+    const cuerpo = JSON.parse(String(fetchMock.mock.calls[0][1].body));
+    expect(cuerpo.file_outputs).toHaveLength(1);
+    expect(cuerpo.segment_outputs).toHaveLength(1);
+    expect(cuerpo.segment_outputs[0]).toMatchObject({
+      protocol: "HLS_PROTOCOL",
+      filename_prefix: "ses-1/rec-1-hls/clase",
+      playlist_name: "ses-1/rec-1-hls/clase.m3u8",
+      segment_duration: 6,
+    });
+    // Las dos salidas van al MISMO bucket y con el mismo force_path_style: si
+    // una se configurara distinto, el rescate no estaría donde se lo busca.
+    expect(cuerpo.segment_outputs[0].s3).toEqual(cuerpo.file_outputs[0].s3);
+    expect(cuerpo.segment_outputs[0].s3.force_path_style).toBe(true);
   });
 });

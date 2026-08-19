@@ -47,6 +47,17 @@ export type FilaGrabacion = {
  */
 const ESTADOS_YA_GRABADA = ["uploaded", "ingesting", "ready"] as const;
 
+/**
+ * Espera mínima entre reintentos automáticos tras un fallo.
+ *
+ * `failed` queda fuera de ESTADOS_YA_GRABADA a propósito: un fallo transitorio
+ * merece otro intento. Pero el disparador ahora es CADA participante que entra,
+ * así que con una causa persistente —credenciales de S3 malas, egress caído— una
+ * clase de 30 alumnos abriría 30 filas y 30 StartEgress. Un minuto de espera
+ * conserva el reintento y corta la avalancha.
+ */
+const ESPERA_TRAS_FALLO_MS = 60_000;
+
 export type ResultadoInicio =
   | { ok: true; fila: FilaGrabacion; egressId: string | null; yaEstaba?: true }
   | { ok: false; motivo: "deshabilitado" }
@@ -54,6 +65,7 @@ export type ResultadoInicio =
   | { ok: false; motivo: "cancelada"; fila: FilaGrabacion | null }
   | { ok: false; motivo: "sala_vacia" }
   | { ok: false; motivo: "ya_grabada" }
+  | { ok: false; motivo: "fallo_reciente" }
   | { ok: false; motivo: "error"; detalle: string };
 
 export function configuracionGrabacion():
@@ -84,12 +96,15 @@ async function filaViva(
   admin: SupabaseClient,
   sessionId: string,
 ): Promise<FilaGrabacion | null> {
-  const { data } = await admin
+  const { data, error } = await admin
     .from("session_recordings")
     .select(COLUMNAS_FILA)
     .eq("session_id", sessionId)
     .in("status", ["starting", "active"])
     .maybeSingle();
+  // Un fallo de lectura NO es "no hay grabación viva": leerlo así manda derecho
+  // al insert. Sobrevive por el 23505, pero en silencio — y así se ve.
+  if (error) console.error("[grabacion] filaViva falló", error.message);
   return (data as FilaGrabacion | null) ?? null;
 }
 
@@ -97,7 +112,7 @@ async function ultimaFila(
   admin: SupabaseClient,
   sessionId: string,
 ): Promise<FilaGrabacion | null> {
-  const { data } = await admin
+  const { data, error } = await admin
     .from("session_recordings")
     .select(COLUMNAS_FILA)
     .eq("session_id", sessionId)
@@ -106,6 +121,7 @@ async function ultimaFila(
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error) console.error("[grabacion] ultimaFila falló", error.message);
   return (data as FilaGrabacion | null) ?? null;
 }
 
@@ -152,6 +168,20 @@ export async function iniciarGrabacionDeSesion(
       .limit(1)
       .maybeSingle();
     if (previa) return { ok: false, motivo: "ya_grabada" };
+
+    const { data: falloReciente } = await admin
+      .from("session_recordings")
+      .select("id, started_at")
+      .eq("session_id", input.sessionId)
+      .eq("status", "failed")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const cuando = (falloReciente as { started_at: string | null } | null)?.started_at;
+    if (cuando && Date.now() - new Date(cuando).getTime() < ESPERA_TRAS_FALLO_MS) {
+      return { ok: false, motivo: "fallo_reciente" };
+    }
   }
 
   // La fila se crea ANTES de llamar a Egress: es la reserva que hace valer el

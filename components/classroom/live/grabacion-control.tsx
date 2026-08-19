@@ -109,7 +109,13 @@ export function GrabacionControl({
       setEnCurso(true);
       if (!automatico) setAviso(null);
       try {
-        const res = await fetch(`/api/classroom/clase/${sessionId}/grabacion`, { method: metodo });
+        // El flag viaja al SERVIDOR, no se queda en la UI: es lo que le permite
+        // respetar una detención hecha a mano. Sin esto, reconectar la pestaña
+        // reencendía una grabación que el docente había parado a propósito.
+        const url = `/api/classroom/clase/${sessionId}/grabacion${
+          automatico && metodo === "POST" ? "?automatico=1" : ""
+        }`;
+        const res = await fetch(url, { method: metodo });
         const cuerpo = (await res.json().catch(() => null)) as
           | (EstadoApi & { missing?: string[] })
           | null;

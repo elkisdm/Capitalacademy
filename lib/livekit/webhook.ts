@@ -179,7 +179,7 @@ export function verifyLiveKitWebhook(
 }
 
 /** El nombre de la sala, venga en `room.name` o en `room.room_name`. */
-function nombreDeSala(raw: unknown): string | undefined {
+export function nombreDeSala(raw: unknown): string | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const o = raw as Record<string, unknown>;
   const nombre = o.name ?? o.room_name ?? o.roomName;

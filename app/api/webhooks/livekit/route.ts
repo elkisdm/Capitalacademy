@@ -4,6 +4,7 @@ import { getLiveKitConfig, LiveKitNotConfiguredError } from "@/lib/livekit/confi
 import {
   normalizeEgressInfo,
   verifyLiveKitWebhook,
+  nombreDeSala,
   type EgressInfo,
   type LiveKitWebhookEvent,
 } from "@/lib/livekit/webhook";
@@ -136,7 +137,7 @@ export async function POST(req: Request) {
       evento = {
         event: String(crudo.event ?? ""),
         egressInfo: normalizeEgressInfo(crudo.egressInfo ?? crudo.egress_info),
-        roomName: nombreDeSalaCruda(crudo.room),
+        roomName: nombreDeSala(crudo.room),
       };
     } catch {
       return NextResponse.json({ error: "Body inválido" }, { status: 400 });
@@ -154,7 +155,14 @@ export async function POST(req: Request) {
   // "sala inexistente" y el `participant_joined` que viene detrás encontraría
   // esa fila y no haría nada. Resultado: clase sin grabar y nada que reintente.
   if (evento.event === "participant_joined") {
-    await intentarArranqueAutomatico(evento.roomName);
+    // El try/catch no es decorativo: `createAdminClient()` LANZA si falta la
+    // service-role key, y sin esto cada ingreso a una sala se volvería un 500
+    // que LiveKit reintenta en bucle — justo lo que el silencio quiere evitar.
+    try {
+      await intentarArranqueAutomatico(evento.roomName);
+    } catch (e) {
+      console.error("[webhooks/livekit] arranque automático falló", e);
+    }
     return NextResponse.json({ received: true });
   }
 
@@ -303,7 +311,15 @@ async function intentarArranqueAutomatico(roomName: string | undefined): Promise
   };
   if (!isLiveModality(sesion.modality)) return descartar("no es una clase en vivo");
   if (sesion.status === "cancelled") return descartar("clase cancelada");
-  if (!isWithinRoomWindow(sesion, new Date())) return descartar("fuera de la ventana");
+  const ahora = new Date();
+  if (!isWithinRoomWindow(sesion, ahora)) return descartar("fuera de la ventana");
+
+  // La sala abre 30 min ANTES para probar cámara y audio; grabar desde ahí es
+  // un error caro: si un alumno entra temprano y luego se va, la sala se vacía,
+  // el egress se completa y esa grabación de una sala vacía se ingesta como la
+  // repetición de la clase. Cuando la clase de verdad empieza, el guardia de
+  // "ya grabada" la bloquea y la clase real NO se graba nunca.
+  if (ahora < new Date(sesion.starts_at)) return descartar("la clase todavía no empieza");
 
   const res = await iniciarGrabacionDeSesion(admin, {
     sessionId: sesion.id,
@@ -317,12 +333,4 @@ async function intentarArranqueAutomatico(roomName: string | undefined): Promise
   if (!res.ok && res.motivo !== "deshabilitado") {
     console.warn("[webhooks/livekit] no se pudo arrancar la grabación:", sesion.id, res.motivo);
   }
-}
-
-/** El nombre de la sala en un cuerpo crudo (camino local sin firma). */
-function nombreDeSalaCruda(raw: unknown): string | undefined {
-  if (!raw || typeof raw !== "object") return undefined;
-  const o = raw as Record<string, unknown>;
-  const nombre = o.name ?? o.room_name ?? o.roomName;
-  return typeof nombre === "string" && nombre ? nombre : undefined;
 }

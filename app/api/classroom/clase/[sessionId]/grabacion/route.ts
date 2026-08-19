@@ -183,8 +183,12 @@ export async function GET(_req: Request, ctxParams: { params: Promise<{ sessionI
   return estadoResponse(await ultimaFila(ctx), ctx.session.lesson_id);
 }
 
-export async function POST(_req: Request, ctxParams: { params: Promise<{ sessionId: string }> }) {
+export async function POST(req: Request, ctxParams: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await ctxParams.params;
+  // El navegador del docente reintenta solo al conectarse. Ese intento es
+  // AUTOMÁTICO y no puede resucitar una grabación detenida a mano; el clic en
+  // el botón sí, porque ahí alguien lo está pidiendo.
+  const automatico = new URL(req.url).searchParams.get("automatico") === "1";
   const ctx = await autorizar(sessionId);
   if (ctx instanceof Response) return ctx;
 
@@ -195,6 +199,7 @@ export async function POST(_req: Request, ctxParams: { params: Promise<{ session
     sessionId: ctx.session.id,
     room: ctx.room,
     startedBy: ctx.userId,
+    automatico,
   });
 
   if (res.ok) {
@@ -219,11 +224,15 @@ export async function POST(_req: Request, ctxParams: { params: Promise<{ session
   if (res.motivo === "cancelada") {
     return estadoResponse((res.fila as RecordingRow | null), ctx.session.lesson_id);
   }
-  // `ya_grabada` solo lo produce el arranque automático; por el botón no llega.
-  if (res.motivo === "ya_grabada") {
+  // Ambos motivos solo los produce el intento AUTOMÁTICO. Se responde con el
+  // estado real en vez de un error: el navegador reintentó solo, nadie pidió
+  // nada, y el docente no tiene por qué ver una alarma.
+  if (res.motivo === "ya_grabada" || res.motivo === "fallo_reciente") {
     return estadoResponse(await ultimaFila(ctx), ctx.session.lesson_id);
   }
-  return NextResponse.json({ error: res.detalle }, { status: 502 });
+  // El detalle de Egress se queda en los logs: puede traer el endpoint y el
+  // bucket, y termina pintado tal cual en la pantalla del docente.
+  return NextResponse.json({ error: "No se pudo iniciar la grabación." }, { status: 502 });
 }
 
 export async function DELETE(_req: Request, ctxParams: { params: Promise<{ sessionId: string }> }) {

@@ -352,6 +352,36 @@ describe("arranque automático de la grabación", () => {
     );
   });
 
+  it("un alumno que entra ANTES de la hora no dispara la grabación", async () => {
+    // La sala abre 30 min antes para probar cámara y audio. Grabar desde ahí es
+    // caro: si esa persona se va, la sala se vacía, el egress se completa y esa
+    // grabación de una sala vacía se ingesta como la repetición. Cuando la clase
+    // empieza de verdad, el guardia de "ya grabada" la bloquea para siempre.
+    sesionDeClase = {
+      data: {
+        ...enVentana(),
+        starts_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+        ends_at: new Date(Date.now() + 140 * 60_000).toISOString(),
+      },
+      error: null,
+    };
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).not.toHaveBeenCalled();
+  });
+
+  it("justo a la hora de inicio sí dispara", async () => {
+    sesionDeClase = {
+      data: {
+        ...enVentana(),
+        starts_at: new Date(Date.now() - 1000).toISOString(),
+        ends_at: new Date(Date.now() + 120 * 60_000).toISOString(),
+      },
+      error: null,
+    };
+    await POST(req(evento(`clase-${SESSION}`)));
+    expect(mockIniciar).toHaveBeenCalledTimes(1);
+  });
+
   it("no graba una clase fuera de su ventana", async () => {
     sesionDeClase = {
       data: {

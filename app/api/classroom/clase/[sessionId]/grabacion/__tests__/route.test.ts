@@ -69,9 +69,12 @@ const CODIGO = "xkw-mqtd-abn";
 let usuarios = 0;
 let userId = "u1";
 
-function ctx(sessionId = CODIGO) {
+function ctx(sessionId = CODIGO, opts?: { automatico?: boolean }) {
+  const qs = opts?.automatico ? "?automatico=1" : "";
   return [
-    new Request(`http://localhost/api/classroom/clase/${sessionId}/grabacion`, { method: "POST" }),
+    new Request(`http://localhost/api/classroom/clase/${sessionId}/grabacion${qs}`, {
+      method: "POST",
+    }),
     { params: Promise.resolve({ sessionId }) },
   ] as const;
 }

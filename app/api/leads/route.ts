@@ -16,6 +16,12 @@ const bodySchema = z.object({
   company: z.string().trim().max(160).optional().or(z.literal("")),
   program_interest: z.enum(["diplomado", "liderazgo", "ruta", "indeciso"]),
   message: z.string().trim().max(2000).optional().or(z.literal("")),
+  // Calificación del formulario de Liderazgo (0103). Opcionales: las otras
+  // landings comparten este endpoint y no preguntan nada de esto.
+  lidera_equipo: z.string().trim().max(120).optional().or(z.literal("")),
+  personas_a_cargo: z.string().trim().max(60).optional().or(z.literal("")),
+  // El tope corta un envío manipulado sin estorbar: son 8 opciones y un texto.
+  desafios: z.array(z.string().trim().max(160)).max(12).optional(),
   source: z.string().trim().max(80).optional().or(z.literal("")),
   utm_source: z.string().trim().max(120).optional().or(z.literal("")),
   utm_medium: z.string().trim().max(120).optional().or(z.literal("")),
@@ -79,6 +85,11 @@ export async function POST(req: Request) {
     utm_campaign: emptyToNull(parsed.data.utm_campaign),
     utm_content: emptyToNull(parsed.data.utm_content),
     utm_term: emptyToNull(parsed.data.utm_term),
+    lidera_equipo: emptyToNull(parsed.data.lidera_equipo),
+    personas_a_cargo: emptyToNull(parsed.data.personas_a_cargo),
+    // Un arreglo vacío se guarda como null y no como `{}`: "no respondió" y
+    // "respondió nada" son lo mismo acá, y null filtra mejor en la tabla.
+    desafios: parsed.data.desafios?.length ? parsed.data.desafios : null,
     user_agent: ua,
   };
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildLiderazgoLeadPayload,
   LIDERAZGO_LEAD_SOURCE,
+  normalizarDesafios,
 } from "../liderazgo-lead";
 
 describe("buildLiderazgoLeadPayload", () => {
@@ -36,5 +37,54 @@ describe("buildLiderazgoLeadPayload", () => {
     });
 
     expect(payload.website).toBe("http://spam.example");
+  });
+});
+
+describe("normalizarDesafios", () => {
+  it("descarta la etiqueta 'Otro' y guarda el texto que escribió", () => {
+    // Guardar la palabra "Otro" no dice nada, y dejarla junto al texto real
+    // inflaría un "Otro" que no corresponde a ningún desafío concreto.
+    expect(normalizarDesafios(["Motivación", "Otro"], "Rotación de asesores")).toEqual([
+      "Motivación",
+      "Rotación de asesores",
+    ]);
+  });
+
+  it("no guarda nada por 'Otro' si marcó la casilla y no escribió", () => {
+    expect(normalizarDesafios(["Motivación", "Otro"], "  ")).toEqual(["Motivación"]);
+  });
+
+  it("no duplica cuando el texto libre repite una opción ya marcada", () => {
+    expect(normalizarDesafios(["Motivación", "Otro"], "Motivación")).toEqual(["Motivación"]);
+  });
+
+  it("devuelve un arreglo vacío cuando no marcó nada", () => {
+    expect(normalizarDesafios(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe("buildLiderazgoLeadPayload con las preguntas de calificación", () => {
+  it("lleva las respuestas nuevas al payload", () => {
+    const p = buildLiderazgoLeadPayload({
+      full_name: "Ana Soto",
+      email: "ana@ejemplo.cl",
+      phone: "+56911111111",
+      lidera_equipo: "Sí",
+      personas_a_cargo: "4 a 7 personas",
+      desafios: ["Motivación"],
+    });
+    expect(p.lidera_equipo).toBe("Sí");
+    expect(p.personas_a_cargo).toBe("4 a 7 personas");
+    expect(p.desafios).toEqual(["Motivación"]);
+  });
+
+  it("no rompe un lead sin las preguntas nuevas (las otras landings)", () => {
+    const p = buildLiderazgoLeadPayload({
+      full_name: "Ana Soto",
+      email: "ana@ejemplo.cl",
+      phone: "+56911111111",
+    });
+    expect(p.lidera_equipo).toBe("");
+    expect(p.desafios).toEqual([]);
   });
 });

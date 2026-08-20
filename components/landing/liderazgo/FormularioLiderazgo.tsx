@@ -5,6 +5,13 @@ import { Input, Textarea } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { formatPhone } from "@/lib/utils/phone";
 import { buildLiderazgoLeadPayload } from "@/lib/landing/liderazgo-lead";
+import { LIDERAZGO } from "@/lib/landing/liderazgo";
+
+/** Fila de opción: el área clickeable es toda la fila, no solo el círculo. */
+const OPCION =
+  "flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-ca-outline)] px-4 py-3 text-sm text-[var(--color-ca-ink)] transition-colors hover:border-[var(--color-ca-violet)]/40 has-[:checked]:border-[var(--color-ca-violet)] has-[:checked]:bg-[var(--color-ca-violet)]/5";
+
+const RADIO = "h-4 w-4 shrink-0 accent-[var(--color-ca-violet)]";
 
 type Estado =
   | { tag: "idle" }
@@ -28,7 +35,11 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
   const [estado, setEstado] = useState<Estado>({ tag: "idle" });
   const [pending, startTransition] = useTransition();
   const [phone, setPhone] = useState("");
+  // Solo para revelar el campo de texto de "Otro": el valor lo lee el submit
+  // del propio FormData, como el resto.
+  const [otroMarcado, setOtroMarcado] = useState(false);
   const uid = useId();
+  const F = LIDERAZGO.formulario;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,6 +51,11 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
       role: String(fd.get("role") ?? ""),
       company: String(fd.get("company") ?? ""),
       message: String(fd.get("message") ?? ""),
+      lidera_equipo: String(fd.get("lidera_equipo") ?? ""),
+      personas_a_cargo: String(fd.get("personas_a_cargo") ?? ""),
+      // `getAll` y no `get`: es de casillas y se eligen varias.
+      desafios: fd.getAll("desafios").map(String),
+      desafio_otro: String(fd.get("desafio_otro") ?? ""),
       website: String(fd.get("website") ?? ""),
       utms: getUtms(),
     });
@@ -168,6 +184,69 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
         </Campo>
       </div>
 
+      {/* Preguntas de calificación, calcadas del formulario de Google del
+          programa. Van DESPUÉS de los datos de contacto: pedirlas antes le
+          pone trabajo a alguien que todavía no decidió dejar sus datos. */}
+      <fieldset className="mt-8 border-t border-[var(--color-ca-outline)] pt-7">
+        <legend className="sr-only">Sobre tu equipo</legend>
+
+        <p className="text-sm font-semibold text-[var(--color-ca-ink)]">
+          {F.liderazgo.label} <span className="text-[var(--color-ca-violet)]">*</span>
+        </p>
+        <div className="mt-3 grid gap-2">
+          {F.liderazgo.opciones.map((o) => (
+            <label key={o} className={OPCION}>
+              <input type="radio" name="lidera_equipo" value={o} required className={RADIO} />
+              <span>{o}</span>
+            </label>
+          ))}
+        </div>
+
+        <p className="mt-7 text-sm font-semibold text-[var(--color-ca-ink)]">
+          {F.personas.label}
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {F.personas.opciones.map((o) => (
+            <label key={o} className={OPCION}>
+              <input type="radio" name="personas_a_cargo" value={o} className={RADIO} />
+              <span>{o}</span>
+            </label>
+          ))}
+        </div>
+
+        <p className="mt-7 text-sm font-semibold text-[var(--color-ca-ink)]">
+          {F.desafios.label} <span className="text-[var(--color-ca-violet)]">*</span>
+        </p>
+        <p className="mt-1 text-xs text-[var(--color-ca-ink-soft)]">{F.desafios.ayuda}</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {F.desafios.opciones.map((o) => (
+            <label key={o} className={OPCION}>
+              <input type="checkbox" name="desafios" value={o} className={RADIO} />
+              <span>{o}</span>
+            </label>
+          ))}
+          <label className={OPCION}>
+            <input
+              type="checkbox"
+              name="desafios"
+              value={F.desafios.otro}
+              className={RADIO}
+              onChange={(e) => setOtroMarcado(e.currentTarget.checked)}
+            />
+            <span>{F.desafios.otro}</span>
+          </label>
+        </div>
+        {otroMarcado && (
+          <div className="mt-3">
+            <Input
+              name="desafio_otro"
+              aria-label={`${F.desafios.otro}: cuéntanos cuál`}
+              placeholder="Cuéntanos cuál"
+            />
+          </div>
+        )}
+      </fieldset>
+
       <div className="mt-5">
         <Campo id={`${uid}-msg`} label="Mensaje (opcional)">
           <Textarea
@@ -193,7 +272,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
       </Button>
       <p className="mt-4 text-xs leading-relaxed text-[var(--color-ca-ink-soft)]/80">
         Al enviar este formulario aceptas que Capital Academy te contacte con
-        información del programa.
+        información del programa. {F.consentimiento}
       </p>
     </form>
   );

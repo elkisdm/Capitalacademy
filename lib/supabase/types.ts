@@ -1532,11 +1532,14 @@ export type Database = {
         Row: {
           company: string | null
           created_at: string
+          desafios: string[] | null
           email: string
           full_name: string
           id: string
           ip_hash: string | null
+          lidera_equipo: string | null
           message: string | null
+          personas_a_cargo: string | null
           phone: string
           program_interest: string
           role: string | null
@@ -1551,11 +1554,14 @@ export type Database = {
         Insert: {
           company?: string | null
           created_at?: string
+          desafios?: string[] | null
           email: string
           full_name: string
           id?: string
           ip_hash?: string | null
+          lidera_equipo?: string | null
           message?: string | null
+          personas_a_cargo?: string | null
           phone: string
           program_interest: string
           role?: string | null
@@ -1570,11 +1576,14 @@ export type Database = {
         Update: {
           company?: string | null
           created_at?: string
+          desafios?: string[] | null
           email?: string
           full_name?: string
           id?: string
           ip_hash?: string | null
+          lidera_equipo?: string | null
           message?: string | null
+          personas_a_cargo?: string | null
           phone?: string
           program_interest?: string
           role?: string | null

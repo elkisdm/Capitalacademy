@@ -375,7 +375,7 @@ export function Inscripcion() {
       <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[260px_1fr] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--color-ca-violet)]">
-            <span className="tabular-nums">11</span>
+            <span className="tabular-nums">07</span>
             <span aria-hidden className="mx-2 text-[var(--color-ca-outline-strong)]">
               —
             </span>

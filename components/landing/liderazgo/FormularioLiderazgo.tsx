@@ -115,14 +115,40 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
           El equipo de Capital Academy se pondrá en contacto contigo con la
           información completa del programa.
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setEstado({ tag: "idle" })}
-          className="mt-8"
-        >
-          Enviar otra solicitud
-        </Button>
+
+        {/* El paso al pago va ACÁ y no reemplazando al formulario: quien deja
+            sus datos ya mostró intención, y es el momento de mayor decisión.
+            Poner el checkout como único camino perdería a todo el que quiere
+            informarse antes de comprometer $450.000.
+
+            Sin prefijar datos en la URL: son datos personales y no viajan en
+            una query string. El checkout los vuelve a pedir. */}
+        <div className="mt-8 border-t border-[var(--color-ca-outline)] pt-7">
+          <p className="text-sm font-semibold text-[var(--color-ca-ink)]">
+            ¿Prefieres asegurar tu cupo ahora?
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
+            Puedes completar tu inscripción y el pago en línea, con la opción de
+            pagar en cuotas. Al confirmarse el pago recibes tu acceso a la
+            plataforma por correo.
+          </p>
+          <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <a
+              href="/pago/liderazgo"
+              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-7 text-sm font-semibold text-white transition-[filter] hover:brightness-110 sm:w-auto"
+            >
+              Inscribirme y pagar
+            </a>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEstado({ tag: "idle" })}
+              className="w-full sm:w-auto"
+            >
+              Enviar otra solicitud
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

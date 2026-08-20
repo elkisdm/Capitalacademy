@@ -20,17 +20,6 @@ export const LIDERAZGO = {
     "Trabajo sobre el equipo real del participante",
     "Plan de implementación a seis meses",
   ],
-  desafios: {
-    titulo: "Herramientas para desafíos reales",
-    items: [
-      "Alta rotación y dificultad para atraer el perfil correcto.",
-      "Onboarding poco claro para nuevos asesores.",
-      "Equipos con distintos niveles de autonomía.",
-      "Reuniones, metas y seguimiento sin una rutina consistente.",
-      "Conversaciones difíciles que se postergan.",
-      "Presión y desgaste del propio líder.",
-    ],
-  },
   resultados: {
     titulo: "Al finalizar, podrás:",
     items: [
@@ -74,30 +63,6 @@ export const LIDERAZGO = {
       entregable: "Sistema de liderazgo comercial a seis meses.",
     },
   ],
-  proyecto: {
-    titulo: "No terminas solo con conocimientos. Terminas con un sistema para implementar.",
-    intro:
-      "Durante el programa construirás una presentación ejecutiva adaptada a la realidad de tu equipo, que integrará:",
-    componentes: [
-      "Sistema de reclutamiento",
-      "Sistema de onboarding",
-      "Sistema de motivación y desarrollo",
-      "Plan de crecimiento a seis meses",
-    ],
-    cta: "Quiero construir mi plan",
-  },
-  metodologia: {
-    titulo: "Un laboratorio ejecutivo de liderazgo comercial",
-    intro:
-      "La metodología combina contenido aplicado, casos reales, diagnóstico, diseño de herramientas y práctica:",
-    items: [
-      "Clases aplicadas al liderazgo inmobiliario.",
-      "Role play de feedback y conversaciones de desempeño.",
-      "Ejercicios individuales y análisis de casos.",
-      "Diseño de rutinas, metas y sistemas de seguimiento.",
-      "Avance progresivo del proyecto de implementación.",
-    ],
-  },
   publico: {
     titulo: "¿Este programa es para ti?",
     intro:
@@ -143,33 +108,55 @@ export const LIDERAZGO = {
       "Fecha de inicio, lugar, valor y cupos de la próxima generación están por confirmar: déjanos tus datos y recibirás la información completa apenas esté disponible.",
     cta: "Quiero recibir la información completa",
   },
-  faq: [
-    {
-      q: "¿Necesito liderar actualmente un equipo?",
-      a: "El programa está diseñado principalmente para personas con responsabilidad actual sobre equipos, metas y desarrollo de asesores.",
-    },
-    {
-      q: "¿Es exclusivo para el rubro inmobiliario?",
-      a: "Sí. Los casos, herramientas y desafíos están desarrollados para la gestión comercial inmobiliaria.",
-    },
-    {
-      q: "¿Es un programa teórico?",
-      a: "No. Combina conceptos, casos, práctica y la construcción de un sistema aplicable al equipo real del participante.",
-    },
-    {
-      q: "¿Qué obtendré al finalizar?",
-      a: "Un proyecto ejecutivo con sistemas de reclutamiento, onboarding, desarrollo y un plan de crecimiento a seis meses.",
-    },
-    {
-      q: "¿Se entrega certificado?",
-      a: "Sí. Al completar el programa recibes el diploma certificado de Capital Academy.",
-    },
-  ],
   formulario: {
     titulo: "Da el primer paso para liderar con sistema",
     intro:
       "Completa tus datos para inscribirte o recibir más información sobre el Programa de Liderazgo Comercial Inmobiliario. El equipo de Capital Academy se pondrá en contacto contigo.",
     cta: "Enviar mi inscripción",
+    // Aviso del formulario original: es lo que autoriza a usar los datos, así
+    // que viaja con el formulario y no en una nota al pie que nadie lee.
+    consentimiento:
+      "Al completarlo autorizas a Capital Academy a usar esta información con fines académicos.",
+    /**
+     * Preguntas de calificación, calcadas del formulario de Google del programa
+     * ("Formulario de registro— Programa de liderazgo"). Los textos y el orden
+     * son los del formulario: quien lo respondió en Google y quien lo responda
+     * acá tienen que ser comparables.
+     */
+    liderazgo: {
+      label: "¿Lideras un equipo actualmente?",
+      opciones: [
+        "Sí",
+        "No actualmente, pero tengo responsabilidades de coordinación",
+        "No",
+      ],
+    },
+    personas: {
+      label: "¿Cuántas personas tienes a cargo hoy?",
+      opciones: [
+        "1 a 3 personas",
+        "4 a 7 personas",
+        "8 a 15 personas",
+        "16 o más personas",
+        "Ninguna",
+      ],
+    },
+    desafios: {
+      label: "¿Qué desafío de liderazgo estás viviendo hoy con más fuerza?",
+      // En el original es de casillas: se elige más de uno.
+      ayuda: "Puedes elegir más de uno.",
+      opciones: [
+        "Comunicación con el equipo",
+        "Seguimiento y exigencia",
+        "Motivación",
+        "Manejo de conversaciones difíciles",
+        "Desarrollo de personas",
+        "Delegación de tareas y responsabilidades",
+        "Orden y estructura",
+        "Liderazgo personal / seguridad",
+      ],
+      otro: "Otro",
+    },
   },
   cierre: {
     titulo: "Desarrolla personas. Ordena la gestión. Sostén los resultados.",

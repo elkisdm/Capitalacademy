@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { LIDERAZGO } from "@/lib/landing/liderazgo";
-import { FaqLiderazgo } from "./FaqLiderazgo";
 import { FormularioLiderazgo } from "./FormularioLiderazgo";
 
 /* Landing del Programa de Liderazgo — registro sobrio tipo prospecto
@@ -190,31 +189,10 @@ export function QueEncontraras() {
   );
 }
 
-export function Desafios() {
-  const d = LIDERAZGO.desafios;
-  return (
-    <Seccion num="02" kicker="Desafíos reales" titulo={d.titulo} tone="soft">
-      <ul className="grid gap-x-12 gap-y-5 sm:grid-cols-2">
-        {d.items.map((item) => (
-          <li
-            key={item}
-            className="flex gap-4 border-t border-[var(--color-ca-outline)] pt-5 text-[15px] leading-relaxed text-[var(--color-ca-ink-soft)]"
-          >
-            <span aria-hidden className="font-semibold text-[var(--color-ca-violet)]">
-              —
-            </span>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </Seccion>
-  );
-}
-
 export function Resultados() {
   const r = LIDERAZGO.resultados;
   return (
-    <Seccion num="03" kicker="Resultados" titulo={r.titulo}>
+    <Seccion num="02" kicker="Resultados" titulo={r.titulo} tone="soft">
       <ul className="space-y-4">
         {r.items.map((item) => (
           <li key={item} className="flex items-start gap-4">
@@ -245,7 +223,7 @@ export function Resultados() {
 
 export function Malla() {
   return (
-    <Seccion id="malla" num="04" kicker="Malla" titulo="Cuatro jornadas, un sistema" tone="soft">
+    <Seccion id="malla" num="03" kicker="Malla" titulo="Cuatro jornadas, un sistema">
       <ol className="space-y-0">
         {LIDERAZGO.jornadas.map((j) => (
           <li
@@ -282,73 +260,10 @@ export function Malla() {
   );
 }
 
-export function ProyectoAplicado() {
-  const p = LIDERAZGO.proyecto;
-  return (
-    <section className="bg-[var(--color-ca-navy-ink)] py-20 sm:py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--color-ca-violet-soft)]">
-          05 <span aria-hidden className="mx-2 opacity-40">—</span> Proyecto aplicado
-        </p>
-        <h2 className="mt-6 max-w-3xl text-balance text-3xl font-semibold leading-[1.15] tracking-[-0.02em] text-white sm:text-4xl">
-          {p.titulo}
-        </h2>
-        <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/70">
-          {p.intro}
-        </p>
-        <ol className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-white/15 bg-white/15 sm:grid-cols-2 lg:grid-cols-4">
-          {p.componentes.map((c, i) => (
-            <li key={c} className="bg-[var(--color-ca-navy-ink)] p-6">
-              <span className="text-xs font-semibold tabular-nums text-[var(--color-ca-violet-soft)]">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <p className="mt-3 text-[15px] font-medium leading-snug text-white">
-                {c}
-              </p>
-            </li>
-          ))}
-        </ol>
-        <a
-          href="#inscripcion"
-          className="mt-12 inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-sm font-bold tracking-[0.02em] text-[var(--color-ca-navy-ink)] transition-colors hover:bg-[var(--color-ca-violet-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-        >
-          {p.cta}
-        </a>
-      </div>
-    </section>
-  );
-}
-
-export function Metodologia() {
-  const m = LIDERAZGO.metodologia;
-  return (
-    <Seccion num="06" kicker="Metodología" titulo={m.titulo}>
-      <p className="max-w-2xl text-base leading-relaxed text-[var(--color-ca-ink-soft)]">
-        {m.intro}
-      </p>
-      <ul className="mt-8 space-y-5">
-        {m.items.map((item, i) => (
-          <li
-            key={item}
-            className="flex gap-5 border-t border-[var(--color-ca-outline)] pt-5"
-          >
-            <span className="text-xs font-semibold tabular-nums text-[var(--color-ca-violet)]">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className="text-[15px] leading-relaxed text-[var(--color-ca-ink)]">
-              {item}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Seccion>
-  );
-}
-
 export function PublicoObjetivo() {
   const p = LIDERAZGO.publico;
   return (
-    <Seccion num="07" kicker="Público objetivo" titulo={p.titulo} tone="soft">
+    <Seccion num="04" kicker="Público objetivo" titulo={p.titulo} tone="soft">
       <p className="max-w-2xl text-base leading-relaxed text-[var(--color-ca-ink-soft)]">
         {p.intro}
       </p>
@@ -387,7 +302,7 @@ function iniciales(nombre: string) {
 export function EquipoAcademico() {
   return (
     <Seccion
-      num="08"
+      num="05"
       kicker="Equipo académico"
       titulo="Aprende con especialistas en liderazgo y gestión comercial inmobiliaria"
     >
@@ -424,7 +339,7 @@ export function EquipoAcademico() {
 export function InfoPractica() {
   const f = LIDERAZGO.formato;
   return (
-    <Seccion num="09" kicker="Formato" titulo={f.titulo} tone="soft">
+    <Seccion num="06" kicker="Formato" titulo={f.titulo} tone="soft">
       <dl className="overflow-hidden rounded-2xl border border-[var(--color-ca-outline)] bg-[var(--color-ca-surface)]">
         {f.datos.map((d) => (
           <div
@@ -446,18 +361,6 @@ export function InfoPractica() {
       <a href="#inscripcion" className={`${ctaOutline} mt-10`}>
         {f.cta}
       </a>
-    </Seccion>
-  );
-}
-
-export function FaqSeccion() {
-  return (
-    <Seccion
-      num="10"
-      kicker="Preguntas frecuentes"
-      titulo="Antes de inscribirte, revisa las preguntas frecuentes"
-    >
-      <FaqLiderazgo items={LIDERAZGO.faq} />
     </Seccion>
   );
 }

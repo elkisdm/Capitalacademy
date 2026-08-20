@@ -3,15 +3,11 @@ import {
   HeaderLiderazgo,
   HeroLiderazgo,
   QueEncontraras,
-  Desafios,
   Resultados,
   Malla,
-  ProyectoAplicado,
-  Metodologia,
   PublicoObjetivo,
   EquipoAcademico,
   InfoPractica,
-  FaqSeccion,
   Inscripcion,
   CierreLiderazgo,
 } from "@/components/landing/liderazgo/secciones";
@@ -37,15 +33,11 @@ export default function LiderazgoLanding() {
       <main id="main" className="bg-[var(--color-ca-surface)]">
         <HeroLiderazgo />
         <QueEncontraras />
-        <Desafios />
         <Resultados />
         <Malla />
-        <ProyectoAplicado />
-        <Metodologia />
         <PublicoObjetivo />
         <EquipoAcademico />
         <InfoPractica />
-        <FaqSeccion />
         <Inscripcion />
       </main>
       <CierreLiderazgo />

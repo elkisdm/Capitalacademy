@@ -15,7 +15,7 @@ describe("formatChile", () => {
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
-      }),
+      }).replace(/[\u00a0\u202f]/g, " "),
     ).toBe("1 sept, 10:00 a. m.");
   });
 
@@ -27,7 +27,7 @@ describe("formatChile", () => {
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
-      }),
+      }).replace(/[\u00a0\u202f]/g, " "),
     ).toBe("10 sept, 11:00 a. m.");
   });
 

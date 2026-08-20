@@ -480,6 +480,7 @@ export async function GET(req: Request) {
       // DOBLE de cada clase. Un fallo acá no aborta el borrado del MP4, que es
       // lo que de verdad pesa; queda en el log para revisarlo.
       await borrarSegmentos(admin, fila.session_id, fila.id);
+      await borrarManifiesto(admin, fila.session_id, fila.egress_id);
       await admin
         .from("session_recordings")
         .update({ storage_deleted_at: new Date().toISOString() })
@@ -522,5 +523,32 @@ async function borrarSegmentos(
     .remove(rutas);
   if (borrarError) {
     console.error("[cron/grabaciones] no se pudieron borrar los segmentos", prefijo, borrarError);
+  }
+}
+
+/**
+ * Borra el manifiesto que deja Egress al terminar.
+ *
+ * Es un `.json` con los metadatos del trabajo (`<sessionId>/<EGRESS_ID>.json`)
+ * y nombra el trabajo de egress, NO la grabación: por eso no lo alcanzan ni el
+ * borrado del MP4 ni el de los segmentos, que derivan del `recordingId`.
+ *
+ * Antes no aparecía porque la lista blanca de MIME del bucket lo rechazaba en
+ * silencio (`application/json` no estaba). Al quitar esa lista (migración 0102,
+ * necesaria para que el playlist HLS suba) el manifiesto empezó a llegar, y sin
+ * esto quedaría uno huérfano por cada clase para siempre.
+ */
+async function borrarManifiesto(
+  admin: ReturnType<typeof createAdminClient>,
+  sessionId: string,
+  egressId: string | null,
+): Promise<void> {
+  if (!egressId) return;
+  const { error } = await admin.storage
+    .from(GRABACIONES_BUCKET)
+    .remove([`${sessionId}/${egressId}.json`]);
+  // No aborta nada: 18 KB huérfanos son un problema de higiene, no de datos.
+  if (error) {
+    console.error("[cron/grabaciones] no se pudo borrar el manifiesto", egressId, error);
   }
 }

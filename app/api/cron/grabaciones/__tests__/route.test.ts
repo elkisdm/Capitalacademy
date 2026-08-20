@@ -393,4 +393,28 @@ describe("limpieza de los segmentos HLS", () => {
 
     expect(storageRemove).toHaveBeenCalledWith(["ses-1/rec-1.mp4"]);
   });
+
+  it("borra el manifiesto del egress, que se nombra por el trabajo y no por la grabación", async () => {
+    // `<sesión>/<EGRESS_ID>.json`: no lo alcanza ni el borrado del MP4 ni el de
+    // los segmentos, porque ambos derivan del recordingId. Sin esto queda uno
+    // huérfano por clase, para siempre.
+    state.listas = [{ ...FILA_ABIERTA, status: "ready", storage_path: "ses-1/rec-1.mp4" }];
+    storageList.mockResolvedValue({ data: [], error: null });
+
+    await GET(req());
+
+    expect(storageRemove).toHaveBeenCalledWith(["ses-1/EG_1.json"]);
+  });
+
+  it("no intenta borrar un manifiesto cuando la grabación nunca tuvo egress", async () => {
+    state.listas = [
+      { ...FILA_ABIERTA, status: "ready", storage_path: "ses-1/rec-1.mp4", egress_id: null },
+    ];
+    storageList.mockResolvedValue({ data: [], error: null });
+
+    await GET(req());
+
+    const rutas = storageRemove.mock.calls.flatMap((c) => c[0] as string[]);
+    expect(rutas.some((r) => r.endsWith(".json"))).toBe(false);
+  });
 });

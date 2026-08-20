@@ -109,3 +109,44 @@ export function tokenErrorMessage(status: number, serverMessage?: string | null)
   if (status === 503) return "Las clases en vivo no están disponibles por ahora.";
   return "No pudimos conectarte a la clase.";
 }
+
+/**
+ * Calidad de conexión, en los términos que reporta LiveKit.
+ *
+ * Se declara acá en vez de importar el enum del SDK para que este módulo siga
+ * siendo puro y testeable sin navegador, igual que el resto del archivo.
+ */
+export type CalidadConexion = "excellent" | "good" | "poor" | "lost" | "unknown";
+
+export type EtiquetaConexion = {
+  texto: string;
+  /** Decide el color de la píldora; el componente no interpreta la calidad. */
+  tono: "ok" | "aviso" | "malo";
+};
+
+/**
+ * Qué decirle a quien está en la clase sobre su conexión.
+ *
+ * Devuelve `null` para `unknown` a propósito: durante los primeros segundos, y
+ * cada vez que el SDK pierde la medición, la calidad es desconocida. Mostrar
+ * "Conexión desconocida" ahí sería alarmar por no saber — es peor que no decir
+ * nada, porque la persona no puede hacer nada con esa información.
+ *
+ * `excellent` y `good` comparten mensaje: la diferencia no cambia lo que la
+ * persona haría, y dos etiquetas positivas distintas invitan a compararlas.
+ */
+export function etiquetaConexion(calidad: CalidadConexion): EtiquetaConexion | null {
+  switch (calidad) {
+    case "excellent":
+    case "good":
+      return { texto: "Conexión estable", tono: "ok" };
+    case "poor":
+      // Accionable: la causa más común es la subida de video y apagar la cámara
+      // es lo único que la persona puede hacer sin salirse de la clase.
+      return { texto: "Conexión inestable", tono: "aviso" };
+    case "lost":
+      return { texto: "Sin conexión", tono: "malo" };
+    case "unknown":
+      return null;
+  }
+}

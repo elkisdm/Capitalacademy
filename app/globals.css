@@ -635,6 +635,119 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Tira de participantes (el `carousel` del prefab, cuando alguien tiene foco o
+   comparte pantalla). Sin esto es una fila de rectángulos grises pegados al
+   borde; el diseño la quiere como fichas con la misma esquina que el resto. */
+.ca-live-room .lk-carousel {
+  gap: 12px;
+  padding: 2px;
+}
+
+.ca-live-room .lk-carousel .lk-participant-tile {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Quien tiene el foco: mismo aro de marca que quien habla, más grueso, para
+   que se lea a qué está mirando la sala. */
+.ca-live-room .lk-focus-layout .lk-focused-participant .lk-participant-tile {
+  outline: 2px solid var(--color-ca-lime);
+  outline-offset: -2px;
+}
+
+.ca-live-room .lk-focus-toggle-button {
+  border-radius: 9999px;
+  background: rgba(15, 19, 64, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+/* Chat por dentro: hasta ahora solo estaba vestido el contenedor y el campo de
+   texto, así que la cabecera y los mensajes seguían con la tipografía y los
+   grises del prefab. */
+.ca-live-room .lk-chat-header {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ca-live-room .lk-chat-entry {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.ca-live-room .lk-chat-entry .lk-participant-name {
+  color: var(--color-ca-lime);
+}
+
+.ca-live-room .lk-chat-messages {
+  padding: 14px;
+}
+
+.ca-live-room .lk-close-button {
+  border-radius: 9999px;
+}
+
+/* La calidad de conexión del prefab (la que va sobre cada ficha) se apaga: la
+   sala ya muestra UNA píldora de conexión en la barra superior, y repetirla en
+   cada participante convierte un dato útil en ruido. */
+.ca-live-room .lk-participant-tile .lk-connection-quality {
+  display: none;
+}
+
+/* === La sala en el teléfono ================================================
+   El prefab asume un escritorio: la barra de controles en píldora, con seis
+   botones de 46 px, no cabe en 390 px y se desborda fuera de la pantalla. El
+   enlace de una clase llega por WhatsApp, así que el teléfono no es un caso
+   de borde acá — es el caso frecuente. */
+@media (max-width: 640px) {
+  .ca-live-room .lk-control-bar {
+    /* Deja de ser una píldora y pasa a ser una barra: en este ancho, envolver
+       en dos líneas se ve roto y recortar botones esconde el de colgar. */
+    border-radius: 18px;
+    width: auto;
+    max-width: none;
+    margin: 0 6px 6px 6px;
+    padding: 6px;
+    gap: 4px;
+    justify-content: space-around;
+  }
+
+  /* `font-size: 0` colapsa la etiqueta y deja el icono, que es lo que se
+     reconoce a este tamaño. El texto sigue en el DOM, así que el nombre
+     accesible del botón no cambia: se oculta a la vista, no al lector de
+     pantalla. El SVG tiene width/height propios y no lo afecta. */
+  .ca-live-room .lk-control-bar .lk-button {
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 0;
+  }
+
+  /* El menú de dispositivos cuelga de un botón que ahora es un icono: sin
+     esto se abre fuera de la pantalla por la derecha. */
+  .ca-live-room .lk-device-menu {
+    max-width: calc(100vw - 24px);
+  }
+
+  /* El chat ocupa la pantalla en vez de una columna de 320 px que dejaría el
+     video en una franja inservible. */
+  .ca-live-room .lk-chat {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: 0;
+  }
+
+  /* La tira de participantes baja de altura: con el foco ocupando el resto,
+     en vertical no queda alto para las dos cosas. */
+  .ca-live-room .lk-carousel {
+    gap: 8px;
+  }
+}
+
 /* === Informe de la Evaluación Financiera (impresión / PDF) =================
    El botón "Descargar PDF" marca <body data-print-informe> y llama a
    window.print(): estas reglas imprimen SOLO #informe-evaluacion, limpio y a

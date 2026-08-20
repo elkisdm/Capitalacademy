@@ -16,6 +16,7 @@ import {
 } from "@/lib/livekit/room-state";
 import { ModerationPanel } from "./moderation-panel";
 import { AplicarEleccion } from "./aplicar-eleccion";
+import { EstadoConexion } from "@/components/classroom/live/estado-conexion";
 import { GrabacionControl } from "./grabacion-control";
 import { Antesala } from "./antesala";
 
@@ -327,6 +328,8 @@ export function LiveClassRoom({
             camara={eleccion?.videoEnabled ?? false}
           />
           <VideoConference />
+          {/* Sube al encabezado de la sala por portal: ver `EstadoConexion`. */}
+          <EstadoConexion />
           {/* Se monta para TODOS: la insignia "Grabando" tiene que verla quien
               aparece en el video, no solo quien la enciende. */}
           <GrabacionControl sessionId={sessionId} esDocente={conexion.role === "teacher"} />

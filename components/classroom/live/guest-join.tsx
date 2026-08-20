@@ -268,7 +268,31 @@ export function GuestJoin({
         <div className="p-5 md:col-span-5 md:p-0">
           <div className="rounded-[24px] border border-white/10 bg-white/[0.055] p-6 md:p-8">
             {estado === "cargando" && (
-              <p className="py-6 text-center text-[14px] text-white/70">Abriendo la sala…</p>
+              <div className="py-2 text-center">
+                <svg
+                  width="52"
+                  height="52"
+                  viewBox="0 0 52 52"
+                  className="mx-auto mb-5 animate-spin [animation-duration:1.6s]"
+                  aria-hidden
+                >
+                  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3.5" />
+                  <circle
+                    cx="26"
+                    cy="26"
+                    r="22"
+                    fill="none"
+                    stroke="#c5f122"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeDasharray="34 104"
+                  />
+                </svg>
+                <h2 className="mb-2 text-[20px] font-black tracking-[-0.025em]">Abriendo la sala</h2>
+                <p className="text-[13px] leading-relaxed text-white/55">
+                  Un momento, estamos comprobando esta clase.
+                </p>
+              </div>
             )}
 
             {estado === "error" && (
@@ -411,9 +435,18 @@ export function GuestJoin({
                 <h2 className="mb-2 text-[20px] font-black tracking-[-0.025em]">
                   No pudiste entrar
                 </h2>
-                <p className="text-[13px] leading-relaxed text-white/55">
+                <p className="mb-5 text-[13px] leading-relaxed text-white/55">
                   El docente no aceptó tu solicitud para entrar a esta clase.
                 </p>
+                {/* Sin esto la pantalla es un punto final: quien fue rechazado
+                    por error no tiene ningún camino desde acá. El correo va a
+                    la academia y no al docente, que está dictando la clase. */}
+                <a
+                  href="mailto:academia@capitalacademy.cl?subject=No%20pude%20entrar%20a%20una%20clase%20en%20vivo"
+                  className="inline-flex h-11 items-center rounded-full border border-white/15 px-6 text-[12px] font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Escribir a la academia
+                </a>
               </div>
             )}
           </div>

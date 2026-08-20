@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { liveMessage, tokenErrorMessage, mensajeEspera } from "../room-state";
+import { liveMessage, tokenErrorMessage, mensajeEspera, etiquetaConexion } from "../room-state";
 
 describe("liveMessage", () => {
   it("da un texto para cada estado", () => {
@@ -67,5 +67,25 @@ describe("mensajeEspera", () => {
     for (const e of ["puede_pedir", "esperando", "rechazado"] as const) {
       expect(mensajeEspera(e).canRetry).toBe(false);
     }
+  });
+});
+
+describe("etiquetaConexion", () => {
+  it("no dice nada cuando la calidad es desconocida", () => {
+    // Los primeros segundos de una clase la calidad es `unknown`. Mostrar
+    // "conexión desconocida" alarma por no saber, y la persona no puede hacer
+    // nada con esa información.
+    expect(etiquetaConexion("unknown")).toBeNull();
+  });
+
+  it("trata excellent y good como el mismo mensaje", () => {
+    expect(etiquetaConexion("excellent")).toEqual(etiquetaConexion("good"));
+    expect(etiquetaConexion("good")?.tono).toBe("ok");
+  });
+
+  it("distingue una conexión mala de una perdida", () => {
+    expect(etiquetaConexion("poor")?.tono).toBe("aviso");
+    expect(etiquetaConexion("lost")?.tono).toBe("malo");
+    expect(etiquetaConexion("poor")?.texto).not.toBe(etiquetaConexion("lost")?.texto);
   });
 });

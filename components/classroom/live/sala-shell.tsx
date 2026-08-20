@@ -37,14 +37,20 @@ export function SalaShell({
             <p className="font-mono text-[11px] text-white/50">{code}</p>
           </div>
         </div>
-        {volverA && (
-          <Link
-            href={volverA}
-            className="shrink-0 rounded-full border border-white/12 px-4 py-2 text-[12px] font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            Volver a la clase
-          </Link>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          {/* Hueco para la píldora de conexión, que monta `EstadoConexion` por
+              portal: el estado del SDK solo existe dentro de <LiveKitRoom>, y
+              este encabezado lo pinta el servidor. Vacío mientras no hay sala. */}
+          <div id="ca-sala-conexion" className="flex items-center" />
+          {volverA && (
+            <Link
+              href={volverA}
+              className="rounded-full border border-white/12 px-4 py-2 text-[12px] font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              Volver a la clase
+            </Link>
+          )}
+        </div>
       </header>
 
       <main className="min-h-0 flex-1 px-3 pb-3">{children}</main>

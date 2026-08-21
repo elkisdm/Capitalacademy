@@ -168,7 +168,7 @@
 | `app/api/cron/grabaciones/route.ts` · `netlify/functions/grabaciones-cron.mjs` | Cada 15 min: aplica el cierre que se perdió, corta el egress colgado (que factura por minuto), confirma la ingesta contra Mux y borra el MP4 con PII del bucket | `GET/POST /api/cron/grabaciones` | 0034 |
 | `db/migrations/0099_salas_publicas_invitados.sql` | `class_sessions.guest_access` (apagado por defecto) + tabla `room_guests` con la sala de espera de invitados sin cuenta. RLS activa y sin policies: solo `service_role` | — | 0035 |
 | `db/migrations/0097_grabacion_nativa.sql` | `session_recordings` (una fila por intento) + índice único parcial de una grabación viva por sala + bucket privado `grabaciones`. RLS activa y sin policies: solo `service_role` | — | 0034 |
-| `db/migrations/0101_grabaciones_mime_hls.sql` | Enmienda a la 0097: el bucket `grabaciones` acepta además `video/mp2t` y las listas `m3u8`. Sin esto la copia de seguridad en segmentos sube CERO objetos (415 `InvalidMimeType`) sin fallar visiblemente | — | 0034 |
+| `db/migrations/0101_grabaciones_mime_hls.sql` · `0102_grabaciones_sin_filtro_mime.sql` | Enmiendas a la 0097: la 0101 amplía la lista MIME del bucket `grabaciones` para los segmentos HLS; la 0102 elimina el filtro por completo porque el egress manda el playlist en minúsculas (`application/x-mpegurl`), la validación distingue mayúsculas y el 415 mataba el egress | — | 0034 |
 | `scripts/rescatar-segmentos.mjs` | Rescate manual de una clase desde los segmentos HLS cuando el egress murió y no hay MP4. Ignora el `.m3u8` a propósito (sin `#EXT-X-ENDLIST` ffmpeg se cuelga) y ordena por número de secuencia, no alfabético | `--list` / `--prefix` / `--recording` | 0034 |
 
 ## Asistencia (QR)
@@ -372,10 +372,13 @@
 | `components/landing/` | Secciones de la landing (Hero, Programas, Comparador, Syllabus, FAQ, Formulario, …) | — | — |
 | `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images`, `cohort` (fecha de inicio de la próxima cohorte del Diplomado, en vivo desde `cohorts`) | — | — |
 | `app/liderazgo/page.tsx` | Landing pública del Programa de Liderazgo (prospecto sobrio: 11 secciones + formulario de captación) | `/liderazgo` | — |
-| `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`, `FaqLiderazgo`) | — | — |
+| `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`) | — | — |
 | `lib/landing/liderazgo.ts` · `lib/landing/liderazgo-lead.ts` | Contenido tipado del CSV de la landing de Liderazgo y payload del lead (`program_interest: liderazgo`, `source: landing-liderazgo`) | — | — |
 | `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landing de Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
+| `db/migrations/0103_leads_preguntas_liderazgo.sql` | Columnas tipadas en `leads` con la calificación del formulario de Liderazgo (lidera equipo, personas a cargo, desafíos); se leen directo en Supabase, no hay panel | — | — |
+| `components/analytics/meta-pixel.tsx` | Meta Pixel condicionado a `NEXT_PUBLIC_META_PIXEL_ID`; se monta SOLO en `/liderazgo` (el aula queda fuera a propósito) | — | — |
+| `public/landing/liderazgo/` | Fotos web de la landing (sesión oficial 06/08 + clases + graduación), generadas desde `~/Downloads/FOTOS` | — | — |
 
 ## Calculadora de crédito (público)
 

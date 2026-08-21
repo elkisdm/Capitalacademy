@@ -314,6 +314,11 @@
 .ca-scale-in { animation: ca-scale-in var(--dur-base) var(--ease-spring) both; }
 .ca-scale-out { animation: ca-scale-out var(--dur-fast) var(--ease-standard) both; }
 
+/* Revelado al hacer scroll (componente Reveal de la landing): el estado
+   oculto lo pone el cliente al montar, así que sin JS nada queda invisible. */
+.ca-reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s var(--ease-decel), transform 0.6s var(--ease-decel); }
+.ca-reveal.is-visible { opacity: 1; transform: none; }
+
 /* Shimmer skeleton */
 .ca-shimmer {
   background: linear-gradient(90deg, var(--color-ca-bg-soft) 25%, var(--color-ca-bg) 50%, var(--color-ca-bg-soft) 75%);

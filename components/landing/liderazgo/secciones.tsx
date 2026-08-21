@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { RotadorFotos } from "./RotadorFotos";
+import { Reveal } from "./Reveal";
 import Link from "next/link";
 import { LIDERAZGO } from "@/lib/landing/liderazgo";
 import { FormularioLiderazgo } from "./FormularioLiderazgo";
@@ -116,11 +118,14 @@ export function HeroLiderazgo() {
   const h = LIDERAZGO.hero;
   return (
     <section className="relative flex min-h-[560px] items-end overflow-hidden sm:min-h-[620px] lg:min-h-[660px] lg:items-center">
-      <Image
-        src="/landing/liderazgo/hero.jpg"
-        alt="Clase ejecutiva de Capital Academy"
-        fill
+      <RotadorFotos
+        fotos={[
+          { src: "/landing/liderazgo/hero.jpg", alt: "Clase ejecutiva de Capital Academy" },
+          { src: "/landing/liderazgo/hero-2.jpg", alt: "Docente presentando en una sesión ejecutiva" },
+          { src: "/landing/liderazgo/hero-3.jpg", alt: "Sesión de trabajo con el equipo comercial" },
+        ]}
         priority
+        intervaloMs={7000}
         sizes="100vw"
         className="object-cover object-[62%_30%] lg:object-[center_30%]"
       />
@@ -134,7 +139,7 @@ export function HeroLiderazgo() {
         className="absolute inset-0 hidden lg:block"
         style={{ background: HERO_GRADIENT_DESKTOP }}
       />
-      <div className="relative flex max-w-[760px] flex-col gap-5 px-5 py-12 sm:px-8 sm:py-14 lg:gap-[26px] lg:px-16 lg:py-0">
+      <div className="ca-fade-up relative flex max-w-[760px] flex-col gap-5 px-5 py-12 sm:px-8 sm:py-14 lg:gap-[26px] lg:px-16 lg:py-0">
         <div className="flex items-center gap-2.5">
           <span aria-hidden className="h-[3px] w-6 bg-[var(--color-ca-lime)] lg:w-7" />
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ca-lime)] sm:text-xs lg:tracking-[0.24em]">
@@ -187,11 +192,12 @@ export function QueEncontraras() {
             ¿Qué encontrarás?
           </h2>
         </div>
+        <Reveal>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {LIDERAZGO.queEncontraras.map((item, i) => (
             <li
               key={item}
-              className="flex flex-col gap-3 rounded-b-2xl border-t-[3px] border-[var(--color-ca-lime)] bg-[var(--color-ca-bg)] p-6"
+              className="flex flex-col gap-3 rounded-b-2xl border-t-[3px] border-[var(--color-ca-lime)] bg-[var(--color-ca-bg)] p-6 transition-transform duration-300 hover:-translate-y-1"
             >
               <span className="text-[13px] font-extrabold text-[var(--color-ca-lime-text)]">
                 {String(i + 1).padStart(2, "0")}
@@ -202,6 +208,7 @@ export function QueEncontraras() {
             </li>
           ))}
         </ul>
+        </Reveal>
       </div>
     </section>
   );
@@ -214,10 +221,13 @@ export function Resultados() {
       <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-2 lg:items-center lg:gap-16">
         <div className="relative mb-8 lg:order-1 lg:mb-0">
           <div className="relative aspect-[3/2] overflow-hidden rounded-2xl">
-            <Image
-              src="/landing/liderazgo/mesa.jpg"
-              alt="Sesión de trabajo sobre el equipo real"
-              fill
+            <RotadorFotos
+              fotos={[
+                { src: "/landing/liderazgo/mesa.jpg", alt: "Sesión de trabajo sobre el equipo real" },
+                { src: "/landing/liderazgo/mesa-2.jpg", alt: "Mesa de trabajo con el equipo comercial" },
+                { src: "/landing/liderazgo/mesa-3.jpg", alt: "Conversación de trabajo entre líderes" },
+              ]}
+              intervaloMs={6500}
               sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"
             />
@@ -231,7 +241,7 @@ export function Resultados() {
             </span>
           </div>
         </div>
-        <div className="flex flex-col gap-6 lg:order-2">
+        <Reveal className="flex flex-col gap-6 lg:order-2">
           <Kicker num="02" label="Resultados" />
           <h2 className="text-2xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-ca-navy-ink)] sm:text-[32px] lg:text-[34px]">
             {r.titulo}
@@ -257,7 +267,7 @@ export function Resultados() {
               </li>
             ))}
           </ul>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -266,10 +276,13 @@ export function Resultados() {
 export function BandaClase() {
   return (
     <section className="relative flex h-[240px] items-end overflow-hidden sm:h-[320px] lg:h-[420px]">
-      <Image
-        src="/landing/liderazgo/clase.jpg"
-        alt="Clase presencial de Capital Academy"
-        fill
+      <RotadorFotos
+        fotos={[
+          { src: "/landing/liderazgo/clase.jpg", alt: "Clase presencial de Capital Academy" },
+          { src: "/landing/liderazgo/clase-2.jpg", alt: "Docente frente a una generación completa" },
+          { src: "/landing/liderazgo/clase-3.jpg", alt: "Alumnos en una clase presencial" },
+        ]}
+        intervaloMs={7500}
         sizes="100vw"
         className="object-cover object-[center_40%]"
       />
@@ -279,14 +292,14 @@ export function BandaClase() {
         className="absolute inset-0 hidden lg:block"
         style={{ background: BANDA_GRADIENT_DESKTOP }}
       />
-      <div className="relative flex w-full flex-col gap-5 px-5 pb-8 sm:px-8 sm:pb-10 lg:flex-row lg:items-end lg:justify-between lg:px-16 lg:pb-12">
+      <Reveal className="relative flex w-full flex-col gap-5 px-5 pb-8 sm:px-8 sm:pb-10 lg:flex-row lg:items-end lg:justify-between lg:px-16 lg:pb-12">
         <p className="max-w-[640px] text-lg font-bold leading-snug tracking-[-0.01em] text-white sm:text-2xl lg:text-[28px]">
           Formación presencial y aplicada, con equipos y desafíos reales de la industria.
         </p>
         <a href="#inscripcion" className={`${ctaLimeMd} w-full lg:w-auto lg:shrink-0`}>
           Quiero inscribirme
         </a>
-      </div>
+      </Reveal>
     </section>
   );
 }
@@ -310,10 +323,10 @@ export function Malla() {
           </span>
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
-          {LIDERAZGO.jornadas.map((j) => (
+          {LIDERAZGO.jornadas.map((j, i) => (
+            <Reveal key={j.num} delayMs={i * 90}>
             <div
-              key={j.num}
-              className="flex flex-col gap-3.5 rounded-2xl bg-[var(--color-ca-surface)] p-7"
+              className="flex h-full flex-col gap-3.5 rounded-2xl bg-[var(--color-ca-surface)] p-7 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(15,19,64,0.10)]"
             >
               <div className="flex items-center justify-between">
                 <span className="text-4xl font-extrabold leading-none text-[var(--color-ca-lime-deep)]">
@@ -338,6 +351,7 @@ export function Malla() {
                 </span>
               </div>
             </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -350,7 +364,7 @@ export function PublicoObjetivo() {
   return (
     <section className="border-b border-[var(--color-ca-outline)] bg-[var(--color-ca-surface)] px-5 py-16 sm:px-8 lg:px-16 lg:py-[88px]">
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-        <div className="flex flex-col gap-5 lg:gap-[22px]">
+        <Reveal className="flex flex-col gap-5 lg:gap-[22px]">
           <Kicker num="04" label="Público objetivo" />
           <h2 className="text-2xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-ca-navy-ink)] sm:text-[32px] lg:text-[34px]">
             {p.titulo}
@@ -400,12 +414,14 @@ export function PublicoObjetivo() {
           <p className="border-l-[3px] border-[var(--color-ca-lime)] pl-[18px] text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
             {p.recomendado}
           </p>
-        </div>
+        </Reveal>
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[3/2]">
-          <Image
-            src="/landing/liderazgo/conversacion.jpg"
-            alt="Conversación de trabajo entre líderes"
-            fill
+          <RotadorFotos
+            fotos={[
+              { src: "/landing/liderazgo/conversacion.jpg", alt: "Conversación de trabajo entre líderes" },
+              { src: "/landing/liderazgo/conversacion-2.jpg", alt: "Reunión de un equipo comercial" },
+            ]}
+            intervaloMs={8000}
             sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
@@ -439,15 +455,28 @@ export function EquipoAcademico() {
           </h2>
         </div>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {LIDERAZGO.equipo.map((persona) => (
-            <li
-              key={persona.nombre}
-              className="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-ca-outline)]"
+          {LIDERAZGO.equipo.map((persona, i) => (
+            <li key={persona.nombre} className="h-full">
+            <Reveal
+              delayMs={i * 90}
+              className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-ca-outline)]"
             >
-              <div className="flex h-[220px] items-center justify-center bg-[var(--color-ca-lime-mist)] sm:h-[260px]">
-                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-ca-surface)] text-2xl font-extrabold text-[var(--color-ca-lime-text)] sm:h-[84px] sm:w-[84px]">
-                  {iniciales(persona.nombre)}
-                </span>
+              {/* Con retrato disponible se muestra la foto; mientras no llegue
+                  (hoy: las tres), la tarjeta cae a las iniciales de siempre. */}
+              <div className="relative flex h-[220px] items-center justify-center overflow-hidden bg-[var(--color-ca-lime-mist)] sm:h-[260px]">
+                {persona.foto ? (
+                  <Image
+                    src={persona.foto}
+                    alt={`Retrato de ${persona.nombre}`}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover object-top"
+                  />
+                ) : (
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-ca-surface)] text-2xl font-extrabold text-[var(--color-ca-lime-text)] sm:h-[84px] sm:w-[84px]">
+                    {iniciales(persona.nombre)}
+                  </span>
+                )}
               </div>
               <div className="flex flex-col gap-2 p-6">
                 <h3 className="text-base font-bold text-[var(--color-ca-navy-ink)] sm:text-[17px]">
@@ -462,6 +491,7 @@ export function EquipoAcademico() {
                   </p>
                 )}
               </div>
+            </Reveal>
             </li>
           ))}
         </ul>
@@ -476,15 +506,18 @@ export function InfoPractica() {
     <section className="bg-[var(--color-ca-bg)] px-5 py-16 sm:px-8 lg:px-16 lg:py-[88px]">
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[5fr_7fr] lg:items-center lg:gap-16">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[3/2] lg:order-1">
-          <Image
-            src="/landing/liderazgo/oficina.jpg"
-            alt="Ambiente de trabajo ejecutivo"
-            fill
+          <RotadorFotos
+            fotos={[
+              { src: "/landing/liderazgo/oficina.jpg", alt: "Ambiente de trabajo ejecutivo" },
+              { src: "/landing/liderazgo/oficina-2.jpg", alt: "Trabajo individual en la oficina" },
+              { src: "/landing/liderazgo/oficina-3.jpg", alt: "Escritorio ejecutivo con vista a la ciudad" },
+            ]}
+            intervaloMs={8500}
             sizes="(min-width: 1024px) 42vw, 100vw"
             className="object-cover"
           />
         </div>
-        <div className="flex flex-col gap-6 lg:order-2">
+        <Reveal className="flex flex-col gap-6 lg:order-2">
           <Kicker num="06" label="Formato" />
           <h2 className="text-2xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-ca-navy-ink)] sm:text-[28px] lg:text-[30px]">
             {f.titulo}
@@ -507,7 +540,7 @@ export function InfoPractica() {
           <p className="border-l-[3px] border-[var(--color-ca-lime)] pl-[18px] text-sm leading-relaxed text-[var(--color-ca-ink-soft)]">
             {f.pendiente}
           </p>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -554,22 +587,25 @@ export function BandaGraduacion() {
   const c = LIDERAZGO.cierre;
   return (
     <section className="relative flex h-[360px] items-center justify-center overflow-hidden sm:h-[420px] lg:h-[460px]">
-      <Image
-        src="/landing/liderazgo/graduacion.jpg"
-        alt="Graduación de Capital Academy"
-        fill
+      <RotadorFotos
+        fotos={[
+          { src: "/landing/liderazgo/graduacion.jpg", alt: "Graduación de Capital Academy" },
+          { src: "/landing/liderazgo/graduacion-2.jpg", alt: "Entrega de diplomas de una generación" },
+          { src: "/landing/liderazgo/graduacion-3.jpg", alt: "Celebración de cierre de una generación" },
+        ]}
+        intervaloMs={7000}
         sizes="100vw"
         className="object-cover object-[center_32%]"
       />
       <div aria-hidden className="absolute inset-0 bg-[var(--color-ca-navy-ink)]/72" />
-      <div className="relative flex max-w-[820px] flex-col items-center gap-6 px-6 text-center sm:gap-[26px]">
+      <Reveal className="relative flex max-w-[820px] flex-col items-center gap-6 px-6 text-center sm:gap-[26px]">
         <h2 className="text-balance text-[26px] font-extrabold leading-tight tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]">
           {c.titulo}
         </h2>
         <a href="#inscripcion" className={ctaLimeLg}>
           {c.cta}
         </a>
-      </div>
+      </Reveal>
     </section>
   );
 }

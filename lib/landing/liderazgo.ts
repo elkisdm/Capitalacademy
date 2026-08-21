@@ -74,26 +74,35 @@ export const LIDERAZGO = {
     recomendado:
       "Perfil recomendado: experiencia comercial previa y responsabilidad actual sobre un equipo.",
   },
+  // `foto`: ruta bajo public/ del retrato de la persona. Hoy las tres van en
+  // null —la sesión de fotos del 10-08 cubrió a otros docentes— y la tarjeta
+  // cae a las iniciales; cuando lleguen los retratos, basta llenar el campo.
   equipo: [
     {
       nombre: "Milena Zapata",
       rol: "Coach de líderes y equipos",
       bio: "Psicóloga organizacional, consultora y coach de líderes y equipos. Especialista en desarrollo de liderazgo, conversaciones y dinámicas colaborativas.",
+      foto: null,
     },
     {
       nombre: "Paola Vicuña",
       rol: "Directora Académica · Capital Academy",
       bio: "Especialista en formación comercial de la industria inmobiliaria, profesionalización de asesores y liderazgo de equipos. Coach de líderes y equipos comerciales.",
+      foto: null,
     },
     {
       nombre: "Diego de la Prida",
       rol: "Docente · Capital Academy",
       bio: null,
+      foto: null,
     },
   ],
   formato: {
     titulo: "Una experiencia intensiva, presencial y orientada a implementación",
     datos: [
+      // Confirmado por Elkis el 21-08-2026 (coincide con los avisos de la
+      // campaña de diseño): la 1ª generación parte el viernes 25 de septiembre.
+      { label: "Inicio de clases", valor: "Viernes 25 de septiembre de 2026" },
       { label: "Duración total", valor: "16 horas cronológicas" },
       { label: "Distribución", valor: "4 jornadas de 4 horas" },
       { label: "Horario sugerido", valor: "Viernes de 15:00 a 19:00 horas" },
@@ -105,7 +114,7 @@ export const LIDERAZGO = {
       },
     ],
     pendiente:
-      "Fecha de inicio, lugar, valor y cupos de la próxima generación están por confirmar: déjanos tus datos y recibirás la información completa apenas esté disponible.",
+      "El lugar, el valor y los cupos están por confirmar: déjanos tus datos y recibirás la información completa apenas esté disponible.",
     cta: "Quiero recibir la información completa",
   },
   formulario: {

@@ -372,7 +372,7 @@
 | `components/landing/` | Secciones de la landing (Hero, Programas, Comparador, Syllabus, FAQ, Formulario, …) | — | — |
 | `lib/landing/` | Contenido de la landing: `programs`, `faq`, `team`, `constants`, `images`, `cohort` (fecha de inicio de la próxima cohorte del Diplomado, en vivo desde `cohorts`) | — | — |
 | `app/liderazgo/page.tsx` | Landing pública del Programa de Liderazgo (prospecto sobrio: 11 secciones + formulario de captación) | `/liderazgo` | — |
-| `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`) | — | — |
+| `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`, `RotadorFotos` fundido de fotos, `Reveal` aparición al scroll) | — | — |
 | `lib/landing/liderazgo.ts` · `lib/landing/liderazgo-lead.ts` | Contenido tipado del CSV de la landing de Liderazgo y payload del lead (`program_interest: liderazgo`, `source: landing-liderazgo`) | — | — |
 | `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landing de Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |

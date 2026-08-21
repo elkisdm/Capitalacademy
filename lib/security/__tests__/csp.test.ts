@@ -57,7 +57,7 @@ describe("buildCsp", () => {
     expect(connect).toBe(
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co " +
         "https://api.fintoc.com https://*.fintoc.com https://*.mux.com https://*.fastly.mux.com " +
-        "https://umami-production-41e5.up.railway.app",
+        "https://umami-production-41e5.up.railway.app https://www.facebook.com",
     );
   });
 
@@ -82,6 +82,15 @@ describe("buildCsp", () => {
     const csp = buildCsp({ isDev: false });
     expect(directive(csp, "script-src")).toContain("umami-production-41e5.up.railway.app");
     expect(directive(csp, "connect-src")).toContain("umami-production-41e5.up.railway.app");
+  });
+
+  it("permite el Meta Pixel de la landing /liderazgo, en las dos directivas que necesita", () => {
+    // El script se carga desde connect.facebook.net y fbq() manda los eventos
+    // a www.facebook.com: falta cualquiera de las dos y el pixel deja de
+    // medir sin ningún error visible, igual que le pasó antes a Umami.
+    const csp = buildCsp({ isDev: false });
+    expect(directive(csp, "script-src")).toContain("https://connect.facebook.net");
+    expect(directive(csp, "connect-src")).toContain("https://www.facebook.com");
   });
 
   it("solo permite unsafe-eval en desarrollo", () => {

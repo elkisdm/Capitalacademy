@@ -53,6 +53,16 @@ export function livekitConnectSources(livekitUrl: string | undefined): string[] 
  */
 const UMAMI_ORIGIN = "https://umami-production-41e5.up.railway.app";
 
+/**
+ * Meta Pixel de la landing /liderazgo (ver components/analytics/meta-pixel.tsx).
+ * El script se carga desde `connect.facebook.net` y el propio `fbq()` manda
+ * los eventos a `www.facebook.com` — sin las dos directivas el pixel corre
+ * en silencio: no da error, pero tampoco mide nada, igual que le pasó a
+ * Umami antes de que se agregara a esta cabecera.
+ */
+const META_PIXEL_SCRIPT_ORIGIN = "https://connect.facebook.net";
+const META_PIXEL_CONNECT_ORIGIN = "https://www.facebook.com";
+
 export function buildCsp(opts: {
   isDev: boolean;
   livekitUrl?: string;
@@ -68,12 +78,13 @@ export function buildCsp(opts: {
     "https://*.mux.com",
     "https://*.fastly.mux.com",
     UMAMI_ORIGIN,
+    META_PIXEL_CONNECT_ORIGIN,
     ...livekitConnectSources(livekitUrl),
   ];
 
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.fintoc.com ${UMAMI_ORIGIN}`,
+    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.fintoc.com ${UMAMI_ORIGIN} ${META_PIXEL_SCRIPT_ORIGIN}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https://fonts.gstatic.com",

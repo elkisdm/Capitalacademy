@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { LIDERAZGO } from "@/lib/landing/liderazgo";
+import { LIDERAZGO_REGULAR_PRICE_CLP } from "@/lib/programs/liderazgo";
 import {
   HeaderLiderazgo,
   HeroLiderazgo,
@@ -39,8 +40,12 @@ export const metadata: Metadata = {
 
 /**
  * Schema.org del programa (AEO): describe el curso para buscadores y motores
- * de respuesta. Solo afirma lo publicado en la página — la fecha de inicio y
- * el formato sí, el precio y el lugar no (siguen "por confirmar" en Formato).
+ * de respuesta. Solo afirma lo publicado en la página — fecha, formato y
+ * valor sí; el lugar no, que sigue "por confirmar" en Formato.
+ *
+ * El precio es el de contado sin código (`LIDERAZGO_REGULAR_PRICE_CLP`): el
+ * de cuotas incluye recargo y el de lanzamiento depende de un código, y
+ * ninguno de los dos es "el precio del curso" para un buscador.
  */
 const CURSO_JSONLD = {
   "@context": "https://schema.org",
@@ -60,6 +65,14 @@ const CURSO_JSONLD = {
     educationalRole: "professional",
     audienceType:
       "Líderes y coordinadores de equipos comerciales inmobiliarios",
+  },
+  offers: {
+    "@type": "Offer",
+    price: LIDERAZGO_REGULAR_PRICE_CLP,
+    priceCurrency: "CLP",
+    category: "Paid",
+    availability: "https://schema.org/InStock",
+    url: "https://capitalacademy.cl/pago/liderazgo",
   },
   hasCourseInstance: {
     "@type": "CourseInstance",

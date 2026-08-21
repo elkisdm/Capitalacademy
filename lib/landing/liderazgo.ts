@@ -107,6 +107,14 @@ export const LIDERAZGO = {
       { label: "Distribución", valor: "4 jornadas de 4 horas" },
       { label: "Horario sugerido", valor: "Viernes de 15:00 a 19:00 horas" },
       { label: "Modalidad", valor: "Presencial" },
+      // El valor sale de LIDERAZGO_REGULAR_PRICE_CLP (lib/programs/liderazgo.ts),
+      // que es lo que el checkout cobra al contado sin código. Las cuotas
+      // llevan recargo de Webpay y sus montos exactos se ven al inscribirse:
+      // por eso acá se nombran, pero no se listan.
+      {
+        label: "Valor",
+        valor: "$450.000 al contado · también en 4 a 12 cuotas con recargo",
+      },
       {
         label: "Cierre",
         valor:
@@ -114,7 +122,7 @@ export const LIDERAZGO = {
       },
     ],
     pendiente:
-      "El lugar, el valor y los cupos están por confirmar: déjanos tus datos y recibirás la información completa apenas esté disponible.",
+      "El lugar y los cupos están por confirmar: déjanos tus datos y recibirás la información completa apenas esté disponible.",
     cta: "Quiero recibir la información completa",
   },
   formulario: {

@@ -463,14 +463,24 @@ export function EquipoAcademico() {
             >
               {/* Con retrato disponible se muestra la foto; mientras no llegue
                   (hoy: las tres), la tarjeta cae a las iniciales de siempre. */}
-              <div className="relative flex h-[220px] items-center justify-center overflow-hidden bg-[var(--color-ca-lime-mist)] sm:h-[260px]">
+              {/* Con retrato el marco es vertical (4:5), que es como se
+                  fotografía a una persona: un marco ancho y bajo recorta la
+                  cara a la altura del mentón. Sin retrato vuelve a ser bajo,
+                  porque un bloque lima de 4:5 es demasiado vacío. */}
+              <div
+                className={`relative flex items-center justify-center overflow-hidden bg-[var(--color-ca-lime-mist)] ${
+                  persona.foto
+                    ? "aspect-square sm:aspect-[4/5]"
+                    : "h-[220px] sm:h-[260px]"
+                }`}
+              >
                 {persona.foto ? (
                   <Image
                     src={persona.foto}
                     alt={`Retrato de ${persona.nombre}`}
                     fill
                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover object-top"
+                    className="object-cover object-center"
                   />
                 ) : (
                   <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-ca-surface)] text-2xl font-extrabold text-[var(--color-ca-lime-text)] sm:h-[84px] sm:w-[84px]">

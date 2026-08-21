@@ -8,7 +8,7 @@ export const LIDERAZGO = {
   nombre: "Programa de Liderazgo Comercial Inmobiliario",
   hero: {
     kicker: "Programa ejecutivo · Liderazgo comercial inmobiliario",
-    titulo: "Programa ejecutivo para líderes comerciales",
+    titulo: "Lidera tu equipo comercial con sistema",
     bajada:
       "Aprende a atraer talento, integrar asesores, ordenar la gestión y desarrollar un sistema aplicable a tu equipo.",
     meta: ["16 horas", "4 jornadas presenciales", "Proyecto aplicado"],

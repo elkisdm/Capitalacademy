@@ -7,11 +7,12 @@ import { formatPhone } from "@/lib/utils/phone";
 import { buildLiderazgoLeadPayload } from "@/lib/landing/liderazgo-lead";
 import { LIDERAZGO } from "@/lib/landing/liderazgo";
 
-/** Fila de opción: el área clickeable es toda la fila, no solo el círculo. */
+/** Fila de opción tipo chip: el área clickeable es toda la fila, no solo el
+    círculo, y el objetivo táctil respeta el mínimo de 44px de alto. */
 const OPCION =
-  "flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-ca-outline)] px-4 py-3 text-sm text-[var(--color-ca-ink)] transition-colors hover:border-[var(--color-ca-violet)]/40 has-[:checked]:border-[var(--color-ca-violet)] has-[:checked]:bg-[var(--color-ca-violet)]/5";
+  "flex min-h-11 cursor-pointer items-center gap-3 rounded-full border-[1.5px] border-[var(--color-ca-outline-strong)] px-4 py-2.5 text-[13px] font-semibold text-[var(--color-ca-ink-soft)] transition-colors hover:border-[var(--color-ca-lime-deep)]/60 has-[:checked]:border-[var(--color-ca-lime-deep)] has-[:checked]:bg-[var(--color-ca-lime-mist)] has-[:checked]:text-[var(--color-ca-lime-text)]";
 
-const RADIO = "h-4 w-4 shrink-0 accent-[var(--color-ca-violet)]";
+const RADIO = "h-4 w-4 shrink-0 accent-[var(--color-ca-lime-deep)]";
 
 type Estado =
   | { tag: "idle" }
@@ -78,6 +79,12 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
         setEstado({ tag: "ok" });
         (e.target as HTMLFormElement).reset();
         setPhone("");
+        if (typeof window !== "undefined") {
+          const fbq = (
+            window as unknown as { fbq?: (...args: unknown[]) => void }
+          ).fbq;
+          fbq?.("track", "Lead");
+        }
       } catch {
         setEstado({
           tag: "error",
@@ -94,7 +101,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
         aria-live="polite"
         className="rounded-2xl border border-[var(--color-ca-outline)] bg-[var(--color-ca-surface)] p-10 text-center"
       >
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-ca-violet)]/25 text-[var(--color-ca-violet)]">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-ca-lime-mist)] text-[var(--color-ca-lime-text)]">
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
@@ -135,7 +142,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
           <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <a
               href="/pago/liderazgo"
-              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-violet)] px-7 text-sm font-semibold text-white transition-[filter] hover:brightness-110 sm:w-auto"
+              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--color-ca-lime)] px-7 text-sm font-bold text-[var(--color-ca-ink)] transition-colors hover:bg-[var(--color-ca-lime-deep)] sm:w-auto"
             >
               Inscribirme y pagar
             </a>
@@ -156,7 +163,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="relative rounded-2xl border border-[var(--color-ca-outline)] bg-[var(--color-ca-surface)] p-7 sm:p-10"
+      className="relative rounded-2xl bg-[var(--color-ca-surface)] p-7 sm:p-10"
     >
       <input
         type="text"
@@ -174,6 +181,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
             name="full_name"
             required
             autoComplete="name"
+            className="h-12"
           />
         </Campo>
         <Campo id={`${uid}-email`} label="Correo electrónico" required>
@@ -186,6 +194,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
             inputMode="email"
             spellCheck={false}
             autoCapitalize="none"
+            className="h-12"
           />
         </Campo>
         <Campo id={`${uid}-phone`} label="Teléfono / WhatsApp" required>
@@ -200,13 +209,14 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             onBlur={() => phone.trim() && setPhone(formatPhone(phone))}
+            className="h-12"
           />
         </Campo>
         <Campo id={`${uid}-role`} label="Cargo o actividad actual (opcional)">
-          <Input id={`${uid}-role`} name="role" autoComplete="organization-title" />
+          <Input id={`${uid}-role`} name="role" autoComplete="organization-title" className="h-12" />
         </Campo>
         <Campo id={`${uid}-company`} label="Empresa (opcional)" className="sm:col-span-2">
-          <Input id={`${uid}-company`} name="company" autoComplete="organization" />
+          <Input id={`${uid}-company`} name="company" autoComplete="organization" className="h-12" />
         </Campo>
       </div>
 
@@ -217,7 +227,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
         <legend className="sr-only">Sobre tu equipo</legend>
 
         <p className="text-sm font-semibold text-[var(--color-ca-ink)]">
-          {F.liderazgo.label} <span className="text-[var(--color-ca-violet)]">*</span>
+          {F.liderazgo.label} <span className="text-[var(--color-ca-lime-text)]">*</span>
         </p>
         <div className="mt-3 grid gap-2">
           {F.liderazgo.opciones.map((o) => (
@@ -268,6 +278,7 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
               name="desafio_otro"
               aria-label={`${F.desafios.otro}: cuéntanos cuál`}
               placeholder="Cuéntanos cuál"
+              className="h-12"
             />
           </div>
         )}
@@ -293,7 +304,13 @@ export function FormularioLiderazgo({ cta }: { cta: string }) {
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={pending} className="mt-8 w-full sm:w-auto">
+      <Button
+        type="submit"
+        variant="lime"
+        size="lg"
+        disabled={pending}
+        className="mt-8 w-full sm:w-auto"
+      >
         {pending ? "Enviando…" : cta}
       </Button>
       <p className="mt-4 text-xs leading-relaxed text-[var(--color-ca-ink-soft)]/80">

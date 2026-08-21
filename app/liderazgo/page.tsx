@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 import {
   HeaderLiderazgo,
   HeroLiderazgo,
   QueEncontraras,
   Resultados,
+  BandaClase,
   Malla,
   PublicoObjetivo,
   EquipoAcademico,
   InfoPractica,
   Inscripcion,
-  CierreLiderazgo,
+  BandaGraduacion,
+  FooterLiderazgo,
 } from "@/components/landing/liderazgo/secciones";
 
 export const metadata: Metadata = {
@@ -29,18 +32,21 @@ export const metadata: Metadata = {
 export default function LiderazgoLanding() {
   return (
     <>
+      <MetaPixel />
       <HeaderLiderazgo />
       <main id="main" className="bg-[var(--color-ca-surface)]">
         <HeroLiderazgo />
         <QueEncontraras />
         <Resultados />
+        <BandaClase />
         <Malla />
         <PublicoObjetivo />
         <EquipoAcademico />
         <InfoPractica />
         <Inscripcion />
+        <BandaGraduacion />
       </main>
-      <CierreLiderazgo />
+      <FooterLiderazgo />
     </>
   );
 }

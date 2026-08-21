@@ -623,25 +623,25 @@ export function FooterLiderazgo() {
             Formación aplicada para la industria inmobiliaria.
           </p>
         </div>
-        <div className="flex flex-col gap-3">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-ca-lime)]">
+        <div className="flex flex-col gap-1">
+          <span className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-ca-lime)]">
             Programa
           </span>
-          <a href="#programa" className="text-[13px] font-medium text-white/75 hover:text-white">
+          <a href="#programa" className="py-2 text-[13px] font-medium text-white/75 hover:text-white">
             El programa
           </a>
-          <a href="#malla" className="text-[13px] font-medium text-white/75 hover:text-white">
+          <a href="#malla" className="py-2 text-[13px] font-medium text-white/75 hover:text-white">
             Malla académica
           </a>
-          <a href="#equipo" className="text-[13px] font-medium text-white/75 hover:text-white">
+          <a href="#equipo" className="py-2 text-[13px] font-medium text-white/75 hover:text-white">
             Equipo académico
           </a>
-          <a href="#inscripcion" className="text-[13px] font-medium text-white/75 hover:text-white">
+          <a href="#inscripcion" className="py-2 text-[13px] font-medium text-white/75 hover:text-white">
             Inscripción
           </a>
         </div>
-        <div className="flex flex-col gap-3">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-ca-lime)]">
+        <div className="flex flex-col gap-1">
+          <span className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-ca-lime)]">
             Academia
           </span>
           {/* Solo rutas reales: no existe un centro de ayuda público, así que
@@ -649,17 +649,17 @@ export function FooterLiderazgo() {
               el home redirija acá (fase de campaña, ver next.config.ts), el
               enlace al Diplomado también se omite: sería un bucle a esta misma
               página. Restaurarlo cuando vuelva el sitio completo. */}
-          <Link href="/" className="text-[13px] font-medium text-white/75 hover:text-white">
+          <Link href="/" className="py-2 text-[13px] font-medium text-white/75 hover:text-white">
             capitalacademy.cl
           </Link>
         </div>
-        <div className="flex flex-col gap-3.5">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-ca-lime)]">
+        <div className="flex flex-col gap-1.5">
+          <span className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-ca-lime)]">
             Contacto
           </span>
           <a
             href="mailto:academia@capitalacademy.cl"
-            className="flex items-center gap-2.5 text-[13px] font-medium text-white/75 hover:text-white"
+            className="flex items-center gap-2.5 py-2 text-[13px] font-medium text-white/75 hover:text-white"
           >
             <svg
               aria-hidden="true"

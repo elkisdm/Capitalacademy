@@ -609,12 +609,12 @@ export function FooterLiderazgo() {
             Academia
           </span>
           {/* Solo rutas reales: no existe un centro de ayuda público, así que
-              esa fila del canvas se omite en vez de apuntar a un 404. */}
+              esa fila del canvas se omite en vez de apuntar a un 404. Y mientras
+              el home redirija acá (fase de campaña, ver next.config.ts), el
+              enlace al Diplomado también se omite: sería un bucle a esta misma
+              página. Restaurarlo cuando vuelva el sitio completo. */}
           <Link href="/" className="text-[13px] font-medium text-white/75 hover:text-white">
             capitalacademy.cl
-          </Link>
-          <Link href="/#programas" className="text-[13px] font-medium text-white/75 hover:text-white">
-            Diplomado Ejecutivo
           </Link>
         </div>
         <div className="flex flex-col gap-3.5">

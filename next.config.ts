@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "igatsyghbadccbrjiurl.supabase.co" },
     ],
   },
+  // Fase de campaña de Liderazgo (2026-08): lo único público que se muestra es
+  // la landing /liderazgo, así que el home y la calculadora redirigen ahí.
+  // `permanent: false` a propósito —es una fase, no una mudanza—: cuando el
+  // sitio completo vuelva, basta borrar estas dos entradas. El resto de rutas
+  // públicas (login, /pago, /sala, /verificar, /asistencia, /auth) son
+  // funcionales, no vitrinas, y no se tocan.
+  async redirects() {
+    return [
+      { source: "/", destination: "/liderazgo", permanent: false },
+      { source: "/calculadora-credito", destination: "/liderazgo", permanent: false },
+    ];
+  },
   // Presentaciones estáticas en public/presentaciones/<slug>/index.html:
   // permite la URL limpia /presentaciones/<slug> sin el index.html.
   async rewrites() {

@@ -64,6 +64,7 @@ export function StudentToolbar({
   search,
   onSearch,
   searchPlaceholder,
+  searchLabel = "Buscar alumno",
   rightSlot,
 }: {
   chips: { id: string; label: string; count: number }[];
@@ -72,6 +73,7 @@ export function StudentToolbar({
   search: string;
   onSearch: (value: string) => void;
   searchPlaceholder?: string;
+  searchLabel?: string;
   rightSlot?: ReactNode;
 }) {
   return (
@@ -117,7 +119,7 @@ export function StudentToolbar({
             <path d="M21 21l-4.3-4.3" />
           </svg>
           <Input
-            aria-label="Buscar alumno"
+            aria-label={searchLabel}
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => onSearch(e.target.value)}

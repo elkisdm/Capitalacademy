@@ -73,6 +73,7 @@ const ICON_PATHS: Record<string, React.ReactNode> = {
   poll: <><path d="M4 20V10" /><path d="M10 20V4" /><path d="M16 20v-7" /><path d="M2 20h20" /></>,
   idCard: <><rect x="2" y="4" width="20" height="16" rx="2" /><circle cx="8.5" cy="10.5" r="2.5" /><path d="M4.5 17a4 4 0 018 0" /><path d="M15 9h5M15 13h5" /></>,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  funnel: <path d="M3 4h18l-7 8.5V19l-4 2v-8.5L3 4z" />,
 };
 
 function SvgIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -516,6 +517,7 @@ export function ClassroomSidebar({
       // General: opciones globales (no atadas a un entorno).
       { icon: "users", label: "Usuarios", href: "/admin/users", section: "general" as const },
       { icon: "creditCard", label: "Cobros", href: "/admin/cobros", section: "general" as const },
+      { icon: "funnel", label: "Leads", href: "/admin/leads", section: "general" as const },
       { icon: "megaphone", label: "Comunicaciones", href: "/admin/comunicaciones", section: "general" as const },
       { icon: "poll", label: "Encuestas", href: "/admin/encuestas", section: "general" as const },
       ...(activeCohort ? [

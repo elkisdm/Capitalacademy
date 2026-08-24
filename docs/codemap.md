@@ -376,7 +376,9 @@
 | `lib/landing/liderazgo.ts` · `lib/landing/liderazgo-lead.ts` | Contenido tipado del CSV de la landing de Liderazgo y payload del lead (`program_interest: liderazgo`, `source: landing-liderazgo`) | — | — |
 | `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landing de Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
-| `db/migrations/0103_leads_preguntas_liderazgo.sql` | Columnas tipadas en `leads` con la calificación del formulario de Liderazgo (lidera equipo, personas a cargo, desafíos); se leen directo en Supabase, no hay panel | — | — |
+| `db/migrations/0103_leads_preguntas_liderazgo.sql` | Columnas tipadas en `leads` con la calificación del formulario de Liderazgo (lidera equipo, personas a cargo, desafíos); se ven en `/admin/leads` | — | — |
+| `app/(admin)/admin/leads/` | Panel de leads de captación (todas las landings): stats, filtro por programa, buscador y detalle con calificación, origen de campaña y acciones de contacto (patrón master–detail de `/admin/alumnos`) | `/admin/leads` | — |
+| `lib/admin/leads-queries.ts` · `leads-format.ts` | Lectura de `leads` con service_role (RLS sin SELECT) + helpers puros de fecha Chile/origen/iniciales/WhatsApp | — | — |
 | `components/analytics/meta-pixel.tsx` | Meta Pixel condicionado a `NEXT_PUBLIC_META_PIXEL_ID`; se monta SOLO en `/liderazgo` (el aula queda fuera a propósito) | — | — |
 | `public/landing/liderazgo/` | Fotos web de la landing (sesión oficial 06/08 + clases + graduación), generadas desde `~/Downloads/FOTOS` | — | — |
 

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Fixed
+- Los retratos del equipo académico en la landing de Liderazgo ya no cortan la cara: el marco ahora prioriza la parte superior de la foto en vez del centro (`2af8320`)
 - Las clases grabadas ya no se pierden por un rechazo del almacenamiento: el depósito de grabaciones solo aceptaba el video final y rechazaba tanto los trozos de respaldo como su índice, así que la grabación quedaba marcada como fallida y la repetición nunca se publicaba, aunque el video estuviera completo (`ca7357c`)
 - Quien es invitado a una clase en vivo sin tener cuenta ya puede entrar: su solicitud de acceso moría antes de llegar a la sala porque el sistema la trataba como una visita no autenticada más, así que la sala de espera y la aprobación del docente nunca llegaban a ejecutarse. Además la sala en vivo ya se ve con la identidad de la plataforma —barra de controles flotante, aro de color en quien habla, chapas con el nombre— en vez del aspecto crudo del servicio de video (`69df33d`)
 - Los correos de recordatorio de una clase en vivo vuelven a traer el botón para entrar: las salas nuevas de la plataforma no quedaban enlazadas y el correo salía sin ningún acceso, obligando al alumno a buscar la clase a mano (`9f90e92`)
@@ -21,6 +22,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Si una grabación automática queda "subiendo" para siempre (se pierde la confirmación del servicio de grabación), el panel admin ya no bloquea indefinidamente la subida manual: el bloqueo vence a la hora con un aviso que devuelve la opción manual, y tras 24 horas sin confirmación la grabación se declara fallida automáticamente (`b24eb4c`)
 
 ### Added
+- El equipo ahora ve los leads de las landings y campañas en la plataforma (`/admin/leads`, sección General): quiénes llegaron, de qué anuncio vienen, qué desafíos marcaron y botones para escribirles por WhatsApp o correo — antes esos contactos solo se veían consultando la base de datos a mano (`fe9b6f2`)
 - La landing de Liderazgo ya publica el valor del programa ($450.000 al contado, con la opción de cuotas): hasta ahora decía "por confirmar" aunque el pago en línea ya lo cobraba, así que quien miraba la página no sabía cuánto costaba hasta llegar al checkout (`6828997`)
 - La landing de Liderazgo ahora se describe a sí misma para buscadores y motores de respuesta (schema.org del curso con fecha de inicio, modalidad y docentes), su descripción anuncia el inicio del 25 de septiembre al compartirla, y los enlaces del footer son más fáciles de tocar en el teléfono (`561649a`)
 - La landing de Liderazgo ahora publica la fecha de inicio de clases (viernes 25 de septiembre de 2026), sus fotos rotan solas con un fundido suave (2–3 fotos reales por bloque) y las secciones aparecen animadas al hacer scroll; las tarjetas del equipo académico quedaron listas para mostrar retratos apenas estén las fotos (`4a6fcc9`)

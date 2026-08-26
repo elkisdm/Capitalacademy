@@ -136,7 +136,7 @@ export async function getStudentPanelReport(
     scopeCohortIds.length > 0
       ? await admin
           .from("class_sessions")
-          .select("id, cohort_id, title, starts_at, ends_at, status, audience")
+          .select("id, cohort_id, title, starts_at, ends_at, status, audience, attendee_student_ids")
           .in("cohort_id", scopeCohortIds)
           .neq("status", "cancelled")
           .neq("modality", "recorded")
@@ -267,7 +267,7 @@ export async function getStudentPanelReport(
     const email = profile?.email ?? "";
 
     const applicableSessions = (sessionsByCohort.get(enr.cohort_id) ?? []).filter((s) =>
-      sessionAppliesToEnrollment(s, enr),
+      sessionAppliesToEnrollment(s, { ...enr, student_id: enr.student_id }),
     );
     const total = applicableSessions.length;
     const missed = applicableSessions.filter(

@@ -79,6 +79,9 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   const enrollmentEligibility = {
     enrolled_at: enrollmentDetails?.enrolled_at ?? "1970-01-01T00:00:00.000Z",
     segment: enrollmentDetails?.segment ?? null,
+    // Necesario para la convocatoria parcial (0106): una clase a la que este
+    // alumno no fue convocado no entra en su porcentaje de asistencia.
+    student_id: userId,
   };
 
   const { data: cohort, error: cohortError } = await supabase
@@ -285,13 +288,14 @@ export async function getStudentGrades(cohortId: string, userId: string): Promis
   // GRACE_AFTER_MIN` (ventana de gracia), descarta sesiones anteriores a la
   // matrícula del alumno (`enrolled_at`) y respeta `audience`/`segment` (una
   // sesión exclusiva de Capital Inteligente no cuenta para un alumno que no
-  // es de ese segmento). Predicados compartidos: `isSessionClosed` /
-  // `sessionAppliesToEnrollment` en `lib/asistencia/window.ts`.
+  // es de ese segmento) y la convocatoria parcial (una clase a la que no fue
+  // convocado no le baja el porcentaje). Predicados compartidos:
+  // `isSessionClosed` / `sessionAppliesToEnrollment` en `lib/asistencia/window.ts`.
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
   const { data: closedSessionsRaw, error: closedSessionsError } = await supabase
     .from("class_sessions")
-    .select("id, ends_at, audience")
+    .select("id, ends_at, audience, attendee_student_ids")
     .eq("cohort_id", cohortId)
     .neq("status", "cancelled")
     .neq("modality", "recorded")

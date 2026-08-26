@@ -69,6 +69,7 @@ const MAX_ABSENCES_TOLERATED = 3;
 const RETRY_STALE_MS = 10 * 60 * 1000; // 10 min
 
 type SessionRow = {
+  attendee_student_ids: string[] | null;
   id: string;
   cohort_id: string;
   title: string | null;
@@ -103,7 +104,7 @@ async function processWindow(
   const { data: sessionsData, error: sessErr } = await admin
     .from("class_sessions")
     .select(
-      "id, cohort_id, title, starts_at, ends_at, modality, meeting_url, code, status, teacher_id, audience",
+      "id, cohort_id, title, starts_at, ends_at, modality, meeting_url, code, status, teacher_id, audience, attendee_student_ids",
     )
     .eq("status", "scheduled")
     // Las grabadas no son eventos en vivo: no se recuerdan.

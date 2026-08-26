@@ -42,7 +42,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ sessionId: str
   const admin = createAdminClient();
   const { data: session } = await admin
     .from("class_sessions")
-    .select("cohort_id, audience")
+    .select("cohort_id, audience, attendee_student_ids")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -99,7 +99,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
 
   const { data: session } = await admin
     .from("class_sessions")
-    .select("id, cohort_id, title, starts_at, ends_at, modality, audience, teacher_id")
+    .select("id, cohort_id, title, starts_at, ends_at, modality, audience, teacher_id, attendee_student_ids")
     .eq("id", sessionId)
     .maybeSingle();
 

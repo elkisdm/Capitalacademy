@@ -215,7 +215,13 @@ export type StudentAbsence = {
 };
 
 type CohortRow = { id: string; program_id: string; name: string };
-type ClosedSessionRow = { id: string; cohort_id: string; audience: string; ends_at: string };
+type ClosedSessionRow = {
+  id: string;
+  cohort_id: string;
+  audience: string;
+  ends_at: string;
+  attendee_student_ids: string[] | null;
+};
 type EnrollmentSegmentRow = {
   student_id: string;
   cohort_id: string;
@@ -274,7 +280,7 @@ export async function getStudentsAtAbsenceThreshold(
   const cutoff = new Date(Date.now() - GRACE_AFTER_MIN * 60_000).toISOString();
   const { data: sessionsRaw } = await admin
     .from("class_sessions")
-    .select("id, cohort_id, audience, ends_at")
+    .select("id, cohort_id, audience, ends_at, attendee_student_ids")
     .in("cohort_id", cohortIds)
     .neq("modality", "recorded")
     .neq("status", "cancelled")
@@ -318,7 +324,7 @@ export async function getStudentsAtAbsenceThreshold(
     const cohortSessions = sessionsByCohort.get(e.cohort_id) ?? [];
     let absences = 0;
     for (const s of cohortSessions) {
-      if (!sessionAppliesToEnrollment(s, e)) continue;
+      if (!sessionAppliesToEnrollment(s, { ...e, student_id: e.student_id })) continue;
       if (!attended.has(`${s.id}:${e.student_id}`)) absences++;
     }
     if (absences >= threshold) {

@@ -290,6 +290,7 @@ export type Database = {
       }
       class_sessions: {
         Row: {
+          attendee_student_ids: string[] | null
           audience: string
           code: string
           cohort_id: string
@@ -311,6 +312,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
+          attendee_student_ids?: string[] | null
           audience?: string
           code?: string
           cohort_id: string
@@ -332,6 +334,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
+          attendee_student_ids?: string[] | null
           audience?: string
           code?: string
           cohort_id?: string

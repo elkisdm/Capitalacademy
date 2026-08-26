@@ -69,13 +69,26 @@ export function isSessionClosed(session: { ends_at: string }, now: number = Date
 
 /**
  * `true` si una sesión cuenta como aplicable a un alumno matriculado: no fue
- * anterior a su matrícula (`enrolled_at`), y si es exclusiva de un segmento
- * (`audience='capital_inteligente'`), el alumno pertenece a ese segmento.
+ * anterior a su matrícula (`enrolled_at`), está convocado a ella, y si es
+ * exclusiva de un segmento (`audience='capital_inteligente'`), el alumno
+ * pertenece a ese segmento.
+ *
+ * La convocatoria parcial (`attendee_student_ids`, migración 0106) es lo que
+ * permite una clase a la que va solo parte del curso, como el examen de Role
+ * Play repartido en dos sábados. Quien no está convocado NO acumula
+ * inasistencia por no ir: contarlo sería castigarlo por respetar su propio
+ * calendario. `null` = convoca a toda la cohorte, que es el caso de siempre.
  */
 export function sessionAppliesToEnrollment(
-  session: { ends_at: string; audience: string },
-  enrollment: { enrolled_at: string; segment: string | null },
+  session: { ends_at: string; audience: string; attendee_student_ids?: string[] | null },
+  enrollment: { enrolled_at: string; segment: string | null; student_id?: string },
 ): boolean {
   if (session.ends_at < enrollment.enrolled_at) return false;
+  const convocados = session.attendee_student_ids;
+  if (convocados && convocados.length > 0) {
+    // Sin `student_id` no se puede decidir; se prefiere NO imputar la falta.
+    if (!enrollment.student_id) return false;
+    if (!convocados.includes(enrollment.student_id)) return false;
+  }
   return session.audience === "all" || (session.audience === "capital_inteligente" && enrollment.segment === "capital_inteligente");
 }

@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Input, Textarea } from "@/components/ui/field";
-import { useToast } from "@/components/ui/toast";
+// `@/components/admin/toast` y NO `@/components/ui/toast`: el segundo exige un
+// <ToastProvider> que no se monta en ninguna parte de la aplicación, así que
+// `useToast` lanza al renderizar y se lleva la pantalla entera por delante.
+// Este es un hook con estado propio: hay que pintar su <ToastContainer />.
+import { useToast } from "@/components/admin/toast";
 import { DetailSectionTitle } from "@/components/admin/students/shared";
 import { formatLeadDate, formatLeadDateFull } from "@/lib/admin/leads-format";
 import { isoToChileWallTime, chileWallTimeToIso } from "@/lib/time";
@@ -47,7 +51,7 @@ export function LeadSeguimiento({
   tasks: LeadTaskRow[];
 }) {
   const router = useRouter();
-  const { showToast } = useToast();
+  const { toast, ToastContainer } = useToast();
   const [guardando, setGuardando] = useState(false);
 
   async function escribir(url: string, init: RequestInit, exito: string) {
@@ -60,16 +64,16 @@ export function LeadSeguimiento({
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        showToast(err.error ?? "No se pudo guardar", "error");
+        toast(err.error ?? "No se pudo guardar", "error");
         return false;
       }
-      showToast(exito, "success");
+      toast(exito, "success");
       router.refresh();
       return true;
     } catch {
       // Sin esto, un `fetch` que rechaza (sin red, DNS caído) no muestra nada:
       // el spinner se apaga y quien mueve la etapa asume que se movió.
-      showToast("Sin conexión: no se pudo guardar", "error");
+      toast("Sin conexión: no se pudo guardar", "error");
       return false;
     } finally {
       setGuardando(false);
@@ -78,6 +82,8 @@ export function LeadSeguimiento({
 
   return (
     <div className="mt-6 flex flex-col gap-6">
+      <ToastContainer />
+
       <EtapaSelector
         stage={stage}
         disabled={guardando}

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/toast";
+// Ver la nota en lead-seguimiento.tsx: el toast de `ui/` exige un provider que
+// la aplicación nunca monta y lanza al renderizar.
+import { useToast } from "@/components/admin/toast";
 import { formatLeadDate } from "@/lib/admin/leads-format";
 import { tareasPorAvisar } from "@/lib/admin/leads-pipeline";
 import type { LeadTaskRow } from "@/lib/admin/leads-queries";
@@ -28,7 +30,7 @@ export function Pendientes({
   onIrAlLead: (leadId: string) => void;
 }) {
   const router = useRouter();
-  const { showToast } = useToast();
+  const { toast, ToastContainer } = useToast();
   const [cerrando, setCerrando] = useState<string | null>(null);
 
   const porAvisar = tareasPorAvisar(tasks);
@@ -46,10 +48,10 @@ export function Pendientes({
         body: JSON.stringify({ done: true }),
       });
       if (!res.ok) {
-        showToast("No se pudo cerrar la tarea", "error");
+        toast("No se pudo cerrar la tarea", "error");
         return;
       }
-      showToast("Tarea lista", "success");
+      toast("Tarea lista", "success");
       router.refresh();
     } finally {
       setCerrando(null);
@@ -61,6 +63,8 @@ export function Pendientes({
       aria-label="Tareas pendientes"
       className="mb-6 rounded-2xl border border-ca-ink/[0.10] bg-ca-bg-soft p-4"
     >
+      <ToastContainer />
+
       <div className="mb-2.5 flex flex-wrap items-center gap-2">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-ca-ink-soft">
           Para hoy

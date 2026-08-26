@@ -83,4 +83,19 @@ describe("phoneDigits", () => {
     expect(phoneDigits("+56 9 9132 0220")).toBe("56991320220");
     expect(phoneDigits("+56947087669")).toBe("56947087669");
   });
+
+  it("agrega el código de país cuando el lead lo escribió sin prefijo", () => {
+    // 7 de los 41 leads de la campaña llegaron así; sin el 56, wa.me no abre.
+    expect(phoneDigits("986733726")).toBe("56986733726");
+    expect(phoneDigits("9 7602 2862")).toBe("56976022862");
+  });
+
+  it("no toca un número que ya trae código de país", () => {
+    expect(phoneDigits("+1 415 555 0123")).toBe("14155550123");
+  });
+
+  it("no inventa prefijo para algo que no parece móvil chileno", () => {
+    expect(phoneDigits("221234567")).toBe("221234567");
+    expect(phoneDigits("12345")).toBe("12345");
+  });
 });

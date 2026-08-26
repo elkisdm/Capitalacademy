@@ -85,7 +85,21 @@ export function isNewLead(iso: string, now: Date = new Date()): boolean {
   return now.getTime() - d.getTime() < 48 * 60 * 60 * 1000;
 }
 
-/** Teléfono en dígitos para el enlace de WhatsApp (wa.me/569…). */
+/**
+ * Teléfono en dígitos para el enlace de WhatsApp (wa.me/569…).
+ *
+ * `wa.me` exige el número COMPLETO con código de país; sin él no abre el chat.
+ * El formulario de la landing no obliga a escribir el prefijo, así que uno de
+ * cada seis leads llega como "986733726" (9 dígitos) y el enlace quedaba roto
+ * en silencio: el botón existía, se veía bien y no llevaba a ninguna parte.
+ *
+ * Se asume Chile cuando el número tiene la forma de un móvil chileno local
+ * (9 dígitos empezando en 9), que es el caso de todos los leads de la campaña.
+ * Un número que ya trae código de país se respeta tal cual, venga de donde venga.
+ */
 export function phoneDigits(phone: string): string {
-  return phone.replace(/\D/g, "");
+  const digits = phone.replace(/\D/g, "");
+  // Móvil chileno escrito sin prefijo: 9 dígitos que parten en 9.
+  if (digits.length === 9 && digits.startsWith("9")) return `56${digits}`;
+  return digits;
 }

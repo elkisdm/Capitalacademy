@@ -21,7 +21,22 @@ import {
   leadInitials,
   phoneDigits,
 } from "@/lib/admin/leads-format";
+import {
+  LEAD_EXPORT_WIDTHS,
+  buildLeadsSheet,
+  leadsFileName,
+} from "@/lib/admin/leads-export";
 import type { LeadRow } from "@/lib/admin/leads-queries";
+
+function DownloadIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
 
 function FunnelEmptyIcon({ className }: { className?: string }) {
   return (
@@ -160,6 +175,7 @@ export function LeadsPanel({ leads }: { leads: LeadRow[] }) {
   const [chip, setChip] = useState("todos");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [descargando, setDescargando] = useState(false);
 
   const chips = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -186,6 +202,27 @@ export function LeadsPanel({ leads }: { leads: LeadRow[] }) {
 
   const selected = filtered.find((l) => l.id === selectedId) ?? null;
 
+  // Se descarga LO QUE ESTÁ EN PANTALLA (chip + búsqueda ya aplicados): los
+  // leads viven completos en el cliente, así que no hace falta un endpoint que
+  // vuelva a resolver el mismo filtro del otro lado.
+  //
+  // SheetJS pesa lo suyo, así que entra por `import()` al hacer clic: quien
+  // nunca descarga no lo carga nunca.
+  async function descargarXlsx() {
+    if (descargando || filtered.length === 0) return;
+    setDescargando(true);
+    try {
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.aoa_to_sheet(buildLeadsSheet(filtered));
+      ws["!cols"] = LEAD_EXPORT_WIDTHS.map((wch) => ({ wch }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Leads");
+      XLSX.writeFile(wb, leadsFileName(chip));
+    } finally {
+      setDescargando(false);
+    }
+  }
+
   return (
     <div>
       <StudentToolbar
@@ -196,6 +233,22 @@ export function LeadsPanel({ leads }: { leads: LeadRow[] }) {
         onSearch={setSearch}
         searchPlaceholder="Nombre, correo, empresa…"
         searchLabel="Buscar lead"
+        rightSlot={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={descargarXlsx}
+            disabled={descargando || filtered.length === 0}
+            title={
+              filtered.length === 0
+                ? "No hay leads que descargar"
+                : `Descargar ${filtered.length} lead${filtered.length === 1 ? "" : "s"} en Excel`
+            }
+          >
+            <DownloadIcon className="mr-1.5 inline-block align-[-2px]" />
+            {descargando ? "Generando…" : `Descargar XLSX (${filtered.length})`}
+          </Button>
+        }
       />
 
       {filtered.length === 0 ? (

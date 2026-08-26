@@ -1531,6 +1531,96 @@ export type Database = {
           },
         ]
       }
+      lead_activity: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          lead_id: string
+          outcome: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          lead_id: string
+          outcome?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          lead_id?: string
+          outcome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activity_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activity_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done_at: string | null
+          due_at: string
+          id: string
+          lead_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done_at?: string | null
+          due_at: string
+          id?: string
+          lead_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done_at?: string | null
+          due_at?: string
+          id?: string
+          lead_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           company: string | null
@@ -1547,6 +1637,7 @@ export type Database = {
           program_interest: string
           role: string | null
           source: string | null
+          stage: string
           user_agent: string | null
           utm_campaign: string | null
           utm_content: string | null
@@ -1569,6 +1660,7 @@ export type Database = {
           program_interest: string
           role?: string | null
           source?: string | null
+          stage?: string
           user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -1591,6 +1683,7 @@ export type Database = {
           program_interest?: string
           role?: string | null
           source?: string | null
+          stage?: string
           user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -3186,6 +3279,15 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      mover_etapa_lead: {
+        Args: {
+          p_actor: string
+          p_detalle: string
+          p_lead_id: string
+          p_stage: string
+        }
+        Returns: string
+      }
       is_cohort_staff: { Args: { p_cohort_id: string }; Returns: boolean }
       is_evaluation_staff: {
         Args: { p_evaluation_id: string }

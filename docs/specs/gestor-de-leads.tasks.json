@@ -1,0 +1,16 @@
+{
+  "change": "gestor-de-leads",
+  "spec_flow_tier": 3,
+  "tasks": [
+    { "id": 1, "title": "Migración 0107: etapa en leads + lead_activity + lead_tasks", "kind": "feat", "size": "medium", "signals": { "type": "feat", "tier": 3, "risk": "high", "breaking": false }, "depends_on": [] },
+    { "id": 2, "title": "lib/admin/leads-pipeline.ts (puro) + test", "kind": "feat", "size": "small", "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [1] },
+    { "id": 3, "title": "Lecturas en leads-queries.ts: stage, actividad, tareas abiertas", "kind": "feat", "size": "small", "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [1, 2] },
+    { "id": 4, "title": "Rutas PATCH etapa y POST actividad + tests", "kind": "feat", "size": "medium", "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [3] },
+    { "id": 5, "title": "Rutas de tareas (alta, completar, borrar) + tests", "kind": "feat", "size": "medium", "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [3] },
+    { "id": 6, "title": "Detalle del lead: selector de etapa, historial, notas y tareas", "kind": "feat", "size": "large", "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [4, 5] },
+    { "id": 7, "title": "Chips de etapa, franja de pendientes y stats en el listado", "kind": "feat", "size": "medium", "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [5, 6] },
+    { "id": 8, "title": "Columnas Etapa y Último contacto en el XLSX + test", "kind": "feat", "size": "small", "signals": { "type": "feat", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [3] },
+    { "id": 9, "title": "Digest diario: plantilla, route del cron, función Netlify + tests", "kind": "feat", "size": "medium", "signals": { "type": "feat", "tier": 3, "risk": "med", "breaking": false }, "depends_on": [5] },
+    { "id": 10, "title": "ADR-0038, codemap y CHANGELOG", "kind": "docs", "size": "small", "signals": { "type": "docs", "tier": 3, "risk": "low", "breaking": false }, "depends_on": [6, 7, 8, 9] }
+  ]
+}

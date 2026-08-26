@@ -28,6 +28,7 @@ function lead(overrides: Partial<LeadRow> = {}): LeadRow {
     lidera_equipo: "Sí",
     personas_a_cargo: "6 a 10",
     desafios: ["Motivar al equipo", "Cerrar más ventas"],
+    stage: "nuevo",
     ...overrides,
   };
 }
@@ -57,16 +58,30 @@ describe("leadToSheetRow", () => {
   });
 
   it("aplana los desafíos en una sola celda", () => {
-    expect(leadToSheetRow(lead())[10]).toBe("Motivar al equipo · Cerrar más ventas");
+    // Por nombre de columna y no por índice literal: agregar una columna antes
+    // no debe romper este test (ya pasó al sumar "Etapa" y "Último contacto").
+    const i = LEAD_EXPORT_HEADERS.indexOf("Desafíos");
+    expect(leadToSheetRow(lead())[i]).toBe("Motivar al equipo · Cerrar más ventas");
   });
 
   it("convierte los nulos en celdas vacías, no en 'null'", () => {
     const row = leadToSheetRow(
-      lead({ role: null, company: null, message: null, desafios: null, utm_source: null }),
+      lead({
+        role: null,
+        company: null,
+        message: null,
+        desafios: null,
+        lidera_equipo: null,
+        personas_a_cargo: null,
+        utm_source: null,
+        utm_medium: null,
+        utm_campaign: null,
+        utm_content: null,
+      }),
     );
     expect(row).not.toContain(null);
-    expect(row[4]).toBe("");
-    expect(row[10]).toBe("");
+    expect(row[LEAD_EXPORT_HEADERS.indexOf("Cargo")]).toBe("");
+    expect(row[LEAD_EXPORT_HEADERS.indexOf("Desafíos")]).toBe("");
   });
 });
 
@@ -100,5 +115,46 @@ describe("leadsFileName", () => {
   it("fecha el archivo en Chile y no en UTC", () => {
     // 02:30 UTC del 27 es todavía el 26 en Chile.
     expect(leadsFileName("todos", new Date("2026-08-27T02:30:00Z"))).toBe("leads-2026-08-26.xlsx");
+  });
+});
+
+describe("etapa y último contacto en la planilla", () => {
+  const iEtapa = LEAD_EXPORT_HEADERS.indexOf("Etapa");
+  const iContacto = LEAD_EXPORT_HEADERS.indexOf("Último contacto");
+
+  it("las dos columnas existen y tienen ancho", () => {
+    expect(iEtapa).toBeGreaterThan(-1);
+    expect(iContacto).toBeGreaterThan(-1);
+    expect(LEAD_EXPORT_WIDTHS).toHaveLength(LEAD_EXPORT_HEADERS.length);
+  });
+
+  it("escribe la etiqueta de la etapa, no su código", () => {
+    expect(leadToSheetRow(lead({ stage: "matriculado" }))[iEtapa]).toBe("Matriculado");
+    expect(leadToSheetRow(lead({ stage: "nuevo" }))[iEtapa]).toBe("Nuevo");
+  });
+
+  it("dice 'Sin contactar' cuando no hay registro de contacto", () => {
+    expect(leadToSheetRow(lead())[iContacto]).toBe("Sin contactar");
+  });
+
+  it("formatea el último contacto en hora de Chile", () => {
+    expect(leadToSheetRow(lead(), "2026-08-26T19:31:00Z")[iContacto]).toBe(
+      "26-08-2026 15:31",
+    );
+  });
+
+  it("buildLeadsSheet cruza cada lead con su propio último contacto", () => {
+    const leads = [lead({ id: "a" }), lead({ id: "b" })];
+    const contactos = new Map([["a", "2026-08-26T19:31:00Z"]]);
+
+    const [, filaA, filaB] = buildLeadsSheet(leads, contactos);
+
+    expect(filaA[iContacto]).toBe("26-08-2026 15:31");
+    expect(filaB[iContacto]).toBe("Sin contactar");
+  });
+
+  it("sin mapa de contactos, ninguna fila inventa una fecha", () => {
+    const [, fila] = buildLeadsSheet([lead()]);
+    expect(fila[iContacto]).toBe("Sin contactar");
   });
 });

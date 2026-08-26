@@ -130,6 +130,8 @@
 | `lib/admin/leads-export.ts` | Contenido de la planilla de leads (columnas, anchos, nombre de archivo); el XLSX se arma en el cliente con SheetJS por `import()` al hacer clic | — | — |
 | `lib/classroom/enlace-clase.ts` | `joinHrefFor`: única decisión de a dónde entra el alumno a una clase en vivo (el enlace externo gana sobre la sala propia). La usan el correo de recordatorio, el calendario, la pantalla de clase y la vista de módulo | — | 0031 |
 | `lib/profiles/account-type.ts` | Naturaleza de la cuenta (`real`/`staff`/`test`): predicado único que saca a las cuentas del equipo y de QA de comunicaciones y métricas SIN quitarles acceso | — | 0037 |
+| `db/migrations/0104_profiles_account_type.sql` | `profiles.account_type`: etiqueta la cuenta como del equipo o de QA para sacarla de datos y correos sin quitarle acceso | — | 0037 |
+| `db/migrations/0105_attendance_alerts_recurrentes.sql` | La alerta de inasistencias deja de ser un envío único por (alumno, cohorte) y vuelve a avisar cada vez; limpia los 22 avisos quemados con asistencia incompleta | — | 0037 |
 | `scripts/borrar-cuentas-qa.mjs` | Borra de `auth.users` las cuentas de QA que la 0104 sacó de `profiles` (corre en seco por defecto; `profiles` no tiene FK hacia auth) | — | 0037 |
 | `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI), `attendance-warning` (alerta de inasistencias, brandeada por entorno) | — | 0013 |
 
@@ -382,8 +384,14 @@
 | `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landing de Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
 | `db/migrations/0103_leads_preguntas_liderazgo.sql` | Columnas tipadas en `leads` con la calificación del formulario de Liderazgo (lidera equipo, personas a cargo, desafíos); se ven en `/admin/leads` | — | — |
-| `app/(admin)/admin/leads/` | Panel de leads de captación (todas las landings): stats, filtro por programa, buscador y detalle con calificación, origen de campaña y acciones de contacto (patrón master–detail de `/admin/alumnos`) | `/admin/leads` | — |
-| `lib/admin/leads-queries.ts` · `leads-format.ts` | Lectura de `leads` con service_role (RLS sin SELECT) + helpers puros de fecha Chile/origen/iniciales/WhatsApp | — | — |
+| `app/(admin)/admin/leads/` | Panel de leads de captación (todas las landings): stats del embudo, filtros por programa y por etapa, buscador y detalle master–detail. `pendientes.tsx` (franja de tareas vencidas/de hoy) y `lead-seguimiento.tsx` (etapa, bitácora, notas y tareas del detalle) | `/admin/leads` | 0038 |
+| `lib/admin/leads-queries.ts` · `leads-format.ts` | Lectura de `leads`, `lead_activity` y `lead_tasks` con service_role (RLS deny-all) + helpers puros de fecha Chile/origen/iniciales/WhatsApp. `getTasksForDigest` agrupa los pendientes por la persona que los agendó | — | 0038 |
+| `lib/admin/leads-pipeline.ts` | Única definición del embudo: etapas y sus etiquetas, tipos de contacto, y el corte vencida/hoy/próxima de una tarea en días calendario de Chile. Lo comparten el panel, la franja y el correo | — | 0038 |
+| `db/migrations/0107_gestor_de_leads.sql` | `leads.stage` + `lead_activity` (bitácora append-only) + `lead_tasks` (próximo paso con vencimiento) + `mover_etapa_lead()`, que cambia la etapa y la registra en una transacción | — | 0038 |
+| `app/api/admin/leads/[leadId]/` | Escritura del seguimiento: `PATCH` de etapa, `POST` de contacto (`activity/`) y alta de tarea (`tasks/`) | `PATCH /api/admin/leads/[leadId]`, `POST .../activity`, `POST .../tasks` | 0038 |
+| `app/api/admin/leads/tasks/[taskId]/route.ts` | Completar, reabrir o borrar una tarea (colgada de la tarea: la franja de pendientes cruza leads distintos) | `PATCH`/`DELETE /api/admin/leads/tasks/[taskId]` | 0038 |
+| `app/api/cron/lead-tasks/route.ts` · `netlify/functions/lead-tasks-cron.mjs` | Recordatorio diario del seguimiento (12:00 UTC). No envía nada si no hay pendientes | `POST /api/cron/lead-tasks` | 0038 |
+| `lib/email/lead-tasks-digest.ts` | Correo del recordatorio diario: asunto con conteo y atrasadas, tareas agrupadas por persona | — | 0038 |
 | `components/analytics/meta-pixel.tsx` | Meta Pixel condicionado a `NEXT_PUBLIC_META_PIXEL_ID`; se monta SOLO en `/liderazgo` (el aula queda fuera a propósito) | — | — |
 | `public/landing/liderazgo/` | Fotos web de la landing (sesión oficial 06/08 + clases + graduación), generadas desde `~/Downloads/FOTOS` | — | — |
 
@@ -456,4 +464,6 @@
 | `db/migrations/0080_quiz_correct_option_af.sql` | Amplía el CHECK de `quiz_questions.correct_option` de A–D a A–F (o NULL), alineando el esquema con las hasta 6 opciones que ya soporta la UI de preguntas de opción única | — | — |
 | `scripts/invite-capacitaciones.mjs` | Invitación masiva de asistentes al ciclo CAP-CI (crea usuario + matrícula + correo branded) | — | 0012 |
 | `scripts/reinvite-stuck-capacitaciones.mjs` | Segunda tanda: reenvía invitación solo a quien sigue sin activar cuenta del ciclo CAP-CI (roster 'active' vs `last_sign_in_at` nulo en Admin API) | — | 0012 |
+| `scripts/aviso-clase-zoom-2026-08-26.mjs` | Aviso one-off: la clase del 26-ago se dictó por Zoom y los recordatorios ya habían salido apuntando a la sala propia | — | — |
+| `scripts/aviso-roleplay-final.mjs` | Aviso one-off del examen de Role Play: horario por persona y quién hace de cliente, que el recordatorio automático no puede saber | — | — |
 | `scripts/` | Scripts de operación: Mux (upload/link/status), transcripciones IA, invitaciones, brochures, cobro | — | — |

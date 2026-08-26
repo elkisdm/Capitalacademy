@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { StatStrip } from "@/components/admin/students/shared";
-import { getAllLeads } from "@/lib/admin/leads-queries";
+import {
+  getAllLeads,
+  getAllLeadActivity,
+  getAllLeadTasks,
+} from "@/lib/admin/leads-queries";
+import { LEAD_STAGES_TERMINALES, esContacto } from "@/lib/admin/leads-pipeline";
 import { LeadsPanel } from "./leads-panel";
 
 export const metadata = {
@@ -14,12 +19,28 @@ export default async function AdminLeadsPage() {
   const { data: { user } } = await getAuthUser();
   if (!user) redirect("/login");
 
-  const leads = await getAllLeads();
+  const [leads, activity, tasks] = await Promise.all([
+    getAllLeads(),
+    getAllLeadActivity(),
+    getAllLeadTasks(),
+  ]);
 
   const now = Date.now();
-  const last7 = leads.filter((l) => now - new Date(l.created_at).getTime() < 7 * DAY_MS).length;
   const last24 = leads.filter((l) => now - new Date(l.created_at).getTime() < DAY_MS).length;
-  const deCampana = leads.filter((l) => l.utm_campaign).length;
+  // "En gestión" es el embudo vivo: todo lo que no terminó en matrícula ni en
+  // descarte. Es el número que dice cuánto trabajo hay encima, que era lo que
+  // el total histórico no respondía.
+  const enGestion = leads.filter((l) => !LEAD_STAGES_TERMINALES.includes(l.stage)).length;
+  const matriculados = leads.filter((l) => l.stage === "matriculado").length;
+  // `esContacto` y no "tiene alguna fila de actividad": un cambio de etapa no es
+  // haber hablado con nadie. Sin este filtro, un lead movido a "Contactado" y
+  // devuelto a "Nuevo" desaparecería de este contador mientras la planilla lo
+  // sigue mostrando como "Sin contactar" — dos números que se contradicen.
+  const sinContactar = leads.filter(
+    (l) =>
+      l.stage === "nuevo" &&
+      !activity.some((a) => a.lead_id === l.id && esContacto(a.kind)),
+  ).length;
 
   return (
     <div className="ca-fade-up mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">
@@ -38,14 +59,14 @@ export default async function AdminLeadsPage() {
 
       <StatStrip
         items={[
-          { label: "Total", value: `${leads.length}`, sub: "histórico", tone: "var(--color-ca-navy)" },
-          { label: "Últimos 7 días", value: `${last7}`, tone: "var(--color-ca-lime-deep)" },
-          { label: "Últimas 24 horas", value: `${last24}`, tone: "var(--color-ca-violet)" },
-          { label: "De campañas", value: `${deCampana}`, sub: "llegaron con UTM de anuncios" },
+          { label: "En gestión", value: `${enGestion}`, sub: `de ${leads.length} en total`, tone: "var(--color-ca-navy)" },
+          { label: "Sin contactar", value: `${sinContactar}`, sub: "nadie los ha tocado", tone: "var(--color-ca-violet)" },
+          { label: "Últimas 24 horas", value: `${last24}`, sub: "leads nuevos", tone: "var(--color-ca-lime-deep)" },
+          { label: "Matriculados", value: `${matriculados}`, sub: "cerraron" },
         ]}
       />
 
-      <LeadsPanel leads={leads} />
+      <LeadsPanel leads={leads} activity={activity} tasks={tasks} />
     </div>
   );
 }

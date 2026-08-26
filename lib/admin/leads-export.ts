@@ -8,6 +8,7 @@
 
 import { TZ_CHILE } from "@/lib/time";
 import { PROGRAM_LABELS, formatLeadOrigin } from "@/lib/admin/leads-format";
+import { LEAD_STAGE_LABELS } from "@/lib/admin/leads-pipeline";
 import type { LeadRow } from "@/lib/admin/leads-queries";
 
 export const LEAD_EXPORT_HEADERS = [
@@ -18,6 +19,8 @@ export const LEAD_EXPORT_HEADERS = [
   "Cargo",
   "Empresa",
   "Programa",
+  "Etapa",
+  "Último contacto",
   "Origen",
   "¿Lidera equipo?",
   "Personas a cargo",
@@ -31,7 +34,7 @@ export const LEAD_EXPORT_HEADERS = [
 
 /** Ancho de cada columna, en caracteres. Mismo orden que los encabezados. */
 export const LEAD_EXPORT_WIDTHS = [
-  18, 26, 30, 18, 22, 24, 14, 26, 16, 18, 40, 40, 16, 16, 22, 22,
+  18, 26, 30, 18, 22, 24, 14, 14, 18, 26, 16, 18, 40, 40, 16, 16, 22, 22,
 ];
 
 const sheetDateFormatter = new Intl.DateTimeFormat("es-CL", {
@@ -58,8 +61,17 @@ export function formatLeadDateForSheet(iso: string): string {
   return sheetDateFormatter.format(d).replace(",", "");
 }
 
-/** Una fila de la planilla por lead, en el orden de LEAD_EXPORT_HEADERS. */
-export function leadToSheetRow(lead: LeadRow): (string | number)[] {
+/**
+ * Una fila de la planilla por lead, en el orden de LEAD_EXPORT_HEADERS.
+ *
+ * `ultimoContactoIso` viene de la bitácora y no del lead porque la planilla es
+ * un REPORTE, no el lugar donde se gestiona: sirve para mirar de un vistazo a
+ * quién nadie ha llamado, mientras que el seguimiento vivo ocurre en el panel.
+ */
+export function leadToSheetRow(
+  lead: LeadRow,
+  ultimoContactoIso: string | null = null,
+): (string | number)[] {
   return [
     formatLeadDateForSheet(lead.created_at),
     lead.full_name,
@@ -68,6 +80,8 @@ export function leadToSheetRow(lead: LeadRow): (string | number)[] {
     lead.role ?? "",
     lead.company ?? "",
     PROGRAM_LABELS[lead.program_interest] ?? lead.program_interest,
+    LEAD_STAGE_LABELS[lead.stage],
+    ultimoContactoIso ? formatLeadDateForSheet(ultimoContactoIso) : "Sin contactar",
     formatLeadOrigin(lead),
     lead.lidera_equipo ?? "",
     lead.personas_a_cargo ?? "",
@@ -81,9 +95,22 @@ export function leadToSheetRow(lead: LeadRow): (string | number)[] {
   ];
 }
 
-/** Encabezados + una fila por lead, listo para `aoa_to_sheet`. */
-export function buildLeadsSheet(leads: LeadRow[]): (string | number)[][] {
-  return [[...LEAD_EXPORT_HEADERS], ...leads.map(leadToSheetRow)];
+/**
+ * Encabezados + una fila por lead, listo para `aoa_to_sheet`.
+ *
+ * `ultimoContactoPorLead` es opcional: sin él la columna dice "Sin contactar"
+ * en todas las filas, que es justo lo que corresponde si nadie registró nada.
+ */
+export function buildLeadsSheet(
+  leads: LeadRow[],
+  ultimoContactoPorLead: ReadonlyMap<string, string> = new Map(),
+): (string | number)[][] {
+  return [
+    [...LEAD_EXPORT_HEADERS],
+    ...leads.map((lead) =>
+      leadToSheetRow(lead, ultimoContactoPorLead.get(lead.id) ?? null),
+    ),
+  ];
 }
 
 /**

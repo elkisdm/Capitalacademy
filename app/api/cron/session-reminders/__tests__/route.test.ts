@@ -746,7 +746,7 @@ describe("processAbsenceAlerts", () => {
     expect(callCount("attendance_alerts.insert")).toBe(0);
   });
 
-  it("excluye pares alumno+cohorte con alerta ya 'sent' o 'pending' fresca", async () => {
+  it("excluye al alumno ya avisado con el mismo conteo y al que tiene reserva fresca", async () => {
     const freshIso = new Date(Date.now() - 60_000).toISOString();
     mockGetStudentsAtAbsenceThreshold.mockResolvedValue([
       {
@@ -773,12 +773,20 @@ describe("processAbsenceAlerts", () => {
         selectResults: [
           {
             data: [
-              { student_id: "stu-sent", cohort_id: "cohort-a", status: "sent", sent_at: freshIso },
+              {
+                student_id: "stu-sent",
+                cohort_id: "cohort-a",
+                status: "sent",
+                sent_at: freshIso,
+                // Misma marca de agua que el conteo actual: nada nuevo que avisar.
+                absences_count: 2,
+              },
               {
                 student_id: "stu-fresh",
                 cohort_id: "cohort-b",
                 status: "pending",
                 sent_at: freshIso,
+                absences_count: 2,
               },
             ],
             error: null,
@@ -814,6 +822,260 @@ describe("processAbsenceAlerts", () => {
     expect(json.absences).toEqual({ evaluated: 1, sent: 0 });
     expect(json.errors).toContain("reserve absence stu-1/cohort-1: db caída");
     expect(mockSendAttendanceWarningEmail).not.toHaveBeenCalled();
+  });
+
+  // --- Marca de agua: la alerta dejó de ser un aviso único (ADR-0037) --------
+
+  function alumnoConFaltas(absences: number) {
+    return [
+      {
+        studentId: "stu-1",
+        cohortId: "cohort-1",
+        programId: "prog-1",
+        cohortName: "Cohorte 1",
+        email: "a@test.cl",
+        fullName: "A",
+        absences,
+      },
+    ];
+  }
+
+  it("no reenvía cuando el conteo no subió desde el último aviso", async () => {
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(3));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "sent",
+                sent_at: new Date(Date.now() - 86_400_000).toISOString(),
+                absences_count: 3,
+              },
+            ],
+            error: null,
+          },
+        ],
+      },
+    };
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.absences).toEqual({ evaluated: 0, sent: 0 });
+    expect(mockSendAttendanceWarningEmail).not.toHaveBeenCalled();
+  });
+
+  it("reenvía con el número nuevo cuando el alumno suma una inasistencia", async () => {
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(3));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "sent",
+                sent_at: new Date(Date.now() - 86_400_000).toISOString(),
+                absences_count: 2,
+              },
+            ],
+            error: null,
+          },
+        ],
+        insertResults: [{ error: { code: "23505", message: "dup" } }],
+        updateClaimResults: [
+          { data: null, error: null }, // no estaba 'failed'
+          { data: null, error: null }, // no era 'pending' colgado
+          { data: { student_id: "stu-1" }, error: null }, // 'sent' con conteo menor
+        ],
+      },
+    };
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.absences).toEqual({ evaluated: 1, sent: 1 });
+    expect(mockSendAttendanceWarningEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ absencesCount: 3 }),
+    );
+  });
+
+  it("un salto de 2 a 16 manda UN correo con el número real, no uno por nivel", async () => {
+    // Es el caso del backfill de asistencia por Excel: el conteo salta de golpe.
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(16));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "sent",
+                sent_at: new Date(Date.now() - 86_400_000).toISOString(),
+                absences_count: 2,
+              },
+            ],
+            error: null,
+          },
+        ],
+        insertResults: [{ error: { code: "23505", message: "dup" } }],
+        updateClaimResults: [
+          { data: null, error: null },
+          { data: null, error: null },
+          { data: { student_id: "stu-1" }, error: null },
+        ],
+      },
+    };
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.absences).toEqual({ evaluated: 1, sent: 1 });
+    expect(mockSendAttendanceWarningEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendAttendanceWarningEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ absencesCount: 16 }),
+    );
+  });
+
+  it("dos corridas concurrentes con el mismo conteo: la segunda no manda nada", async () => {
+    // La corrida que llega segunda pierde los tres reclamos porque la primera
+    // ya movió la fila a 'pending'. Es lo que evita el duplicado del 21-jul.
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(5));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "sent",
+                sent_at: new Date(Date.now() - 86_400_000).toISOString(),
+                absences_count: 2,
+              },
+            ],
+            error: null,
+          },
+        ],
+        insertResults: [{ error: { code: "23505", message: "dup" } }],
+        updateClaimResults: [
+          { data: null, error: null },
+          { data: null, error: null },
+          { data: null, error: null }, // otra corrida ya tomó la fila
+        ],
+      },
+    };
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.absences).toEqual({ evaluated: 1, sent: 0 });
+    expect(mockSendAttendanceWarningEmail).not.toHaveBeenCalled();
+  });
+
+  it("el reclamo por conteo superado exige que la marca de agua sea menor", async () => {
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(7));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "sent",
+                sent_at: new Date(Date.now() - 86_400_000).toISOString(),
+                absences_count: 4,
+              },
+            ],
+            error: null,
+          },
+        ],
+        insertResults: [{ error: { code: "23505", message: "dup" } }],
+        updateClaimResults: [
+          { data: null, error: null },
+          { data: null, error: null },
+          { data: { student_id: "stu-1" }, error: null },
+        ],
+      },
+    };
+
+    await GET(makeRequest());
+
+    // El tercer reclamo es el que hace recurrente la alerta: sin el `lt` sobre
+    // absences_count, dos corridas con el mismo conteo mandarían dos correos.
+    const claims = capturedCalls["attendance_alerts.update-claim"] ?? [];
+    const porConteo = claims[claims.length - 1];
+    expect(porConteo?.filters).toContainEqual(["eq", "status", "sent"]);
+    expect(porConteo?.filters).toContainEqual(["lt", "absences_count", 7]);
+    expect(porConteo?.payload).toMatchObject({ status: "pending", absences_count: 7 });
+  });
+
+  it("reintenta un envío fallido aunque el conteo no haya subido", async () => {
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(2));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "failed",
+                sent_at: new Date(Date.now() - 86_400_000).toISOString(),
+                absences_count: 2,
+              },
+            ],
+            error: null,
+          },
+        ],
+        insertResults: [{ error: { code: "23505", message: "dup" } }],
+        updateClaimResults: [{ data: { student_id: "stu-1" }, error: null }],
+      },
+    };
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.absences).toEqual({ evaluated: 1, sent: 1 });
+  });
+
+  it("recupera una reserva 'pending' colgada aunque el conteo no haya subido", async () => {
+    const viejo = new Date(Date.now() - 30 * 60_000).toISOString(); // > RETRY_STALE_MS
+    mockGetStudentsAtAbsenceThreshold.mockResolvedValue(alumnoConFaltas(2));
+    adminTables = {
+      attendance_alerts: {
+        selectResults: [
+          {
+            data: [
+              {
+                student_id: "stu-1",
+                cohort_id: "cohort-1",
+                status: "pending",
+                sent_at: viejo,
+                absences_count: 2,
+              },
+            ],
+            error: null,
+          },
+        ],
+        insertResults: [{ error: { code: "23505", message: "dup" } }],
+        updateClaimResults: [
+          { data: null, error: null }, // no estaba 'failed'
+          { data: { student_id: "stu-1" }, error: null }, // reserva colgada
+        ],
+      },
+    };
+
+    const res = await GET(makeRequest());
+    const json = await res.json();
+
+    expect(json.absences).toEqual({ evaluated: 1, sent: 1 });
   });
 
   it("23505 con fila 'failed' reclamable: reclama y envía la alerta", async () => {

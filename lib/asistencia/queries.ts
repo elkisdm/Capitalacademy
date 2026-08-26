@@ -9,6 +9,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GRACE_AFTER_MIN, sessionAppliesToEnrollment } from "./window";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 export type AttendanceRow = {
   studentId: string;
@@ -30,7 +31,7 @@ export type SessionAttendanceReport = {
 
 type EnrollmentRow = {
   student_id: string;
-  profiles: { full_name: string | null; email: string | null } | null;
+  profiles: { full_name: string | null; email: string | null; account_type: string | null } | null;
 };
 
 /** Reporte de asistencia de una sesión: matriculados activos + su estado. */
@@ -48,11 +49,15 @@ export async function getSessionAttendance(
 
   const { data: enrollmentsRaw, error: enrollmentsError } = await admin
     .from("enrollments")
-    .select("student_id, profiles(full_name, email)")
+    .select("student_id, profiles(full_name, email, account_type)")
     .eq("cohort_id", session.cohort_id)
     .eq("status", "active");
   if (enrollmentsError) throw new Error("No se pudo cargar la asistencia");
-  const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentRow[];
+  // Cuentas del equipo y de QA fuera del reporte (ADR-0037): inflaban el total
+  // de la clase y bajaban el porcentaje de asistencia real.
+  const enrollments = ((enrollmentsRaw ?? []) as unknown as EnrollmentRow[]).filter((e) =>
+    isRealStudent(e.profiles),
+  );
 
   const { data: attendance, error: attendanceError } = await admin
     .from("session_attendance")
@@ -216,7 +221,7 @@ type EnrollmentSegmentRow = {
   cohort_id: string;
   segment: string | null;
   enrolled_at: string;
-  profiles: { email: string | null; full_name: string | null } | null;
+  profiles: { email: string | null; full_name: string | null; account_type: string | null } | null;
 };
 
 /**
@@ -225,6 +230,10 @@ type EnrollmentSegmentRow = {
  * de programas con `attendance_alerts_enabled = true`. Respeta audiencia: una
  * sesión `audience='capital_inteligente'` solo cuenta para alumnos con
  * `enrollments.segment='capital_inteligente'`.
+ *
+ * Las cuentas del equipo y de QA quedan fuera (`profiles.account_type`,
+ * ADR-0037): la cuenta `Administrador` y las cuentas personales del equipo
+ * figuraban con inasistencias y habrían recibido la advertencia.
  *
  * Todo con service_role: el llamador (cron) no tiene sesión de usuario.
  */
@@ -282,7 +291,9 @@ export async function getStudentsAtAbsenceThreshold(
 
   const { data: enrollmentsRaw } = await admin
     .from("enrollments")
-    .select("student_id, cohort_id, segment, enrolled_at, profiles(email, full_name)")
+    .select(
+      "student_id, cohort_id, segment, enrolled_at, profiles(email, full_name, account_type)",
+    )
     .in("cohort_id", cohortIds)
     .eq("status", "active");
   const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentSegmentRow[];
@@ -303,6 +314,7 @@ export async function getStudentsAtAbsenceThreshold(
   const result: StudentAbsence[] = [];
   for (const e of enrollments) {
     if (!e.profiles?.email) continue;
+    if (!isRealStudent(e.profiles)) continue;
     const cohortSessions = sessionsByCohort.get(e.cohort_id) ?? [];
     let absences = 0;
     for (const s of cohortSessions) {

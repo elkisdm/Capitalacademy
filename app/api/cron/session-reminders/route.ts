@@ -43,8 +43,17 @@ const WINDOW_SLACK_MS = 35 * 60 * 1000; // 35 min
 const CATCHUP_MS = 3 * 60 * 60 * 1000; // 3 horas
 
 // Alerta de inasistencia: se avisa al alumno al llegar a 2 clases en vivo sin
-// registro (por debajo del máximo tolerado de 3), UNA vez por alumno+cohorte.
-// Ver docs/adr/0013-alerta-inasistencias-y-expiracion-qr.md.
+// registro (por debajo del máximo tolerado de 3) y OTRA VEZ cada vez que ese
+// conteo sube. Ver ADR-0037, que reemplaza el "una sola vez" del ADR-0013.
+//
+// La fila de `attendance_alerts` funciona como MARCA DE AGUA: guarda el conteo
+// del último aviso enviado y solo se vuelve a escribir cuando el conteo real lo
+// supera. De ahí sale gratis el anti-ráfaga: un alumno que salta de 2 a 16
+// inasistencias (típico tras cargar asistencia por Excel) recibe UN correo que
+// dice 16, no catorce correos de los niveles intermedios.
+//
+// El sufijo `_2` del kind es el umbral de ENTRADA, no un nivel: se mantiene
+// como identificador estable de la bitácora, no como "aviso número 2".
 const ABSENCE_ALERT_KIND = "absence_2";
 const ABSENCE_ALERT_THRESHOLD = 2;
 const MAX_ABSENCES_TOLERATED = 3;
@@ -393,10 +402,37 @@ async function processWindow(
 }
 
 /**
+ * Update condicional base para reclamar una fila de `attendance_alerts`.
+ *
+ * Deja la fila en 'pending' con el conteo de AHORA; quien llama agrega la
+ * condición que define el caso (falló / reserva colgada / conteo superado).
+ * Se extrae para que los tres reclamos no puedan divergir en lo que escriben.
+ */
+function buildAlertClaim(
+  admin: ReturnType<typeof createAdminClient>,
+  row: { studentId: string; cohortId: string; absences: number },
+  nowIso: string,
+) {
+  return admin
+    .from("attendance_alerts")
+    .update({ status: "pending", absences_count: row.absences, error: null, sent_at: nowIso })
+    .eq("student_id", row.studentId)
+    .eq("cohort_id", row.cohortId)
+    .eq("kind", ABSENCE_ALERT_KIND);
+}
+
+/**
  * Detecta alumnos con `ABSENCE_ALERT_THRESHOLD` o más inasistencias a clases
- * en vivo y envía UN correo de advertencia por alumno+cohorte, reservando la
- * fila en `attendance_alerts` ANTES de enviar (mismo patrón reserva-antes-de-
- * enviar de `processWindow`, contra `session_reminders`).
+ * en vivo y les envía el correo de advertencia, reservando la fila en
+ * `attendance_alerts` ANTES de enviar (mismo patrón reserva-antes-de-enviar de
+ * `processWindow`, contra `session_reminders`).
+ *
+ * Reenvía cuando el conteo SUPERA el del último aviso (ADR-0037). Cada corrida
+ * manda como máximo un correo por alumno, con el número real del momento.
+ *
+ * Las cuentas del equipo y de QA ya vienen filtradas desde
+ * `getStudentsAtAbsenceThreshold` (ADR-0037): la cuenta `Administrador` y las
+ * cuentas personales del equipo figuraban con inasistencias.
  */
 async function processAbsenceAlerts(
   admin: ReturnType<typeof createAdminClient>,
@@ -406,33 +442,42 @@ async function processAbsenceAlerts(
   const rows = await getStudentsAtAbsenceThreshold(ABSENCE_ALERT_THRESHOLD);
   if (rows.length === 0) return { evaluated: 0, sent: 0, errors };
 
-  // Descartar pares (alumno, cohorte) que YA tienen alerta RESUELTA
-  // ('sent') o RESERVADA hace poco ('pending' fresco). 'failed' y 'pending'
-  // viejo (>RETRY_STALE_MS: reserva que nunca terminó) SÍ se reintentan.
+  // Marca de agua por (alumno, cohorte): a qué conteo se avisó por última vez.
+  // Se reenvía SOLO si el conteo actual la supera. 'failed' y 'pending' viejo
+  // (>RETRY_STALE_MS: reserva que nunca terminó) se reintentan aunque el conteo
+  // no haya cambiado, porque ese correo nunca llegó a salir.
   const staleCutoffIso = new Date(now - RETRY_STALE_MS).toISOString();
   const { data: existing } = await admin
     .from("attendance_alerts")
-    .select("student_id, cohort_id, status, sent_at")
+    .select("student_id, cohort_id, status, sent_at, absences_count")
     .eq("kind", ABSENCE_ALERT_KIND)
     .in(
       "student_id",
       rows.map((r) => r.studentId),
     );
-  const alreadySent = new Set(
+  const previous = new Map(
     (
       (existing ?? []) as Array<{
         student_id: string;
         cohort_id: string;
         status: string;
         sent_at: string;
+        absences_count: number;
       }>
-    )
-      .filter(
-        (r) => r.status === "sent" || (r.status === "pending" && r.sent_at >= staleCutoffIso),
-      )
-      .map((r) => `${r.student_id}:${r.cohort_id}`),
+    ).map((r) => [`${r.student_id}:${r.cohort_id}`, r]),
   );
-  const pending = rows.filter((r) => !alreadySent.has(`${r.studentId}:${r.cohortId}`));
+
+  const pending = rows.filter((row) => {
+    const prev = previous.get(`${row.studentId}:${row.cohortId}`);
+    if (!prev) return true; // nunca se le avisó
+    // Reserva de otra corrida todavía viva: no tocar.
+    if (prev.status === "pending" && prev.sent_at >= staleCutoffIso) return false;
+    // Envío fallido o reserva colgada: reintentar aunque el conteo no suba.
+    if (prev.status === "failed") return true;
+    if (prev.status === "pending") return true;
+    // Ya avisado: solo si acumuló una inasistencia nueva desde entonces.
+    return row.absences > prev.absences_count;
+  });
 
   let sent = 0;
   for (const row of pending) {
@@ -452,36 +497,40 @@ async function processAbsenceAlerts(
     if (reserveErr) {
       if (String(reserveErr.code).includes("23505")) {
         // 23505 = unique_violation: ya existe una fila para este slot. Puede
-        // ser una corrida concurrente (status 'sent'/'pending' fresco, dejar
-        // en paz) o un intento previo sin terminar: 'failed' (reintentable
-        // de inmediato) o 'pending' viejo (>RETRY_STALE_MS, crash a mitad de
-        // camino). El reclamo es un update condicional atómico: solo una
-        // corrida puede ganar la fila (ver comentario equivalente en
-        // processWindow).
-        const { data: retriedFailed } = await admin
-          .from("attendance_alerts")
-          .update({ status: "pending", absences_count: row.absences, error: null, sent_at: nowIso })
-          .eq("student_id", row.studentId)
-          .eq("cohort_id", row.cohortId)
-          .eq("kind", ABSENCE_ALERT_KIND)
-          .eq("status", "failed")
-          .select("student_id")
-          .maybeSingle();
-        let retried = retriedFailed;
-        if (!retried) {
-          const { data: retriedStale } = await admin
-            .from("attendance_alerts")
-            .update({ status: "pending", absences_count: row.absences, error: null, sent_at: nowIso })
-            .eq("student_id", row.studentId)
-            .eq("cohort_id", row.cohortId)
-            .eq("kind", ABSENCE_ALERT_KIND)
-            .eq("status", "pending")
-            .lt("sent_at", staleCutoffIso)
+        // ser una corrida concurrente (dejar en paz) o un caso reclamable:
+        // 'failed', 'pending' viejo (>RETRY_STALE_MS, crash a mitad de camino)
+        // o 'sent' con una marca de agua MENOR que el conteo de ahora.
+        //
+        // Cada reclamo es un update condicional atómico y todos mueven la fila
+        // a 'pending': solo una corrida puede ganarla, porque la que llega
+        // segunda ya no encuentra el status que su WHERE exige. Es lo que
+        // impide repetir el incidente de correos duplicados del 21-jul.
+        const claim = async (
+          apply: (
+            q: ReturnType<typeof buildAlertClaim>,
+          ) => ReturnType<typeof buildAlertClaim>,
+        ) => {
+          const { data } = await apply(buildAlertClaim(admin, row, nowIso))
             .select("student_id")
             .maybeSingle();
-          retried = retriedStale;
+          return data;
+        };
+
+        // 1) Envío que falló: se reintenta aunque el conteo no haya subido.
+        let retried = await claim((q) => q.eq("status", "failed"));
+        // 2) Reserva colgada de una corrida que murió antes de enviar.
+        if (!retried) {
+          retried = await claim((q) => q.eq("status", "pending").lt("sent_at", staleCutoffIso));
         }
-        if (!retried) continue; // no era reintentable: otra corrida ya tiene el slot.
+        // 3) Ya avisado, pero acumuló inasistencias nuevas desde ese aviso.
+        //    El `lt` sobre absences_count es lo que hace recurrente la alerta
+        //    sin permitir dos correos por el mismo conteo.
+        if (!retried) {
+          retried = await claim((q) =>
+            q.eq("status", "sent").lt("absences_count", row.absences),
+          );
+        }
+        if (!retried) continue; // no era reclamable: otra corrida ya tiene el slot.
       } else {
         errors.push(`reserve absence ${row.studentId}/${row.cohortId}: ${reserveErr.message}`);
         continue;

@@ -7,7 +7,7 @@ import { BrandShapes, Avatar } from "@/components/classroom/primitives";
 import { MonthCalendar } from "@/components/classroom/month-calendar";
 import type { ScheduleSession, SessionTiming } from "@/lib/classroom/types";
 import { TZ_SANTIAGO, dayKeyOf } from "@/lib/calendar/month-grid";
-import { meetingPath } from "@/lib/livekit/meeting-code";
+import { joinHrefFor } from "@/lib/classroom/enlace-clase";
 
 const TZ = TZ_SANTIAGO;
 
@@ -135,10 +135,9 @@ function SessionRow({
   const isCancelled = s.status === "cancelled";
   const pill = TIMING_PILL[timing];
   // Una sesión cancelada no se "entra", aunque sea online futura con enlace vivo.
-  // La sala PROPIA manda sobre el enlace externo heredado (Zoom/Meet): si la
-  // clase tiene código, se entra por /sala/<código>; el meeting_url queda como
-  // respaldo de las clases antiguas creadas con uno.
-  const salaHref = s.code ? meetingPath(s.code) : (s.meeting_url ?? null);
+  // A dónde entra el alumno lo decide `joinHrefFor`, compartido con el correo de
+  // recordatorio: un enlace externo cargado a mano gana sobre la sala propia.
+  const salaHref = joinHrefFor(s);
   const showJoin = isOnline && timing !== "past" && !!salaHref && !isCancelled;
 
   return (

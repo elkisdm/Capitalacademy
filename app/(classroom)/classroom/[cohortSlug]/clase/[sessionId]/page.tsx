@@ -18,6 +18,7 @@ import { Breadcrumb, Avatar } from "@/components/classroom/primitives";
 import { ClassMaterial } from "@/components/classroom/class-material";
 import { isWithinRoomWindow } from "@/lib/livekit/access";
 import { meetingPath } from "@/lib/livekit/meeting-code";
+import { joinHrefFor, isExternalJoinHref } from "@/lib/classroom/enlace-clase";
 
 const TZ = "America/Santiago";
 
@@ -75,6 +76,11 @@ export default async function ClassSessionPage(
   const isLive = start <= now && now <= end;
   const isUpcoming = start > now;
   const meetingUrl = (session as { meeting_url?: string | null }).meeting_url ?? null;
+  // Único lugar que decide a dónde entra el alumno (compartido con el correo de
+  // recordatorio y el calendario): un enlace externo cargado a mano gana sobre
+  // la sala propia, porque significa que la clase se dicta ahí.
+  const joinHref = joinHrefFor({ meeting_url: meetingUrl, code: session.code });
+  const entraPorEnlaceExterno = isExternalJoinHref(joinHref);
 
   // El staff ve la sala siempre (necesita entrar antes a probar); al alumno se
   // le ofrece solo dentro de la ventana, igual que decide la ruta del token.
@@ -241,7 +247,7 @@ export default async function ClassSessionPage(
               es el camino por defecto desde ADR-0031. Las sesiones creadas
               antes siguen teniendo su `meeting_url` de Zoom/Meet y deben poder
               usarlo mientras la migración no esté completa. */}
-          {(isLive || isUpcoming) && meetingUrl && (
+          {(isLive || isUpcoming) && meetingUrl && !entraPorEnlaceExterno && (
             <a
               href={meetingUrl}
               target="_blank"
@@ -287,22 +293,33 @@ export default async function ClassSessionPage(
               <p className="text-[15px] font-black tracking-tight text-ca-ink">
                 {isLive
                   ? "La clase está en curso"
-                  : showLiveRoom
-                    ? "La sala ya está abierta"
-                    : "La clase se dicta aquí, en la sala en vivo"}
+                  : entraPorEnlaceExterno
+                    ? "Esta clase se dicta por videollamada externa"
+                    : showLiveRoom
+                      ? "La sala ya está abierta"
+                      : "La clase se dicta aquí, en la sala en vivo"}
               </p>
               <p className="mt-1 text-[13px] leading-relaxed text-ca-ink-soft">
-                {showLiveRoom
-                  ? "Se abre en pantalla completa, como una videollamada."
-                  : "La sala abre 30 minutos antes del inicio; el botón para entrar aparecerá aquí."}
+                {entraPorEnlaceExterno
+                  ? "El botón te lleva al enlace de la videollamada, fuera de la plataforma."
+                  : showLiveRoom
+                    ? "Se abre en pantalla completa, como una videollamada."
+                    : "La sala abre 30 minutos antes del inicio; el botón para entrar aparecerá aquí."}
               </p>
-              <p className="mt-1.5 font-mono text-[11px] text-ca-ink-soft/70">
-                {session.code}
-              </p>
+              {/* El código solo sirve para la sala propia: mostrarlo cuando la
+                  clase se dicta afuera manda al alumno al lugar equivocado. */}
+              {!entraPorEnlaceExterno && (
+                <p className="mt-1.5 font-mono text-[11px] text-ca-ink-soft/70">
+                  {session.code}
+                </p>
+              )}
             </div>
-            {showLiveRoom && (
+            {joinHref && (showLiveRoom || entraPorEnlaceExterno) && (
               <Link
-                href={meetingPath(session.code)}
+                href={joinHref}
+                {...(entraPorEnlaceExterno
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 className="ca-btn-lime ca-btn-interactive shrink-0 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.08em]"
               >
                 Entrar a la clase

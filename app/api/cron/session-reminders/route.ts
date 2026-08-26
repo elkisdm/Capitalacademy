@@ -11,6 +11,7 @@ import { sendAttendanceWarningEmail } from "@/lib/email/attendance-warning";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
 import { getStudentsAtAbsenceThreshold } from "@/lib/asistencia/queries";
 import { authorizeCron } from "@/lib/api/cron-auth";
+import { joinHrefFor } from "@/lib/classroom/enlace-clase";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -300,14 +301,13 @@ async function processWindow(
 
     const studentIdByEmail = new Map(missing.map((r) => [r.email, r.studentId]));
 
-    // A dónde entra el alumno. `meeting_url` es la columna vieja del enlace
-    // externo (Zoom); las salas de la plataforma viven en `code`, así que sin
-    // esto una clase con sala propia sale SIN botón para entrar — que es lo que
-    // pasó con los recordatorios de 72 h y 24 h del 19-ago.
-    // El externo manda cuando existe: si alguien lo cargó a mano, es porque esa
-    // clase se dicta ahí y no en la sala nuestra.
+    // A dónde entra el alumno. La regla vive en `joinHrefFor`, compartida con el
+    // calendario y la pantalla de clase: el enlace externo manda cuando existe,
+    // la sala propia es el camino por defecto. Acá se absolutiza la ruta porque
+    // va dentro de un correo.
+    const destino = joinHrefFor(session);
     const enlaceParaEntrar =
-      session.meeting_url ?? (session.code ? `${getPublicBaseUrl()}/sala/${session.code}` : null);
+      destino && destino.startsWith("/") ? `${getPublicBaseUrl()}${destino}` : destino;
     const messages: BatchMessage[] = missing.map((r) => {
       const content = isCapacitacion
         ? buildCapacitacionReminderEmail({

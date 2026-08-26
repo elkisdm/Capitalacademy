@@ -21,6 +21,7 @@ import {
 import type { LessonWithProgress, ScheduleSession } from "@/lib/classroom/types";
 import { fmtDuration } from "@/lib/classroom/format";
 import { ClassMaterial } from "@/components/classroom/class-material";
+import { joinHrefFor, isExternalJoinHref } from "@/lib/classroom/enlace-clase";
 
 function ChapterRow({ lesson, index, cohortSlug, moduleSlug, isLast }: {
   lesson: LessonWithProgress;
@@ -211,11 +212,18 @@ function SessionRow({ session, isLast, cohortSlug }: { session: ScheduleSession;
             </Link>
           )}
         </div>
-        {isLive && (session as unknown as { meeting_url?: string }).meeting_url && (
+        {/* Mismo criterio que el correo y el calendario (`joinHrefFor`): el
+            enlace externo manda, la sala propia es el camino por defecto. Antes
+            este botón solo aparecía si la clase tenía enlace externo, así que
+            una clase con sala propia se quedaba sin "Entrar". */}
+        {isLive && joinHrefFor(session as { meeting_url?: string | null; code?: string | null }) && (
           <a
-            href={(session as unknown as { meeting_url: string }).meeting_url}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={joinHrefFor(session as { meeting_url?: string | null; code?: string | null })!}
+            {...(isExternalJoinHref(
+              joinHrefFor(session as { meeting_url?: string | null; code?: string | null }),
+            )
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
             className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-ca-lime px-4 py-2 text-[12px] font-bold text-ca-ink transition-transform hover:scale-[1.02]"
           >
             Entrar

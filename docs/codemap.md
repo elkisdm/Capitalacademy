@@ -115,7 +115,7 @@
 
 | Path | Responsabilidad | Rutas / entrypoints clave | ADR |
 |------|-----------------|---------------------------|-----|
-| `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) y detecta inasistencias (`processAbsenceAlerts`) | `POST /api/cron/session-reminders` | 0008, 0013 |
+| `app/api/cron/session-reminders/route.ts` | Endpoint que envía recordatorios de clase próximos (gateado por `CRON_SECRET`) y detecta inasistencias (`processAbsenceAlerts`, recurrente por marca de agua) | `POST /api/cron/session-reminders` | 0008, 0013, 0037 |
 | `netlify/functions/session-reminders-cron.mjs` | Netlify Scheduled Function (`*/30`) que invoca el endpoint de recordatorios | — | 0008 |
 | `app/api/admin/sessions/[sessionId]/aviso/route.ts` | Aviso de reprogramación/cancelación de una clase: GET devuelve a cuántos alcanza, POST envía y deja bitácora. El horario ANTERIOR llega en el body (la fila ya tiene el nuevo) | `GET/POST /api/admin/sessions/[id]/aviso` | 0013 |
 | `lib/email/session-change.ts` · `lib/classroom/session-recipients.ts` | Plantilla del aviso (horario viejo tachado + nuevo) y destinatarios de una clase, compartidos con el cron de recordatorios | — | 0013 |
@@ -126,6 +126,8 @@
 | `netlify/functions/recording-notifications-cron.mjs` | Netlify Scheduled Function que invoca el cron de reconciliación de notificaciones de grabación | — | — |
 | `lib/api/cron-auth.ts` | `authorizeCron`: valida el header `Authorization: Bearer <CRON_SECRET>` (timing-safe) para los endpoints de cron | — | — |
 | `lib/email/recording-available.ts` | Correo "grabación disponible" al publicarse la repetición de una clase en vivo (todo programa salvo CAP-CI) | — | — |
+| `lib/profiles/account-type.ts` | Naturaleza de la cuenta (`real`/`staff`/`test`): predicado único que saca a las cuentas del equipo y de QA de comunicaciones y métricas SIN quitarles acceso | — | 0037 |
+| `scripts/borrar-cuentas-qa.mjs` | Borra de `auth.users` las cuentas de QA que la 0104 sacó de `profiles` (corre en seco por defecto; `profiles` no tiene FK hacia auth) | — | 0037 |
 | `lib/email/` | Correos transaccionales (Resend): `invitation`, `diplomado-invitation`, `payment-confirmation`, `session-reminder`, `certificate`, `capacitacion-emails` (recordatorios + follow-up del ciclo CAP-CI), `attendance-warning` (alerta de inasistencias, brandeada por entorno) | — | 0013 |
 
 ## Clases en vivo (LiveKit)
@@ -179,7 +181,7 @@
 | `lib/asistencia/checkin.ts` | Lógica **pura** de decisión del check-in (`evaluateCheckin`: sesión→matrícula→ventana→registro); la Server Action la envuelve | — | — |
 | `lib/asistencia/window.ts` | Ventana temporal válida (20 min antes / 30 después) y `getWindowState` (`before`/`open`/`closed`) | — | 0013 |
 | `lib/asistencia/queries.ts` | Reportería de asistencia + marcado/desmarcado manual (service_role) + `getStudentsAtAbsenceThreshold` (conteo de inasistencias para el cron) | — | 0013 |
-| `db/migrations/0054_attendance_alerts.sql` | Bitácora idempotente de correos de alerta de inasistencia (`unique student+cohort+kind`) | — | 0013 |
+| `db/migrations/0054_attendance_alerts.sql` | Bitácora idempotente de correos de alerta de inasistencia (`unique student+cohort+kind`); desde la 0105 `absences_count` es la MARCA DE AGUA que hace recurrente el aviso | — | 0013, 0037 |
 | `app/api/admin/sessions/[sessionId]/attendance/route.ts` | GET reporte · POST marcar · DELETE desmarcar (gateado por `requireSessionStaff`: staff o docente/asistente de esa cohorte) | `/api/admin/sessions/[sessionId]/attendance` | 0013 |
 | `app/api/admin/sessions/[sessionId]/attendance/bulk/route.ts` | Marca o quita, en un solo round-trip, la asistencia de varios alumnos a la vez | `POST /api/admin/sessions/[sessionId]/attendance/bulk` | 0013 |
 | `components/admin/session-qr.tsx` | QR imprimible por sesión para el PPT del docente (admin) | — | — |

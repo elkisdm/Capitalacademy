@@ -23,6 +23,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 export type CampaignRecipient = {
   studentId: string;
@@ -50,7 +51,12 @@ export const AUDIENCE_STATUSES = ["active", "invited", "completed", "suspended"]
 
 type EnrollmentRow = {
   student_id: string;
-  profiles: { email: string | null; full_name: string | null; role: string | null } | null;
+  profiles: {
+    email: string | null;
+    full_name: string | null;
+    role: string | null;
+    account_type: string | null;
+  } | null;
 };
 
 /**
@@ -65,7 +71,9 @@ export async function resolveAudience(
 
   let query = admin
     .from("enrollments")
-    .select("student_id, profiles!inner(email, full_name, role), cohorts!inner(program_id)")
+    .select(
+      "student_id, profiles!inner(email, full_name, role, account_type), cohorts!inner(program_id)",
+    )
     .eq("cohorts.program_id", filter.programId)
     .in("status", statuses as ("active" | "invited" | "completed" | "suspended" | "dropped")[]);
 
@@ -92,6 +100,9 @@ export async function resolveAudience(
     const email = profile?.email?.trim().toLowerCase();
     if (!email) continue;
     if (profile?.role !== "student") continue;
+    // El filtro por `role` no alcanza: dos personas del equipo tienen cuenta
+    // con role='student' (ADR-0037). La etiqueta explícita sí las atrapa.
+    if (!isRealStudent(profile)) continue;
     if (selected && !selected.has(row.student_id)) continue;
     if (byEmail.has(email)) continue;
     byEmail.set(email, {

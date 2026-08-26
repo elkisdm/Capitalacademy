@@ -6,6 +6,7 @@ import {
   shiftDateKey,
   type ActivityRiskLevel,
 } from "@/lib/classroom/actividad";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 /**
  * Reportes de actividad del alumno para el panel de operaciones (ADR-0029).
@@ -80,6 +81,10 @@ const PLATFORM_STAFF_ROLES = new Set(["ops", "admin"]);
  * lista de inactivos a quien nunca fue alumno. Un `system_role` ausente se
  * trata como alumno: el panel prefiere mostrar de más a esconder a alguien que
  * sí tenía que aparecer.
+ *
+ * OJO: por sí sola esta señal NO alcanza — dos personas del equipo tienen
+ * cuenta con `system_role='user'`. La fuente de verdad es
+ * `profiles.account_type` (ADR-0037); esto queda como refuerzo por rol.
  */
 export function isStaffEnrollment(systemRole: string | null | undefined): boolean {
   return systemRole != null && PLATFORM_STAFF_ROLES.has(systemRole);
@@ -236,14 +241,19 @@ export async function getCohortActivityReport(
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("id, student_id, profiles(full_name, email, system_role)")
+    .select("id, student_id, profiles(full_name, email, system_role, account_type)")
     .eq("cohort_id", cohortId)
     .eq("status", "active");
 
   const refs: EnrollmentRef[] = (enrollments ?? [])
     .filter((e) => {
-      const profile = e.profiles as { system_role: string | null } | null;
-      return !isStaffEnrollment(profile?.system_role);
+      const profile = e.profiles as {
+        system_role: string | null;
+        account_type: string | null;
+      } | null;
+      // La etiqueta explícita manda; el rol queda como red de seguridad para
+      // una cuenta de staff que nadie alcanzó a etiquetar.
+      return isRealStudent(profile) && !isStaffEnrollment(profile?.system_role);
     })
     .map((e) => {
       const profile = e.profiles as { full_name: string | null; email: string } | null;

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 export type CohortStudentProgress = {
   student_id: string;
@@ -31,13 +32,19 @@ export async function getCohortProgressReport(cohortId: string) {
 
   const program = cohort.programs as { id: string; name: string };
 
-  const { data: enrollments } = await supabase
+  const { data: enrollmentsRaw } = await supabase
     .from("enrollments")
-    .select("id, student_id, profiles(full_name, email)")
+    .select("id, student_id, profiles(full_name, email, account_type)")
     .eq("cohort_id", cohortId)
     .eq("status", "active");
 
-  if (!enrollments) return { cohort, program, students: [] };
+  if (!enrollmentsRaw) return { cohort, program, students: [] };
+
+  // Cuentas del equipo y de QA fuera del reporte de avance (ADR-0037): con
+  // 0% de avance arrastraban hacia abajo el promedio de la cohorte.
+  const enrollments = enrollmentsRaw.filter((e) =>
+    isRealStudent(e.profiles as { account_type: string | null } | null),
+  );
 
   const { data: modules } = await supabase
     .from("program_modules")

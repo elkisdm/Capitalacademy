@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 export type SessionRecipient = {
   studentId: string;
@@ -17,6 +18,9 @@ export type SessionRecipient = {
  *
  * El filtro por `audience` importa: una clase marcada para el segmento interno
  * de Capital Inteligente no le corresponde al resto de la cohorte.
+ *
+ * Las cuentas del equipo y de QA (`profiles.account_type`, ADR-0037) quedan
+ * fuera: siguen teniendo acceso a la clase, pero no reciben el correo.
  */
 export async function getSessionRecipients(
   admin: SupabaseClient<Database>,
@@ -24,7 +28,7 @@ export async function getSessionRecipients(
 ): Promise<SessionRecipient[]> {
   let query = admin
     .from("enrollments")
-    .select("student_id, profiles(email, full_name)")
+    .select("student_id, profiles(email, full_name, account_type)")
     .eq("cohort_id", session.cohort_id)
     .eq("status", "active")
     .order("student_id", { ascending: true });
@@ -40,13 +44,14 @@ export async function getSessionRecipients(
 
   const rows = (data ?? []) as Array<{
     student_id: string;
-    profiles: { email: string; full_name: string | null } | null;
+    profiles: { email: string; full_name: string | null; account_type: string } | null;
   }>;
 
   // Dedup por correo: una persona con dos matrículas en la cohorte no recibe el
   // aviso dos veces.
   const byEmail = new Map<string, SessionRecipient>();
   for (const row of rows) {
+    if (!isRealStudent(row.profiles)) continue;
     const email = row.profiles?.email?.trim().toLowerCase();
     if (!email || byEmail.has(email)) continue;
     byEmail.set(email, {

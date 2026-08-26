@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildDeliverableOpenEmail } from "@/lib/email/deliverable-open";
 import { sendEmailBatch, type BatchMessage } from "@/lib/email/send-batch";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 type NotifyResult = { skipped: true } | { skipped: false; sent: number };
 
@@ -78,7 +79,7 @@ export async function notifyDeliverableOpen(deliverableId: string): Promise<Noti
 
   const { data: enrollments, error: enrollmentsError } = await admin
     .from("enrollments")
-    .select("student_id, profiles(email, full_name), cohorts!inner(program_id)")
+    .select("student_id, profiles(email, full_name, account_type), cohorts!inner(program_id)")
     .eq("cohorts.program_id", reserved.program_id)
     .eq("status", "active");
 
@@ -90,9 +91,11 @@ export async function notifyDeliverableOpen(deliverableId: string): Promise<Noti
   const byStudent = new Map<string, { email: string; fullName: string }>();
   for (const e of (enrollments ?? []) as Array<{
     student_id: string;
-    profiles: { email: string; full_name: string | null } | null;
+    profiles: { email: string; full_name: string | null; account_type: string } | null;
   }>) {
     const p = e.profiles;
+    // Cuentas del equipo y de QA fuera del aviso (ADR-0037).
+    if (!isRealStudent(p)) continue;
     if (p?.email && !byStudent.has(e.student_id)) {
       byStudent.set(e.student_id, { email: p.email, fullName: p.full_name ?? "" });
     }

@@ -3,6 +3,7 @@ import { buildCapacitacionFollowupEmail } from "@/lib/email/capacitacion-emails"
 import { buildRecordingAvailableEmail } from "@/lib/email/recording-available";
 import { sendEmailBatch, type BatchMessage } from "@/lib/email/send-batch";
 import { getPublicBaseUrl } from "@/lib/api/base-url";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 // Ciclo de Capacitación Comercial CI: solo sus grabaciones disparan el
 // seguimiento post-clase. Ver lib/programs/registry.ts.
@@ -99,16 +100,19 @@ export async function dispatchCapacitacionFollowup(
     // Inscritos activos de la cohorte (mismo patrón que el cron de recordatorios).
     const { data: enrollments } = await supabase
       .from("enrollments")
-      .select("student_id, profiles(email, full_name)")
+      .select("student_id, profiles(email, full_name, account_type)")
       .eq("cohort_id", sessionRow.cohort_id)
       .eq("status", "active");
 
     const recipients = (
       (enrollments ?? []) as Array<{
         student_id: string;
-        profiles: { email: string; full_name: string | null } | null;
+        profiles: { email: string; full_name: string | null; account_type: string } | null;
       }>
     )
+      // Cuentas del equipo y de QA fuera del correo (ADR-0037): conservan el
+      // acceso a la repetición, pero no se les avisa.
+      .filter((e) => isRealStudent(e.profiles))
       .filter((e) => Boolean(e.profiles?.email))
       .map((e) => ({
         studentId: e.student_id,
@@ -307,16 +311,19 @@ export async function dispatchRecordingAvailableNotification(
     // Inscritos activos de la cohorte (mismo patrón que el follow-up CAP-CI).
     const { data: enrollments } = await supabase
       .from("enrollments")
-      .select("student_id, profiles(email, full_name)")
+      .select("student_id, profiles(email, full_name, account_type)")
       .eq("cohort_id", sessionRow.cohort_id)
       .eq("status", "active");
 
     const recipients = (
       (enrollments ?? []) as Array<{
         student_id: string;
-        profiles: { email: string; full_name: string | null } | null;
+        profiles: { email: string; full_name: string | null; account_type: string } | null;
       }>
     )
+      // Cuentas del equipo y de QA fuera del correo (ADR-0037): conservan el
+      // acceso a la repetición, pero no se les avisa.
+      .filter((e) => isRealStudent(e.profiles))
       .filter((e) => Boolean(e.profiles?.email))
       .map((e) => ({
         studentId: e.student_id,

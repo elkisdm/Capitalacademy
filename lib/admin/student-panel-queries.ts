@@ -17,6 +17,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSessionClosed, sessionAppliesToEnrollment } from "@/lib/asistencia/window";
+import { isRealStudent } from "@/lib/profiles/account-type";
 
 export type MissedSession = { id: string; title: string | null; startsAt: string };
 export type PendingLesson = { lessonTitle: string; moduleTitle: string };
@@ -63,7 +64,7 @@ type EnrollmentRow = {
   cohort_id: string;
   segment: string | null;
   enrolled_at: string;
-  profiles: { full_name: string | null; email: string | null } | null;
+  profiles: { full_name: string | null; email: string | null; account_type: string | null } | null;
 };
 
 function initialsOf(name: string): string {
@@ -115,7 +116,9 @@ export async function getStudentPanelReport(
     scopeCohortIds.length > 0
       ? await admin
           .from("enrollments")
-          .select("id, student_id, cohort_id, segment, enrolled_at, profiles(full_name, email)")
+          .select(
+            "id, student_id, cohort_id, segment, enrolled_at, profiles(full_name, email, account_type)",
+          )
           .in("cohort_id", scopeCohortIds)
           .eq("status", "active")
       : { data: [] as EnrollmentRow[], error: null };
@@ -123,7 +126,11 @@ export async function getStudentPanelReport(
     console.error("[student-panel] enrollments falló", { programId, code: enrollmentsError.code, message: enrollmentsError.message });
     throw enrollmentsError;
   }
-  const enrollments = (enrollmentsRaw ?? []) as unknown as EnrollmentRow[];
+  // Cuentas del equipo y de QA fuera del roster y de sus totales (ADR-0037):
+  // el panel debe reflejar la cohorte real, no las cuentas de prueba.
+  const enrollments = ((enrollmentsRaw ?? []) as unknown as EnrollmentRow[]).filter((e) =>
+    isRealStudent(e.profiles),
+  );
 
   const { data: sessionsRaw, error: sessionsError } =
     scopeCohortIds.length > 0

@@ -126,6 +126,7 @@
 | `netlify/functions/recording-notifications-cron.mjs` | Netlify Scheduled Function que invoca el cron de reconciliación de notificaciones de grabación | — | — |
 | `lib/api/cron-auth.ts` | `authorizeCron`: valida el header `Authorization: Bearer <CRON_SECRET>` (timing-safe) para los endpoints de cron | — | — |
 | `lib/email/recording-available.ts` | Correo "grabación disponible" al publicarse la repetición de una clase en vivo (todo programa salvo CAP-CI) | — | — |
+| `db/migrations/0106_sesiones_convocatoria_parcial.sql` | `class_sessions.attendee_student_ids`: convoca a parte de la cohorte (null = todos). Decide correos Y asistencia | — | — |
 | `lib/admin/leads-export.ts` | Contenido de la planilla de leads (columnas, anchos, nombre de archivo); el XLSX se arma en el cliente con SheetJS por `import()` al hacer clic | — | — |
 | `lib/classroom/enlace-clase.ts` | `joinHrefFor`: única decisión de a dónde entra el alumno a una clase en vivo (el enlace externo gana sobre la sala propia). La usan el correo de recordatorio, el calendario, la pantalla de clase y la vista de módulo | — | 0031 |
 | `lib/profiles/account-type.ts` | Naturaleza de la cuenta (`real`/`staff`/`test`): predicado único que saca a las cuentas del equipo y de QA de comunicaciones y métricas SIN quitarles acceso | — | 0037 |

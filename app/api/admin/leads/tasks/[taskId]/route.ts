@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/auth/authorize-admin";
 import { uuidLike } from "@/lib/utils/zod";
+import { cancelarReunion } from "@/lib/atlas/calendario";
 
 export const runtime = "nodejs";
 
@@ -79,12 +80,13 @@ export async function DELETE(
   const supabase = createAdminClient();
 
   // `select` tras el delete distingue "no existía" de "se borró": sin eso, un
-  // id inventado devolvería 200 y el panel creería que borró algo.
+  // id inventado devolvería 200 y el panel creería que borró algo. Además trae
+  // el evento de Google, que hay que cancelar antes de perder el puntero.
   const { data, error } = await supabase
     .from("lead_tasks")
     .delete()
     .eq("id", taskId)
-    .select("id")
+    .select("id, google_event_id")
     .maybeSingle();
 
   if (error) {
@@ -92,6 +94,25 @@ export async function DELETE(
   }
   if (!data) {
     return NextResponse.json({ error: "Tarea no encontrada" }, { status: 404 });
+  }
+
+  // Borrar la tarea sin cancelar el evento llenaría de fantasmas el calendario
+  // de la profesora, y el lead seguiría con una invitación a una reunión que ya
+  // nadie va a dar. Si la cancelación falla NO se revierte el borrado: la fila
+  // ya no está y resucitarla sería peor. Queda en el log para revisarlo a mano.
+  if (data.google_event_id) {
+    try {
+      await cancelarReunion(data.google_event_id);
+    } catch (err) {
+      console.error(
+        `[leads] la tarea ${taskId} se borró pero su evento ${data.google_event_id} sigue en Google:`,
+        err instanceof Error ? err.message : String(err),
+      );
+      return NextResponse.json({
+        ok: true,
+        warning: "La reunión se borró acá pero sigue en el calendario de Google.",
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });

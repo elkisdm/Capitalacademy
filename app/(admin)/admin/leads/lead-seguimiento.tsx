@@ -41,11 +41,14 @@ import type { LeadActivityRow, LeadTaskRow } from "@/lib/admin/leads-queries";
  */
 export function LeadSeguimiento({
   leadId,
+  leadEmail,
   stage,
   activity,
   tasks,
 }: {
   leadId: string;
+  /** Sin correo no hay a quién mandarle la invitación: la reunión se oculta. */
+  leadEmail: string | null;
   stage: LeadStage;
   activity: LeadActivityRow[];
   tasks: LeadTaskRow[];
@@ -99,12 +102,22 @@ export function LeadSeguimiento({
       <Tareas
         tasks={tasks}
         disabled={guardando}
-        onCrear={(title, dueAt) =>
-          escribir(
-            `/api/admin/leads/${leadId}/tasks`,
-            { method: "POST", body: JSON.stringify({ title, due_at: dueAt }) },
-            "Tarea agendada",
-          )
+        puedeAgendarReunion={Boolean(leadEmail)}
+        onCrear={(title, dueAt, duracion) =>
+          duracion === null
+            ? escribir(
+                `/api/admin/leads/${leadId}/tasks`,
+                { method: "POST", body: JSON.stringify({ title, due_at: dueAt }) },
+                "Tarea agendada",
+              )
+            : escribir(
+                `/api/admin/leads/${leadId}/meetings`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({ title, due_at: dueAt, duration_minutes: duracion }),
+                },
+                "Reunión agendada",
+              )
         }
         onCompletar={(taskId, done) =>
           escribir(
@@ -181,17 +194,22 @@ const URGENCIA_TEXTO = {
 function Tareas({
   tasks,
   disabled,
+  puedeAgendarReunion,
   onCrear,
   onCompletar,
   onBorrar,
 }: {
   tasks: LeadTaskRow[];
   disabled: boolean;
-  onCrear: (title: string, dueAt: string) => Promise<boolean>;
+  puedeAgendarReunion: boolean;
+  /** `duracion === null` = recordatorio interno; un número = reunión real. */
+  onCrear: (title: string, dueAt: string, duracion: number | null) => Promise<boolean>;
   onCompletar: (taskId: string, done: boolean) => Promise<boolean>;
   onBorrar: (taskId: string) => Promise<boolean>;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [esReunion, setEsReunion] = useState(false);
+  const [duracion, setDuracion] = useState(45);
   const [title, setTitle] = useState("");
   // Arranca mañana a las 10:00 de Chile: es el próximo paso más habitual y
   // evita que agendar cueste tocar el calendario cada vez.
@@ -209,9 +227,14 @@ function Tareas({
     // "" y `chileWallTimeToIso("")` revienta al partir el string, dejando el
     // formulario mudo (sin aviso y sin petición).
     if (!title.trim() || !cuando) return;
-    const ok = await onCrear(title.trim(), chileWallTimeToIso(cuando));
+    const ok = await onCrear(
+      title.trim(),
+      chileWallTimeToIso(cuando),
+      esReunion ? duracion : null,
+    );
     if (ok) {
       setTitle("");
+      setEsReunion(false);
       setAbierto(false);
     }
   }
@@ -232,10 +255,35 @@ function Tareas({
 
       {abierto && (
         <form onSubmit={enviar} className="mt-2 flex flex-col gap-2">
+          {puedeAgendarReunion && (
+            <div className="flex gap-1.5" role="radiogroup" aria-label="Tipo">
+              {[
+                { v: false, label: "Recordatorio" },
+                { v: true, label: "Reunión" },
+              ].map((o) => (
+                <button
+                  key={String(o.v)}
+                  type="button"
+                  role="radio"
+                  aria-checked={esReunion === o.v}
+                  onClick={() => setEsReunion(o.v)}
+                  className={cn(
+                    "ca-btn-interactive rounded-full border px-3 py-1 text-[12px] font-bold",
+                    esReunion === o.v
+                      ? "border-transparent bg-ca-ink text-ca-surface"
+                      : "border-ca-ink/[0.14] text-ca-ink-soft hover:bg-ca-bg-soft",
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Llamar para confirmar interés"
+            placeholder={esReunion ? "Reunión de admisión" : "Llamar para confirmar interés"}
             maxLength={200}
             aria-label="Qué hay que hacer"
             autoFocus
@@ -247,10 +295,29 @@ function Tareas({
               onChange={(e) => setCuando(e.target.value)}
               aria-label="Cuándo"
             />
+            {esReunion && (
+              <Select
+                value={String(duracion)}
+                onChange={(v) => setDuracion(Number(v))}
+                aria-label="Duración"
+                className="w-32 shrink-0"
+                options={[30, 45, 60, 90].map((m) => ({ value: String(m), label: `${m} min` }))}
+              />
+            )}
             <Button type="submit" size="sm" disabled={disabled || !title.trim() || !cuando}>
               Agendar
             </Button>
           </div>
+
+          {/* El lead recibe un correo real de Google: decirlo antes evita la
+              sorpresa de haber contactado a un prospecto sin querer. */}
+          {esReunion && (
+            <p className="text-[11px] leading-relaxed text-ca-ink-soft">
+              Se creará en el calendario de la profesora y{" "}
+              <strong className="font-bold">al lead le llegará una invitación</strong> con
+              enlace de Meet.
+            </p>
+          )}
         </form>
       )}
 
@@ -288,10 +355,29 @@ function Tareas({
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                     <span className="font-mono text-[11px] text-ca-ink-soft">
                       {formatLeadDate(task.due_at)}
+                      {task.kind === "meeting" && task.duration_minutes
+                        ? ` · ${task.duration_minutes} min`
+                        : ""}
                     </span>
                     {!hecha && urgencia !== "proxima" && (
                       <Badge tone={URGENCIA_TONO[urgencia]} size="sm">
                         {URGENCIA_TEXTO[urgencia]}
+                      </Badge>
+                    )}
+                    {task.meet_url && (
+                      <a
+                        href={task.meet_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-ca-violet underline"
+                      >
+                        Meet
+                      </a>
+                    )}
+                    {/* Nunca dar por agendado lo que no llegó al calendario. */}
+                    {task.kind === "meeting" && task.sync_error && (
+                      <Badge tone="amber" size="sm" title={task.sync_error}>
+                        No llegó al calendario
                       </Badge>
                     )}
                   </div>

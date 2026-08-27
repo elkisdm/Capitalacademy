@@ -12,6 +12,15 @@ let updateResult: Result;
 let deleteResult: Result;
 const updateSpy = vi.fn();
 
+let cancelarImpl: (id: string) => Promise<boolean>;
+const cancelarSpy = vi.fn();
+vi.mock("@/lib/atlas/calendario", () => ({
+  cancelarReunion: vi.fn((id: string) => {
+    cancelarSpy(id);
+    return cancelarImpl(id);
+  }),
+}));
+
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
     from: () => ({
@@ -48,8 +57,11 @@ const ctx = (taskId = TASK) => ({ params: Promise.resolve({ taskId }) });
 beforeEach(() => {
   authResult = { user: { id: "actor-1" } };
   updateResult = { data: { id: TASK }, error: null };
-  deleteResult = { data: { id: TASK }, error: null };
+  deleteResult = { data: { id: TASK, google_event_id: null }, error: null };
+  cancelarImpl = async () => true;
   updateSpy.mockClear();
+  cancelarSpy.mockClear();
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("PATCH /api/admin/leads/tasks/[taskId]", () => {
@@ -131,5 +143,63 @@ describe("DELETE /api/admin/leads/tasks/[taskId]", () => {
     deleteResult = { data: null, error: null };
     const res = await DELETE(del(), ctx());
     expect(res.status).toBe(404);
+  });
+});
+
+
+describe("borrar una reunión limpia el calendario de la profesora", () => {
+  const del = () => new Request("http://x", { method: "DELETE" });
+
+  it("un recordatorio interno no llama a Google", async () => {
+    deleteResult = { data: { id: TASK, google_event_id: null }, error: null };
+    await DELETE(del(), ctx());
+    expect(cancelarSpy).not.toHaveBeenCalled();
+  });
+
+  it("una reunión cancela su evento", async () => {
+    deleteResult = { data: { id: TASK, google_event_id: "abc12" }, error: null };
+    const res = await DELETE(del(), ctx());
+    expect(res.status).toBe(200);
+    expect(cancelarSpy).toHaveBeenCalledWith("abc12");
+    await expect(res.json()).resolves.toEqual({ ok: true });
+  });
+
+  it("un evento que ya no estaba en Google no es error", async () => {
+    deleteResult = { data: { id: TASK, google_event_id: "abc12" }, error: null };
+    cancelarImpl = async () => false;
+    const res = await DELETE(del(), ctx());
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ ok: true });
+  });
+
+  it("si la cancelación falla NO se resucita la fila, pero se avisa", async () => {
+    // La tarea ya se borró: revertir es imposible y fingir éxito dejaría un
+    // evento fantasma en la agenda sin que nadie lo sepa.
+    deleteResult = { data: { id: TASK, google_event_id: "abc12" }, error: null };
+    cancelarImpl = async () => { throw new Error("Atlas caído"); };
+    const res = await DELETE(del(), ctx());
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      warning: "La reunión se borró acá pero sigue en el calendario de Google.",
+    });
+  });
+
+  it("un fallo que no es Error tampoco rompe el log", async () => {
+    deleteResult = { data: { id: TASK, google_event_id: "abc12" }, error: null };
+    cancelarImpl = async () => { throw "texto suelto"; };
+    const res = await DELETE(del(), ctx());
+    expect(res.status).toBe(200);
+    expect(console.error).toHaveBeenCalledWith(expect.any(String), "texto suelto");
+  });
+
+  it("el evento huérfano queda registrado para revisarlo a mano", async () => {
+    deleteResult = { data: { id: TASK, google_event_id: "abc12" }, error: null };
+    cancelarImpl = async () => { throw new Error("Atlas caído"); };
+    await DELETE(del(), ctx());
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("abc12"),
+      expect.anything(),
+    );
   });
 });

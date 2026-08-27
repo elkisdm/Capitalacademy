@@ -127,6 +127,13 @@ export type LeadTaskRow = {
   done_at: string | null;
   created_at: string;
   created_by: string | null;
+  /** `task` = recordatorio interno; `meeting` = reunión real en Google. */
+  kind: string;
+  duration_minutes: number | null;
+  google_event_id: string | null;
+  meet_url: string | null;
+  /** Poblado = la reunión NO llegó al calendario. El panel tiene que decirlo. */
+  sync_error: string | null;
 };
 
 type AuthorJoin = { full_name: string | null } | { full_name: string | null }[] | null;
@@ -170,7 +177,9 @@ export async function getAllLeadTasks(): Promise<LeadTaskRow[]> {
   const data = await traerTodo("lead_tasks", (desde, hasta) =>
     supabase
       .from("lead_tasks")
-      .select("id, lead_id, title, due_at, done_at, created_at, created_by")
+      .select(
+        "id, lead_id, title, due_at, done_at, created_at, created_by, kind, duration_minutes, google_event_id, meet_url, sync_error",
+      )
       .order("due_at", { ascending: true })
       .range(desde, hasta),
   );

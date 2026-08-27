@@ -1582,8 +1582,13 @@ export type Database = {
           created_by: string | null
           done_at: string | null
           due_at: string
+          duration_minutes: number | null
+          google_event_id: string | null
           id: string
+          kind: string
           lead_id: string
+          meet_url: string | null
+          sync_error: string | null
           title: string
         }
         Insert: {
@@ -1591,8 +1596,13 @@ export type Database = {
           created_by?: string | null
           done_at?: string | null
           due_at: string
+          duration_minutes?: number | null
+          google_event_id?: string | null
           id?: string
+          kind?: string
           lead_id: string
+          meet_url?: string | null
+          sync_error?: string | null
           title: string
         }
         Update: {
@@ -1600,8 +1610,13 @@ export type Database = {
           created_by?: string | null
           done_at?: string | null
           due_at?: string
+          duration_minutes?: number | null
+          google_event_id?: string | null
           id?: string
+          kind?: string
           lead_id?: string
+          meet_url?: string | null
+          sync_error?: string | null
           title?: string
         }
         Relationships: [

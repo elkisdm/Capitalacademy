@@ -120,6 +120,7 @@ function LeadDetail({
 
         <LeadSeguimiento
           leadId={lead.id}
+          leadEmail={lead.email}
           stage={lead.stage}
           activity={activity}
           tasks={tasks}

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Fixed
+- Al compartir los enlaces de la landing y del pago del Programa de Liderazgo, y del pago del Diplomado, la tarjeta de vista previa ahora muestra la foto real, el logo y las fechas de cada programa; la del pago del Diplomado decía "modalidad online" y el programa es híbrido (`8810166`)
 - El panel de leads ya no se queda en blanco al abrir el seguimiento de un lead: un aviso emergente mal enlazado interrumpía la carga (`3edde81`)
 - Una clase que se dicta por Zoom o Meet ya lleva al alumno al mismo lugar desde todas partes: el correo de recordatorio apuntaba al enlace externo pero el calendario y la pantalla de la clase seguían ofreciendo la sala de la plataforma, así que quien entraba por la plataforma llegaba a una sala vacía. Además el botón "Entrar" de la vista de módulo ahora aparece también en las clases que usan la sala propia (`28097bf`)
 - Los retratos del equipo académico en la landing de Liderazgo ya no cortan la cara: el marco ahora prioriza la parte superior de la foto en vez del centro (`2af8320`)

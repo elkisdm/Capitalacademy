@@ -381,7 +381,10 @@
 | `app/liderazgo/page.tsx` | Landing pública del Programa de Liderazgo (prospecto sobrio: 11 secciones + formulario de captación) | `/liderazgo` | — |
 | `components/landing/liderazgo/` | Secciones de la landing de Liderazgo (`secciones.tsx`, `FormularioLiderazgo`, `RotadorFotos` fundido de fotos, `Reveal` aparición al scroll) | — | — |
 | `lib/landing/liderazgo.ts` · `lib/landing/liderazgo-lead.ts` | Contenido tipado del CSV de la landing de Liderazgo y payload del lead (`program_interest: liderazgo`, `source: landing-liderazgo`) | — | — |
-| `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landing de Liderazgo y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
+| `app/diplomado/page.tsx` | Landing pública del Diplomado, 5ª generación (hero + 5 secciones del CSV + formulario de captación; misma familia visual que Liderazgo) | `/diplomado` | — |
+| `components/landing/diplomado/` | Secciones de la landing del Diplomado (`secciones.tsx`, `FormularioDiplomado` corto: solo contacto); reusa `RotadorFotos` y `Reveal` de `liderazgo/` | — | — |
+| `lib/landing/diplomado.ts` · `lib/landing/diplomado-lead.ts` | Contenido tipado del CSV de la landing del Diplomado y payload del lead (`program_interest: diplomado`, `source: landing-diplomado`) | — | — |
+| `lib/og/brand.tsx` + `app/**/opengraph-image.tsx` | Tarjetas Open Graph 1200×630 (ImageResponse/Satori): genérica, checkouts Diplomado/Liderazgo, landings de Liderazgo y del Diplomado y certificado dinámico por código | `/opengraph-image`, `/pago/opengraph-image`, `/liderazgo/opengraph-image`, `/diplomado/opengraph-image`, `/verificar/[code]/opengraph-image` | — |
 | `app/api/leads/route.ts` | Captura de leads del formulario de contacto y de la calculadora (`source` los distingue) | `POST /api/leads` | — |
 | `db/migrations/0103_leads_preguntas_liderazgo.sql` | Columnas tipadas en `leads` con la calificación del formulario de Liderazgo (lidera equipo, personas a cargo, desafíos); se ven en `/admin/leads` | — | — |
 | `app/(admin)/admin/leads/` | Panel de leads de captación (todas las landings): stats del embudo, filtros por programa y por etapa, buscador y detalle master–detail. `pendientes.tsx` (franja de tareas vencidas/de hoy) y `lead-seguimiento.tsx` (etapa, bitácora, notas y tareas del detalle) | `/admin/leads` | 0038 |
@@ -395,8 +398,8 @@
 | `db/migrations/0108_lead_meetings.sql` | `lead_tasks.kind` (`task`/`meeting`) + duración, `google_event_id`, `meet_url` y `sync_error`. Ojo: el CHECK de duración lleva `is not null` explícito porque `null between` da NULL y un CHECK solo rechaza en FALSE | — | 0039 |
 | `app/api/cron/lead-tasks/route.ts` · `netlify/functions/lead-tasks-cron.mjs` | Recordatorio diario del seguimiento (12:00 UTC). No envía nada si no hay pendientes | `POST /api/cron/lead-tasks` | 0038 |
 | `lib/email/lead-tasks-digest.ts` | Correo del recordatorio diario: asunto con conteo y atrasadas, tareas agrupadas por persona | — | 0038 |
-| `components/analytics/meta-pixel.tsx` | Meta Pixel condicionado a `NEXT_PUBLIC_META_PIXEL_ID`; se monta SOLO en `/liderazgo` (el aula queda fuera a propósito) | — | — |
-| `public/landing/liderazgo/` | Fotos web de la landing (sesión oficial 06/08 + clases + graduación), generadas desde `~/Downloads/FOTOS` | — | — |
+| `components/analytics/meta-pixel.tsx` | Meta Pixel condicionado a `NEXT_PUBLIC_META_PIXEL_ID`; se monta SOLO en `/liderazgo` y `/diplomado` (el aula queda fuera a propósito) | — | — |
+| `public/landing/liderazgo/` | Fotos web de las landings de Liderazgo y del Diplomado (sesión oficial 06/08 + clases + graduación), generadas desde `~/Downloads/FOTOS` | — | — |
 
 ## Calculadora de crédito (público)
 

@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Fixed
+- El panel de leads ya no se queda en blanco al abrir el seguimiento de un lead: un aviso emergente mal enlazado interrumpía la carga (`3edde81`)
 - Una clase que se dicta por Zoom o Meet ya lleva al alumno al mismo lugar desde todas partes: el correo de recordatorio apuntaba al enlace externo pero el calendario y la pantalla de la clase seguían ofreciendo la sala de la plataforma, así que quien entraba por la plataforma llegaba a una sala vacía. Además el botón "Entrar" de la vista de módulo ahora aparece también en las clases que usan la sala propia (`28097bf`)
 - Los retratos del equipo académico en la landing de Liderazgo ya no cortan la cara: el marco ahora prioriza la parte superior de la foto en vez del centro (`2af8320`)
 - Las clases grabadas ya no se pierden por un rechazo del almacenamiento: el depósito de grabaciones solo aceptaba el video final y rechazaba tanto los trozos de respaldo como su índice, así que la grabación quedaba marcada como fallida y la repetición nunca se publicaba, aunque el video estuviera completo (`ca7357c`)

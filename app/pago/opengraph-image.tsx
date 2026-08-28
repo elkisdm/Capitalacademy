@@ -1,23 +1,30 @@
 import { ImageResponse } from "next/og";
-import { BrandCard, CA, OG_SIZE } from "@/lib/og/brand";
+import { OG_SIZE } from "@/lib/og/brand";
+import { loadPhotoCardAssets, PhotoCard } from "@/lib/og/photo-card";
 
-export const alt = "Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria · Capital Academy";
+export const alt = "Inscripción al Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria · Capital Academy";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
+// Misma foto y datos que la landing del Diplomado: quien comparte el enlace
+// de pago ve la misma tarjeta que la del programa (antes decía "modalidad
+// online", que no es cierto: es híbrida).
 export default async function OpenGraphImage() {
+  const { foto, logo, fonts } = await loadPhotoCardAssets("public/landing/diplomado/og-bg.jpg");
   return new ImageResponse(
     (
-      <BrandCard
-        eyebrow="Diplomado · Capital Academy"
-        title="Diplomado Ejecutivo en Ventas y Asesoría Inmobiliaria"
-        titleSize={65}
-        subtitle="Método y estrategia para cerrar más operaciones. Modalidad online."
-        accent={CA.violet}
-        footerLeft="INSCRIPCIONES ABIERTAS"
-        footerRight="Certificación · SERNAC 10 días"
+      <PhotoCard
+        foto={foto}
+        logo={logo}
+        eyebrow="Inscripción · Diplomado ejecutivo"
+        title="Inscríbete al Diplomado en Ventas y Asesoría de Inversión Inmobiliaria"
+        subtitle="Pago seguro en línea con opción de cuotas. Al confirmarse el pago recibes tu acceso por correo."
+        chips={["12 semanas", "Modalidad híbrida", "Diploma certificado"]}
+        pill="Inscripciones abiertas · Inicio 17 de octubre"
+        url="capitalacademy.cl/pago"
+        titleSize={50}
       />
     ),
-    { ...size },
+    { ...size, fonts },
   );
 }

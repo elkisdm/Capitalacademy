@@ -1,24 +1,28 @@
 import { ImageResponse } from "next/og";
-import { BrandCard, CA, OG_SIZE } from "@/lib/og/brand";
+import { OG_SIZE } from "@/lib/og/brand";
+import { loadPhotoCardAssets, PhotoCard } from "@/lib/og/photo-card";
 
 export const alt =
-  "Programa de Liderazgo y Gestión de Equipos Comerciales · Capital Academy";
+  "Inscripción al Programa de Liderazgo Comercial Inmobiliario · Capital Academy";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
 export default async function OpenGraphImage() {
+  const { foto, logo, fonts } = await loadPhotoCardAssets("public/landing/liderazgo/og-bg.jpg");
   return new ImageResponse(
     (
-      <BrandCard
-        eyebrow="Liderazgo · Capital Academy"
-        title="Programa de Liderazgo y Gestión de Equipos Comerciales"
-        titleSize={60}
-        subtitle="Construye y sostén equipos comerciales de alto desempeño. Cupos limitados."
-        accent={CA.amber}
-        footerLeft="INSCRIPCIONES ABIERTAS"
-        footerRight="Certificación · SERNAC 10 días"
+      <PhotoCard
+        foto={foto}
+        logo={logo}
+        eyebrow="Inscripción · Programa de Liderazgo"
+        title="Inscríbete al Programa de Liderazgo Comercial Inmobiliario"
+        subtitle="Pago seguro en línea con opción de cuotas. Al confirmarse el pago recibes tu acceso por correo."
+        chips={["16 horas", "4 jornadas presenciales", "Diploma certificado"]}
+        pill="Inscripciones abiertas · Inicio 25 de septiembre"
+        url="capitalacademy.cl/pago/liderazgo"
+        titleSize={52}
       />
     ),
-    { ...size },
+    { ...size, fonts },
   );
 }

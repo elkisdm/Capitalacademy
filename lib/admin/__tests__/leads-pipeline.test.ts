@@ -107,6 +107,21 @@ describe("tipos de contacto", () => {
       expect(ultimoContacto([])).toBeNull();
     });
 
+    it("ignora la actividad automática (sin autor): el bot no es un contacto del equipo", () => {
+      expect(
+        ultimoContacto([
+          { kind: "whatsapp", created_at: "2026-08-28T15:00:00Z", created_by: null },
+        ]),
+      ).toBeNull();
+      // La manual (con autor) sí cuenta, y una sin el campo también (compatibilidad).
+      expect(
+        ultimoContacto([
+          { kind: "whatsapp", created_at: "2026-08-28T15:00:00Z", created_by: null },
+          { kind: "call", created_at: "2026-08-20T12:00:00Z", created_by: "user-1" },
+        ]),
+      ).toBe("2026-08-20T12:00:00Z");
+    });
+
     it("descarta fechas ilegibles en vez de propagarlas", () => {
       expect(
         ultimoContacto([

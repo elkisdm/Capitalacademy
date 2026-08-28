@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-type InsertResult = { error: unknown };
+type InsertResult = { data: { id: string } | null; error: unknown };
 let insertResult: InsertResult;
-const insertSpy = vi.fn(async (_payload: unknown) => insertResult);
+// `insert(payload).select("id").single()`: el spy captura el payload y la
+// cadena devuelve el resultado configurado por el test.
+const insertSpy = vi.fn((_payload: unknown) => ({
+  select: () => ({ single: async () => insertResult }),
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
@@ -11,6 +15,12 @@ vi.mock("@/lib/supabase/admin", () => ({
     }),
   })),
 }));
+
+const enviarInvitacionSpy = vi.fn(async () => ({ ok: true as const, messageId: "wamid.1" }));
+vi.mock("@/lib/whatsapp/invitacion-reunion-liderazgo", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/whatsapp/invitacion-reunion-liderazgo")>();
+  return { ...real, enviarInvitacionReunion: enviarInvitacionSpy };
+});
 
 const { POST } = await import("@/app/api/leads/route");
 
@@ -47,7 +57,8 @@ function postReq(body: unknown, opts?: { ip?: string; headers?: Record<string, s
 
 beforeEach(() => {
   vi.clearAllMocks();
-  insertResult = { error: null };
+  enviarInvitacionSpy.mockResolvedValue({ ok: true, messageId: "wamid.1" });
+  insertResult = { data: { id: "lead-1" }, error: null };
 });
 
 describe("POST /api/leads", () => {
@@ -115,7 +126,7 @@ describe("POST /api/leads", () => {
   });
 
   it("500 cuando Supabase falla al insertar", async () => {
-    insertResult = { error: { message: "db down" } };
+    insertResult = { data: null, error: { message: "db down" } };
     const res = await POST(postReq(validBody()));
     expect(res.status).toBe(500);
     const json = await res.json();
@@ -193,5 +204,36 @@ describe("POST /api/leads", () => {
     const json = await res.json();
     expect(json.error).toBe("Demasiadas solicitudes. Intenta nuevamente más tarde.");
     expect(res.headers.get("Retry-After")).toBeTruthy();
+  });
+});
+
+describe("invitación por WhatsApp a la reunión con la directora (ADR-0040)", () => {
+  it("un lead de la landing de Liderazgo dispara la invitación con id, nombre y teléfono", async () => {
+    const res = await POST(
+      postReq(validBody({ program_interest: "liderazgo", source: "landing-liderazgo", full_name: "Ana Pérez" })),
+    );
+    expect(res.status).toBe(201);
+    expect(enviarInvitacionSpy).toHaveBeenCalledTimes(1);
+    const [, lead] = enviarInvitacionSpy.mock.calls[0] as unknown as [unknown, Record<string, string>];
+    expect(lead).toEqual({ id: "lead-1", full_name: "Ana Pérez", phone: "+56912345678" });
+  });
+
+  it("el Diplomado y la calculadora no envían nada", async () => {
+    await POST(postReq(validBody({ program_interest: "diplomado", source: "landing-diplomado" })));
+    await POST(postReq(validBody({ program_interest: "liderazgo", source: "calculadora" })));
+    expect(enviarInvitacionSpy).not.toHaveBeenCalled();
+  });
+
+  it("si la invitación falla, la inscripción igual responde 201", async () => {
+    enviarInvitacionSpy.mockResolvedValueOnce({ ok: false, error: "Meta respondió 132001" } as never);
+    const res = await POST(postReq(validBody({ program_interest: "liderazgo", source: "landing-liderazgo" })));
+    expect(res.status).toBe(201);
+  });
+
+  it("si el insert falla no se invita a nadie", async () => {
+    insertResult = { data: null, error: { message: "boom" } };
+    const res = await POST(postReq(validBody({ program_interest: "liderazgo", source: "landing-liderazgo" })));
+    expect(res.status).toBe(500);
+    expect(enviarInvitacionSpy).not.toHaveBeenCalled();
   });
 });

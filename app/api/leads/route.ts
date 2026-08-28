@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createRateLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { debeInvitar, enviarInvitacionReunion } from "@/lib/whatsapp/invitacion-reunion-liderazgo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,9 +95,11 @@ export async function POST(req: Request) {
   };
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data: creado, error } = await supabase
     .from("leads")
-    .insert(payload);
+    .insert(payload)
+    .select("id")
+    .single();
 
   if (error) {
     console.error("[leads] insert failed", error);
@@ -104,6 +107,17 @@ export async function POST(req: Request) {
       { error: "No pudimos guardar tu mensaje. Intenta nuevamente." },
       { status: 500 },
     );
+  }
+
+  // Invitación por WhatsApp a la reunión con la directora (ADR-0040). Se espera
+  // porque en serverless la función puede morir al responder; nunca lanza y no
+  // cambia la respuesta: el lead ya quedó guardado.
+  if (creado?.id && debeInvitar(payload)) {
+    await enviarInvitacionReunion(supabase, {
+      id: creado.id,
+      full_name: payload.full_name,
+      phone: payload.phone,
+    });
   }
 
   return NextResponse.json({ ok: true }, { status: 201 });

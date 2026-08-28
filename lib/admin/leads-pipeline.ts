@@ -123,15 +123,23 @@ export function esContacto(kind: LeadActivityKind): boolean {
 /**
  * Fecha del último contacto real de una lista de actividad, o null si solo hubo
  * cambios de etapa (o nada). No asume orden: recorre y se queda con la mayor.
+ *
+ * Una actividad AUTOMÁTICA (`created_by` null, como la invitación por WhatsApp
+ * del ADR-0040) no cuenta: "último contacto" responde "¿cuándo habló alguien
+ * del equipo con esta persona?", y un bot enviando una plantilla no es eso. Si
+ * contara, cada lead nuevo saldría "contactado" en la planilla al segundo de
+ * inscribirse y nadie lo llamaría. Toda actividad manual lleva autor (la
+ * escribe una sesión de staff), así que null discrimina sin ambigüedad.
  */
 export function ultimoContacto(
-  activity: readonly { kind: LeadActivityKind; created_at: string }[],
+  activity: readonly { kind: LeadActivityKind; created_at: string; created_by?: string | null }[],
 ): string | null {
   let masReciente: string | null = null;
   let masRecienteMs = -Infinity;
 
   for (const a of activity) {
     if (!esContacto(a.kind)) continue;
+    if (a.created_by === null) continue; // automática: no la envió una persona
     const ms = new Date(a.created_at).getTime();
     if (Number.isNaN(ms) || ms <= masRecienteMs) continue;
     masRecienteMs = ms;

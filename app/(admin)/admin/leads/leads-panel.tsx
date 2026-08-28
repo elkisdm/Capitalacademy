@@ -30,6 +30,8 @@ import {
   LEAD_STAGES,
   LEAD_STAGE_LABELS,
   ultimoContacto,
+  visibleConFiltroEtapa,
+  type LeadStage,
 } from "@/lib/admin/leads-pipeline";
 import type {
   LeadRow,
@@ -215,7 +217,7 @@ export function LeadsPanel({
   tasks: LeadTaskRow[];
 }) {
   const [chip, setChip] = useState("todos");
-  const [etapa, setEtapa] = useState("todas");
+  const [etapa, setEtapa] = useState<LeadStage | "todas">("todas");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [descargando, setDescargando] = useState(false);
@@ -274,13 +276,15 @@ export function LeadsPanel({
     const counts: Record<string, number> = {};
     for (const l of leads) counts[l.stage] = (counts[l.stage] ?? 0) + 1;
     return [
-      { id: "todas", label: "Todas", count: leads.length },
+      // "Todas" cuenta lo que ese chip realmente muestra: los descartados no
+      // aparecen bajo "Todas" (visibleConFiltroEtapa), así que no se cuentan.
+      { id: "todas" as LeadStage | "todas", label: "Todas", count: leads.length - (counts["descartado"] ?? 0) },
       // Las etapas vacías se ocultan, SALVO la que está activa: mover el último
       // lead de una etapa la vaciaría y el chip desaparecería con el filtro
       // todavía puesto, dejando una lista vacía sin ningún chip marcado y sin
       // pista de por qué.
       ...LEAD_STAGES.filter((s) => (counts[s] ?? 0) > 0 || s === etapa).map((s) => ({
-        id: s as string,
+        id: s as LeadStage | "todas",
         label: LEAD_STAGE_LABELS[s],
         count: counts[s] ?? 0,
       })),
@@ -302,7 +306,7 @@ export function LeadsPanel({
     const q = search.trim().toLowerCase();
     return leads.filter((l) => {
       if (chip !== "todos" && l.program_interest !== chip) return false;
-      if (etapa !== "todas" && l.stage !== etapa) return false;
+      if (!visibleConFiltroEtapa(l.stage, etapa)) return false;
       if (!q) return true;
       return [l.full_name, l.email, l.phone, l.company ?? "", l.role ?? ""]
         .join(" ")

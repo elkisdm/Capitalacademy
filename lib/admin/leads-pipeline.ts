@@ -121,6 +121,20 @@ export function esContacto(kind: LeadActivityKind): boolean {
 }
 
 /**
+ * ¿Se muestra este lead bajo el filtro de etapa del panel?
+ *
+ * Con "todas" los `descartado` quedan FUERA: son leads que ya se decidió no
+ * trabajar y en la vista diaria solo estorban (pedido de la directora,
+ * 28-ago-2026). No se borra nada — su chip sigue mostrando el conteo y
+ * seleccionarlo los lista, que es la diferencia entre "no los quiero ver" y
+ * "no existieron".
+ */
+export function visibleConFiltroEtapa(stage: LeadStage, filtro: LeadStage | "todas"): boolean {
+  if (filtro === "todas") return stage !== "descartado";
+  return stage === filtro;
+}
+
+/**
  * Fecha del último contacto real de una lista de actividad, o null si solo hubo
  * cambios de etapa (o nada). No asume orden: recorre y se queda con la mayor.
  *

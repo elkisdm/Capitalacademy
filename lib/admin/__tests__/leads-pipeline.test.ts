@@ -12,6 +12,7 @@ import {
   describeStageChange,
   esContacto,
   ultimoContacto,
+  visibleConFiltroEtapa,
   diaChile,
   urgenciaDeTarea,
   estaPendiente,
@@ -105,6 +106,15 @@ describe("tipos de contacto", () => {
         ultimoContacto([{ kind: "stage_change", created_at: "2026-08-26T12:00:00Z" }]),
       ).toBeNull();
       expect(ultimoContacto([])).toBeNull();
+    });
+
+    it("con 'todas' los descartados quedan fuera; con su chip, solo ellos", () => {
+      expect(visibleConFiltroEtapa("descartado", "todas")).toBe(false);
+      expect(visibleConFiltroEtapa("nuevo", "todas")).toBe(true);
+      expect(visibleConFiltroEtapa("matriculado", "todas")).toBe(true);
+      expect(visibleConFiltroEtapa("descartado", "descartado")).toBe(true);
+      expect(visibleConFiltroEtapa("nuevo", "descartado")).toBe(false);
+      expect(visibleConFiltroEtapa("contactado", "contactado")).toBe(true);
     });
 
     it("ignora la actividad automática (sin autor): el bot no es un contacto del equipo", () => {

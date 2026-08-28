@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- El panel de leads ya no muestra los descartados en la vista normal: dejan de listarse y de contarse bajo "Todas", y siguen disponibles completos en su propio filtro "Descartado" (`fc4faf3`)
 - Quien se inscribe en la landing del Programa de Liderazgo recibe al instante un WhatsApp desde el número de la Academia invitándolo a una reunión de 15 minutos con la directora académica, con un botón para elegir hora en su calendario; cada envío (o su fallo) queda anotado en la bitácora del lead y no cuenta como contacto del equipo (`9f46d9c`)
 
 ### Fixed

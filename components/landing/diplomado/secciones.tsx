@@ -8,8 +8,8 @@ import { FormularioDiplomado } from "./FormularioDiplomado";
 /* Landing del Diplomado (5ª generación, ago-2026): misma familia visual que
    la de Liderazgo — fotos reales, verde lima de marca como acento y bandas
    full-image — con el contenido del CSV "Estructura Landing - Diplomado".
-   Las fotos son de la sesión oficial de la Academia (clases y graduación),
-   compartidas con /liderazgo. */
+   Las fotos son de la sesión oficial de la Academia (clases 01.26 y 3ª gen,
+   graduaciones 1ª y 3ª gen), distintas de las que usa /liderazgo. */
 
 const HERO_GRADIENT_MOBILE =
   "linear-gradient(180deg, color-mix(in srgb, var(--color-ca-navy-ink) 20%, transparent) 0%, color-mix(in srgb, var(--color-ca-navy-ink) 55%, transparent) 45%, color-mix(in srgb, var(--color-ca-navy-ink) 94%, transparent) 100%)";
@@ -138,9 +138,9 @@ export function HeroDiplomado() {
     <section className="relative flex min-h-[600px] items-end overflow-hidden sm:min-h-[640px] lg:min-h-[680px] lg:items-center">
       <RotadorFotos
         fotos={[
-          { src: "/landing/liderazgo/clase.jpg", alt: "Clase presencial del Diplomado de Capital Academy" },
-          { src: "/landing/liderazgo/hero-2.jpg", alt: "Docente presentando en una sesión del Diplomado" },
-          { src: "/landing/liderazgo/clase-3.jpg", alt: "Alumnos en una clase presencial" },
+          { src: "/landing/diplomado/hero.jpg", alt: "Clase presencial del Diplomado de Capital Academy" },
+          { src: "/landing/diplomado/hero-2.jpg", alt: "Docente presentando en una sesión del Diplomado" },
+          { src: "/landing/diplomado/hero-3.jpg", alt: "Alumnos en una clase presencial del Diplomado" },
         ]}
         priority
         intervaloMs={7000}
@@ -231,9 +231,9 @@ export function CambioIndustria() {
           <div className="relative aspect-[3/2] overflow-hidden rounded-2xl">
             <RotadorFotos
               fotos={[
-                { src: "/landing/liderazgo/mesa.jpg", alt: "Trabajo sobre casos reales en clase" },
-                { src: "/landing/liderazgo/conversacion.jpg", alt: "Conversación comercial de práctica" },
-                { src: "/landing/liderazgo/mesa-3.jpg", alt: "Alumnos trabajando en equipo" },
+                { src: "/landing/diplomado/taller.jpg", alt: "Trabajo en equipo sobre casos reales en clase" },
+                { src: "/landing/diplomado/taller-2.jpg", alt: "Alumnos resolviendo un caso en grupo" },
+                { src: "/landing/diplomado/taller-3.jpg", alt: "Taller práctico de una jornada presencial" },
               ]}
               intervaloMs={6500}
               sizes="(min-width: 1024px) 50vw, 100vw"
@@ -302,8 +302,8 @@ export function BandaClase() {
     <section className="relative flex h-[240px] items-end overflow-hidden sm:h-[320px] lg:h-[420px]">
       <RotadorFotos
         fotos={[
-          { src: "/landing/liderazgo/clase-2.jpg", alt: "Docente frente a una generación completa" },
-          { src: "/landing/liderazgo/hero.jpg", alt: "Clase ejecutiva de Capital Academy" },
+          { src: "/landing/diplomado/clase.jpg", alt: "Docente exponiendo frente a una generación del Diplomado" },
+          { src: "/landing/diplomado/clase-2.jpg", alt: "Clase presencial de Capital Academy" },
         ]}
         intervaloMs={7500}
         sizes="100vw"
@@ -338,9 +338,9 @@ export function PracticaReal() {
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[3/2] lg:order-1">
           <RotadorFotos
             fotos={[
-              { src: "/landing/liderazgo/conversacion-2.jpg", alt: "Práctica de conversación comercial" },
-              { src: "/landing/liderazgo/mesa-2.jpg", alt: "Jornada práctica presencial" },
-              { src: "/landing/liderazgo/oficina.jpg", alt: "Trabajo individual del asesor" },
+              { src: "/landing/diplomado/practica.jpg", alt: "Práctica grupal en una jornada presencial" },
+              { src: "/landing/diplomado/practica-2.jpg", alt: "Alumnos trabajando un caso en clase" },
+              { src: "/landing/diplomado/practica-3.jpg", alt: "Asesora trabajando en la pizarra" },
             ]}
             intervaloMs={8000}
             sizes="(min-width: 1024px) 42vw, 100vw"
@@ -469,9 +469,9 @@ export function BandaGraduacion() {
     <section className="relative flex h-[360px] items-center justify-center overflow-hidden sm:h-[420px] lg:h-[460px]">
       <RotadorFotos
         fotos={[
-          { src: "/landing/liderazgo/graduacion.jpg", alt: "Graduación de una generación del Diplomado" },
-          { src: "/landing/liderazgo/graduacion-2.jpg", alt: "Entrega de diplomas de una generación" },
-          { src: "/landing/liderazgo/graduacion-3.jpg", alt: "Celebración de cierre de una generación" },
+          { src: "/landing/diplomado/graduacion.jpg", alt: "Graduación de una generación del Diplomado" },
+          { src: "/landing/diplomado/graduacion-2.jpg", alt: "Entrega de diplomas de una generación" },
+          { src: "/landing/diplomado/graduacion-3.jpg", alt: "Celebración de cierre de una generación" },
         ]}
         intervaloMs={7000}
         sizes="100vw"

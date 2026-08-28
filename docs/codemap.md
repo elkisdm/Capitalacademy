@@ -399,7 +399,7 @@
 | `app/api/cron/lead-tasks/route.ts` · `netlify/functions/lead-tasks-cron.mjs` | Recordatorio diario del seguimiento (12:00 UTC). No envía nada si no hay pendientes | `POST /api/cron/lead-tasks` | 0038 |
 | `lib/email/lead-tasks-digest.ts` | Correo del recordatorio diario: asunto con conteo y atrasadas, tareas agrupadas por persona | — | 0038 |
 | `components/analytics/meta-pixel.tsx` | Meta Pixel condicionado a `NEXT_PUBLIC_META_PIXEL_ID`; se monta SOLO en `/liderazgo` y `/diplomado` (el aula queda fuera a propósito) | — | — |
-| `public/landing/liderazgo/` | Fotos web de las landings de Liderazgo y del Diplomado (sesión oficial 06/08 + clases + graduación), generadas desde `~/Downloads/FOTOS` | — | — |
+| `public/landing/liderazgo/` · `public/landing/diplomado/` | Fotos web de cada landing (sesión oficial 06/08, clases y graduaciones), sin repetirse entre ambas; fuente en `~/Downloads/Capitalacademy/FOTOS` | — | — |
 
 ## Calculadora de crédito (público)
 

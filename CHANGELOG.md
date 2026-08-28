@@ -7,6 +7,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Added
+- Quien se inscribe en la landing del Programa de Liderazgo recibe al instante un WhatsApp desde el número de la Academia invitándolo a una reunión de 15 minutos con la directora académica, con un botón para elegir hora en su calendario; cada envío (o su fallo) queda anotado en la bitácora del lead y no cuenta como contacto del equipo (`9f46d9c`)
+
 ### Fixed
 - Al compartir los enlaces de la landing y del pago del Programa de Liderazgo, y del pago del Diplomado, la tarjeta de vista previa ahora muestra la foto real, el logo y las fechas de cada programa; la del pago del Diplomado decía "modalidad online" y el programa es híbrido (`8810166`)
 - El panel de leads ya no se queda en blanco al abrir el seguimiento de un lead: un aviso emergente mal enlazado interrumpía la carga (`3edde81`)
